@@ -1,0 +1,20 @@
+# A local PostgreSQL for `dotnet run` and `dotnet test` (see CLAUDE.md):
+#   docker compose -f docker-compose.dev.yml up -d
+# The app's Development settings and the tests both connect to it on localhost:5432.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      # The app's database and user (appsettings.Development.json)...
+      POSTGRES_DB: spellbound
+      POSTGRES_USER: spellbound
+      POSTGRES_PASSWORD: spellbound
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - spellbound-dev-db:/var/lib/postgresql/data
+      - ./scripts/dev-postgres.sql:/docker-entrypoint-initdb.d/dev-postgres.sql:ro
+
+volumes:
+  spellbound-dev-db:

@@ -1,4 +1,4 @@
-# Spellbound web app with its embedded RavenDB server. See docs/deploy.md.
+# Spellbound web app. Its PostgreSQL database runs in its own container (docker-compose.yml). See docs/deploy.md.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Spellbound.slnx Directory.Build.props ./
@@ -9,15 +9,17 @@ COPY src/ src/
 RUN dotnet publish src/Spellbound.Web/Spellbound.Web.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
+# pg_dump and pg_restore for backups. They must be the database server's major version or newer: this image is
+# Ubuntu 24.04, whose client is PostgreSQL 16, so docker-compose.yml runs postgres:16.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-16 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app .
-# Everything that must survive a new image lives on /data: the database and the sign-in cookie keys.
-# RavenDB also writes its logs and package caches next to its binaries, so the app user needs those two folders.
-RUN mkdir -p /data /app/RavenDB /app/RavenDBServer/Packages \
-    && chown -R app:app /data /app/RavenDB /app/RavenDBServer/Packages
+# Everything of the app's that must survive a new image lives on /data: the sign-in cookie keys and the backups.
+RUN mkdir -p /data && chown -R app:app /data
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_HTTP_PORTS=8080 \
-    RavenDb__DataDirectory=/data/raven \
     DataProtection__KeysDirectory=/data/keys \
     Backup__Directory=/data/backups \
     ForwardedHeaders__Enabled=true

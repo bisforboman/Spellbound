@@ -1,19 +1,17 @@
 # Deploying Spellbound
 
-One small Linux server runs two containers from `docker-compose.yml`:
+One small Linux server runs three containers from `docker-compose.yml`:
 
-- **app**: the Spellbound web app with its embedded RavenDB. Its data lives on the `spellbound-data` volume
-  (`/data` in the container): the database and the keys that protect sign-in cookies.
+- **app**: the Spellbound web app. Its `spellbound-data` volume (`/data` in the container) holds the nightly backups
+  and the keys that protect sign-in cookies.
+- **db**: PostgreSQL 16, with its data on the `postgres-data` volume. Only the app can reach it.
 - **caddy**: the only thing exposed to the internet. It gets and renews a Let's Encrypt certificate for your domain,
   redirects HTTP to HTTPS and forwards everything, websockets included, to the app.
 
 ## What you need
 
 - A VPS with **2 vCPU and 4 GB RAM** or more, running Ubuntu 24.04 (for example a Hetzner CX22 in the EU).
-  The image is about 1.3 GB, mostly the RavenDB server. Keep the core count within your RavenDB licence's limit.
 - A **domain** (or subdomain) for the game.
-- A **RavenDB Community licence key** (free, from ravendb.net). A Developer key is not allowed in production.
-  See [Architecture](architecture.md#persistence-notes).
 
 ## First deployment
 
@@ -28,10 +26,11 @@ One small Linux server runs two containers from `docker-compose.yml`:
    git clone https://github.com/bisforboman/Spellbound.git
    cd Spellbound
    cp .env.example .env
-   nano .env   # DOMAIN, ADMIN_EMAIL, and RAVEN_LICENSE (the licence JSON on one line, in single quotes)
+   nano .env   # DOMAIN, ADMIN_EMAIL, and POSTGRES_PASSWORD (a long random one: openssl rand -hex 24)
    ```
 
-   `.env` holds the licence key. It is gitignored; never commit it.
+   `.env` holds the database password. It is gitignored; never commit it. Set the password before the first start:
+   the database keeps the one it was created with.
 5. **Start**:
 
    ```sh
@@ -39,7 +38,9 @@ One small Linux server runs two containers from `docker-compose.yml`:
    docker compose logs -f app   # wait for "Round 1 started", then Ctrl+C
    ```
 
-   If the licence is missing or invalid, the app stops at once and the log says why.
+   The very first start creates the tables. Its log shows one `Failed executing DbCommand` for
+   `__EFMigrationsHistory` just before "Applying migration": that's the check that finds the database empty, not an
+   error.
 6. **Open `https://your.domain`**, register with the `ADMIN_EMAIL` address, and check that the top bar shows **Admin**.
 
 ## Updating
@@ -50,12 +51,13 @@ git pull
 docker compose up -d --build
 ```
 
-The database and sign-ins survive: they live on the volume, not in the image. Players see a short reconnect while
-the app restarts.
+The database and sign-ins survive: they live on volumes, not in the image. A new version that changes the tables
+updates them when it starts. Players see a short reconnect while the app restarts.
 
 ## Day to day
 
-- **Logs**: `docker compose logs -f app` (or `caddy`).
+- **Logs**: `docker compose logs -f app` (or `db`, `caddy`).
+- **Look at the data**: `docker compose exec db psql -U spellbound` (for example `select * from current_round;`).
 - **Health**: `https://your.domain/healthz` answers `Healthy` while the app is up.
 - **Change a setting** (`GameRules__...`, admins): add it to the `environment` list of `app` in
   `docker-compose.yml` or to `.env`, then `docker compose up -d`.
@@ -63,8 +65,9 @@ the app restarts.
   Players → **Reset a password by email** (or tap **Reset password…** on their row): you get a temporary password,
   shown once, to give them privately. They log in with it and choose a new one under Account. This also lifts a
   lockout from wrong guesses (not a ban).
-- **Licence renewal**: the Community key lasts a year. Put the new JSON in `.env` and run `docker compose up -d`.
-  RavenDB also requires the latest major version, so update the `RavenDB.*` packages when a new major version ships.
+- **PostgreSQL version**: the compose file pins `postgres:16`, the same major version as the backup tools in the app
+  image. Minor updates come with `docker compose pull db && docker compose up -d`. A new major version needs a dump
+  and restore (as in Restoring, below) and a newer client in the `Dockerfile`, so it's a planned change, not an update.
 
 ## Rate limits
 
@@ -76,8 +79,8 @@ Caddy's, or every player will share Cloudflare's addresses: do that in the same 
 
 ## Backups
 
-The app backs itself up: every night after 03:00 UTC it exports the whole database (game and accounts) to
-`/data/backups/spellbound-<date>-<time>.ravendbdump` and keeps the newest 7. The admin page shows the last backup and
+The app backs itself up: every night after 03:00 UTC it dumps the whole database (game and accounts) with `pg_dump`
+to `/data/backups/spellbound-<date>-<time>.dump` and keeps the newest 7. The admin page shows the last backup and
 has a **Back up now** button. Settings, if you want to change them: `Backup__TimeOfDayUtc` (default `03:00:00`) and
 `Backup__Keep` (default `7`).
 
@@ -93,20 +96,22 @@ The volume name starts with the folder name (`spellbound_` for a clone in `Spell
 
 ### Restoring
 
-A restore goes into an **empty** database, so it can never overwrite a running game by accident:
+A restore goes into an **empty** database (one the app has never started on), so it can never overwrite a running
+game by accident:
 
-1. `docker compose down` and move the old volume aside: `docker volume rm spellbound_spellbound-data` (after copying
-   anything you want to keep).
-2. Put the backup on a fresh volume **without starting the app** (a started app creates round 1, and then the
-   database isn't empty any more). From the folder that holds the backup file:
+1. `docker compose down`, then remove the database volume: `docker volume rm spellbound_postgres-data` (after making
+   sure you have the backup you want).
+2. Put the backup on the app's volume. From the folder that holds the backup file:
 
    ```sh
    docker run --rm -v spellbound_spellbound-data:/data -v "$PWD":/in alpine sh -c \
-       'mkdir -p /data/backups && cp /in/spellbound-<date>-<time>.ravendbdump /data/backups/ && chown -R 1654:1654 /data'
+       'mkdir -p /data/backups && cp /in/spellbound-<date>-<time>.dump /data/backups/ && chown -R 1654:1654 /data'
    ```
 
    (1654 is the app user in the image.)
-3. Add `Backup__RestoreFrom: /data/backups/spellbound-<date>-<time>.ravendbdump` to the app's `environment` in
-   `docker-compose.yml`, and run `docker compose up -d`. The log says "Restored the database from …".
+3. Add `Backup__RestoreFrom: /data/backups/spellbound-<date>-<time>.dump` to the app's `environment` in
+   `docker-compose.yml`, and run `docker compose up -d`. The fresh database starts empty, the app restores into it
+   before anything else, then updates the tables if the backup is from an older version. The log says "Restored the
+   database from …".
 4. Remove the `Backup__RestoreFrom` line again and run `docker compose up -d`. (If you forget, nothing happens: the
    app skips the restore once the database has data, and logs a warning.)

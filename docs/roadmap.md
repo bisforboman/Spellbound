@@ -10,7 +10,7 @@
 Goal: you can sign up on a phone, create a mage and play the economy loop.
 
 - [x] Bind `GameRules` from configuration and register `TimeProvider.System`
-- [x] Persistence for `Mage` (RavenDB documents keyed by owner, optimistic concurrency)
+- [x] Persistence for `Mage` (rows keyed by round and owner, optimistic concurrency; RavenDB at first, PostgreSQL since M3)
 - [x] `GameService` in the web project (load → domain action → save, with concurrency handling)
 - [x] "Create your mage" page: name and school, shown after registration if the user has no mage
 - [x] Overview page: land/buildings/gold/mana, turns with "next turn in …" and turn cap, active spells
@@ -18,7 +18,7 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [x] News log: persist the last 50 reports per mage and show them on the overview
 - [x] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll
 - [x] PWA manifest and icons so the game can be added to the home screen
-- [x] Integration test for the action flow (WebApplicationFactory with in-memory RavenDB)
+- [x] Integration test for the action flow (WebApplicationFactory with a real database)
 
 ## M2: PvP
 - [x] Units: recruit, upkeep, and an army page
@@ -31,7 +31,8 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 ## M3: Rounds and hosting
 - [x] Rounds: start/end dates, reset, hall of fame
 - [x] Dockerfile and docker-compose with Caddy ([deploy guide](deploy.md))
-- [ ] Deployed to a VPS (needs the RavenDB Community key, a server and a domain)
+- [x] Moved from embedded RavenDB to PostgreSQL: no licence key needed, a third of the image size, faster start and tests
+- [ ] Deployed to a VPS (needs a server and a domain)
 - [x] Nightly backups with retention and a tested restore ([deploy guide](deploy.md#backups))
 - [x] Basic rate limiting, login lockout and multi-account signals on the admin page
 - [ ] Cloudflare in front (needs the domain)
@@ -41,8 +42,6 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
   protection, turn cap 240
 
 ### Waiting on the owner
-- [ ] RavenDB Community licence key: applied for on 17 Oct 2026. When it arrives, follow
-  [issue #9](https://github.com/bisforboman/Spellbound/issues/9) (check it's Community, put it in `.env`, note the expiry)
 - [ ] A VPS and a domain pointing at it (see [deploy guide](deploy.md))
 
 ## Later
