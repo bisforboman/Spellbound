@@ -1,0 +1,24 @@
+@page "/meditate"
+@inherits GamePage
+
+<PageTitle>Meditate</PageTitle>
+<h1>Meditate</h1>
+
+@if (Mage is not null)
+{
+    <TurnsBar Mage="Mage" />
+    <p>Mana: @N(Mage.Mana) / @N(Mage.ManaCapacity(Rules)). Each turn of meditation adds <b>@N(Mage.MeditateManaPerTurn(Rules))</b> mana on top of your nodes' income.</p>
+
+    <form @onsubmit="() => RunAsync(() => Game.MeditateAsync(OwnerId, turns))">
+        <label class="form-label" for="turns">Turns to spend</label>
+        <input id="turns" type="number" inputmode="numeric" class="form-control form-control-lg" min="1" max="@Mage.Turns" @bind="turns" @bind:event="oninput" />
+        <p class="cost">Cost: <b>@Turns(turns)</b></p>
+        <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@Busy">Meditate</button>
+    </form>
+
+    <ReportView Report="Report" />
+}
+
+@code {
+    private int turns = 5;
+}

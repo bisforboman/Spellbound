@@ -5,7 +5,7 @@
 - **.NET 10**, with **Blazor Server** (interactive server rendering) for the UI, all in C#
 - **ASP.NET Core Identity** (individual accounts) for sign-in, from the official Blazor template
 - **EF Core + SQLite** for M1–M3. Move to PostgreSQL only if load or features require it
-- **xUnit** for domain tests
+- **xUnit** for domain tests, plus `WebApplicationFactory` integration tests for the web app
 
 Blazor Server keeps state on the server and sends small UI diffs over SignalR. That keeps the phone's work light.
 The trade-off is that it needs a live connection, which is acceptable for a game that is played online anyway. If
@@ -21,6 +21,7 @@ src/
   Spellbound.Web/           Blazor app: pages, Identity, EF Core DbContext + migrations, config
 tests/
   Spellbound.Domain.Tests/  xUnit tests for the rules
+  Spellbound.Web.Tests/     integration tests: real app, private in-memory SQLite
 docs/                       design, architecture, roadmap
 scripts/bootstrap.ps1       one-time project generation
 ```
@@ -32,7 +33,8 @@ M1 has no separate Infrastructure project, because a single web project is easie
 
 ```
 page form → GameService.ExploreAsync(userId, turns)
-  1. load Mage (tracked) for the current round and user
+  1. load Mage (tracked) for the current round and user, in a fresh DbContext from IDbContextFactory
+     (a Blazor Server circuit outlives one action, so a scoped context would hold stale entities)
   2. report = mage.Explore(turns, timeProvider.GetUtcNow(), rules)
   3. if report.Succeeded: save the report to the news log
   4. SaveChangesAsync(). On DbUpdateConcurrencyException, reload and tell the player to try again
@@ -41,6 +43,7 @@ page form → GameService.ExploreAsync(userId, turns)
 
 - `TimeProvider` is registered in DI (`TimeProvider.System`) so tests can fake time.
 - `GameRules` is bound from `appsettings.json` → `"GameRules"` and injected as a singleton.
+- EF migrations are applied at startup (`Database.Migrate()` in `Program.cs`).
 
 ## Turns: lazy regeneration
 

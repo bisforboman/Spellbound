@@ -1,0 +1,24 @@
+@page "/explore"
+@inherits GamePage
+
+<PageTitle>Explore</PageTitle>
+<h1>Explore</h1>
+
+@if (Mage is not null)
+{
+    <TurnsBar Mage="Mage" />
+    <p>You hold @N(Mage.Land) acres. Each turn of exploring finds about <b>@N(Mage.ExploreAcresPerTurn(Rules))</b> acres, fewer as your land grows.</p>
+
+    <form @onsubmit="() => RunAsync(() => Game.ExploreAsync(OwnerId, turns))">
+        <label class="form-label" for="turns">Turns to spend</label>
+        <input id="turns" type="number" inputmode="numeric" class="form-control form-control-lg" min="1" max="@Mage.Turns" @bind="turns" @bind:event="oninput" />
+        <p class="cost">Cost: <b>@Turns(turns)</b></p>
+        <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@Busy">Explore</button>
+    </form>
+
+    <ReportView Report="Report" />
+}
+
+@code {
+    private int turns = 10;
+}

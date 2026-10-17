@@ -1,0 +1,37 @@
+@page "/build"
+@inherits GamePage
+
+<PageTitle>Build</PageTitle>
+<h1>Build</h1>
+
+@if (Mage is not null)
+{
+    <TurnsBar Mage="Mage" />
+    <p>You have @N(Mage.FreeLand) free acres and @N(Mage.Gold) gold.</p>
+
+    <form @onsubmit="() => RunAsync(() => Game.BuildAsync(OwnerId, type, count))">
+        <fieldset class="mb-3">
+            <legend class="form-label">What to build</legend>
+            <label class="choice">
+                <input type="radio" name="type" checked="@(type == BuildingType.Town)" @onchange="() => type = BuildingType.Town" />
+                <span><b>Towns</b>: @Rules.GoldPerTownPerTurn gold per turn each</span>
+            </label>
+            <label class="choice">
+                <input type="radio" name="type" checked="@(type == BuildingType.Node)" @onchange="() => type = BuildingType.Node" />
+                <span><b>Nodes</b>: @Rules.ManaPerNodePerTurn mana per turn and @N(Rules.ManaStoragePerNode) mana storage each</span>
+            </label>
+        </fieldset>
+
+        <label class="form-label" for="count">How many</label>
+        <input id="count" type="number" inputmode="numeric" class="form-control form-control-lg" min="1" max="@Mage.FreeLand" @bind="count" @bind:event="oninput" />
+        <p class="cost">Cost: <b>@Turns(Mage.BuildTurnCost(count, Rules))</b> and <b>@N(Mage.BuildGoldCost(count, Rules)) gold</b></p>
+        <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@Busy">Build</button>
+    </form>
+
+    <ReportView Report="Report" />
+}
+
+@code {
+    private BuildingType type = BuildingType.Town;
+    private int count = 10;
+}

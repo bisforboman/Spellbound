@@ -1,20 +1,36 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<header class="top-bar">
+    <a class="brand" href="">Spellbound</a>
+    <AuthorizeView>
+        <Authorized>
+            <a href="Account/Manage">Account</a>
+            <form action="Account/Logout" method="post">
+                <AntiforgeryToken />
+                <input type="hidden" name="ReturnUrl" value="" />
+                <button type="submit" class="btn btn-link">Log out</button>
+            </form>
+        </Authorized>
+        <NotAuthorized>
+            <a href="Account/Login">Log in</a>
+            <a href="Account/Register">Sign up</a>
+        </NotAuthorized>
+    </AuthorizeView>
+</header>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+<main class="content">
+    @Body
+</main>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+<AuthorizeView>
+    <nav class="bottom-nav" aria-label="Game">
+        <NavLink href="" Match="NavLinkMatch.All">Home</NavLink>
+        <NavLink href="explore">Explore</NavLink>
+        <NavLink href="build">Build</NavLink>
+        <NavLink href="meditate">Meditate</NavLink>
+        <NavLink href="cast">Cast</NavLink>
+    </nav>
+</AuthorizeView>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

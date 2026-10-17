@@ -1,0 +1,33 @@
+@page "/cast"
+@inherits GamePage
+
+<PageTitle>Cast</PageTitle>
+<h1>Cast</h1>
+
+@if (Mage is not null)
+{
+    <TurnsBar Mage="Mage" />
+    <p>Mana: @N(Mage.Mana) / @N(Mage.ManaCapacity(Rules)).</p>
+
+    @foreach (var spell in SpellBook.ForSchool(Mage.School))
+    {
+        var active = Mage.ActiveEffects.FirstOrDefault(e => e.SpellId == spell.Id);
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5 card-title">@spell.Name</h2>
+                <p class="card-text">@spell.Description</p>
+                <p class="cost">Cost: <b>@N(spell.ManaCost) mana</b> and <b>@Turns(spell.TurnCost)</b>. Lasts @spell.DurationTurns turns.</p>
+                @if (active is not null)
+                {
+                    <p class="text-muted">Active, @active.RemainingTurns turns left. Casting again restarts the duration.</p>
+                }
+                <button type="button" class="btn btn-primary btn-lg w-100" disabled="@Busy"
+                        @onclick="() => RunAsync(() => Game.CastAsync(OwnerId, spell.Id))">
+                    @(active is null ? "Cast" : "Renew") @spell.Name
+                </button>
+            </div>
+        </div>
+    }
+
+    <ReportView Report="Report" />
+}

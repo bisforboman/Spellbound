@@ -102,6 +102,9 @@ public sealed class Mage
         return Math.Max(1, (int)(baseAcres * Multiplier(EffectKind.ExploreYield)));
     }
 
+    public int MeditateManaPerTurn(GameRules rules) =>
+        (int)(rules.MeditateManaPerTurn * Multiplier(EffectKind.MeditateYield));
+
     public int BuildGoldCost(int count, GameRules rules) =>
         (int)Math.Ceiling(count * rules.BuildingGoldCost * Multiplier(EffectKind.BuildCost));
 
@@ -196,8 +199,7 @@ public sealed class Mage
         var manaGained = 0;
         var summary = SpendTurns(turns, rules, () =>
         {
-            var amount = (int)(rules.MeditateManaPerTurn * Multiplier(EffectKind.MeditateYield));
-            manaGained += AddMana(amount, rules);
+            manaGained += AddMana(MeditateManaPerTurn(rules), rules);
         });
 
         var line = manaGained > 0

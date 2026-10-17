@@ -1,0 +1,39 @@
+@implements IDisposable
+@inject GameService Game
+
+@{
+    var now = Game.Now;
+    var turns = TurnClock.Accrue(Mage.Turns, Mage.TurnsAccruedAt, now, Game.Rules).Turns;
+    var next = Mage.TimeUntilNextTurn(now, Game.Rules);
+}
+<div class="turns">
+    <div class="turns-line">
+        <span><b>@turns</b> / @Game.Rules.MaxTurns turns</span>
+        @if (next is { } wait)
+        {
+            <span>next in @((int)wait.TotalMinutes):@wait.Seconds.ToString("00")</span>
+        }
+        else
+        {
+            <span class="text-danger">at the cap, new turns are lost</span>
+        }
+    </div>
+    <progress max="@Game.Rules.MaxTurns" value="@turns" aria-label="Turns on hand"></progress>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Mage Mage { get; set; } = default!;
+
+    private Timer? timer;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            timer = new Timer(_ => InvokeAsync(StateHasChanged), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        }
+    }
+
+    public void Dispose() => timer?.Dispose();
+}

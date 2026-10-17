@@ -1,0 +1,76 @@
+@page "/"
+@using Spellbound.Web.Data
+@inherits GamePage
+
+<PageTitle>Spellbound</PageTitle>
+
+@if (Mage is not null)
+{
+    <h1>@Mage.Name</h1>
+    <p class="text-muted">@Mage.School mage</p>
+
+    <TurnsBar Mage="Mage" />
+
+    <table class="table stats">
+        <tbody>
+            <tr><th>Land</th><td>@N(Mage.Land) acres (@N(Mage.FreeLand) free)</td></tr>
+            <tr><th>Nodes</th><td>@N(Mage.Nodes)</td></tr>
+            <tr><th>Towns</th><td>@N(Mage.Towns)</td></tr>
+            <tr><th>Gold</th><td>@N(Mage.Gold)</td></tr>
+            <tr><th>Mana</th><td>@N(Mage.Mana) / @N(Mage.ManaCapacity(Rules))</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Active spells</h2>
+    @if (Mage.ActiveEffects.Count == 0)
+    {
+        <p class="text-muted">None. <a href="cast">Cast one</a>.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var effect in Mage.ActiveEffects)
+            {
+                <li>@(SpellBook.Find(effect.SpellId)?.Name ?? effect.SpellId): @effect.RemainingTurns turns left</li>
+            }
+        </ul>
+    }
+
+    <h2>News</h2>
+    @if (news.Count == 0)
+    {
+        <p class="text-muted">Nothing has happened yet. Try <a href="explore">exploring</a>.</p>
+    }
+    @foreach (var entry in news)
+    {
+        <div class="news-entry">
+            <small class="text-muted">@Ago(entry.At)</small>
+            @foreach (var line in entry.Text.Split('\n'))
+            {
+                <p class="mb-1">@line</p>
+            }
+        </div>
+    }
+}
+
+@code {
+    private IReadOnlyList<NewsEntry> news = [];
+
+    protected override async Task LoadAsync()
+    {
+        await base.LoadAsync();
+        if (Mage is not null)
+        {
+            news = await Game.GetNewsAsync(Mage.Id);
+        }
+    }
+
+    private string Ago(DateTimeOffset at)
+    {
+        var age = Game.Now - at;
+        return age.TotalMinutes < 1 ? "just now"
+            : age.TotalHours < 1 ? $"{(int)age.TotalMinutes} min ago"
+            : age.TotalDays < 1 ? $"{(int)age.TotalHours} h ago"
+            : $"{(int)age.TotalDays} d ago";
+    }
+}
