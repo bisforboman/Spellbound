@@ -16,3 +16,20 @@ jobs:
       - run: dotnet restore Spellbound.slnx
       - run: dotnet build Spellbound.slnx --no-restore -c Release
       - run: dotnet test Spellbound.slnx --no-build -c Release
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the compose file
+        run: DOMAIN=example.com RAVEN_LICENSE=placeholder docker compose config --quiet
+      - run: docker build -t spellbound .
+      - name: Smoke test the image (Development, so no licence key is needed)
+        run: |
+          docker run -d --name spellbound -p 8080:8080 -e ASPNETCORE_ENVIRONMENT=Development spellbound
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/healthz; then exit 0; fi
+            sleep 2
+          done
+          docker logs spellbound
+          exit 1

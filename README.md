@@ -27,3 +27,4 @@ environment variable: `Admins__0=you@example.com`.
 - [Game design](docs/game-design.md)
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
+- [Deploying](docs/deploy.md)

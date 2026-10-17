@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Raven.Client.Documents;
@@ -64,8 +66,32 @@ builder.Services.AddSingleton<IAuthorizationHandler, AdminHandler>();
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AdminPolicy.Name, policy => policy.RequireAuthenticatedUser().AddRequirements(new AdminRequirement()));
 builder.Services.AddHostedService(sp => sp.GetRequiredService<RoundKeeper>());
+builder.Services.AddHealthChecks();
+
+// Hosting (see docs/deploy.md). Behind Caddy, trust its X-Forwarded-* headers so the app sees HTTPS and real client IPs.
+// Only switch this on when the app isn't reachable except through the proxy, as in docker-compose.yml.
+if (builder.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
+
+// Keep the keys that protect sign-in cookies on the data volume, so a restart doesn't sign everyone out.
+if (builder.Configuration["DataProtection:KeysDirectory"] is { Length: > 0 } keysDirectory)
+{
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keysDirectory));
+}
 
 var app = builder.Build();
+
+if (app.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
+{
+    app.UseForwardedHeaders();
+}
 
 _ = app.Services.GetRequiredService<IDocumentStore>(); // start embedded RavenDB now, not on the first request
 
@@ -81,6 +107,7 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+app.MapHealthChecks("/healthz");
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/RavenData/
+.git/
+.github/
+.claude/
+tests/
+docs/
+.env

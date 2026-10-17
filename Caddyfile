@@ -1,0 +1,5 @@
+# Caddy gets a certificate for DOMAIN from Let's Encrypt and proxies to the app, websockets included.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:8080
+}
