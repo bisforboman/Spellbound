@@ -43,6 +43,10 @@ dotnet run --project src/Spellbound.Web   # first start is slower: it launches t
 - **Make the domain deterministic.** Any randomness (from milestone 2 combat) comes through an injected, seedable source so
   battles can be replayed in tests.
 
+- **`Hosting/` is the reusable game host and never depends on the game.** It may use `Round`, nothing else from
+  `Spellbound.Domain` or the game's web code; the game plugs in through `Hosting/GameHooks.cs`. `HostingBoundaryTests`
+  fails if this is broken. See `docs/architecture.md`, "The game host boundary".
+
 ## UI rules
 
 - Mobile-first. The UI must work at 360 px wide, with tap targets at least 44 px, and work one-handed.

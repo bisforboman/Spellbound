@@ -44,3 +44,5 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 
 ## Later
 - Research, artifacts, guilds and chat, server variants, a stored-turns bank, web push notifications
+- Move `Hosting/` into its own reusable project when a second game is planned (see architecture, "The game host
+  boundary")

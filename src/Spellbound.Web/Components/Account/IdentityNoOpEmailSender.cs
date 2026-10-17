@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Components.Account;
 

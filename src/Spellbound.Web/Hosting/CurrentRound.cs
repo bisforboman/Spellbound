@@ -1,6 +1,6 @@
 using Spellbound.Domain;
 
-namespace Spellbound.Web.Data;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>The one document that says which round is being played. Only <see cref="RoundKeeper"/> writes it.</summary>
 public sealed class CurrentRound

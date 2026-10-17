@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
-using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
@@ -45,7 +45,7 @@ public sealed partial class SecurityFlowTests : SpellboundTestDriver
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         using var session = store.OpenAsyncSession();
-        var signal = await session.LoadAsync<AccountSignal>(RavenSetup.SignalKey(id));
+        var signal = await session.LoadAsync<AccountSignal>(HostStore.SignalKey(id));
         Assert.Single(signal.Networks);
     }
 
@@ -111,7 +111,7 @@ public sealed partial class SecurityFlowTests : SpellboundTestDriver
         }
 
         using var session = store.OpenAsyncSession();
-        Assert.Null(await session.LoadAsync<AccountSignal>(RavenSetup.SignalKey(id)));
+        Assert.Null(await session.LoadAsync<AccountSignal>(HostStore.SignalKey(id)));
     }
 
     public override void Dispose()

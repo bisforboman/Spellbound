@@ -1,0 +1,27 @@
+@using System.Globalization
+@inject GameRules Rules
+
+@* Shown on the admin page (registered in Program.cs as an admin section). *@
+<h2 class="h4 mt-4">Game rules</h2>
+<p class="text-muted">
+    Set in the <code>GameRules</code> section of <code>appsettings.json</code>, or as environment variables such as
+    <code>GameRules__MaxTurns</code>. Restart the app to apply. Unit and spell stats are in the code.
+</p>
+<table class="table table-sm stats">
+    <tbody>
+        @foreach (var property in typeof(GameRules).GetProperties().Where(p => p.GetMethod?.IsStatic == false))
+        {
+            <tr><th>@property.Name</th><td>@Format(property.GetValue(Rules))</td></tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private static string Format(object? value) => value switch
+    {
+        int i => i.ToString("N0", CultureInfo.InvariantCulture),
+        double d => d.ToString(CultureInfo.InvariantCulture),
+        TimeSpan t => t.ToString("c", CultureInfo.InvariantCulture),
+        _ => value?.ToString() ?? string.Empty,
+    };
+}

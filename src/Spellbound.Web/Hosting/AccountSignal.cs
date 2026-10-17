@@ -1,4 +1,4 @@
-namespace Spellbound.Web.Data;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>The networks (keyed hashes of IP addresses) an account signed in from, with when each was last seen.</summary>
 public sealed class AccountSignal

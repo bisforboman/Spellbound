@@ -19,7 +19,11 @@ domain code doesn't change.
 Spellbound.slnx
 src/
   Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook, UnitBook (no dependencies)
-  Spellbound.Web/           Blazor app: pages, Identity, RavenDB setup, GameService, config
+  Spellbound.Web/           Blazor app
+    Hosting/                the reusable game host: accounts, RavenDB setup, rounds, admin page, bans, backups,
+                            rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
+    Components/Account/     the template's Identity pages (part of the host, not yet moved into Hosting/)
+    Components/Game/, GameService, SpellboundHost, Data/   the game itself
 tests/
   Spellbound.Domain.Tests/  xUnit tests for the rules
   Spellbound.Web.Tests/     integration tests: real app, in-memory RavenDB (TestDriver)
@@ -27,8 +31,24 @@ docs/                       design, architecture, roadmap
 scripts/bootstrap.ps1       one-time project generation
 ```
 
-M1 has no separate Infrastructure project, because a single web project is easier to work with. Split out
-`Spellbound.Infrastructure` once a second host appears, such as a worker for round resets.
+### The game host boundary
+
+Everything a game server needs that isn't about Spellbound lives in `Hosting/`, so it can become its own project
+(a Razor class library) when a second game is planned. Until then it stays a folder: one project is simpler, and
+extension points designed for a single game tend to come out wrong.
+
+- **Hosting never depends on the game.** It may use `Round` from the domain (the round itself knows nothing about
+  Spellbound), and nothing else from `Spellbound.Domain` or the game's web code. `HostingBoundaryTests` enforces this
+  on both the compiled types and the source files.
+- **The game plugs in** through `Hosting/GameHooks.cs`: `IRoundLifecycle` (round length, and what happens when a round
+  ends, inside the reset's transaction; Spellbound records its hall of fame) and `IPlayerSummaries` (how a player shows
+  on the admin page). `AdminPageOptions.GameSections` adds game sections to the admin page (Spellbound's rules table).
+  `SpellboundHost` implements the hooks.
+- `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
+- **Database keys** are split the same way: `HostStore` (conventions, licence, `rounds/current`, `admin/*`,
+  `signals/*`) and `GameKeys` (`mages/{round}/…`, `news/{round}/…`, `halloffame/…`).
+- **When a second game comes:** move `Hosting/` and `Components/Account/` into a `GameHost` Razor class library,
+  register its assembly with the router (`AdditionalAssemblies`), and split the tests. Roughly 2–3 days.
 
 ## Request flow for a game action
 
@@ -63,7 +83,7 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 
 - Documents need no schema or migrations. Adding a property to `Mage` just works; renaming one needs a patch script.
 - `Mage` is stored as-is (RavenDB sets private setters and the private `_activeEffects` list). Only string `Id`
-  properties are treated as document keys (`RavenSetup.IsDocumentKey`), so `Mage.Id` (a Guid) is plain data.
+  properties are treated as document keys (`HostStore.IsDocumentKey`), so `Mage.Id` (a Guid) is plain data.
 - **Load by key, never query, on the action path.** Loads are always consistent; queries go through indexes that
   update a moment after each write. The one exception is finding an attack target's owner by mage id, which never
   changes; the target itself is then loaded by key.

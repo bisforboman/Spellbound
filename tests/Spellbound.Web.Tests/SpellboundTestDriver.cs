@@ -1,7 +1,7 @@
 using Raven.Client.Documents;
 using Raven.Embedded;
 using Raven.TestDriver;
-using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
@@ -21,5 +21,5 @@ public abstract class SpellboundTestDriver : RavenTestDriver
     }
 
     protected override void PreInitialize(IDocumentStore documentStore) =>
-        documentStore.Conventions.FindIdentityProperty = RavenSetup.IsDocumentKey;
+        documentStore.Conventions.FindIdentityProperty = HostStore.IsDocumentKey;
 }

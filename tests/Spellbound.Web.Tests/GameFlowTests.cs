@@ -10,6 +10,7 @@ using Raven.Client.Exceptions;
 using Spellbound.Domain;
 using Spellbound.Web;
 using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
@@ -112,14 +113,14 @@ public sealed class GameFlowTests : SpellboundTestDriver, IAsyncLifetime
         var interfered = false;
         store.OnBeforeStore += (_, args) =>
         {
-            if (interfered || args.DocumentId != RavenSetup.MageKey(1, Owner))
+            if (interfered || args.DocumentId != GameKeys.MageKey(1, Owner))
             {
                 return;
             }
 
             interfered = true;
             using var other = store.OpenSession();
-            other.Load<Mage>(RavenSetup.MageKey(1, Owner)).Meditate(1, DateTimeOffset.UtcNow, rules);
+            other.Load<Mage>(GameKeys.MageKey(1, Owner)).Meditate(1, DateTimeOffset.UtcNow, rules);
             other.SaveChanges();
         };
 

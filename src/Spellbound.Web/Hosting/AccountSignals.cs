@@ -3,9 +3,8 @@ using System.Security.Cryptography;
 using System.Text;
 using Raven.Client.Documents;
 using Raven.Client.Exceptions;
-using Spellbound.Web.Data;
 
-namespace Spellbound.Web;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>Accounts that signed in from the same network recently: a hint for the admin, never proof.</summary>
 public sealed record SharedNetwork(string Network, IReadOnlyList<string> OwnerIds, DateTimeOffset LastSeen);
@@ -32,7 +31,7 @@ public sealed class AccountSignals(IDocumentStore store, TimeProvider time)
 
         var network = await HashAsync(address);
         using var session = store.OpenAsyncSession();
-        var signalKey = RavenSetup.SignalKey(ownerId);
+        var signalKey = HostStore.SignalKey(ownerId);
         var signal = await session.LoadAsync<AccountSignal>(signalKey);
         if (signal is null)
         {
@@ -55,7 +54,7 @@ public sealed class AccountSignals(IDocumentStore store, TimeProvider time)
         var since = time.GetUtcNow() - Window;
         var uses = new List<(string Network, string OwnerId, DateTimeOffset At)>();
         using var session = store.OpenAsyncSession();
-        await using var stream = await session.Advanced.StreamAsync<AccountSignal>(startsWith: RavenSetup.SignalPrefix);
+        await using var stream = await session.Advanced.StreamAsync<AccountSignal>(startsWith: HostStore.SignalPrefix);
         while (await stream.MoveNextAsync())
         {
             var signal = stream.Current.Document;
@@ -83,13 +82,13 @@ public sealed class AccountSignals(IDocumentStore store, TimeProvider time)
     {
         using (var session = store.OpenAsyncSession())
         {
-            if (await session.LoadAsync<ServerSecrets>(RavenSetup.SecretsKey) is { } existing)
+            if (await session.LoadAsync<ServerSecrets>(HostStore.SecretsKey) is { } existing)
             {
                 return existing.SignalKey;
             }
 
             await session.StoreAsync(
-                new ServerSecrets { SignalKey = RandomNumberGenerator.GetBytes(32) }, changeVector: string.Empty, RavenSetup.SecretsKey);
+                new ServerSecrets { SignalKey = RandomNumberGenerator.GetBytes(32) }, changeVector: string.Empty, HostStore.SecretsKey);
             try
             {
                 await session.SaveChangesAsync();
@@ -101,6 +100,6 @@ public sealed class AccountSignals(IDocumentStore store, TimeProvider time)
         }
 
         using var fresh = store.OpenAsyncSession();
-        return (await fresh.LoadAsync<ServerSecrets>(RavenSetup.SecretsKey)).SignalKey;
+        return (await fresh.LoadAsync<ServerSecrets>(HostStore.SecretsKey)).SignalKey;
     }
 }

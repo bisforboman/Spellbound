@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents.Session;
 
-namespace Spellbound.Web.Data;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// RavenDB.Identity leaves saving to the app. Every UserManager (and SignInManager) change goes through
@@ -30,7 +30,7 @@ public sealed class SavingUserManager(
         var result = await base.DeleteAsync(user);
         if (result.Succeeded && user.Id is { } id)
         {
-            session.Delete(RavenSetup.SignalKey(id)); // the account's network hashes go with it
+            session.Delete(HostStore.SignalKey(id)); // the account's network hashes go with it
         }
 
         return await SaveIfSucceeded(result);
