@@ -57,3 +57,8 @@ dotnet run --project src/Spellbound.Web   # first start is slower: it launches t
 - When a rule or number changes, update `docs/game-design.md` in the same change.
 - Tick off items in `docs/roadmap.md` as they are completed.
 - Keep dependencies minimal. Ask before adding a NuGet package that isn't Microsoft-provided.
+- **Advisor**: when an advisor tool is available, call it before design decisions or recommendations, before splitting
+  work across agents or sessions, and before declaring a larger task done.
+- **Where work runs**: long work (multi-step tasks, PRs, CI waits, releases) runs as cloud sessions; the owner's
+  computer must stay free to restart or turn off. Work that needs it (local timings, Windows-only checks) is asked for,
+  never started unasked; a cloud session that needs such a step says so in its PR.
