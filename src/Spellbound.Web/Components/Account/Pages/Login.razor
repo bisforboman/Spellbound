@@ -10,6 +10,7 @@
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject AccountSignals Signals
 
 <PageTitle>Log in</PageTitle>
 
@@ -99,13 +100,17 @@
             return;
         }
 
-        // This doesn't count login failures towards account lockout
-        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        // Repeated wrong passwords lock the account for a few minutes (Identity's defaults: 5 tries, 5 minutes).
+        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
 
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
+            if (await UserManager.FindByEmailAsync(Input.Email) is { Id: { } userId })
+            {
+                await Signals.RecordAsync(userId, HttpContext.Connection.RemoteIpAddress); // before the redirect, which ends the request
+            }
+
             RedirectManager.RedirectTo(ReturnUrl);
         }
         else if (result.RequiresTwoFactor)
