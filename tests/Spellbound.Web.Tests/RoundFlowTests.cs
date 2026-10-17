@@ -3,15 +3,13 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
-using Raven.Embedded;
-using Raven.TestDriver;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
 
 namespace Spellbound.Web.Tests;
 
 /// <summary>Round start, end and reset through the real app, with a clock the test moves by hand.</summary>
-public sealed class RoundFlowTests : RavenTestDriver
+public sealed class RoundFlowTests : SpellboundTestDriver
 {
     private const string Merlin = "ApplicationUsers/1-A";
     private const string Morgana = "ApplicationUsers/2-A";
@@ -21,14 +19,6 @@ public sealed class RoundFlowTests : RavenTestDriver
     private readonly ManualTime time = new(new DateTimeOffset(2026, 10, 17, 12, 0, 0, TimeSpan.Zero));
     private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
-
-    static RoundFlowTests()
-    {
-        ConfigureServer(new Raven.TestDriver.TestServerOptions
-        {
-            Licensing = new ServerOptions.LicensingOptions { ThrowOnInvalidOrMissingLicense = false },
-        });
-    }
 
     public RoundFlowTests()
     {
@@ -47,9 +37,6 @@ public sealed class RoundFlowTests : RavenTestDriver
     private GameService Game => factory.Services.GetRequiredService<GameService>();
 
     private RoundKeeper Keeper => factory.Services.GetRequiredService<RoundKeeper>();
-
-    protected override void PreInitialize(IDocumentStore documentStore) =>
-        documentStore.Conventions.FindIdentityProperty = RavenSetup.IsDocumentKey;
 
     [Fact]
     public async Task Ticking_again_before_the_end_keeps_the_round()

@@ -97,7 +97,10 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   the database and the Data Protection keys (`DataProtection:KeysDirectory`), so restarts and new images keep sign-ins.
   Only Caddy is published; the app trusts its `X-Forwarded-*` headers (`ForwardedHeaders:Enabled`) so it sees HTTPS.
   The image runs as the non-root `app` user. `/healthz` reports health.
-- Nightly off-site backup with a RavenDB periodic backup task. Check which backup destinations the license tier allows.
+- **Backups:** `BackupKeeper`, a hosted service, exports the database once a night (`Backup:Directory`, on in the Docker
+  image) with RavenDB's export, which works on every licence, unlike the periodic backup task. It keeps the newest few.
+  `Backup:RestoreFrom` imports a dump at startup, but only into an empty database. Copying the files off the server is a
+  host cron job (see [deploy.md](deploy.md#backups)).
 - **Cloudflare** free tier in front for DNS, DDoS protection and static asset caching.
 - **PWA manifest and service worker**, so the game installs to the home screen without an app store.
 - Global events (round end and reset, hall of fame snapshot) run in the `RoundKeeper` hosted service.

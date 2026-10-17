@@ -32,7 +32,8 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [x] Rounds: start/end dates, reset, hall of fame
 - [x] Dockerfile and docker-compose with Caddy ([deploy guide](deploy.md))
 - [ ] Deployed to a VPS (needs the RavenDB Community key, a server and a domain)
-- [ ] Backups, Cloudflare, basic rate limiting and anti-multi-account checks
+- [x] Nightly backups with retention and a tested restore ([deploy guide](deploy.md#backups))
+- [ ] Cloudflare, basic rate limiting and anti-multi-account checks
 - [x] Admin page: server settings, ban, reset
 
 ## Later

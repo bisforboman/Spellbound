@@ -64,13 +64,37 @@ the app restarts.
 
 ## Backups
 
-Proper nightly backups are the next roadmap item. Until then, a manual copy of the volume, with the app stopped:
+The app backs itself up: every night after 03:00 UTC it exports the whole database (game and accounts) to
+`/data/backups/spellbound-<date>-<time>.ravendbdump` and keeps the newest 7. The admin page shows the last backup and
+has a **Back up now** button. Settings, if you want to change them: `Backup__TimeOfDayUtc` (default `03:00:00`) and
+`Backup__Keep` (default `7`).
+
+These files sit on the same disk as the database, so also **copy them off the server**. For example, a nightly cron
+job on the host that sends the backups folder to a Hetzner Storage Box (or any SSH server):
 
 ```sh
-docker compose stop app
-docker run --rm -v spellbound_spellbound-data:/data -v "$PWD":/backup alpine \
-    tar czf /backup/spellbound-$(date +%F).tar.gz -C /data .
-docker compose start app
+# crontab -e on the server; the volume's path is shown by: docker volume inspect spellbound_spellbound-data
+30 4 * * * rsync -a /var/lib/docker/volumes/spellbound_spellbound-data/_data/backups/ u12345@u12345.your-storagebox.de:spellbound/
 ```
 
 The volume name starts with the folder name (`spellbound_` for a clone in `Spellbound/`); `docker volume ls` shows it.
+
+### Restoring
+
+A restore goes into an **empty** database, so it can never overwrite a running game by accident:
+
+1. `docker compose down` and move the old volume aside: `docker volume rm spellbound_spellbound-data` (after copying
+   anything you want to keep).
+2. Put the backup on a fresh volume **without starting the app** (a started app creates round 1, and then the
+   database isn't empty any more). From the folder that holds the backup file:
+
+   ```sh
+   docker run --rm -v spellbound_spellbound-data:/data -v "$PWD":/in alpine sh -c \
+       'mkdir -p /data/backups && cp /in/spellbound-<date>-<time>.ravendbdump /data/backups/ && chown -R 1654:1654 /data'
+   ```
+
+   (1654 is the app user in the image.)
+3. Add `Backup__RestoreFrom: /data/backups/spellbound-<date>-<time>.ravendbdump` to the app's `environment` in
+   `docker-compose.yml`, and run `docker compose up -d`. The log says "Restored the database from …".
+4. Remove the `Backup__RestoreFrom` line again and run `docker compose up -d`. (If you forget, nothing happens: the
+   app skips the restore once the database has data, and logs a warning.)

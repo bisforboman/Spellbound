@@ -3,15 +3,13 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
-using Raven.Embedded;
-using Raven.TestDriver;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
 
 namespace Spellbound.Web.Tests;
 
 /// <summary>Attacks and hexes through the real app: two mages, no protection, a seeded random source.</summary>
-public sealed class PvpFlowTests : RavenTestDriver, IAsyncLifetime
+public sealed class PvpFlowTests : SpellboundTestDriver, IAsyncLifetime
 {
     private const string Attacker = "ApplicationUsers/1-A";
     private const string Defender = "ApplicationUsers/2-A";
@@ -20,14 +18,6 @@ public sealed class PvpFlowTests : RavenTestDriver, IAsyncLifetime
 
     private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
-
-    static PvpFlowTests()
-    {
-        ConfigureServer(new Raven.TestDriver.TestServerOptions
-        {
-            Licensing = new ServerOptions.LicensingOptions { ThrowOnInvalidOrMissingLicense = false },
-        });
-    }
 
     public PvpFlowTests()
     {
@@ -48,9 +38,6 @@ public sealed class PvpFlowTests : RavenTestDriver, IAsyncLifetime
     public async Task InitializeAsync() => await factory.Services.GetRequiredService<RoundKeeper>().TickAsync(); // round 1
 
     public Task DisposeAsync() => Task.CompletedTask;
-
-    protected override void PreInitialize(IDocumentStore documentStore) =>
-        documentStore.Conventions.FindIdentityProperty = RavenSetup.IsDocumentKey;
 
     private async Task<Guid> CreateBothAsync()
     {
