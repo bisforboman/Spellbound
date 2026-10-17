@@ -156,4 +156,6 @@ A simulation of a full round answers several of these with numbers, and proposes
 - Should we add population or peasants, or keep the economy as just land and buildings?
 - Does the repeat-attack rule need a longer memory (72 hours did much better in the simulation), or a limit on how
   often one mage can be attacked, since 1-acre attacks still cost the defender units? See [balance.md](balance.md).
+- Is upkeep too harsh, or too light? In the simulation attackers spend nearly all their income on it and still win,
+  because stolen land pays for it. Revisit after the repeat-attack question.
 - Should there be a break between rounds, or an end-of-round event in the last days (for example, double land taken)?
