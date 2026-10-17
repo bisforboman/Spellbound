@@ -13,10 +13,10 @@ public enum BuildingType
 
 /// <summary>
 /// A player's mage for one round. Time only moves forward for a mage when it spends turns:
-/// each spent turn runs one economy tick (gold, mana, spell durations).
+/// each spent turn runs one economy tick (gold, army upkeep, mana, spell durations).
 /// Every action accrues turns first, and either fully succeeds or changes nothing.
 /// </summary>
-public sealed class Mage
+public sealed partial class Mage
 {
     public const int MinNameLength = 3;
     public const int MaxNameLength = 24;
@@ -25,7 +25,7 @@ public sealed class Mage
 
     private Mage()
     {
-        OwnerId = string.Empty; // EF Core
+        OwnerId = string.Empty; // for deserialization
         Name = string.Empty;
     }
 
@@ -217,7 +217,7 @@ public sealed class Mage
             return ActionReport.Fail("You don't know that spell.");
         }
 
-        if (spell.School != School)
+        if (spell.School is { } school && school != School)
         {
             return ActionReport.Fail($"{spell.Name} belongs to the {spell.School} school.");
         }
@@ -278,6 +278,7 @@ public sealed class Mage
                              * Multiplier(EffectKind.GoldIncome));
             Gold += gold;
             summary.Gold += gold;
+            PayUpkeep(rules, summary);
 
             var mana = (int)(Nodes * rules.ManaPerNodePerTurn * Multiplier(EffectKind.ManaIncome));
             summary.Mana += AddMana(mana, rules);
@@ -328,14 +329,23 @@ public sealed class Mage
         return multiplier;
     }
 
-    private static ActionReport Report(int turns, TurnSummary summary, string headline)
+    private static ActionReport Report(int turns, TurnSummary summary, params string[] headlines)
     {
-        var lines = new List<string>
+        var lines = new List<string>(headlines)
         {
-            headline,
             $"Over {N(turns)} {(turns == 1 ? "turn" : "turns")} your towns and lands brought in {N(summary.Gold)} gold " +
             $"and your nodes produced {N(summary.Mana)} mana.",
         };
+        if (summary.Upkeep > 0)
+        {
+            lines.Add($"Your army's upkeep cost {N(summary.Upkeep)} gold.");
+        }
+
+        if (summary.Deserted > 0)
+        {
+            lines.Add($"You ran out of gold to pay your army: {N(summary.Deserted)} units deserted.");
+        }
+
         lines.AddRange(summary.Faded.Select(name => $"{name} has faded."));
         return new ActionReport(true, turns, lines);
     }
@@ -347,6 +357,10 @@ public sealed class Mage
         public int Gold { get; set; }
 
         public int Mana { get; set; }
+
+        public int Upkeep { get; set; }
+
+        public int Deserted { get; set; }
 
         public List<string> Faded { get; } = [];
     }
