@@ -92,18 +92,21 @@ public sealed class Turtle(string name) : Bot(name, MagicSchool.Tidal)
 /// </summary>
 public sealed class Warmonger(string name) : Bot(name, MagicSchool.Ember)
 {
-    public override string Strategy => "economy + knights + attacks the biggest beatable target";
+    public override string Strategy => "economy + knights + attacks when it beats exploring";
 
     public override void Play(Mage me, IReadOnlyList<Mage> others, Sim sim)
     {
         var rules = sim.Rules;
-        while (me.Turns >= rules.AttackTurnCost && !me.IsProtected(rules))
+        while (me.Turns >= rules.AttackTurnCost && !me.IsProtected(sim.Now, rules))
         {
             var target = others
-                .Where(t => me.TargetProblem(t, rules) is null)
+                .Where(t => me.TargetProblem(t, sim.Now, rules) is null)
                 .Where(t => me.AttackPower * (1 + (me.CounterSign(t) * rules.CounterBonus)) * (1 - rules.CombatRollSpread)
                             > t.DefensePower(rules) * (1 + rules.CombatRollSpread))
-                .OrderByDescending(t => t.Land)
+                .Select(t => (Target: t, Acres: (int)(t.Land * t.LandTakenPercent(sim.Now, rules) / 100)))
+                .Where(x => x.Acres >= rules.AttackTurnCost * me.ExploreAcresPerTurn(rules)) // else exploring pays more
+                .OrderByDescending(x => x.Acres)
+                .Select(x => x.Target)
                 .FirstOrDefault();
             if (target is null)
             {

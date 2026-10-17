@@ -17,7 +17,7 @@ public sealed class AdminFlowTests : SpellboundTestDriver, IAsyncLifetime
 {
     private const string AdminEmail = "admin@spellbound.test";
 
-    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, StartingGold = 200_000 };
+    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
     private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;

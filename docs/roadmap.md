@@ -37,6 +37,8 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [ ] Cloudflare in front (needs the domain)
 - [x] Admin page: server settings, ban, reset
 - [x] Password reset by an admin (the server sends no email yet; "Forgot password" points players to the admin)
+- [x] Balance pass from a round simulation ([balance](balance.md)): diminishing land on repeated attacks, 72 hours of
+  protection, turn cap 240
 
 ### Waiting on the owner
 - [ ] RavenDB Community licence key: applied for on 17 Oct 2026. When it arrives, follow
@@ -44,7 +46,7 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [ ] A VPS and a domain pointing at it (see [deploy guide](deploy.md))
 
 ## Later
-- Research, artifacts, guilds and chat, server variants, a stored-turns bank, web push notifications
+- Research, artifacts, guilds and chat, server variants, web push notifications
 - Real email (an SMTP service) so players can reset their own password and change their email address; until then
   both go through an admin
 - Move `Hosting/` into its own reusable project when a second game is planned (see architecture, "The game host

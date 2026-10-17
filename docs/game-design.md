@@ -25,7 +25,7 @@ Design goals:
 
 | Resource | Source | Limit |
 |---|---|---|
-| **Turns** | 1 per 6 minutes (real time) | Max 200 on hand; time at the cap is lost |
+| **Turns** | 1 per 6 minutes (real time) | Max 240 on hand (one day's worth); time at the cap is lost |
 | **Land** (acres) | Exploring | None, but each explore turn yields less as land grows |
 | **Gold** | Every turn: 1 per acre + 10 per town | None |
 | **Mana** | Every turn: 10 per node; meditating adds 100 per turn | 5,000 + 1,000 per node |
@@ -34,7 +34,8 @@ Design goals:
 
 250 acres, 20 nodes, 40 towns (so 190 acres are free), 10,000 gold, 2,000 mana, 100 turns.
 
-New mages are **protected** from attacks until they have spent 120 turns. This matters from milestone 2.
+New mages are **protected** from attacks for their first **72 hours** and until they have spent **120 turns**,
+whichever comes later. This matters from milestone 2.
 
 ## Actions (milestone 1)
 
@@ -89,7 +90,9 @@ An attack costs **4 turns** and resolves in the first of them; the 4 turns then 
   anyone either. The target must hold at least **60%** of your land, so big mages can't farm small ones.
 - **Power:** attack = your units' attack × school counter (×1.15 if your school is strong against theirs, ×0.85 if
   weak) × luck. Defense = their defense × luck. Luck is a roll between ×0.9 and ×1.1 for each side.
-- **Win** (attack > defense): you take **10%** of their land (at least 1 acre). Taken land comes from their free acres
+- **Win** (attack > defense): you take **10%** of their land (at least 1 acre), halved for every battle they have lost
+  in the last **24 hours**, to anyone: 10%, then 5%, then 2.5%. Each loss is forgotten a day after it happened. Battles
+  they held don't count. The target's page shows the share a win would take now. Taken land comes from their free acres
   first; if that's not enough, buildings on it are destroyed, split between nodes and towns by how many they have.
   The land arrives as free acres for you.
 - **Losses:** the attacker loses 8% of every unit on a win and 12% on a loss. The defender loses 10% when broken and
@@ -117,7 +120,9 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 
 ## Protection, rankings and networth (milestone 2)
 
-- New mages are protected until they have spent **120 turns** (see Starting mage).
+- New mages are protected for **72 hours** and until they have spent **120 turns** (see Starting mage). Mages created
+  before the time rule existed are protected by turns only.
+- Because everyone creates a mage when a round starts, every round opens with about **three days without attacks**.
 - **Networth** = 5 per acre + 10 per building + 1 per point of unit attack and defense (a knight adds 8).
 - The **Rivals** page ranks every mage by land or by networth, and is where you pick a target.
 - When you are attacked or hexed, the overview shows a banner with how many times since you last looked, and the
@@ -148,8 +153,9 @@ can't be targeted, and they're left out of the hall of fame. Unbanning restores 
 A simulation of a full round answers several of these with numbers, and proposes changes: see
 [balance.md](balance.md).
 
-- Should we add a stored-turns bank (as Earth Empires does) so missing a day hurts less?
 - Should we add population or peasants, or keep the economy as just land and buildings?
-- Should repeated attacks on the same mage take less land (Archmage-style diminishing returns)?
-- Is upkeep too harsh? 400 knights cost 1,200 gold a turn against a starting income of 650.
+- Does the repeat-attack rule need a longer memory (72 hours did much better in the simulation), or a limit on how
+  often one mage can be attacked, since 1-acre attacks still cost the defender units? See [balance.md](balance.md).
+- Is upkeep too harsh, or too light? In the simulation attackers spend nearly all their income on it and still win,
+  because stolen land pays for it. Revisit after the repeat-attack question.
 - Should there be a break between rounds, or an end-of-round event in the last days (for example, double land taken)?

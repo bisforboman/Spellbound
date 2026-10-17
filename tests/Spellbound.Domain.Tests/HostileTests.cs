@@ -4,7 +4,7 @@ namespace Spellbound.Domain.Tests;
 public class HostileTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
-    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, StartingGold = 200_000 };
+    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
     /// <summary>Always rolls the same number: 0.5 means no luck either way.</summary>
     private sealed class FixedRandom(double value) : IRandomSource
@@ -118,7 +118,86 @@ public class HostileTests
         var result = attacker.Attack(NewMage("Morgana", MagicSchool.Tidal), T0, rules, Even);
 
         Assert.False(result.Report.Succeeded);
-        Assert.StartsWith("You are under protection for 119 more turns", result.Report.Lines[0], StringComparison.Ordinal);
+        Assert.Equal(
+            "You are protected until you've spent 119 more turns, and can't attack or hex anyone until then.",
+            result.Report.Lines[0]);
+    }
+
+    [Fact]
+    public void New_mages_are_protected_for_a_while_however_many_turns_they_spend()
+    {
+        var rules = Rules with { ProtectionDuration = TimeSpan.FromHours(72) }; // and no protection turns
+        var attacker = Attacker(); // created at T0, so its own protection ends at T0 + 72 h
+        var born = T0.AddHours(72);
+        var defender = Mage.Create("owner-Morgana", "Morgana", MagicSchool.Tidal, born, rules);
+
+        var early = attacker.Attack(defender, born.AddHours(71), rules, Even);
+        var late = attacker.Attack(defender, born.AddHours(73), rules, Even);
+
+        Assert.Equal("Morgana is still under protection.", early.Report.Lines[0]);
+        Assert.True(late.Report.Succeeded);
+        Assert.True(defender.IsProtected(born.AddHours(71), rules));
+        Assert.False(defender.IsProtected(born.AddHours(72), rules));
+    }
+
+    [Fact]
+    public void Protection_message_names_what_is_left_and_never_a_negative_count()
+    {
+        var rules = Rules with { ProtectionTurns = 120, ProtectionDuration = TimeSpan.FromHours(72) };
+        var mage = NewMage("Merlin", MagicSchool.Radiant, rules);
+
+        Assert.Equal("for another 3 days 0 hours and until you've spent 120 more turns", mage.DescribeProtection(T0, rules));
+        mage.Meditate(100, T0, rules);
+        mage.Meditate(30, T0.AddHours(5), rules); // 130 turns spent: only the time is left
+        Assert.Equal("for another 2 days 19 hours", mage.DescribeProtection(T0.AddHours(5), rules));
+        Assert.Equal("for another 30 minutes", mage.DescribeProtection(T0.AddHours(71.5), rules));
+        Assert.Equal(string.Empty, mage.DescribeProtection(T0.AddHours(72), rules));
+    }
+
+    [Fact]
+    public void Each_battle_lost_in_the_last_day_halves_the_land_the_next_win_takes()
+    {
+        var attacker = Attacker();
+        var defender = NewMage("Morgana", MagicSchool.Tidal);
+
+        var first = attacker.Attack(defender, T0, Rules, Even);
+        var second = attacker.Attack(defender, T0, Rules, Even);
+        var third = attacker.Attack(defender, T0, Rules, Even);
+
+        Assert.Equal("You attacked Morgana and broke through, taking 25 acres.", first.Report.Lines[0]); // 10% of 250
+        Assert.Equal("You attacked Morgana and broke through, taking 11 acres.", second.Report.Lines[0]); // 5% of 225
+        Assert.Equal("You attacked Morgana and broke through, taking 5 acres.", third.Report.Lines[0]); // 2.5% of 214
+        Assert.Contains(
+            "They had already been beaten 2 times in the last day, so you took only 2.5% of their land.", third.Report.Lines);
+        Assert.Contains(
+            "You had already been beaten 2 times in the last day, so they took only 2.5% of your land.", third.TargetLines);
+        Assert.Equal(1.25, defender.LandTakenPercent(T0, Rules), 3);
+    }
+
+    [Fact]
+    public void A_loss_more_than_a_day_old_is_forgotten()
+    {
+        var attacker = Attacker();
+        var defender = NewMage("Morgana", MagicSchool.Tidal);
+
+        attacker.Attack(defender, T0, Rules, Even);
+        var dayLater = attacker.Attack(defender, T0.AddHours(25), Rules, Even);
+
+        Assert.Equal("You attacked Morgana and broke through, taking 22 acres.", dayLater.Report.Lines[0]); // 10% of 225
+        Assert.Single(defender.RecentLosses); // the old one was dropped when the new one was recorded
+    }
+
+    [Fact]
+    public void A_battle_the_defender_held_does_not_count()
+    {
+        var weak = Attacker(knights: 50); // 300 attack against 500 + 300 defense
+        var defender = NewMage("Morgana", MagicSchool.Tidal);
+        defender.Recruit("militia", 100, T0, Rules);
+
+        Assert.Equal("You attacked Morgana, but their defenses held.", weak.Attack(defender, T0, Rules, Even).Report.Lines[0]);
+
+        Assert.Empty(defender.RecentLosses);
+        Assert.Equal(10, defender.LandTakenPercent(T0, Rules));
     }
 
     [Fact]

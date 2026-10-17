@@ -85,8 +85,10 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 ## Persistence notes
 
 - Documents need no schema or migrations. Adding a property to `Mage` just works; renaming one needs a patch script.
-- `Mage` is stored as-is (RavenDB sets private setters and the private `_activeEffects` list). Only string `Id`
-  properties are treated as document keys (`HostStore.IsDocumentKey`), so `Mage.Id` (a Guid) is plain data.
+- `Mage` is stored as-is (RavenDB sets private setters and the private `_activeEffects` and `_recentLosses` lists).
+  Mages saved before `CreatedAt` existed read it as the minimum date, so they are protected by spent turns only.
+  Only string `Id` properties are treated as document keys (`HostStore.IsDocumentKey`), so `Mage.Id`
+  (a Guid) is plain data.
 - **Load by key, never query, on the action path.** Loads are always consistent; queries go through indexes that
   update a moment after each write. The one exception is finding an attack target's owner by mage id, which never
   changes; the target itself is then loaded by key.

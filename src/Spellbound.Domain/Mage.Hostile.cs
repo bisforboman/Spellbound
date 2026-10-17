@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Spellbound.Domain;
 
 /// <summary>
@@ -12,6 +14,22 @@ public sealed record HostileReport(ActionReport Report, IReadOnlyList<string> Ta
 /// <summary>Attacks and hexes against other mages.</summary>
 public sealed partial class Mage
 {
+    private readonly List<DateTimeOffset> _recentLosses = [];
+
+    /// <summary>When this mage lost battles (an attacker broke through), within the repeat-attack window.</summary>
+    public IReadOnlyList<DateTimeOffset> RecentLosses => _recentLosses;
+
+    /// <summary>Battles this mage lost within the repeat-attack window before <paramref name="now"/>.</summary>
+    public int LossesInWindow(DateTimeOffset now, GameRules rules) =>
+        _recentLosses.Count(at => at > now - rules.RepeatAttackWindow && at <= now);
+
+    /// <summary>
+    /// The share of this mage's land (in percent) a winning attack would take right now: the base share, shrunk once for
+    /// every battle it lost in the last window. Shown before attacking, which also tells attackers it was hit recently.
+    /// </summary>
+    public double LandTakenPercent(DateTimeOffset now, GameRules rules) =>
+        rules.LandTakenPercent * Math.Pow(rules.RepeatAttackLandFactor, Math.Min(LossesInWindow(now, rules), 60));
+
     /// <summary>Whether the target is big enough to pick on: at least AttackRangePercent of your land.</summary>
     public bool InRange(Mage target, GameRules rules) =>
         (long)target.Land * 100 >= (long)Land * rules.AttackRangePercent;
@@ -31,7 +49,7 @@ public sealed partial class Mage
         ArgumentNullException.ThrowIfNull(target);
         AccrueTurns(now, rules);
         target.AccrueTurns(now, rules);
-        if (TargetProblem(target, rules) is { } invalid)
+        if (TargetProblem(target, now, rules) is { } invalid)
         {
             return HostileReport.Fail(invalid);
         }
@@ -58,11 +76,20 @@ public sealed partial class Mage
         var theirs = new List<string>();
         if (won)
         {
-            var acres = Math.Max(1, target.Land * rules.LandTakenPercent / 100);
+            var losses = target.LossesInWindow(now, rules);
+            var percent = target.LandTakenPercent(now, rules);
+            var acres = Math.Max(1, (int)(target.Land * percent / 100));
             var (nodes, towns) = target.LoseLand(acres, rules);
+            target.RecordLoss(now, rules);
             Land += acres;
             ours.Add($"You attacked {target.Name} and broke through, taking {N(acres)} acres.");
             theirs.Add($"{Name} ({School}) attacked you and broke through. You lost {N(acres)} acres.");
+            if (losses > 0)
+            {
+                var times = losses == 1 ? "once" : $"{N(losses)} times";
+                ours.Add($"They had already been beaten {times} in the last day, so you took only {Percent(percent)} of their land.");
+                theirs.Add($"You had already been beaten {times} in the last day, so they took only {Percent(percent)} of your land.");
+            }
             if (nodes + towns > 0)
             {
                 var ruins = $"{N(nodes)} nodes and {N(towns)} towns were destroyed in the fighting.";
@@ -104,7 +131,7 @@ public sealed partial class Mage
             return HostileReport.Fail($"{hex.Name} belongs to the {hex.School} school.");
         }
 
-        if (TargetProblem(target, rules) is { } invalid)
+        if (TargetProblem(target, now, rules) is { } invalid)
         {
             return HostileReport.Fail(invalid);
         }
@@ -137,7 +164,7 @@ public sealed partial class Mage
     }
 
     /// <summary>Why this mage can't attack or hex the target right now, or null if it can.</summary>
-    public string? TargetProblem(Mage target, GameRules rules)
+    public string? TargetProblem(Mage target, DateTimeOffset now, GameRules rules)
     {
         ArgumentNullException.ThrowIfNull(target);
         if (target.Id == Id)
@@ -145,13 +172,12 @@ public sealed partial class Mage
             return "You can't target yourself.";
         }
 
-        if (IsProtected(rules))
+        if (IsProtected(now, rules))
         {
-            return $"You are under protection for {N(rules.ProtectionTurns - TurnsSpent)} more turns " +
-                   "and can't attack or hex anyone yet.";
+            return $"You are protected {DescribeProtection(now, rules)}, and can't attack or hex anyone until then.";
         }
 
-        if (target.IsProtected(rules))
+        if (target.IsProtected(now, rules))
         {
             return $"{target.Name} is still under protection.";
         }
@@ -162,6 +188,15 @@ public sealed partial class Mage
     }
 
     // ---- Internals ----
+
+    /// <summary>Remembers a lost battle, forgetting those outside the window so the list stays short.</summary>
+    private void RecordLoss(DateTimeOffset now, GameRules rules)
+    {
+        _recentLosses.RemoveAll(at => at <= now - rules.RepeatAttackWindow);
+        _recentLosses.Add(now);
+    }
+
+    private static string Percent(double percent) => $"{percent.ToString("0.##", CultureInfo.InvariantCulture)}%";
 
     private (string Ours, string Theirs) ApplyHex(HexDefinition hex, Mage target, GameRules rules)
     {
