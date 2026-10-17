@@ -54,6 +54,10 @@ public sealed partial class Mage
 
     public int TurnsSpent { get; private set; }
 
+    /// <summary>When the mage was created. Mages saved before this existed read as the minimum value, so they're
+    /// protected by spent turns only.</summary>
+    public DateTimeOffset CreatedAt { get; private set; }
+
     public IReadOnlyList<ActiveEffect> ActiveEffects => _activeEffects;
 
     public int BuiltLand => Nodes + Towns;
@@ -85,6 +89,7 @@ public sealed partial class Mage
             Gold = rules.StartingGold,
             Turns = rules.StartingTurns,
             TurnsAccruedAt = now,
+            CreatedAt = now,
         };
         mage.Mana = Math.Min(rules.StartingMana, mage.ManaCapacity(rules));
         return mage;
@@ -92,7 +97,32 @@ public sealed partial class Mage
 
     // ---- Derived values (also useful for UI previews) ----
 
-    public bool IsProtected(GameRules rules) => TurnsSpent < rules.ProtectionTurns;
+    /// <summary>Protected until both the protection turns are spent and the protection time has passed.</summary>
+    public bool IsProtected(DateTimeOffset now, GameRules rules) =>
+        TurnsSpent < rules.ProtectionTurns || now < CreatedAt + rules.ProtectionDuration;
+
+    /// <summary>What's left of the protection, in words: "for another 2 days 5 hours and until you've spent 30 more
+    /// turns". Empty when the mage isn't protected.</summary>
+    public string DescribeProtection(DateTimeOffset now, GameRules rules)
+    {
+        var turns = Math.Max(0, rules.ProtectionTurns - TurnsSpent);
+        var time = CreatedAt + rules.ProtectionDuration - now;
+        return (turns > 0, time > TimeSpan.Zero) switch
+        {
+            (true, true) => $"for another {Duration(time)} and until you've spent {N(turns)} more turns",
+            (false, true) => $"for another {Duration(time)}",
+            (true, false) => $"until you've spent {N(turns)} more turns",
+            _ => string.Empty,
+        };
+
+        static string Duration(TimeSpan span) => span.TotalDays >= 1
+            ? $"{(int)span.TotalDays} {Plural((int)span.TotalDays, "day")} {span.Hours} {Plural(span.Hours, "hour")}"
+            : span.TotalHours >= 1
+                ? $"{(int)span.TotalHours} {Plural((int)span.TotalHours, "hour")} {span.Minutes} {Plural(span.Minutes, "minute")}"
+                : $"{Math.Max(1, (int)Math.Ceiling(span.TotalMinutes))} minutes";
+
+        static string Plural(int count, string word) => count == 1 ? word : word + "s";
+    }
 
     public int ManaCapacity(GameRules rules) => rules.BaseManaStorage + (Nodes * rules.ManaStoragePerNode);
 

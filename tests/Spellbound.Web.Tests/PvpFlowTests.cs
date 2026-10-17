@@ -14,7 +14,7 @@ public sealed class PvpFlowTests : SpellboundTestDriver, IAsyncLifetime
     private const string Attacker = "ApplicationUsers/1-A";
     private const string Defender = "ApplicationUsers/2-A";
 
-    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, StartingGold = 200_000 };
+    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
     private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
@@ -75,6 +75,20 @@ public sealed class PvpFlowTests : SpellboundTestDriver, IAsyncLifetime
         Assert.StartsWith("Merlin (Tidal) attacked you and broke through", news.Lines[0], StringComparison.Ordinal);
         Assert.Equal(1, await Game.TakeUnseenAlertsAsync(Defender));
         Assert.Equal(0, await Game.TakeUnseenAlertsAsync(Defender));
+    }
+
+    [Fact]
+    public async Task A_second_win_in_a_day_takes_half_as_much_land_after_a_save()
+    {
+        var defenderId = await CreateBothAsync();
+        await Game.RecruitAsync(Attacker, "knights", 400);
+
+        Assert.True((await Game.AttackAsync(Attacker, defenderId)).Succeeded);
+        var second = await Game.AttackAsync(Attacker, defenderId);
+
+        Assert.True(second.Succeeded, string.Join(" ", second.Lines));
+        Assert.Equal(214, (await Game.GetMageAsync(Defender))!.Land); // 225 minus 5% (11 acres)
+        Assert.Equal(2, (await Game.GetMageAsync(Defender))!.RecentLosses.Count);
     }
 
     [Fact]

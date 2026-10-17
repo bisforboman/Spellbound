@@ -14,9 +14,12 @@ public sealed record GameRules
 
     // Turns
     public TimeSpan TurnInterval { get; init; } = TimeSpan.FromMinutes(6);
-    public int MaxTurns { get; init; } = 200;
+    public int MaxTurns { get; init; } = 240;
     public int StartingTurns { get; init; } = 100;
     public int ProtectionTurns { get; init; } = 120;
+
+    /// <summary>New mages are also protected for this long after creation, however many turns they spend.</summary>
+    public TimeSpan ProtectionDuration { get; init; } = TimeSpan.FromHours(72);
 
     // Starting mage
     public int StartingLand { get; init; } = 250;
@@ -49,6 +52,13 @@ public sealed record GameRules
     public double CombatRollSpread { get; init; } = 0.1;
     public double CounterBonus { get; init; } = 0.15;
     public int LandTakenPercent { get; init; } = 10;
+
+    /// <summary>Each battle a mage lost within this window shrinks the land the next attacker takes...</summary>
+    public TimeSpan RepeatAttackWindow { get; init; } = TimeSpan.FromHours(24);
+
+    /// <summary>...by this factor: with 0.5, a win takes 10%, then 5%, then 2.5% of the same mage's land.</summary>
+    public double RepeatAttackLandFactor { get; init; } = 0.5;
+
     public int AttackerLossPercentOnWin { get; init; } = 8;
     public int AttackerLossPercentOnLoss { get; init; } = 12;
     public int DefenderLossPercentOnWin { get; init; } = 5;

@@ -13,8 +13,9 @@ at each check-in, three times a day or once a day:
 
 - **Builder:** explores, and builds towns and nodes (1 in 4 a node), and keeps its school's buff up.
 - **Turtle:** the same, plus one militia per acre and an Arcane Barrier.
-- **Warmonger:** the same, plus half its spare gold into knights. It attacks the biggest target in range it is
-  certain to beat, as often as its turns allow.
+- **Warmonger:** the same, plus half its spare gold into knights. It attacks a target it is certain to beat as long as
+  the land a win would take is at least what exploring would give for the same 4 turns, starting with the target that
+  gives the most land.
 - **Idle:** signs up and never plays.
 
 **Limits:**
@@ -25,65 +26,89 @@ at each check-in, three times a day or once a day:
 
 The conclusions hold across seeds 1–3; the exact numbers move a few percent.
 
-## What the numbers say
+## Changes adopted after the first run
 
-### 1. Attacking dominates, and peers can farm each other
+The first run (rules as of PR #13) found four problems. The owner adopted three proposals:
 
-- On the mixed server the busy warmonger ends with **10,526 acres**, and the builders and turtle with about 3,300–3,500.
-- On a peaceful server those same three builders reach about 5,800–6,800 acres, so the attackers halve everyone
-  else's growth.
-- **The range rule works.** The busy warmonger hit the builders and turtle only on days 1–3. After that they were
-  below 60% of its land and out of reach. Small players are safe from big ones.
-- **Nothing protects peers from peers.** The once-a-day warmonger stayed about the builders' size, so it kept hitting
-  them until day 27: 13–17 times each. The two warmongers, also in range of each other, traded **39 attacks**. One hit
-  the other **29 times**, up to **5 times in a day**, taking 12,771 acres.
-- Every attack takes 10% of the target's land, whatever happened to it before. That is the open question "should
-  repeated attacks take less land?", and the answer is yes.
+| Problem in the first run | Change |
+|---|---|
+| Peers farmed each other: one warmonger hit another 29 times, up to 5 times a day, taking 12,771 acres | Each battle a mage lost in the last 24 hours, to anyone, halves the land the next win takes (10%, 5%, 2.5%, …) |
+| Protection lasted hours: the first attacks came on day 1 | New mages are also protected for 72 hours |
+| Checking in once a day lost 1,180 turns (17%) at the 200-turn cap | The turn cap is 240, one day of turns |
+| Upkeep didn't limit attackers (95–100% of income, still winning) | No change, as proposed: revisit after the others |
 
-### 2. Protection lasts hours, not days
+## Second run: what changed (seed 7)
 
-Protection lasts until a mage has spent 120 turns. A new player starts with 100, so it survives their first session.
-But turns come back at 10 an hour, so an active player is unprotected a few hours into the game. (The bots were created
-at midnight and had 180 turns at their first check-in, so in the simulation it ended even sooner: the warmonger
-attacked builders on day 1.) Protection only lasts for players who don't play: the idle account never spent a turn and
-was never attacked.
+| | First run | Second run |
+|---|---:|---:|
+| First attack | day 1 | **day 4** |
+| Turns a once-a-day player loses over the round | 1,180 (17%) | **60 (0%)** |
+| Once-a-day builder, peaceful server | 5,825 acres | **6,834** (the 3×-a-day builder: 6,785) |
+| Busy warmonger / once-a-day warmonger, mixed server | 10,526 / 6,265 | 10,784 / 6,098 |
+| Turtle, builders, mixed server | 3,339–3,554 | 3,438–3,565 |
+| Warmonger-3x on Warmonger-1x | 29 hits, 12,771 acres | 50 hits, 9,631 acres |
+| Most hits on one target in one day | 5 | 8 |
 
-### 3. Upkeep isn't too harsh, because stolen land pays for the army
+The first run's warmonger always attacked the biggest target in range. Under a flat 10% any target in range was worth
+far more than four turns of exploring, so the new rule (attack only when it beats exploring) changes nothing about
+that run.
 
-Both warmongers spend **95–100%** of their income on upkeep and still win the round. The land they take keeps
-raising their income, so upkeep doesn't limit an attacker. That answers "is upkeep too harsh?": no, and lowering it
-would make attacking stronger still. The turtle's militia costs about 11% of its income and still didn't stop the
-knights. One militia per acre isn't enough defense against a dedicated attacker, which is reasonable as long as
-repeated attacks are limited (point 1).
+### 1. Protection and the turn cap work
 
-### 4. Checking in once a day loses about a sixth of your turns
+The first attacks moved from day 1 to day 4 on every seed, and a once-a-day player now loses almost nothing. On a
+peaceful server they end level with someone who checks in three times a day.
 
-A day makes 240 turns, but you can hold at most 200. A once-a-day player loses **1,180 turns (17%)** over the round,
-about 40 a day. In the peaceful run that left them 14% behind on land (5,825 against 6,785 acres). Three check-ins a
-day lose nothing. That's the open question "should there be a stored-turns bank?"
+Because everyone creates a mage when a round starts, **every round now opens with about three days without attacks.**
+That is a quiet building phase, which fits the game, but it is a side effect worth knowing.
 
-### 5. The economy grows steadily
+### 2. The repeat-attack rule caps the damage per day, not the war
 
-Land grows quickly at first (250 to about 900 acres on day 1), then by about 210 acres a day from the second week, as
-exploring gets less productive. The round doesn't stall and nobody runs away by economy alone: the builders and the
-turtle end within 15% of each other.
+A beaten mage can lose at most about 20% of its land in a day (10 + 5 + 2.5 + …), where before five hits took 41%.
+But the totals barely moved: the busy warmonger still ends with about three times everyone else's land, and the
+builders and the turtle end where they did. Two reasons:
 
-### Not answered by the simulation
+- **Attacking stays worth it for big mages.** Exploring yields less as land grows. At 6,000 acres, four turns of
+  exploring give about 2 acres, so even a 0.3% take of a big target beats it. The halving makes each hit smaller,
+  so the bots attack more often (most hits in a day went from 5 to 8).
+- **A day is a short memory.** The rule resets every day, and the warmongers attack every day.
 
-Whether to add peasants or population, and whether to have a break or an end-of-round event, are questions about how
-the game feels, not about numbers.
+This is "the rule caps damage, not war between peers": a better floor for the defender, not a fix for attacking
+dominating.
+
+The once-a-day builder still ends far behind the peaceful run: it builds no defense, so two attackers keep taking
+their daily share. That is the rule working as intended on an undefended player.
+
+### 3. New: many small attacks still hurt
+
+The halving shrinks the land, not the attack. Every lost battle still costs the defender 10% of its units and a
+hostile news alert. A mage that only takes 1–10 acres per hit can still strip a defender's army and flood their news.
+Real players may also do it on purpose, to grief.
+
+### 4. A 72-hour memory does much better
+
+Tried by changing only `RepeatAttackWindow` to 72 hours (seeds 7, 1 and 2):
+
+| | 24 hours (adopted) | 72 hours |
+|---|---:|---:|
+| Warmongers | 5,726–11,607 | 4,346–6,482 |
+| Turtle | 3,565–3,739 | 5,423–5,489 |
+| Builders | 3,379–3,953 | 4,933–6,053 |
+
+With a three-day memory the attackers end level with the builders, and a builder ends close to its peaceful size
+(about 6,000 acres). Attacks continue all round, but each takes little. A steeper halving (×0.25 per loss, 24 hours, seed 7)
+helped less: builders 3,835–4,148, warmongers 7,025–8,652.
 
 ## Proposals
 
-These change rules, so they need the owner's decision. Each is a `GameRules` number or a small rule with tests.
+These change rules, so they need the owner's decision.
 
-1. **Diminishing returns on repeated attacks.** Every successful attack on a mage in the last 24 hours, by anyone,
-   halves the land the next one takes: 10%, then 5%, 2.5%, and so on. A target recovers a day after the last hit. This
-   stops farming without stopping war.
-2. **Protection by time as well as turns.** For example, protected for 72 hours *and* until 120 turns are spent, so
-   a new player gets three days to build before anyone can attack.
-3. **Raise the turn cap to 240**, one day of turns, so checking in once a day loses nothing. This is simpler than a
-   stored-turns bank, and enough to make "five minutes a few times a day" truly optional.
-4. **Keep upkeep as it is** for now. Revisit after 1 and 2, which take away the stolen land that pays for it.
+1. **Raise `RepeatAttackWindow` to 72 hours.** A one-line `GameRules` change; the simulation says it ends attack
+   dominance without ending attacks. It does make a mage that has been beaten once a poor target for three days.
+2. **Limit the cost of tiny attacks.** For example, a defender loses no units when the take is below 1% of its land,
+   or a mage can be attacked at most N times a day. Wait for 1 before choosing.
+3. **Keep upkeep as it is.** Revisit if attackers still dominate after 1.
 
-After a change, rerun the simulation and compare it with the numbers above.
+## Not answered by the simulation
+
+Whether to add peasants or population, and whether to have a break or an end-of-round event, are questions about how
+the game feels, not about numbers.

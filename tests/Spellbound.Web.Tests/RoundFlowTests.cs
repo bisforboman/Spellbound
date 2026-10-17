@@ -14,7 +14,7 @@ public sealed class RoundFlowTests : SpellboundTestDriver
     private const string Merlin = "ApplicationUsers/1-A";
     private const string Morgana = "ApplicationUsers/2-A";
 
-    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, StartingGold = 200_000 };
+    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
     private readonly ManualTime time = new(new DateTimeOffset(2026, 10, 17, 12, 0, 0, TimeSpan.Zero));
     private readonly IDocumentStore store;

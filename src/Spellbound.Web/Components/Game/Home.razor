@@ -19,9 +19,9 @@
 
     <TurnsBar Mage="Mage" />
 
-    @if (Mage.IsProtected(Rules))
+    @if (Mage.IsProtected(Game.Now, Rules))
     {
-        <p class="text-muted">Protected from attacks and hexes for @N(Rules.ProtectionTurns - Mage.TurnsSpent) more turns. While protected you can't target others either.</p>
+        <p class="text-muted">Protected from attacks and hexes @Mage.DescribeProtection(Game.Now, Rules). While protected you can't target others either.</p>
     }
 
     <table class="table stats">

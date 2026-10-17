@@ -20,7 +20,7 @@ public class MageTests
         Assert.Equal(10_000, mage.Gold);
         Assert.Equal(2_000, mage.Mana);
         Assert.Equal(100, mage.Turns);
-        Assert.True(mage.IsProtected(Rules));
+        Assert.True(mage.IsProtected(T0, Rules));
     }
 
     [Theory]
