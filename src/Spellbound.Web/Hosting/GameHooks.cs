@@ -17,6 +17,16 @@ public interface IRoundLifecycle
     Task OnRoundEndedAsync(IAsyncDocumentSession session, Round ended, BanList bans, CancellationToken cancellationToken);
 }
 
+/// <summary>What the hosting code tells the game about accounts.</summary>
+public interface IAccountLifecycle
+{
+    /// <summary>
+    /// Called when an account is deleted, inside the session that deletes it: delete the player's game data here, and
+    /// it goes in the same transaction (or not at all).
+    /// </summary>
+    Task OnAccountDeletedAsync(IAsyncDocumentSession session, string ownerId);
+}
+
 /// <summary>How a player looks on the admin page.</summary>
 /// <param name="Name">The player's in-game name.</param>
 /// <param name="Details">A short line of game facts, for example school and land.</param>

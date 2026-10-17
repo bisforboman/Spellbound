@@ -42,7 +42,8 @@ extension points designed for a single game tend to come out wrong.
   on both the compiled types and the source files.
 - **The game plugs in** through `Hosting/GameHooks.cs`: `IRoundLifecycle` (round length, and what happens when a round
   ends, inside the reset's transaction; Spellbound records its hall of fame) and `IPlayerSummaries` (how a player shows
-  on the admin page). `AdminPageOptions.GameSections` adds game sections to the admin page (Spellbound's rules table).
+  on the admin page), and `IAccountLifecycle` (deleting an account deletes the player's game data in the same
+  transaction; Spellbound removes their mages and news from every round). `AdminPageOptions.GameSections` adds game sections to the admin page (Spellbound's rules table).
   `SpellboundHost` implements the hooks.
 - `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
 - **Database keys** are split the same way: `HostStore` (conventions, licence, `rounds/current`, `admin/*`,
