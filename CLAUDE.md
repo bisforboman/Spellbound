@@ -62,3 +62,7 @@ dotnet run --project src/Spellbound.Web   # first start is slower: it launches t
 - **Where work runs**: long work (multi-step tasks, PRs, CI waits, releases) runs as cloud sessions; the owner's
   computer must stay free to restart or turn off. Work that needs it (local timings, Windows-only checks) is asked for,
   never started unasked; a cloud session that needs such a step says so in its PR.
+- **Asking the owner**: when you need input, a decision or an action only the owner can take (a key, a setting, an
+  approval), ask with the question prompt (the AskUserQuestion tool) so it can't be missed, instead of leaving the
+  question in a summary. Ask once, with the options and your recommendation, and keep working on what doesn't depend
+  on the answer.
