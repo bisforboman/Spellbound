@@ -59,6 +59,10 @@ the app restarts.
 - **Health**: `https://your.domain/healthz` answers `Healthy` while the app is up.
 - **Change a setting** (`GameRules__...`, admins): add it to the `environment` list of `app` in
   `docker-compose.yml` or to `.env`, then `docker compose up -d`.
+- **Forgotten passwords**: the server sends no email, so players ask you. On the admin page, enter their email under
+  Players → **Reset a password by email** (or tap **Reset password…** on their row): you get a temporary password,
+  shown once, to give them privately. They log in with it and choose a new one under Account. This also lifts a
+  lockout from wrong guesses (not a ban).
 - **Licence renewal**: the Community key lasts a year. Put the new JSON in `.env` and run `docker compose up -d`.
   RavenDB also requires the latest major version, so update the `RavenDB.*` packages when a new major version ships.
 
