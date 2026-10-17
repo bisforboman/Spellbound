@@ -103,6 +103,9 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   the networks it signed up or logged in from (never the IP itself; the key is `admin/secrets`), and the admin page
   lists networks shared by several accounts in the last 30 days, as hints, not automatic bans. Deleting an account
   deletes its signals.
+- **Email:** none yet (`IdentityNoOpEmailSender`). "Forgot password" tells players to ask an admin, who gives them a
+  temporary password from the admin page (`AdminService.ResetPasswordAsync`). Changing an email address needs a
+  confirmation link, so it doesn't work until real email is added.
 - **Admin:** the `Admin` policy allows accounts whose email is in the `Admins` config list; `AdminHandler` reads the
   list on every check. `admin/bans` holds the ban list. `GameService` checks it on every action and filters banned
   mages out of rankings and targeting; `RoundKeeper` leaves them out of the hall of fame. A ban also locks the account

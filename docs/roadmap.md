@@ -35,14 +35,17 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [x] Nightly backups with retention and a tested restore ([deploy guide](deploy.md#backups))
 - [x] Basic rate limiting, login lockout and multi-account signals on the admin page
 - [ ] Cloudflare in front (needs the domain)
+- [x] Admin page: server settings, ban, reset
+- [x] Password reset by an admin (the server sends no email yet; "Forgot password" points players to the admin)
 
 ### Waiting on the owner
 - [ ] RavenDB Community licence key: applied for on 17 Oct 2026. When it arrives, follow
   [issue #9](https://github.com/bisforboman/Spellbound/issues/9) (check it's Community, put it in `.env`, note the expiry)
 - [ ] A VPS and a domain pointing at it (see [deploy guide](deploy.md))
-- [x] Admin page: server settings, ban, reset
 
 ## Later
 - Research, artifacts, guilds and chat, server variants, a stored-turns bank, web push notifications
+- Real email (an SMTP service) so players can reset their own password and change their email address; until then
+  both go through an admin
 - Move `Hosting/` into its own reusable project when a second game is planned (see architecture, "The game host
   boundary")

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
+using System.Security.Cryptography;
 using Raven.Client.Exceptions;
 using Spellbound.Domain;
 
@@ -83,6 +84,67 @@ public sealed class AdminService(
             await users.UpdateSecurityStampAsync(user);
             return $"Banned {user.Email}.";
         });
+    }
+
+    /// <summary>
+    /// Gives a player a new, temporary password, for when they've forgotten theirs (the server sends no email). The
+    /// admin passes it on; the player logs in with it and picks their own under Account. Signs them out elsewhere.
+    /// </summary>
+    public async Task<string> ResetPasswordAsync(string ownerId)
+    {
+        using (var session = store.OpenAsyncSession())
+        {
+            if ((await HostStore.LoadBansAsync(session)).IsBanned(ownerId))
+            {
+                return "That player is banned. Unban them first if they should get back in.";
+            }
+        }
+
+        return await WithUserAsync(ownerId, async (users, user) =>
+        {
+            var password = TemporaryPassword();
+            var token = await users.GeneratePasswordResetTokenAsync(user);
+            var result = await users.ResetPasswordAsync(user, token, password);
+            if (!result.Succeeded)
+            {
+                return $"Couldn't reset the password: {string.Join(" ", result.Errors.Select(e => e.Description))}";
+            }
+
+            await users.ResetAccessFailedCountAsync(user);
+            await users.SetLockoutEndDateAsync(user, null); // lift a lockout from their wrong guesses (bans are refused above)
+            return $"Temporary password for {user.Email}: {password} (shown once; give it to them privately).";
+        });
+    }
+
+    /// <summary>The same, for any account by email, including players with no mage this round.</summary>
+    public async Task<string> ResetPasswordByEmailAsync(string email)
+    {
+        using var scope = scopes.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        return await users.FindByEmailAsync(email.Trim()) is { Id: { } ownerId }
+            ? await ResetPasswordAsync(ownerId)
+            : "No account has that email.";
+    }
+
+    /// <summary>
+    /// Three groups of four letters and digits separated by dashes, e.g. "Kq7m-Pz2r-Hb9w": easy to read out, and it
+    /// meets Identity's rules (upper, lower, digit and a symbol). Leaves out look-alikes such as 0/O and 1/l/I.
+    /// </summary>
+    public static string TemporaryPassword()
+    {
+        const string upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const string lower = "abcdefghijkmnopqrstuvwxyz";
+        const string digits = "23456789";
+        var groups = new string[3];
+        for (var g = 0; g < groups.Length; g++)
+        {
+            groups[g] = string.Concat(
+                Pick(upper), Pick(lower), Pick(digits), Pick(lower));
+        }
+
+        return string.Join('-', groups);
+
+        static char Pick(string from) => from[RandomNumberGenerator.GetInt32(from.Length)];
     }
 
     public async Task<string> UnbanAsync(string ownerId)
