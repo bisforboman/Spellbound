@@ -4,6 +4,9 @@
     <a class="brand" href="">Spellbound</a>
     <AuthorizeView>
         <Authorized>
+            <AuthorizeView Policy="@AdminPolicy.Name" Context="admin">
+                <a href="admin">Admin</a>
+            </AuthorizeView>
             <a href="Account/Manage">Account</a>
             <form action="Account/Logout" method="post">
                 <AntiforgeryToken />

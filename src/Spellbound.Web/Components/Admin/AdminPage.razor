@@ -1,0 +1,175 @@
+@page "/admin"
+@attribute [Authorize(Policy = AdminPolicy.Name)]
+@using System.Globalization
+@using System.Security.Claims
+@inject AdminService Admin
+@inject GameService Game
+
+<PageTitle>Admin</PageTitle>
+<h1>Admin</h1>
+
+@if (status is not null)
+{
+    <p class="alert alert-info" role="status">@status</p>
+}
+
+<h2 class="h4">Round</h2>
+@if (round is null)
+{
+    <p class="text-muted">No round has started yet.</p>
+}
+else
+{
+    <table class="table stats">
+        <tbody>
+            <tr><th>Round</th><td>@round.Number</td></tr>
+            <tr><th>Started</th><td>@Utc(round.StartsAt)</td></tr>
+            <tr><th>Ends</th><td>@Utc(round.EndsAt)</td></tr>
+        </tbody>
+    </table>
+
+    <form @onsubmit="ChangeEndAsync">
+        <label class="form-label" for="ends">New end (UTC)</label>
+        <input id="ends" type="datetime-local" class="form-control form-control-lg" @bind="newEnd" />
+        <button type="submit" class="btn btn-primary btn-lg w-100 mt-2" disabled="@busy">Change end</button>
+    </form>
+
+    @if (!confirmEnd)
+    {
+        <button type="button" class="btn btn-outline-danger btn-lg w-100 mt-3" disabled="@busy" @onclick="() => confirmEnd = true">End round @round.Number now…</button>
+    }
+    else
+    {
+        <div class="alert alert-warning mt-3">
+            <p>This records the hall of fame and starts round @(round.Number + 1). Every player starts over. It can't be undone.</p>
+            <button type="button" class="btn btn-danger btn-lg w-100" disabled="@busy" @onclick="EndNowAsync">Yes, end round @round.Number now</button>
+            <button type="button" class="btn btn-link w-100" @onclick="() => confirmEnd = false">Cancel</button>
+        </div>
+    }
+}
+
+<h2 class="h4 mt-4">Players</h2>
+@if (players.Count == 0)
+{
+    <p class="text-muted">Nobody has a mage this round.</p>
+}
+@foreach (var player in players)
+{
+    <div class="admin-player">
+        <div>
+            <b>@(player.Mage?.Name ?? "(no mage this round)")</b>
+            @if (player.Mage is not null)
+            {
+                <span class="text-muted"> · @player.Mage.School · @N(player.Mage.Land) acres</span>
+            }
+            <small class="text-muted d-block">@(player.Email ?? player.OwnerId)</small>
+        </div>
+
+        @if (player.Ban is { } ban)
+        {
+            <p class="text-danger mb-1">Banned @Utc(ban.At) by @ban.By: @ban.Reason</p>
+            <button type="button" class="btn btn-outline-secondary w-100" disabled="@busy" @onclick="() => UnbanAsync(player.OwnerId)">Unban</button>
+        }
+        else if (banning == player.OwnerId)
+        {
+            <label class="form-label" for="reason">Reason</label>
+            <input id="reason" class="form-control" maxlength="@AdminService.MaxReasonLength" @bind="reason" @bind:event="oninput" />
+            <button type="button" class="btn btn-danger w-100 mt-2" disabled="@(busy || string.IsNullOrWhiteSpace(reason))" @onclick="() => BanAsync(player.OwnerId)">Confirm ban</button>
+            <button type="button" class="btn btn-link w-100" @onclick="() => banning = null">Cancel</button>
+        }
+        else if (player.OwnerId != adminOwnerId)
+        {
+            <button type="button" class="btn btn-outline-danger w-100" disabled="@busy" @onclick="() => { banning = player.OwnerId; reason = string.Empty; }">Ban…</button>
+        }
+    </div>
+}
+
+<h2 class="h4 mt-4">Game rules</h2>
+<p class="text-muted">
+    Set in the <code>GameRules</code> section of <code>appsettings.json</code>, or as environment variables such as
+    <code>GameRules__MaxTurns</code>. Restart the app to apply. Unit and spell stats are in the code.
+</p>
+<table class="table table-sm stats">
+    <tbody>
+        @foreach (var property in typeof(GameRules).GetProperties().Where(p => p.GetMethod?.IsStatic == false))
+        {
+            <tr><th>@property.Name</th><td>@Format(property.GetValue(Game.Rules))</td></tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private string adminOwnerId = string.Empty;
+    private string adminEmail = string.Empty;
+    private Round? round;
+    private IReadOnlyList<AdminPlayer> players = [];
+    private DateTime newEnd;
+    private bool confirmEnd;
+    private string? banning;
+    private string reason = string.Empty;
+    private string? status;
+    private bool busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthState).User;
+        adminOwnerId = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        adminEmail = user.Identity?.Name ?? string.Empty;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        round = await Game.GetRoundAsync();
+        players = await Admin.GetPlayersAsync();
+        if (round is not null)
+        {
+            newEnd = round.EndsAt.UtcDateTime;
+        }
+    }
+
+    private Task ChangeEndAsync() =>
+        RunAsync(() => Admin.ChangeRoundEndAsync(new DateTimeOffset(DateTime.SpecifyKind(newEnd, DateTimeKind.Utc))));
+
+    private Task EndNowAsync() => RunAsync(() => Admin.ChangeRoundEndAsync(Game.Now));
+
+    private Task BanAsync(string ownerId) => RunAsync(() => Admin.BanAsync(adminOwnerId, adminEmail, ownerId, reason));
+
+    private Task UnbanAsync(string ownerId) => RunAsync(() => Admin.UnbanAsync(ownerId));
+
+    private async Task RunAsync(Func<Task<string>> action)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            status = await action();
+            confirmEnd = false;
+            banning = null;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private static string Utc(DateTimeOffset at) => at.UtcDateTime.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture);
+
+    private static string N(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
+
+    private static string Format(object? value) => value switch
+    {
+        int i => N(i),
+        double d => d.ToString(CultureInfo.InvariantCulture),
+        TimeSpan t => t.ToString("c", CultureInfo.InvariantCulture),
+        _ => value?.ToString() ?? string.Empty,
+    };
+}

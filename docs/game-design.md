@@ -131,6 +131,12 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 - **Everything resets:** every player creates a new mage with the starting values, and news starts empty.
   Accounts carry over; mages, armies and spells don't.
 - The overview shows the round number and the time left. Past rounds are on the Hall of fame page.
+- An admin can move the current round's end, or end it now (which runs the reset at once).
+
+## Bans (milestone 3)
+
+An admin can ban a player with a reason. A banned player can't sign in or act, their mage disappears from Rivals and
+can't be targeted, and they're left out of the hall of fame. Unbanning restores all of it; the mage is untouched.
 
 ## Later (not designed yet)
 

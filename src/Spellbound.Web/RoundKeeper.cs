@@ -37,14 +37,32 @@ public sealed class RoundKeeper(IDocumentStore store, TimeProvider time, GameRul
             return ended;
         }
 
-        var mages = await RavenSetup.LoadRoundMagesAsync(session, ended.Number);
-        var fame = HallOfFame.Record(ended, [.. mages], rules);
+        var bans = await RavenSetup.LoadBansAsync(session);
+        var mages = (await RavenSetup.LoadRoundMagesAsync(session, ended.Number)).Where(m => !bans.IsBanned(m.OwnerId)).ToList();
+        var fame = HallOfFame.Record(ended, mages, rules);
         await session.StoreAsync(fame, changeVector: string.Empty, RavenSetup.HallOfFameKey(ended.Number), cancellationToken);
         current.Round = ended.Next(now, rules);
         return await SaveAsync(
             session,
             current.Round,
             $"Round {ended.Number} ended with {mages.Count} mages. Round {current.Round.Number} started, ends {current.Round.EndsAt:u}.");
+    }
+
+    /// <summary>Moves the current round's end. An end at or before now ends the round right away (with its reset).</summary>
+    public async Task<Round> ChangeEndAsync(DateTimeOffset endsAt, CancellationToken cancellationToken = default)
+    {
+        using (var session = store.OpenAsyncSession())
+        {
+            session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
+            var current = await session.LoadAsync<CurrentRound>(RavenSetup.CurrentRoundKey, cancellationToken)
+                          ?? throw new InvalidOperationException("No round has started yet.");
+            var old = current.Round.EndsAt;
+            current.Round = current.Round.WithEnd(endsAt);
+            await session.SaveChangesAsync(cancellationToken); // a reset racing this one makes it throw: try again
+            logger.LogInformation("Round {Number} end moved from {Old:u} to {New:u}.", current.Round.Number, old, endsAt);
+        }
+
+        return await TickAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

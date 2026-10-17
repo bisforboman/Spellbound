@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Raven.Client.Documents;
@@ -54,6 +55,11 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IRandomSource, SharedRandom>();
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<RoundKeeper>();
+builder.Services.AddSingleton<AdminService>();
+
+builder.Services.AddSingleton<IAuthorizationHandler, AdminHandler>();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AdminPolicy.Name, policy => policy.RequireAuthenticatedUser().AddRequirements(new AdminRequirement()));
 builder.Services.AddHostedService(sp => sp.GetRequiredService<RoundKeeper>());
 
 var app = builder.Build();
