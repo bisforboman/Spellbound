@@ -22,34 +22,34 @@ Land by day:
 
 | Player | Strategy | Checks in | Land | Networth | Units | Upkeep / income | Turns lost at the cap |
 |---|---|---|---:|---:|---:|---:|---:|
-| Warmonger-3x | economy + knights + attacks when it beats exploring | 3× a day | 10,784 | 392,882 | 29,009 | 97% (peak 102%) | 0 (0%) |
-| Warmonger-1x | economy + knights + attacks when it beats exploring | once a day | 6,098 | 208,408 | 14,621 | 91% (peak 105%) | 60 (0%) |
-| Turtle-3x | economy + militia (1/acre) + barrier | 3× a day | 3,565 | 67,383 | 3,497 | 11% (peak 12%) | 0 (0%) |
-| Builder-3x | economy only | 3× a day | 3,558 | 53,370 | 0 | 0% (peak 0%) | 0 (0%) |
-| Builder-1x | economy only | once a day | 3,438 | 51,570 | 0 | 0% (peak 0%) | 60 (0%) |
+| Warmonger-3x | economy + knights + attacks when it beats exploring | 3× a day | 5,338 | 146,180 | 8,280 | 58% (peak 105%) | 0 (0%) |
+| Warmonger-1x | economy + knights + attacks when it beats exploring | once a day | 4,717 | 142,065 | 8,925 | 68% (peak 108%) | 60 (0%) |
+| Turtle-3x | economy + militia (1/acre) + barrier | 3× a day | 5,439 | 103,029 | 5,381 | 11% (peak 12%) | 0 (0%) |
+| Builder-1x | economy only | once a day | 6,053 | 90,795 | 0 | 0% (peak 0%) | 60 (0%) |
+| Builder-3x | economy only | 3× a day | 5,973 | 89,585 | 0 | 0% (peak 0%) | 0 (0%) |
 | Idle | signs up, never plays | never | 250 | 1,850 | 0 | 0% (peak 0%) | 6,580 (96%) |
 
 Land by day:
 
 | Player | Day 1 | Day 3 | Day 7 | Day 14 | Day 21 | Day 28 |
 |---|---:|---:|---:|---:|---:|---:|
-| Builder-3x | 904 | 1,485 | 1,888 | 2,119 | 2,794 | 3,558 |
-| Builder-1x | 779 | 1,434 | 1,911 | 2,249 | 2,953 | 3,438 |
-| Turtle-3x | 818 | 1,414 | 1,607 | 1,941 | 2,808 | 3,565 |
-| Warmonger-3x | 860 | 1,413 | 3,070 | 6,290 | 8,903 | 10,784 |
-| Warmonger-1x | 773 | 1,365 | 1,830 | 3,584 | 4,542 | 6,098 |
+| Builder-3x | 904 | 1,485 | 1,984 | 3,330 | 4,675 | 5,973 |
+| Builder-1x | 779 | 1,434 | 2,012 | 3,384 | 4,746 | 6,053 |
+| Turtle-3x | 818 | 1,414 | 1,883 | 3,143 | 4,340 | 5,439 |
+| Warmonger-3x | 860 | 1,413 | 2,097 | 3,287 | 4,505 | 5,338 |
+| Warmonger-1x | 773 | 1,365 | 2,670 | 3,469 | 4,058 | 4,717 |
 | Idle | 250 | 250 | 250 | 250 | 250 | 250 |
 
 Attacks (all won by the attacker, who only attacks when sure to win):
 
 | Attacker | Target | Attacks | Acres taken | Most attacks in one day | First day | Last day |
 |---|---|---:|---:|---:|---:|---:|
-| Warmonger-3x | Warmonger-1x | 50 | 9,631 | 8 | 4 | 27 |
-| Warmonger-1x | Builder-1x | 31 | 3,164 | 6 | 4 | 28 |
-| Warmonger-1x | Builder-3x | 26 | 2,774 | 5 | 4 | 27 |
-| Warmonger-3x | Builder-3x | 21 | 459 | 4 | 4 | 9 |
-| Warmonger-1x | Warmonger-3x | 20 | 3,334 | 8 | 4 | 24 |
-| Warmonger-1x | Turtle-3x | 19 | 2,488 | 5 | 4 | 27 |
-| Warmonger-3x | Builder-1x | 14 | 281 | 3 | 4 | 8 |
-| Warmonger-3x | Turtle-3x | 11 | 387 | 6 | 4 | 6 |
+| Warmonger-1x | Warmonger-3x | 59 | 2,318 | 5 | 4 | 28 |
+| Warmonger-3x | Warmonger-1x | 55 | 2,631 | 7 | 4 | 26 |
+| Warmonger-3x | Turtle-3x | 48 | 639 | 4 | 4 | 28 |
+| Warmonger-3x | Builder-3x | 42 | 665 | 4 | 4 | 28 |
+| Warmonger-3x | Builder-1x | 36 | 464 | 4 | 4 | 28 |
+| Warmonger-1x | Builder-1x | 27 | 367 | 3 | 4 | 28 |
+| Warmonger-1x | Builder-3x | 20 | 153 | 2 | 4 | 28 |
+| Warmonger-1x | Turtle-3x | 9 | 95 | 2 | 4 | 25 |
 

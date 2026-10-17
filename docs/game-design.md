@@ -91,7 +91,7 @@ An attack costs **4 turns** and resolves in the first of them; the 4 turns then 
 - **Power:** attack = your units' attack × school counter (×1.15 if your school is strong against theirs, ×0.85 if
   weak) × luck. Defense = their defense × luck. Luck is a roll between ×0.9 and ×1.1 for each side.
 - **Win** (attack > defense): you take **10%** of their land (at least 1 acre), halved for every battle they have lost
-  in the last **24 hours**, to anyone: 10%, then 5%, then 2.5%. Each loss is forgotten a day after it happened. Battles
+  in the last **72 hours**, to anyone: 10%, then 5%, then 2.5%. Each loss is forgotten three days after it happened. Battles
   they held don't count. The target's page shows the share a win would take now. Taken land comes from their free acres
   first; if that's not enough, buildings on it are destroyed, split between nodes and towns by how many they have.
   The land arrives as free acres for you.
@@ -154,8 +154,8 @@ A simulation of a full round answers several of these with numbers, and proposes
 [balance.md](balance.md).
 
 - Should we add population or peasants, or keep the economy as just land and buildings?
-- Does the repeat-attack rule need a longer memory (72 hours did much better in the simulation), or a limit on how
-  often one mage can be attacked, since 1-acre attacks still cost the defender units? See [balance.md](balance.md).
+- Should there be a limit on how often one mage can be attacked, since tiny attacks still cost the defender units?
+  See [balance.md](balance.md).
 - Is upkeep too harsh, or too light? In the simulation attackers spend nearly all their income on it and still win,
   because stolen land pays for it. Revisit after the repeat-attack question.
 - Should there be a break between rounds, or an end-of-round event in the last days (for example, double land taken)?

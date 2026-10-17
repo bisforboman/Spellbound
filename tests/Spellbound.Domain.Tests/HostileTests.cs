@@ -155,7 +155,7 @@ public class HostileTests
     }
 
     [Fact]
-    public void Each_battle_lost_in_the_last_day_halves_the_land_the_next_win_takes()
+    public void Each_battle_lost_in_the_window_halves_the_land_the_next_win_takes()
     {
         var attacker = Attacker();
         var defender = NewMage("Morgana", MagicSchool.Tidal);
@@ -168,24 +168,31 @@ public class HostileTests
         Assert.Equal("You attacked Morgana and broke through, taking 11 acres.", second.Report.Lines[0]); // 5% of 225
         Assert.Equal("You attacked Morgana and broke through, taking 5 acres.", third.Report.Lines[0]); // 2.5% of 214
         Assert.Contains(
-            "They had already been beaten 2 times in the last day, so you took only 2.5% of their land.", third.Report.Lines);
+            "They had already been beaten 2 times in the last 3 days, so you took only 2.5% of their land.", third.Report.Lines);
         Assert.Contains(
-            "You had already been beaten 2 times in the last day, so they took only 2.5% of your land.", third.TargetLines);
+            "You had already been beaten 2 times in the last 3 days, so they took only 2.5% of your land.", third.TargetLines);
         Assert.Equal(1.25, defender.LandTakenPercent(T0, Rules), 3);
     }
 
     [Fact]
-    public void A_loss_more_than_a_day_old_is_forgotten()
+    public void A_loss_older_than_the_window_is_forgotten()
     {
         var attacker = Attacker();
         var defender = NewMage("Morgana", MagicSchool.Tidal);
 
         attacker.Attack(defender, T0, Rules, Even);
-        var dayLater = attacker.Attack(defender, T0.AddHours(25), Rules, Even);
+        var later = attacker.Attack(defender, T0.AddHours(73), Rules, Even); // the window is 72 hours
 
-        Assert.Equal("You attacked Morgana and broke through, taking 22 acres.", dayLater.Report.Lines[0]); // 10% of 225
+        Assert.Equal("You attacked Morgana and broke through, taking 22 acres.", later.Report.Lines[0]); // 10% of 225
         Assert.Single(defender.RecentLosses); // the old one was dropped when the new one was recorded
     }
+
+    [Theory]
+    [InlineData(24, "the last day")]
+    [InlineData(72, "the last 3 days")]
+    [InlineData(12, "the last 12 hours")]
+    public void The_window_is_described_in_words(int hours, string expected) =>
+        Assert.Equal(expected, Mage.RepeatAttackWindowText(Rules with { RepeatAttackWindow = TimeSpan.FromHours(hours) }));
 
     [Fact]
     public void A_battle_the_defender_held_does_not_count()

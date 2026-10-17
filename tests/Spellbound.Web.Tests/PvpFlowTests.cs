@@ -78,7 +78,7 @@ public sealed class PvpFlowTests : SpellboundTestDriver, IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_second_win_in_a_day_takes_half_as_much_land_after_a_save()
+    public async Task A_second_win_soon_after_takes_half_as_much_land_after_a_save()
     {
         var defenderId = await CreateBothAsync();
         await Game.RecruitAsync(Attacker, "knights", 400);

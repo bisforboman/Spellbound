@@ -28,16 +28,17 @@ The conclusions hold across seeds 1–3; the exact numbers move a few percent.
 
 ## Changes adopted after the first run
 
-The first run (rules as of PR #13) found four problems. The owner adopted three proposals:
+The first run (rules as of PR #13) found four problems. The owner adopted three proposals (PR #14), and after the
+second run a 72-hour memory for the repeat-attack rule:
 
 | Problem in the first run | Change |
 |---|---|
-| Peers farmed each other: one warmonger hit another 29 times, up to 5 times a day, taking 12,771 acres | Each battle a mage lost in the last 24 hours, to anyone, halves the land the next win takes (10%, 5%, 2.5%, …) |
+| Peers farmed each other: one warmonger hit another 29 times, up to 5 times a day, taking 12,771 acres | Each battle a mage lost in the last 24 hours, to anyone, halves the land the next win takes (10%, 5%, 2.5%, …); later 72 hours |
 | Protection lasted hours: the first attacks came on day 1 | New mages are also protected for 72 hours |
 | Checking in once a day lost 1,180 turns (17%) at the 200-turn cap | The turn cap is 240, one day of turns |
 | Upkeep didn't limit attackers (95–100% of income, still winning) | No change, as proposed: revisit after the others |
 
-## Second run: what changed (seed 7)
+## Second run: what changed (seed 7, 24-hour memory)
 
 | | First run | Second run |
 |---|---:|---:|
@@ -84,11 +85,12 @@ The halving shrinks the land, not the attack. Every lost battle still costs the 
 hostile news alert. A mage that only takes 1–10 acres per hit can still strip a defender's army and flood their news.
 Real players may also do it on purpose, to grief.
 
-### 4. A 72-hour memory does much better
+### 4. A 72-hour memory does much better (adopted)
 
-Tried by changing only `RepeatAttackWindow` to 72 hours (seeds 7, 1 and 2):
+Tried by changing only `RepeatAttackWindow` to 72 hours (seeds 7, 1 and 2), and then made the default. The current
+[balance-results.md](balance-results.md) is this run:
 
-| | 24 hours (adopted) | 72 hours |
+| | 24 hours | 72 hours (now the default) |
 |---|---:|---:|
 | Warmongers | 5,726–11,607 | 4,346–6,482 |
 | Turtle | 3,565–3,739 | 5,423–5,489 |
@@ -102,11 +104,12 @@ helped less: builders 3,835–4,148, warmongers 7,025–8,652.
 
 These change rules, so they need the owner's decision.
 
-1. **Raise `RepeatAttackWindow` to 72 hours.** A one-line `GameRules` change; the simulation says it ends attack
-   dominance without ending attacks. It does make a mage that has been beaten once a poor target for three days.
-2. **Limit the cost of tiny attacks.** For example, a defender loses no units when the take is below 1% of its land,
-   or a mage can be attacked at most N times a day. Wait for 1 before choosing.
-3. **Keep upkeep as it is.** Revisit if attackers still dominate after 1.
+1. **Limit the cost of tiny attacks.** With a 72-hour memory the bots attack all round for little land (one
+   warmonger hit the other 55 times for 2,631 acres), and every hit still costs the defender 10% of its units and sends
+   an alert. For example, a defender loses no units when the take is below 1% of its land, or a mage can be attacked
+   at most N times a day. Best decided with real players' data: real players may not bother with 40-acre attacks.
+2. **Keep upkeep as it is.** With a 72-hour memory the warmongers no longer run away with the round, and their upkeep peaks
+   above their income.
 
 ## Not answered by the simulation
 

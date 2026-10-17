@@ -43,7 +43,7 @@ else if (Mage is not null && rival is not null)
     <p>
         Your attack power is <b>@N(Mage.AttackPower)</b>. Their army is unknown; their land's guards alone give
         @N(rival.Land * Rules.BaseDefensePerAcre) defense. Luck moves both sides by up to @((int)(Rules.CombatRollSpread * 100))%.
-        A win takes <b>@rival.LandTakenPercent(Game.Now, Rules).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%</b> of their land@(rival.LossesInWindow(Game.Now, Rules) is > 0 and var losses ? $" (less than the usual {Rules.LandTakenPercent}%: they've been beaten {(losses == 1 ? "once" : $"{losses} times")} in the last day)" : "").
+        A win takes <b>@rival.LandTakenPercent(Game.Now, Rules).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%</b> of their land@(rival.LossesInWindow(Game.Now, Rules) is > 0 and var losses ? $" (less than the usual {Rules.LandTakenPercent}%: they've been beaten {(losses == 1 ? "once" : $"{losses} times")} in {Mage.RepeatAttackWindowText(Rules)})" : "").
     </p>
     <p class="cost">Cost: <b>@Turns(Rules.AttackTurnCost)</b>. You lose @Rules.AttackerLossPercentOnWin% of your units if you win, @Rules.AttackerLossPercentOnLoss% if you lose.</p>
     <button type="button" class="btn btn-danger btn-lg w-100" disabled="@(Busy || problem is not null || Mage.AttackPower == 0)"
