@@ -2,17 +2,17 @@ using System.Reflection;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
 using Raven.Embedded;
-using Spellbound.Domain;
 
-namespace Spellbound.Web.Data;
+namespace Spellbound.Web.Hosting;
 
-public static class RavenSetup
+/// <summary>The hosting side of the database: conventions, licence, and the keys of the documents it owns.</summary>
+public static class HostStore
 {
     public static DocumentConventions Conventions() => new() { FindIdentityProperty = IsDocumentKey };
 
     /// <summary>
-    /// Only string <c>Id</c> properties are document keys. Mage keeps its Guid Id as plain data
-    /// and is stored under <see cref="MageKey"/>.
+    /// Only string <c>Id</c> properties are document keys. Other <c>Id</c>s (such as a Guid) stay plain data, and
+    /// their documents are stored under keys the owner chooses.
     /// </summary>
     public static bool IsDocumentKey(MemberInfo member) =>
         member is PropertyInfo { Name: "Id" } property && property.PropertyType == typeof(string);
@@ -40,8 +40,6 @@ public static class RavenSetup
     /// <summary>Points at the round being played; see <see cref="CurrentRound"/>.</summary>
     public const string CurrentRoundKey = "rounds/current";
 
-    public const string HallOfFamePrefix = "halloffame/";
-
     public const string BansKey = "admin/bans";
 
     public const string SecretsKey = "admin/secrets";
@@ -50,28 +48,6 @@ public static class RavenSetup
 
     public static string SignalKey(string ownerId) => $"{SignalPrefix}{ownerId}";
 
-    /// <summary>One mage per player per round: the round and owner id are the key, so a second mage can't be stored.</summary>
-    public static string MageKey(int round, string ownerId) => $"{MagePrefix(round)}{ownerId}";
-
-    public static string MagePrefix(int round) => $"mages/{round}/";
-
-    public static string NewsKey(int round, string ownerId) => $"news/{round}/{ownerId}";
-
-    public static string HallOfFameKey(int round) => $"{HallOfFamePrefix}{round}";
-
     public static async Task<BanList> LoadBansAsync(IAsyncDocumentSession session) =>
         await session.LoadAsync<BanList>(BansKey) ?? new BanList();
-
-    /// <summary>Every mage of a round, read by key prefix: consistent and needs no index.</summary>
-    public static async Task<IReadOnlyList<Mage>> LoadRoundMagesAsync(IAsyncDocumentSession session, int round)
-    {
-        var mages = new List<Mage>();
-        await using var stream = await session.Advanced.StreamAsync<Mage>(startsWith: MagePrefix(round));
-        while (await stream.MoveNextAsync())
-        {
-            mages.Add(stream.Current.Document);
-        }
-
-        return mages;
-    }
 }

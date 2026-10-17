@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Spellbound.Web.Components.Account.Pages;
 using Spellbound.Web.Components.Account.Pages.Manage;
-using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
 
 namespace Microsoft.AspNetCore.Routing;
 

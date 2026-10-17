@@ -3,7 +3,8 @@
 @using System.Globalization
 @using System.Security.Claims
 @inject AdminService Admin
-@inject GameService Game
+@inject TimeProvider Time
+@inject Microsoft.Extensions.Options.IOptions<AdminPageOptions> Sections
 
 <PageTitle>Admin</PageTitle>
 <h1>Admin</h1>
@@ -68,10 +69,10 @@ else
 {
     <div class="admin-player">
         <div>
-            <b>@(player.Mage?.Name ?? "(no mage this round)")</b>
-            @if (player.Mage is not null)
+            <b>@(player.Player?.Name ?? "(not playing this round)")</b>
+            @if (player.Player is not null)
             {
-                <span class="text-muted"> · @player.Mage.School · @N(player.Mage.Land) acres</span>
+                <span class="text-muted"> · @player.Player.Details</span>
             }
             <small class="text-muted d-block">@(player.Email ?? player.OwnerId)</small>
         </div>
@@ -112,7 +113,7 @@ else
             @foreach (var player in network.Players)
             {
                 <li>
-                    @(player.Email ?? player.OwnerId)@(player.Mage is { } mage ? $" · {mage.Name}, {N(mage.Land)} acres" : " · no mage this round")
+                    @(player.Email ?? player.OwnerId)@(player.Player is { } summary ? $" · {summary.Name}, {summary.Details}" : " · not playing this round")
                     @if (player.Ban is not null)
                     {
                         <span class="text-danger"> · banned</span>
@@ -123,19 +124,10 @@ else
     </div>
 }
 
-<h2 class="h4 mt-4">Game rules</h2>
-<p class="text-muted">
-    Set in the <code>GameRules</code> section of <code>appsettings.json</code>, or as environment variables such as
-    <code>GameRules__MaxTurns</code>. Restart the app to apply. Unit and spell stats are in the code.
-</p>
-<table class="table table-sm stats">
-    <tbody>
-        @foreach (var property in typeof(GameRules).GetProperties().Where(p => p.GetMethod?.IsStatic == false))
-        {
-            <tr><th>@property.Name</th><td>@Format(property.GetValue(Game.Rules))</td></tr>
-        }
-    </tbody>
-</table>
+@foreach (var section in Sections.Value.GameSections)
+{
+    <DynamicComponent Type="section" />
+}
 
 @code {
     [CascadingParameter]
@@ -163,7 +155,7 @@ else
 
     private async Task LoadAsync()
     {
-        round = await Game.GetRoundAsync();
+        round = await Admin.GetRoundAsync();
         players = await Admin.GetPlayersAsync();
         sharedNetworks = await Admin.GetSharedNetworksAsync();
         if (round is not null)
@@ -175,7 +167,7 @@ else
     private Task ChangeEndAsync() =>
         RunAsync(() => Admin.ChangeRoundEndAsync(new DateTimeOffset(DateTime.SpecifyKind(newEnd, DateTimeKind.Utc))));
 
-    private Task EndNowAsync() => RunAsync(() => Admin.ChangeRoundEndAsync(Game.Now));
+    private Task EndNowAsync() => RunAsync(() => Admin.ChangeRoundEndAsync(Time.GetUtcNow()));
 
     private Task BanAsync(string ownerId) => RunAsync(() => Admin.BanAsync(adminOwnerId, adminEmail, ownerId, reason));
 
@@ -207,12 +199,4 @@ else
     private static string Utc(DateTimeOffset at) => at.UtcDateTime.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture);
 
     private static string N(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
-
-    private static string Format(object? value) => value switch
-    {
-        int i => N(i),
-        double d => d.ToString(CultureInfo.InvariantCulture),
-        TimeSpan t => t.ToString("c", CultureInfo.InvariantCulture),
-        _ => value?.ToString() ?? string.Empty,
-    };
 }

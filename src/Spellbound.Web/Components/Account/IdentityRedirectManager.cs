@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
-using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Components.Account;
 

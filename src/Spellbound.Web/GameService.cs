@@ -4,6 +4,7 @@ using Raven.Client.Documents.Session;
 using Raven.Client.Exceptions;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web;
 
@@ -39,7 +40,7 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return null;
         }
 
-        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, ownerId));
+        var mage = await session.LoadAsync<Mage>(GameKeys.MageKey(round.Number, ownerId));
         mage?.AccrueTurns(Now, rules);
         return mage;
     }
@@ -52,7 +53,7 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return [];
         }
 
-        var log = await session.LoadAsync<NewsLog>(RavenSetup.NewsKey(round.Number, ownerId));
+        var log = await session.LoadAsync<NewsLog>(GameKeys.NewsKey(round.Number, ownerId));
         return log?.Entries ?? [];
     }
 
@@ -65,7 +66,7 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return 0;
         }
 
-        var key = RavenSetup.NewsKey(round.Number, ownerId);
+        var key = GameKeys.NewsKey(round.Number, ownerId);
         var log = await session.LoadAsync<NewsLog>(key);
         if (log is not { Unseen: > 0 })
         {
@@ -90,8 +91,8 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return [];
         }
 
-        var bans = await RavenSetup.LoadBansAsync(session);
-        return [.. (await RavenSetup.LoadRoundMagesAsync(session, round.Number)).Where(m => !bans.IsBanned(m.OwnerId))];
+        var bans = await HostStore.LoadBansAsync(session);
+        return [.. (await GameKeys.LoadRoundMagesAsync(session, round.Number)).Where(m => !bans.IsBanned(m.OwnerId))];
     }
 
     /// <summary>Another mage in the current round by its public id (never the owner id, which is an account key).</summary>
@@ -105,8 +106,8 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
 
         var mage = await session.Query<Mage>().Where(m => m.Id == mageId).FirstOrDefaultAsync();
         return mage is not null
-               && session.Advanced.GetDocumentId(mage).StartsWith(RavenSetup.MagePrefix(round.Number), StringComparison.Ordinal)
-               && !(await RavenSetup.LoadBansAsync(session)).IsBanned(mage.OwnerId)
+               && session.Advanced.GetDocumentId(mage).StartsWith(GameKeys.MagePrefix(round.Number), StringComparison.Ordinal)
+               && !(await HostStore.LoadBansAsync(session)).IsBanned(mage.OwnerId)
             ? mage
             : null;
     }
@@ -116,7 +117,7 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
     {
         using var session = store.OpenAsyncSession();
         var all = new List<HallOfFame>();
-        await using var stream = await session.Advanced.StreamAsync<HallOfFame>(startsWith: RavenSetup.HallOfFamePrefix);
+        await using var stream = await session.Advanced.StreamAsync<HallOfFame>(startsWith: GameKeys.HallOfFamePrefix);
         while (await stream.MoveNextAsync())
         {
             all.Add(stream.Current.Document);
@@ -145,14 +146,14 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return closed;
         }
 
-        if ((await RavenSetup.LoadBansAsync(session)).IsBanned(ownerId))
+        if ((await HostStore.LoadBansAsync(session)).IsBanned(ownerId))
         {
             return Banned;
         }
 
         var mage = Mage.Create(ownerId, trimmed, school, now, rules);
         // An empty change vector means the key must not exist yet: one mage per player per round.
-        await session.StoreAsync(mage, changeVector: string.Empty, RavenSetup.MageKey(round.Number, ownerId));
+        await session.StoreAsync(mage, changeVector: string.Empty, GameKeys.MageKey(round.Number, ownerId));
         try
         {
             await session.SaveChangesAsync();
@@ -197,13 +198,13 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return closed;
         }
 
-        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, ownerId));
+        var mage = await session.LoadAsync<Mage>(GameKeys.MageKey(round.Number, ownerId));
         if (mage is null)
         {
             return ActionReport.Fail("You don't have a mage yet.");
         }
 
-        var bans = await RavenSetup.LoadBansAsync(session);
+        var bans = await HostStore.LoadBansAsync(session);
         if (bans.IsBanned(ownerId))
         {
             return Banned;
@@ -235,13 +236,13 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return closed;
         }
 
-        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, ownerId));
+        var mage = await session.LoadAsync<Mage>(GameKeys.MageKey(round.Number, ownerId));
         if (mage is null)
         {
             return ActionReport.Fail("You don't have a mage yet.");
         }
 
-        var bans = await RavenSetup.LoadBansAsync(session);
+        var bans = await HostStore.LoadBansAsync(session);
         if (bans.IsBanned(ownerId))
         {
             return Banned;
@@ -255,7 +256,7 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             .FirstOrDefaultAsync();
         var target = targetOwner is null ? null
             : targetOwner == ownerId ? mage
-            : await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, targetOwner));
+            : await session.LoadAsync<Mage>(GameKeys.MageKey(round.Number, targetOwner));
         if (target is null || target.Id != targetId || bans.IsBanned(target.OwnerId))
         {
             return ActionReport.Fail("There is no such mage this round.");
@@ -273,7 +274,7 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
     }
 
     private static async Task<Round?> CurrentRoundAsync(IAsyncDocumentSession session) =>
-        (await session.LoadAsync<CurrentRound>(RavenSetup.CurrentRoundKey))?.Round;
+        (await session.LoadAsync<CurrentRound>(HostStore.CurrentRoundKey))?.Round;
 
     /// <summary>Why nobody can act right now (no round yet, or the round is over and waiting for its reset).</summary>
     private static ActionReport? ClosedReason(Round? current, DateTimeOffset now, out Round round)
@@ -286,7 +287,7 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
 
     private static async Task AddNewsAsync(IAsyncDocumentSession session, int round, string ownerId, NewsEntry entry)
     {
-        var newsKey = RavenSetup.NewsKey(round, ownerId);
+        var newsKey = GameKeys.NewsKey(round, ownerId);
         var news = await session.LoadAsync<NewsLog>(newsKey);
         if (news is null)
         {

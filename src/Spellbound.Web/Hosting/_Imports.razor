@@ -1,0 +1,11 @@
+@* Hosting is reusable and must not depend on the game: no Spellbound.Domain or game namespaces here (Round is the one
+   shared type, see HostingBoundaryTests). *@
+@using System.Net.Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using Spellbound.Web.Hosting
+@using Round = Spellbound.Domain.Round

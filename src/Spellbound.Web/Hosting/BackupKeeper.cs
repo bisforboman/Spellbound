@@ -1,9 +1,8 @@
 using System.Globalization;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Smuggler;
-using Spellbound.Web.Data;
 
-namespace Spellbound.Web;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// Nightly backups: exports the whole database (game data and accounts) to a dump file in Backup:Directory once a day
@@ -14,7 +13,8 @@ namespace Spellbound.Web;
 public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfiguration configuration, ILogger<BackupKeeper> logger)
     : BackgroundService
 {
-    public const string FilePrefix = "spellbound-";
+    /// <summary>Start of every backup file's name (Backup:FilePrefix); the game sets its own, e.g. "spellbound-".</summary>
+    public string FilePrefix => configuration["Backup:FilePrefix"] is { Length: > 0 } prefix ? prefix : "backup-";
     public const string FileExtension = ".ravendbdump";
 
     public static readonly TimeSpan CheckEvery = TimeSpan.FromMinutes(15);
@@ -75,7 +75,7 @@ public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfi
     {
         using (var session = store.OpenAsyncSession())
         {
-            if (await session.Advanced.ExistsAsync(RavenSetup.CurrentRoundKey, cancellationToken))
+            if (await session.Advanced.ExistsAsync(HostStore.CurrentRoundKey, cancellationToken))
             {
                 logger.LogWarning("Backup:RestoreFrom is set, but the database isn't empty. Skipped the restore; remove the setting.");
                 return false;
@@ -111,7 +111,7 @@ public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfi
     }
 
     /// <summary>Finished backups in the directory, newest first.</summary>
-    private static IEnumerable<(string File, DateTimeOffset At)> Backups(string directory) =>
+    private IEnumerable<(string File, DateTimeOffset At)> Backups(string directory) =>
         System.IO.Directory.Exists(directory)
             ? System.IO.Directory.EnumerateFiles(directory, $"{FilePrefix}*{FileExtension}")
                 .Select(file => (file, At: ParseTime(file)))
@@ -120,7 +120,7 @@ public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfi
                 .OrderByDescending(b => b.Item2)
             : [];
 
-    private static DateTimeOffset? ParseTime(string file) =>
+    private DateTimeOffset? ParseTime(string file) =>
         DateTime.TryParseExact(
             Path.GetFileNameWithoutExtension(file)[FilePrefix.Length..],
             "yyyyMMdd-HHmmss",

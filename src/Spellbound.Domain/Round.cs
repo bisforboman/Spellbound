@@ -1,22 +1,22 @@
 namespace Spellbound.Domain;
 
 /// <summary>
-/// One round of the game. Mages, news and rankings belong to a round; when it ends, the top mages go into the
-/// hall of fame and everyone starts over in the next round.
+/// One round: a number and a start and end. When it ends, everyone starts over in the next round. It knows nothing about
+/// Spellbound's rules (the game passes the length, GameRules.RoundLength), so the reusable hosting code can run rounds.
 /// </summary>
 public sealed record Round(int Number, DateTimeOffset StartsAt, DateTimeOffset EndsAt)
 {
-    public static Round First(DateTimeOffset now, GameRules rules)
+    public static Round First(DateTimeOffset now, TimeSpan length)
     {
-        ArgumentNullException.ThrowIfNull(rules);
-        return new Round(1, now, now + rules.RoundLength);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(length, TimeSpan.Zero);
+        return new Round(1, now, now + length);
     }
 
     /// <summary>The round after this one, starting now (the reset can run a little after the end).</summary>
-    public Round Next(DateTimeOffset now, GameRules rules)
+    public Round Next(DateTimeOffset now, TimeSpan length)
     {
-        ArgumentNullException.ThrowIfNull(rules);
-        return new Round(Number + 1, now, now + rules.RoundLength);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(length, TimeSpan.Zero);
+        return new Round(Number + 1, now, now + length);
     }
 
     /// <summary>

@@ -1,6 +1,6 @@
 using System.Threading.RateLimiting;
 
-namespace Spellbound.Web;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// Per-IP request limits, set in the "RateLimits" config section. Behind Caddy the IP is the player's (see

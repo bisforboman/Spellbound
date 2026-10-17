@@ -3,12 +3,12 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using Raven.Client.Exceptions;
 using Spellbound.Domain;
-using Spellbound.Web.Data;
 
-namespace Spellbound.Web;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>A player in the current round, or a banned player, as the admin page lists them.</summary>
-public sealed record AdminPlayer(string OwnerId, string? Email, Mage? Mage, Ban? Ban);
+/// <param name="Player">How the game describes them this round; null if they don't play this round.</param>
+public sealed record AdminPlayer(string OwnerId, string? Email, PlayerSummary? Player, Ban? Ban);
 
 /// <summary>Accounts that recently signed in from the same network (see <see cref="AccountSignals"/>).</summary>
 public sealed record AdminSharedNetwork(string Network, DateTimeOffset LastSeen, IReadOnlyList<AdminPlayer> Players);
@@ -23,29 +23,34 @@ public sealed class AdminService(
     RoundKeeper rounds,
     BackupKeeper backups,
     AccountSignals signals,
+    IPlayerSummaries summaries,
     TimeProvider time)
 {
     public const int MaxReasonLength = 200;
 
-    /// <summary>The current round's mages (banned or not), then banned players who have no mage this round.</summary>
+    public async Task<Round?> GetRoundAsync()
+    {
+        using var session = store.OpenAsyncSession();
+        return (await session.LoadAsync<CurrentRound>(HostStore.CurrentRoundKey))?.Round;
+    }
+
+    /// <summary>The current round's players (banned or not), then banned players who don't play this round.</summary>
     public async Task<IReadOnlyList<AdminPlayer>> GetPlayersAsync()
     {
         using var session = store.OpenAsyncSession();
-        var round = (await session.LoadAsync<CurrentRound>(RavenSetup.CurrentRoundKey))?.Round;
-        var mages = round is null ? [] : await RavenSetup.LoadRoundMagesAsync(session, round.Number);
-        var bans = await RavenSetup.LoadBansAsync(session);
+        var players = await RoundPlayersAsync(session);
+        var bans = await HostStore.LoadBansAsync(session);
 
-        var ownerIds = mages.Select(m => m.OwnerId).Concat(bans.Bans.Keys).Distinct().ToList();
+        var ownerIds = players.Keys.Concat(bans.Bans.Keys).Distinct().ToList();
         var users = await session.LoadAsync<ApplicationUser>(ownerIds);
-        var byOwner = mages.ToDictionary(m => m.OwnerId);
 
         return
         [
             .. ownerIds
                 .Select(id => new AdminPlayer(
-                    id, users.GetValueOrDefault(id)?.Email, byOwner.GetValueOrDefault(id), bans.Bans.GetValueOrDefault(id)))
-                .OrderBy(p => p.Mage is null)
-                .ThenByDescending(p => p.Mage?.Land ?? 0)
+                    id, users.GetValueOrDefault(id)?.Email, players.GetValueOrDefault(id), bans.Bans.GetValueOrDefault(id)))
+                .OrderBy(p => p.Player is null)
+                .ThenByDescending(p => p.Player?.Rank ?? 0)
                 .ThenBy(p => p.Email, StringComparer.OrdinalIgnoreCase),
         ];
     }
@@ -128,13 +133,10 @@ public sealed class AdminService(
         }
 
         using var session = store.OpenAsyncSession();
-        var round = (await session.LoadAsync<CurrentRound>(RavenSetup.CurrentRoundKey))?.Round;
         var ownerIds = shared.SelectMany(n => n.OwnerIds).Distinct().ToList();
         var users = await session.LoadAsync<ApplicationUser>(ownerIds);
-        var mages = round is null
-            ? new Dictionary<string, Mage>()
-            : await session.LoadAsync<Mage>(ownerIds.Select(id => RavenSetup.MageKey(round.Number, id)));
-        var bans = await RavenSetup.LoadBansAsync(session);
+        var players = await RoundPlayersAsync(session);
+        var bans = await HostStore.LoadBansAsync(session);
 
         return
         [
@@ -143,7 +145,7 @@ public sealed class AdminService(
                 .. n.OwnerIds.Select(id => new AdminPlayer(
                     id,
                     users.GetValueOrDefault(id)?.Email,
-                    round is null ? null : mages.GetValueOrDefault(RavenSetup.MageKey(round.Number, id)),
+                    players.GetValueOrDefault(id),
                     bans.Bans.GetValueOrDefault(id))),
             ])),
         ];
@@ -164,15 +166,20 @@ public sealed class AdminService(
         return $"Backed up to {Path.GetFileName(file)}.";
     }
 
+    private async Task<IReadOnlyDictionary<string, PlayerSummary>> RoundPlayersAsync(IAsyncDocumentSession session) =>
+        (await session.LoadAsync<CurrentRound>(HostStore.CurrentRoundKey))?.Round is { } round
+            ? await summaries.GetAsync(session, round)
+            : new Dictionary<string, PlayerSummary>();
+
     private async Task<string?> ChangeBansAsync(Action<BanList> change)
     {
         using var session = store.OpenAsyncSession();
         session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
-        var bans = await session.LoadAsync<BanList>(RavenSetup.BansKey);
+        var bans = await session.LoadAsync<BanList>(HostStore.BansKey);
         if (bans is null)
         {
             bans = new BanList();
-            await session.StoreAsync(bans, RavenSetup.BansKey);
+            await session.StoreAsync(bans, HostStore.BansKey);
         }
 
         change(bans);

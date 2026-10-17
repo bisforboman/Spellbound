@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Spellbound.Web;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// Admins are the accounts whose email is listed in configuration ("Admins": ["you@example.com"], or Admins__0 as an

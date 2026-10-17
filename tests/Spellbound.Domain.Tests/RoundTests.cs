@@ -8,7 +8,7 @@ public class RoundTests
     [Fact]
     public void A_round_lasts_four_weeks()
     {
-        var round = Round.First(T0, Rules);
+        var round = Round.First(T0, Rules.RoundLength);
 
         Assert.Equal(1, round.Number);
         Assert.True(round.IsOpen(T0));
@@ -24,7 +24,7 @@ public class RoundTests
     {
         var resetAt = T0.AddDays(28).AddMinutes(1);
 
-        var next = Round.First(T0, Rules).Next(resetAt, Rules);
+        var next = Round.First(T0, Rules.RoundLength).Next(resetAt, Rules.RoundLength);
 
         Assert.Equal(2, next.Number);
         Assert.Equal(resetAt, next.StartsAt);
@@ -34,7 +34,7 @@ public class RoundTests
     [Fact]
     public void An_admin_can_move_the_end_but_not_before_the_start()
     {
-        var round = Round.First(T0, Rules);
+        var round = Round.First(T0, Rules.RoundLength);
 
         Assert.Equal(T0.AddDays(35), round.WithEnd(T0.AddDays(35)).EndsAt);
         Assert.True(round.WithEnd(T0.AddDays(1)).HasEnded(T0.AddDays(1)));
@@ -51,7 +51,7 @@ public class RoundTests
         big.Explore(10, T0, rules);
         var armed = Mage.Create("u3", "Cedar", MagicSchool.Tidal, T0, rules);
         armed.Recruit("knights", 400, T0, rules); // more networth than Birch's extra land
-        var round = Round.First(T0, rules);
+        var round = Round.First(T0, rules.RoundLength);
 
         var fame = HallOfFame.Record(round, [small, big, armed], rules);
 
@@ -66,7 +66,7 @@ public class RoundTests
     [Fact]
     public void Hall_of_fame_of_an_empty_round_is_empty()
     {
-        var fame = HallOfFame.Record(Round.First(T0, Rules), [], Rules);
+        var fame = HallOfFame.Record(Round.First(T0, Rules.RoundLength), [], Rules);
 
         Assert.Equal(0, fame.MageCount);
         Assert.Empty(fame.ByLand);

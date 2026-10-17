@@ -1,4 +1,4 @@
-namespace Spellbound.Web.Data;
+namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// Banned players by owner id, in one document. A banned player's account is locked, their actions are refused, and

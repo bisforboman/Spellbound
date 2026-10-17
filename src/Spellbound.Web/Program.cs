@@ -1,120 +1,30 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Raven.Client.Documents;
-using Raven.Embedded;
-using Raven.Identity;
 using Spellbound.Domain;
 using Spellbound.Web;
 using Spellbound.Web.Components;
-using Spellbound.Web.Components.Account;
-using Spellbound.Web.Data;
+using Spellbound.Web.Components.Game;
+using Spellbound.Web.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<IdentityRedirectManager>();
-builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+// The reusable host (Hosting/): accounts, database, rounds, admin, backups and abuse protection.
+builder.AddGameHost();
 
-builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    })
-    .AddIdentityCookies();
-
-// Embedded RavenDB, started on first use so tests can swap in their own store.
-builder.Services.AddSingleton<IDocumentStore>(_ =>
-{
-    var settings = builder.Configuration.GetSection("RavenDb");
-    EmbeddedServer.Instance.StartServer(new ServerOptions
-    {
-        DataDirectory = Path.Combine(builder.Environment.ContentRootPath, settings["DataDirectory"] ?? "RavenData"),
-        Licensing = RavenSetup.Licensing(
-            settings["License"] ?? builder.Configuration["RAVEN_License"],
-            required: !builder.Environment.IsDevelopment()),
-    });
-    return EmbeddedServer.Instance.GetDocumentStore(new DatabaseOptions(settings["Database"] ?? "Spellbound")
-    {
-        Conventions = RavenSetup.Conventions(),
-    });
-});
-builder.Services.AddScoped(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession()); // used by RavenDB.Identity
-
-builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
-    .AddRavenDbIdentityStores<ApplicationUser>(_ => { })
-    .AddUserManager<SavingUserManager>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
-
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-
+// Spellbound itself, and its answers to the host's questions.
 builder.Services.AddSingleton(builder.Configuration.GetSection("GameRules").Get<GameRules>() ?? GameRules.Default);
-builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IRandomSource, SharedRandom>();
 builder.Services.AddSingleton<GameService>();
-builder.Services.AddSingleton<RoundKeeper>();
-builder.Services.AddSingleton<AdminService>();
-
-builder.Services.AddSingleton<IAuthorizationHandler, AdminHandler>();
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(AdminPolicy.Name, policy => policy.RequireAuthenticatedUser().AddRequirements(new AdminRequirement()));
-builder.Services.AddHostedService(sp => sp.GetRequiredService<RoundKeeper>());
-builder.Services.AddHealthChecks();
-builder.Services.AddSingleton<AccountSignals>();
-
-var rateLimits = builder.Configuration.GetSection("RateLimits").Get<RateLimits>() ?? new RateLimits();
-builder.Services.AddRateLimiter(options =>
-{
-    options.GlobalLimiter = rateLimits.CreateLimiter();
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.OnRejected = (context, token) =>
-        new ValueTask(context.HttpContext.Response.WriteAsync(RateLimits.RejectionMessage, token));
-});
-builder.Services.AddSingleton<BackupKeeper>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<BackupKeeper>());
-
-// Hosting (see docs/deploy.md). Behind Caddy, trust its X-Forwarded-* headers so the app sees HTTPS and real client IPs.
-// Only switch this on when the app isn't reachable except through the proxy, as in docker-compose.yml.
-if (builder.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
-{
-    builder.Services.Configure<ForwardedHeadersOptions>(options =>
-    {
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-        options.KnownIPNetworks.Clear();
-        options.KnownProxies.Clear();
-    });
-}
-
-// Keep the keys that protect sign-in cookies on the data volume, so a restart doesn't sign everyone out.
-if (builder.Configuration["DataProtection:KeysDirectory"] is { Length: > 0 } keysDirectory)
-{
-    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keysDirectory));
-}
+builder.Services.AddSingleton<SpellboundHost>();
+builder.Services.AddSingleton<IRoundLifecycle>(sp => sp.GetRequiredService<SpellboundHost>());
+builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<SpellboundHost>());
+builder.Services.Configure<AdminPageOptions>(options => options.GameSections.Add(typeof(GameRulesAdmin)));
 
 var app = builder.Build();
 
-if (app.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
-{
-    app.UseForwardedHeaders();
-}
+await app.UseGameHostAsync();
 
-app.UseRateLimiter(); // after forwarded headers, so limits are per player IP, not per proxy
-
-_ = app.Services.GetRequiredService<IDocumentStore>(); // start embedded RavenDB now, not on the first request
-
-if (app.Configuration["Backup:RestoreFrom"] is { Length: > 0 } restoreFrom)
-{
-    await app.Services.GetRequiredService<BackupKeeper>().RestoreIfEmptyAsync(restoreFrom); // see docs/deploy.md
-}
-
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
@@ -126,13 +36,10 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
-app.MapHealthChecks("/healthz");
+app.MapGameHost();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-// Add additional endpoints required by the Identity /Account Razor components.
-app.MapAdditionalIdentityEndpoints();
 
 app.Run();
 

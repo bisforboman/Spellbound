@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Raven.Client.Documents;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
@@ -51,8 +52,8 @@ public sealed class BackupTests : SpellboundTestDriver
         Assert.True(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
         using (var session = fresh.OpenAsyncSession())
         {
-            Assert.Equal("Merlin", (await session.LoadAsync<Mage>(RavenSetup.MageKey(1, "ApplicationUsers/1-A"))).Name);
-            Assert.NotNull(await session.LoadAsync<CurrentRound>(RavenSetup.CurrentRoundKey));
+            Assert.Equal("Merlin", (await session.LoadAsync<Mage>(GameKeys.MageKey(1, "ApplicationUsers/1-A"))).Name);
+            Assert.NotNull(await session.LoadAsync<CurrentRound>(HostStore.CurrentRoundKey));
         }
 
         // Once there's data, a restore is refused, so a leftover setting can't overwrite a live game.
@@ -91,10 +92,10 @@ public sealed class BackupTests : SpellboundTestDriver
     private static async Task SeedAsync(IDocumentStore store)
     {
         using var session = store.OpenAsyncSession();
-        await session.StoreAsync(new CurrentRound { Round = Round.First(T0, GameRules.Default) }, RavenSetup.CurrentRoundKey);
+        await session.StoreAsync(new CurrentRound { Round = Round.First(T0, GameRules.Default.RoundLength) }, HostStore.CurrentRoundKey);
         await session.StoreAsync(
             Mage.Create("ApplicationUsers/1-A", "Merlin", MagicSchool.Tidal, T0, GameRules.Default),
-            RavenSetup.MageKey(1, "ApplicationUsers/1-A"));
+            GameKeys.MageKey(1, "ApplicationUsers/1-A"));
         await session.SaveChangesAsync();
     }
 
