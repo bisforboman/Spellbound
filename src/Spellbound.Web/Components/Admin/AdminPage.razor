@@ -95,6 +95,34 @@ else
     </div>
 }
 
+<h2 class="h4 mt-4">Shared networks</h2>
+<p class="text-muted">
+    Accounts that signed up or logged in from the same network in the last 30 days. Families, schools and mobile
+    carriers share networks too, so this is a hint to look closer, not proof.
+</p>
+@if (sharedNetworks.Count == 0)
+{
+    <p class="text-muted">None.</p>
+}
+@foreach (var network in sharedNetworks)
+{
+    <div class="admin-player">
+        <b>Network @network.Network</b> <small class="text-muted">last seen @Utc(network.LastSeen)</small>
+        <ul class="mb-0">
+            @foreach (var player in network.Players)
+            {
+                <li>
+                    @(player.Email ?? player.OwnerId)@(player.Mage is { } mage ? $" · {mage.Name}, {N(mage.Land)} acres" : " · no mage this round")
+                    @if (player.Ban is not null)
+                    {
+                        <span class="text-danger"> · banned</span>
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+}
+
 <h2 class="h4 mt-4">Game rules</h2>
 <p class="text-muted">
     Set in the <code>GameRules</code> section of <code>appsettings.json</code>, or as environment variables such as
@@ -117,6 +145,7 @@ else
     private string adminEmail = string.Empty;
     private Round? round;
     private IReadOnlyList<AdminPlayer> players = [];
+    private IReadOnlyList<AdminSharedNetwork> sharedNetworks = [];
     private DateTime newEnd;
     private bool confirmEnd;
     private string? banning;
@@ -136,6 +165,7 @@ else
     {
         round = await Game.GetRoundAsync();
         players = await Admin.GetPlayersAsync();
+        sharedNetworks = await Admin.GetSharedNetworksAsync();
         if (round is not null)
         {
             newEnd = round.EndsAt.UtcDateTime;

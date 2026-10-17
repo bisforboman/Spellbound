@@ -67,6 +67,16 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AdminPolicy.Name, policy => policy.RequireAuthenticatedUser().AddRequirements(new AdminRequirement()));
 builder.Services.AddHostedService(sp => sp.GetRequiredService<RoundKeeper>());
 builder.Services.AddHealthChecks();
+builder.Services.AddSingleton<AccountSignals>();
+
+var rateLimits = builder.Configuration.GetSection("RateLimits").Get<RateLimits>() ?? new RateLimits();
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = rateLimits.CreateLimiter();
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = (context, token) =>
+        new ValueTask(context.HttpContext.Response.WriteAsync(RateLimits.RejectionMessage, token));
+});
 builder.Services.AddSingleton<BackupKeeper>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BackupKeeper>());
 
@@ -94,6 +104,8 @@ if (app.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
 {
     app.UseForwardedHeaders();
 }
+
+app.UseRateLimiter(); // after forwarded headers, so limits are per player IP, not per proxy
 
 _ = app.Services.GetRequiredService<IDocumentStore>(); // start embedded RavenDB now, not on the first request
 

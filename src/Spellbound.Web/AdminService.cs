@@ -10,12 +10,20 @@ namespace Spellbound.Web;
 /// <summary>A player in the current round, or a banned player, as the admin page lists them.</summary>
 public sealed record AdminPlayer(string OwnerId, string? Email, Mage? Mage, Ban? Ban);
 
+/// <summary>Accounts that recently signed in from the same network (see <see cref="AccountSignals"/>).</summary>
+public sealed record AdminSharedNetwork(string Network, DateTimeOffset LastSeen, IReadOnlyList<AdminPlayer> Players);
+
 /// <summary>
 /// What the admin page can do: list players, ban and unban, and move the current round's end.
 /// Only reachable through pages behind <see cref="AdminPolicy"/>.
 /// </summary>
 public sealed class AdminService(
-    IDocumentStore store, IServiceScopeFactory scopes, RoundKeeper rounds, BackupKeeper backups, TimeProvider time)
+    IDocumentStore store,
+    IServiceScopeFactory scopes,
+    RoundKeeper rounds,
+    BackupKeeper backups,
+    AccountSignals signals,
+    TimeProvider time)
 {
     public const int MaxReasonLength = 200;
 
@@ -108,6 +116,37 @@ public sealed class AdminService(
         {
             return "The round changed at the same moment. Check it and try again.";
         }
+    }
+
+    /// <summary>Networks several accounts used in the last 30 days, with who they are this round.</summary>
+    public async Task<IReadOnlyList<AdminSharedNetwork>> GetSharedNetworksAsync()
+    {
+        var shared = await signals.GetSharedNetworksAsync();
+        if (shared.Count == 0)
+        {
+            return [];
+        }
+
+        using var session = store.OpenAsyncSession();
+        var round = (await session.LoadAsync<CurrentRound>(RavenSetup.CurrentRoundKey))?.Round;
+        var ownerIds = shared.SelectMany(n => n.OwnerIds).Distinct().ToList();
+        var users = await session.LoadAsync<ApplicationUser>(ownerIds);
+        var mages = round is null
+            ? new Dictionary<string, Mage>()
+            : await session.LoadAsync<Mage>(ownerIds.Select(id => RavenSetup.MageKey(round.Number, id)));
+        var bans = await RavenSetup.LoadBansAsync(session);
+
+        return
+        [
+            .. shared.Select(n => new AdminSharedNetwork(n.Network, n.LastSeen,
+            [
+                .. n.OwnerIds.Select(id => new AdminPlayer(
+                    id,
+                    users.GetValueOrDefault(id)?.Email,
+                    round is null ? null : mages.GetValueOrDefault(RavenSetup.MageKey(round.Number, id)),
+                    bans.Bans.GetValueOrDefault(id))),
+            ])),
+        ];
     }
 
     public bool BackupsEnabled => backups.Directory is not null;

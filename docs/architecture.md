@@ -77,6 +77,12 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - **Rounds:** `rounds/current` holds the round being played. `RoundKeeper`, a hosted `BackgroundService`, checks it
   every minute: it creates round 1 on first start, and after a round ends it stores `halloffame/{round}` and moves
   `rounds/current` to the next round in one transaction. Optimistic concurrency means two hosts can't both reset.
+- **Abuse protection:** `RateLimits` (config section `RateLimits`) limits requests per IP: account form posts
+  (10 per 5 minutes), opening the live game connection, and other non-static requests; static files are unlimited.
+  Login locks an account for 5 minutes after 5 wrong passwords. `AccountSignals` stores, per account, keyed hashes of
+  the networks it signed up or logged in from (never the IP itself; the key is `admin/secrets`), and the admin page
+  lists networks shared by several accounts in the last 30 days, as hints, not automatic bans. Deleting an account
+  deletes its signals.
 - **Admin:** the `Admin` policy allows accounts whose email is in the `Admins` config list; `AdminHandler` reads the
   list on every check. `admin/bans` holds the ban list. `GameService` checks it on every action and filters banned
   mages out of rankings and targeting; `RoundKeeper` leaves them out of the hall of fame. A ban also locks the account

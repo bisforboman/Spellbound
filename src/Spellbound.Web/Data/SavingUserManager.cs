@@ -25,8 +25,16 @@ public sealed class SavingUserManager(
     public override async Task<IdentityResult> CreateAsync(ApplicationUser user) =>
         await SaveIfSucceeded(await base.CreateAsync(user));
 
-    public override async Task<IdentityResult> DeleteAsync(ApplicationUser user) =>
-        await SaveIfSucceeded(await base.DeleteAsync(user));
+    public override async Task<IdentityResult> DeleteAsync(ApplicationUser user)
+    {
+        var result = await base.DeleteAsync(user);
+        if (result.Succeeded && user.Id is { } id)
+        {
+            session.Delete(RavenSetup.SignalKey(id)); // the account's network hashes go with it
+        }
+
+        return await SaveIfSucceeded(result);
+    }
 
     protected override async Task<IdentityResult> UpdateUserAsync(ApplicationUser user) =>
         await SaveIfSucceeded(await base.UpdateUserAsync(user));

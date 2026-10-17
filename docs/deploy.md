@@ -62,6 +62,14 @@ the app restarts.
 - **Licence renewal**: the Community key lasts a year. Put the new JSON in `.env` and run `docker compose up -d`.
   RavenDB also requires the latest major version, so update the `RavenDB.*` packages when a new major version ships.
 
+## Rate limits
+
+The app limits requests per IP address (see `RateLimits` in [Architecture](architecture.md#persistence-notes)). A
+mobile carrier or a school can put many players behind one address; if players report "Too many requests", raise the
+limits with `RateLimits__AccountPosts`, `RateLimits__ConnectionRequestsPerMinute` or `RateLimits__RequestsPerMinute`.
+If you put Cloudflare in front later, the app must read the player's address from Cloudflare's header instead of
+Caddy's, or every player will share Cloudflare's addresses: do that in the same change.
+
 ## Backups
 
 The app backs itself up: every night after 03:00 UTC it exports the whole database (game and accounts) to

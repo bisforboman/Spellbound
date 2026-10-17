@@ -44,6 +44,12 @@ public static class RavenSetup
 
     public const string BansKey = "admin/bans";
 
+    public const string SecretsKey = "admin/secrets";
+
+    public const string SignalPrefix = "signals/";
+
+    public static string SignalKey(string ownerId) => $"{SignalPrefix}{ownerId}";
+
     /// <summary>One mage per player per round: the round and owner id are the key, so a second mage can't be stored.</summary>
     public static string MageKey(int round, string ownerId) => $"{MagePrefix(round)}{ownerId}";
 

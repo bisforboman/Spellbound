@@ -33,7 +33,13 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [x] Dockerfile and docker-compose with Caddy ([deploy guide](deploy.md))
 - [ ] Deployed to a VPS (needs the RavenDB Community key, a server and a domain)
 - [x] Nightly backups with retention and a tested restore ([deploy guide](deploy.md#backups))
-- [ ] Cloudflare, basic rate limiting and anti-multi-account checks
+- [x] Basic rate limiting, login lockout and multi-account signals on the admin page
+- [ ] Cloudflare in front (needs the domain)
+
+### Waiting on the owner
+- [ ] RavenDB Community licence key: applied for on 17 Oct 2026. When it arrives, follow
+  [issue #9](https://github.com/bisforboman/Spellbound/issues/9) (check it's Community, put it in `.env`, note the expiry)
+- [ ] A VPS and a domain pointing at it (see [deploy guide](deploy.md))
 - [x] Admin page: server settings, ban, reset
 
 ## Later
