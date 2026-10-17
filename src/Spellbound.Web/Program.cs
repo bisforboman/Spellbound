@@ -34,6 +34,9 @@ builder.Services.AddSingleton<IDocumentStore>(_ =>
     EmbeddedServer.Instance.StartServer(new ServerOptions
     {
         DataDirectory = Path.Combine(builder.Environment.ContentRootPath, settings["DataDirectory"] ?? "RavenData"),
+        Licensing = RavenSetup.Licensing(
+            settings["License"] ?? builder.Configuration["RAVEN_License"],
+            required: !builder.Environment.IsDevelopment()),
     });
     return EmbeddedServer.Instance.GetDocumentStore(new DatabaseOptions(settings["Database"] ?? "Spellbound")
     {

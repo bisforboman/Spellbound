@@ -16,6 +16,9 @@ dotnet test
 dotnet run --project src/Spellbound.Web
 ```
 
+Outside Development the app needs a RavenDB licence key (a free Community key from ravendb.net): set
+`RavenDb__License` to the licence JSON. See [Architecture](docs/architecture.md#persistence-notes).
+
 To use the admin page (`/admin`), list your account's email under `Admins` in `appsettings.json`, or set it as an
 environment variable: `Admins__0=you@example.com`.
 

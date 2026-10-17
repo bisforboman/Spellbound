@@ -84,8 +84,11 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - **Identity:** RavenDB.Identity does not save changes itself, so `SavingUserManager` saves after every create,
   update and delete. It finds users by email first because its by-name lookup is an index query. RavenDB.Identity
   has no passkey support, so the template's passkey pages were removed.
-- **Licensing:** the embedded server runs without a license file in development and tests. Check RavenDB's license terms
-  and which edition production needs before the M3 deployment.
+- **Licensing:** production uses a free RavenDB **Community** licence key, set as `RavenDb__License` (or `RAVEN_License`)
+  to the licence JSON. Outside Development the app won't start without one, and RavenDB refuses an invalid one. Without
+  a key the server software falls under the AGPLv3 instead (see the EULA in the `RavenDB.Embedded` package). A Developer
+  key is not allowed in production. Community keys last a year and require the latest RavenDB major version, so renew
+  the key and update the packages each year. Development and tests run without a key.
 
 ## Hosting plan (M3)
 
