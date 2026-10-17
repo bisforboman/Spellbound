@@ -22,6 +22,9 @@ public abstract class GamePage : ComponentBase
 
     protected Mage? Mage { get; private set; }
 
+    /// <summary>The round being played, or null before the first one starts.</summary>
+    protected Round? Round { get; private set; }
+
     protected ActionReport? Report { get; private set; }
 
     protected bool Busy { get; private set; }
@@ -38,7 +41,11 @@ public abstract class GamePage : ComponentBase
         }
     }
 
-    protected virtual async Task LoadAsync() => Mage = await Game.GetMageAsync(OwnerId);
+    protected virtual async Task LoadAsync()
+    {
+        Round = await Game.GetRoundAsync();
+        Mage = await Game.GetMageAsync(OwnerId);
+    }
 
     /// <summary>Runs one game action, shows its report and reloads the mage. Ignores taps while busy.</summary>
     protected async Task RunAsync(Func<Task<ActionReport>> action)

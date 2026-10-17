@@ -1,0 +1,27 @@
+@if (Entries.Count == 0)
+{
+    <p class="text-muted">Nobody played this round.</p>
+}
+else
+{
+    <ol class="rank-list">
+        @foreach (var entry in Entries)
+        {
+            <li class="rank-row">
+                <span class="rank">@entry.Rank</span>
+                <span class="who"><b>@entry.Name</b><small class="text-muted d-block">@entry.School</small></span>
+                <span class="num">@N(ByNetworth ? entry.Networth : entry.Land)<small class="text-muted d-block">@(ByNetworth ? "networth" : "acres")</small></span>
+            </li>
+        }
+    </ol>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<HallOfFameEntry> Entries { get; set; } = [];
+
+    [Parameter]
+    public bool ByNetworth { get; set; }
+
+    private static string N(int value) => value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+}

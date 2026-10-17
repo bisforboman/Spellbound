@@ -35,9 +35,10 @@ M1 has no separate Infrastructure project, because a single web project is easie
 ```
 page form → GameService.ExploreAsync(userId, turns)
   1. open a session (one per action: a Blazor Server circuit outlives one action) with optimistic
-     concurrency on, and load the mage by key: mages/{ownerId}
+     concurrency on, load the current round (rounds/current) and refuse if it has ended,
+     then load the mage by key: mages/{round}/{ownerId}
   2. report = mage.Explore(turns, timeProvider.GetUtcNow(), rules)
-  3. if report.Succeeded: add the report to the news log document (news/{ownerId})
+  3. if report.Succeeded: add the report to the news log document (news/{round}/{ownerId})
   4. SaveChangesAsync() saves both in one transaction. On ConcurrencyException, tell the player to try again
   5. render the report
 ```
@@ -66,12 +67,16 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - **Load by key, never query, on the action path.** Loads are always consistent; queries go through indexes that
   update a moment after each write. The one exception is finding an attack target's owner by mage id, which never
   changes; the target itself is then loaded by key.
-- **Rankings** query every mage and sort in memory. That's fine for one server's players; add a static index with a
-  stored networth if it grows past a few thousand.
+- **Rankings** stream the round's mages by key prefix (`mages/{round}/`), which is consistent and needs no index, and
+  sort in memory. That's fine for one server's players; add a static index with a stored networth if it grows past a
+  few thousand.
 - **Alerts:** `NewsLog.Unseen` counts hostile entries. The overview reads it and resets it with a patch, so the reset
   can't overwrite news that another mage writes at the same moment.
-- **One mage per player** comes from the key: creating `mages/{ownerId}` with an empty change vector fails if it exists.
-  In M3 the key becomes `mages/{roundId}/{ownerId}`.
+- **One mage per player per round** comes from the key: creating `mages/{round}/{ownerId}` with an empty change vector
+  fails if it exists. Old rounds' mages and news stay in the database; nothing reads them after the reset.
+- **Rounds:** `rounds/current` holds the round being played. `RoundKeeper`, a hosted `BackgroundService`, checks it
+  every minute: it creates round 1 on first start, and after a round ends it stores `halloffame/{round}` and moves
+  `rounds/current` to the next round in one transaction. Optimistic concurrency means two hosts can't both reset.
 - **Identity:** RavenDB.Identity does not save changes itself, so `SavingUserManager` saves after every create,
   update and delete. It finds users by email first because its by-name lookup is an index query. RavenDB.Identity
   has no passkey support, so the template's passkey pages were removed.
@@ -85,6 +90,6 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - Nightly off-site backup with a RavenDB periodic backup task. Check which backup destinations the license tier allows.
 - **Cloudflare** free tier in front for DNS, DDoS protection and static asset caching.
 - **PWA manifest and service worker**, so the game installs to the home screen without an app store.
-- Global events (round end and reset, rankings snapshot) run as a hosted `BackgroundService` or a cron job.
+- Global events (round end and reset, hall of fame snapshot) run in the `RoundKeeper` hosted service.
   Players never need a per-player job.
 - CI: GitHub Actions builds and tests on every push (`.github/workflows/ci.yml`).

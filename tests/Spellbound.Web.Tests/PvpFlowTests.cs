@@ -11,7 +11,7 @@ using Spellbound.Web.Data;
 namespace Spellbound.Web.Tests;
 
 /// <summary>Attacks and hexes through the real app: two mages, no protection, a seeded random source.</summary>
-public sealed class PvpFlowTests : RavenTestDriver
+public sealed class PvpFlowTests : RavenTestDriver, IAsyncLifetime
 {
     private const string Attacker = "ApplicationUsers/1-A";
     private const string Defender = "ApplicationUsers/2-A";
@@ -44,6 +44,10 @@ public sealed class PvpFlowTests : RavenTestDriver
     }
 
     private GameService Game => factory.Services.GetRequiredService<GameService>();
+
+    public async Task InitializeAsync() => await factory.Services.GetRequiredService<RoundKeeper>().TickAsync(); // round 1
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     protected override void PreInitialize(IDocumentStore documentStore) =>
         documentStore.Conventions.FindIdentityProperty = RavenSetup.IsDocumentKey;

@@ -8,9 +8,10 @@ using Spellbound.Web.Data;
 namespace Spellbound.Web;
 
 /// <summary>
-/// Thin glue between pages and the domain: load the mage, run one domain action, save.
+/// Thin glue between pages and the domain: load the current round and the mage, run one domain action, save.
 /// Opens a session per call (a Blazor Server circuit outlives one action) and only loads by key,
 /// because RavenDB loads are always consistent while queries may lag behind writes.
+/// Mages and news live under the current round's keys, so a new round starts everyone over.
 /// </summary>
 public sealed class GameService(IDocumentStore store, TimeProvider time, GameRules rules, IRandomSource random)
 {
@@ -20,11 +21,23 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
 
     public DateTimeOffset Now => time.GetUtcNow();
 
-    /// <summary>Read-only copy of the player's mage with turns accrued to now (not saved).</summary>
+    /// <summary>The current round, or null before the first one has started.</summary>
+    public async Task<Round?> GetRoundAsync()
+    {
+        using var session = store.OpenAsyncSession();
+        return await CurrentRoundAsync(session);
+    }
+
+    /// <summary>Read-only copy of the player's mage in the current round, with turns accrued to now (not saved).</summary>
     public async Task<Mage?> GetMageAsync(string ownerId)
     {
         using var session = store.OpenAsyncSession();
-        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(ownerId));
+        if (await CurrentRoundAsync(session) is not { } round)
+        {
+            return null;
+        }
+
+        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, ownerId));
         mage?.AccrueTurns(Now, rules);
         return mage;
     }
@@ -32,7 +45,12 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
     public async Task<IReadOnlyList<NewsEntry>> GetNewsAsync(string ownerId)
     {
         using var session = store.OpenAsyncSession();
-        var log = await session.LoadAsync<NewsLog>(RavenSetup.NewsKey(ownerId));
+        if (await CurrentRoundAsync(session) is not { } round)
+        {
+            return [];
+        }
+
+        var log = await session.LoadAsync<NewsLog>(RavenSetup.NewsKey(round.Number, ownerId));
         return log?.Entries ?? [];
     }
 
@@ -40,7 +58,12 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
     public async Task<int> TakeUnseenAlertsAsync(string ownerId)
     {
         using var session = store.OpenAsyncSession();
-        var key = RavenSetup.NewsKey(ownerId);
+        if (await CurrentRoundAsync(session) is not { } round)
+        {
+            return 0;
+        }
+
+        var key = RavenSetup.NewsKey(round.Number, ownerId);
         var log = await session.LoadAsync<NewsLog>(key);
         if (log is not { Unseen: > 0 })
         {
@@ -54,20 +77,43 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
     }
 
     /// <summary>
-    /// Every mage, for rankings and picking targets. A query, so a mage created a moment ago may be missing.
-    /// Sorted in memory: fine for one server's players; add an index if it grows past a few thousand.
+    /// Every mage in the current round, for rankings and picking targets. Streamed by key prefix, so it needs no
+    /// index and includes a mage created a moment ago. Fine for one server's players; page it if that grows.
     /// </summary>
     public async Task<IReadOnlyList<Mage>> GetAllMagesAsync()
     {
         using var session = store.OpenAsyncSession();
-        return await session.Query<Mage>().ToListAsync();
+        return await CurrentRoundAsync(session) is { } round
+            ? await RavenSetup.LoadRoundMagesAsync(session, round.Number)
+            : [];
     }
 
-    /// <summary>Another mage by its public id (never the owner id, which is an account key).</summary>
+    /// <summary>Another mage in the current round by its public id (never the owner id, which is an account key).</summary>
     public async Task<Mage?> GetRivalAsync(Guid mageId)
     {
         using var session = store.OpenAsyncSession();
-        return await session.Query<Mage>().Where(m => m.Id == mageId).FirstOrDefaultAsync();
+        if (await CurrentRoundAsync(session) is not { } round)
+        {
+            return null;
+        }
+
+        var mage = await session.Query<Mage>().Where(m => m.Id == mageId).FirstOrDefaultAsync();
+        return mage is not null && session.Advanced.GetDocumentId(mage).StartsWith(
+            RavenSetup.MagePrefix(round.Number), StringComparison.Ordinal) ? mage : null;
+    }
+
+    /// <summary>Every finished round's hall of fame, newest first.</summary>
+    public async Task<IReadOnlyList<HallOfFame>> GetHallOfFameAsync()
+    {
+        using var session = store.OpenAsyncSession();
+        var all = new List<HallOfFame>();
+        await using var stream = await session.Advanced.StreamAsync<HallOfFame>(startsWith: RavenSetup.HallOfFamePrefix);
+        while (await stream.MoveNextAsync())
+        {
+            all.Add(stream.Current.Document);
+        }
+
+        return [.. all.OrderByDescending(f => f.RoundNumber)];
     }
 
     public async Task<ActionReport> CreateMageAsync(string ownerId, string name, MagicSchool school)
@@ -83,9 +129,16 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return ActionReport.Fail("Choose a school of magic.");
         }
 
-        var mage = Mage.Create(ownerId, trimmed, school, Now, rules);
         using var session = store.OpenAsyncSession();
-        await session.StoreAsync(mage, changeVector: string.Empty, RavenSetup.MageKey(ownerId)); // empty = must not exist yet
+        var now = Now;
+        if (ClosedReason(await CurrentRoundAsync(session), now, out var round) is { } closed)
+        {
+            return closed;
+        }
+
+        var mage = Mage.Create(ownerId, trimmed, school, now, rules);
+        // An empty change vector means the key must not exist yet: one mage per player per round.
+        await session.StoreAsync(mage, changeVector: string.Empty, RavenSetup.MageKey(round.Number, ownerId));
         try
         {
             await session.SaveChangesAsync();
@@ -124,20 +177,25 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
         using var session = store.OpenAsyncSession();
         session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes; // a double-tap can't spend turns twice
 
-        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(ownerId));
+        var now = Now;
+        if (ClosedReason(await CurrentRoundAsync(session), now, out var round) is { } closed)
+        {
+            return closed;
+        }
+
+        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, ownerId));
         if (mage is null)
         {
             return ActionReport.Fail("You don't have a mage yet.");
         }
 
-        var now = Now;
         var report = action(mage, now);
         if (!report.Succeeded)
         {
             return report;
         }
 
-        await AddNewsAsync(session, ownerId, new NewsEntry(now, report.Lines));
+        await AddNewsAsync(session, round.Number, ownerId, new NewsEntry(now, report.Lines));
         return await SaveAsync(session, report);
     }
 
@@ -151,40 +209,58 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
         using var session = store.OpenAsyncSession();
         session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
 
-        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(ownerId));
+        var now = Now;
+        if (ClosedReason(await CurrentRoundAsync(session), now, out var round) is { } closed)
+        {
+            return closed;
+        }
+
+        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, ownerId));
         if (mage is null)
         {
             return ActionReport.Fail("You don't have a mage yet.");
         }
 
         // The query only finds the target's owner; the mage itself is then loaded by key, which is always current.
+        // A mage id from an earlier round finds that owner's current mage, which is a different mage: refuse it.
         var targetOwner = await session.Query<Mage>()
             .Where(m => m.Id == targetId)
             .Select(m => m.OwnerId)
             .FirstOrDefaultAsync();
         var target = targetOwner is null ? null
             : targetOwner == ownerId ? mage
-            : await session.LoadAsync<Mage>(RavenSetup.MageKey(targetOwner));
-        if (target is null)
+            : await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, targetOwner));
+        if (target is null || target.Id != targetId)
         {
-            return ActionReport.Fail("There is no such mage.");
+            return ActionReport.Fail("There is no such mage this round.");
         }
 
-        var now = Now;
         var result = action(mage, target, now);
         if (!result.Report.Succeeded)
         {
             return result.Report;
         }
 
-        await AddNewsAsync(session, ownerId, new NewsEntry(now, result.Report.Lines));
-        await AddNewsAsync(session, targetOwner!, new NewsEntry(now, result.TargetLines, Hostile: true));
+        await AddNewsAsync(session, round.Number, ownerId, new NewsEntry(now, result.Report.Lines));
+        await AddNewsAsync(session, round.Number, targetOwner!, new NewsEntry(now, result.TargetLines, Hostile: true));
         return await SaveAsync(session, result.Report);
     }
 
-    private static async Task AddNewsAsync(IAsyncDocumentSession session, string ownerId, NewsEntry entry)
+    private static async Task<Round?> CurrentRoundAsync(IAsyncDocumentSession session) =>
+        (await session.LoadAsync<CurrentRound>(RavenSetup.CurrentRoundKey))?.Round;
+
+    /// <summary>Why nobody can act right now (no round yet, or the round is over and waiting for its reset).</summary>
+    private static ActionReport? ClosedReason(Round? current, DateTimeOffset now, out Round round)
     {
-        var newsKey = RavenSetup.NewsKey(ownerId);
+        round = current!;
+        return current is null ? ActionReport.Fail("The first round hasn't started yet. Try again in a minute.")
+            : current.IsOpen(now) ? null
+            : ActionReport.Fail($"Round {current.Number} is over. The next round starts in a moment.");
+    }
+
+    private static async Task AddNewsAsync(IAsyncDocumentSession session, int round, string ownerId, NewsEntry entry)
+    {
+        var newsKey = RavenSetup.NewsKey(round, ownerId);
         var news = await session.LoadAsync<NewsLog>(newsKey);
         if (news is null)
         {

@@ -1,0 +1,38 @@
+@page "/halloffame"
+@inject GameService Game
+
+<PageTitle>Hall of fame</PageTitle>
+<h1>Hall of fame</h1>
+
+@if (rounds is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (rounds.Count == 0)
+{
+    <p class="text-muted">No round has ended yet. The best mages of each round will be remembered here.</p>
+}
+else
+{
+    @foreach (var fame in rounds)
+    {
+        <details class="fame" open="@(fame == rounds[0])">
+            <summary>
+                <b>Round @fame.RoundNumber</b>
+                <small class="text-muted d-block">@fame.StartedAt.ToString("d MMM yyyy", Invariant) – @fame.EndedAt.ToString("d MMM yyyy", Invariant) · @fame.MageCount @(fame.MageCount == 1 ? "mage" : "mages")</small>
+            </summary>
+            <h2 class="h6 mt-2">Most land</h2>
+            <FameList Entries="fame.ByLand" ByNetworth="false" />
+            <h2 class="h6">Highest networth</h2>
+            <FameList Entries="fame.ByNetworth" ByNetworth="true" />
+        </details>
+    }
+}
+
+@code {
+    private static readonly System.Globalization.CultureInfo Invariant = System.Globalization.CultureInfo.InvariantCulture;
+
+    private IReadOnlyList<HallOfFame>? rounds;
+
+    protected override async Task OnInitializedAsync() => rounds = await Game.GetHallOfFameAsync();
+}
