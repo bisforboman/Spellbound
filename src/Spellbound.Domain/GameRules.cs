@@ -54,7 +54,7 @@ public sealed record GameRules
     public int LandTakenPercent { get; init; } = 10;
 
     /// <summary>Each battle a mage lost within this window shrinks the land the next attacker takes...</summary>
-    public TimeSpan RepeatAttackWindow { get; init; } = TimeSpan.FromHours(24);
+    public TimeSpan RepeatAttackWindow { get; init; } = TimeSpan.FromHours(72);
 
     /// <summary>...by this factor: with 0.5, a win takes 10%, then 5%, then 2.5% of the same mage's land.</summary>
     public double RepeatAttackLandFactor { get; init; } = 0.5;

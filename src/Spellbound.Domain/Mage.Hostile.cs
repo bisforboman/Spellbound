@@ -23,6 +23,14 @@ public sealed partial class Mage
     public int LossesInWindow(DateTimeOffset now, GameRules rules) =>
         _recentLosses.Count(at => at > now - rules.RepeatAttackWindow && at <= now);
 
+    /// <summary>The repeat-attack window in words, as in "beaten twice in the last 3 days".</summary>
+    public static string RepeatAttackWindowText(GameRules rules) => rules.RepeatAttackWindow switch
+    {
+        { TotalHours: 24 } => "the last day",
+        { TotalHours: var h } when h % 24 == 0 => $"the last {h / 24:0} days",
+        { TotalHours: var h } => string.Create(CultureInfo.InvariantCulture, $"the last {h:0.#} hours"),
+    };
+
     /// <summary>
     /// The share of this mage's land (in percent) a winning attack would take right now: the base share, shrunk once for
     /// every battle it lost in the last window. Shown before attacking, which also tells attackers it was hit recently.
@@ -87,8 +95,9 @@ public sealed partial class Mage
             if (losses > 0)
             {
                 var times = losses == 1 ? "once" : $"{N(losses)} times";
-                ours.Add($"They had already been beaten {times} in the last day, so you took only {Percent(percent)} of their land.");
-                theirs.Add($"You had already been beaten {times} in the last day, so they took only {Percent(percent)} of your land.");
+                var window = RepeatAttackWindowText(rules);
+                ours.Add($"They had already been beaten {times} in {window}, so you took only {Percent(percent)} of their land.");
+                theirs.Add($"You had already been beaten {times} in {window}, so they took only {Percent(percent)} of your land.");
             }
             if (nodes + towns > 0)
             {
