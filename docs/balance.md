@@ -27,22 +27,26 @@ The conclusions hold across seeds 1–3; the exact numbers move a few percent.
 
 ## What the numbers say
 
-### 1. Attacking dominates, and the same target can be hit again and again
+### 1. Attacking dominates, and peers can farm each other
 
 - On the mixed server the busy warmonger ends with **10,526 acres**, and the builders and turtle with about 3,300–3,500.
 - On a peaceful server those same three builders reach about 5,800–6,800 acres, so the attackers halve everyone
   else's growth.
-- One warmonger hit the other **29 times** in a round, up to **5 times in one day**, taking 12,771 acres in total.
-- The once-a-day warmonger hit each of the three peaceful players 13–17 times.
-- Every attack takes 10% of the target's land, whatever happened to it before. Nothing slows repeated attacks; that
-  is the open question "should repeated attacks take less land?", and the answer is yes.
+- **The range rule works.** The busy warmonger hit the builders and turtle only on days 1–3. After that they were
+  below 60% of its land and out of reach. Small players are safe from big ones.
+- **Nothing protects peers from peers.** The once-a-day warmonger stayed about the builders' size, so it kept hitting
+  them until day 27: 13–17 times each. The two warmongers, also in range of each other, traded **39 attacks**. One hit
+  the other **29 times**, up to **5 times in a day**, taking 12,771 acres.
+- Every attack takes 10% of the target's land, whatever happened to it before. That is the open question "should
+  repeated attacks take less land?", and the answer is yes.
 
-### 2. Protection ends in the first session
+### 2. Protection lasts hours, not days
 
-Protection lasts until a mage has spent 120 turns. A new player starts with 100 turns and has 180 by their first
-check-in, so an active player is unprotected by the end of their **first session**. The warmonger attacked builders
-on day 1. Protection only lasts for players who don't play: the idle account never spent a turn and was never
-attacked.
+Protection lasts until a mage has spent 120 turns. A new player starts with 100, so it survives their first session.
+But turns come back at 10 an hour, so an active player is unprotected a few hours into the game. (The bots were created
+at midnight and had 180 turns at their first check-in, so in the simulation it ended even sooner: the warmonger
+attacked builders on day 1.) Protection only lasts for players who don't play: the idle account never spent a turn and
+was never attacked.
 
 ### 3. Upkeep isn't too harsh, because stolen land pays for the army
 

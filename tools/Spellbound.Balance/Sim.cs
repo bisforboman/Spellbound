@@ -111,7 +111,7 @@ public sealed class Sim
             var lost = TurnsLost(mage);
             md.AppendLine(CultureInfo.InvariantCulture,
                 $"| {seat.Bot.Name} | {seat.Bot.Strategy} | {seat.Cadence} | {N(mage.Land)} | {N(mage.Networth(Rules))} | {N(mage.TotalUnits)} | " +
-                $"{last.Upkeep * 100 / Math.Max(1, last.Income)}% (peak {peakUpkeep:P0}) | {N(lost)} ({lost * 100 / TurnsGenerated}%) |");
+                $"{last.Upkeep * 100 / Math.Max(1, last.Income)}% (peak {peakUpkeep * 100:F0}%) | {N(lost)} ({lost * 100 / TurnsGenerated}%) |");
         }
 
         md.AppendLine();
@@ -130,13 +130,13 @@ public sealed class Sim
             md.AppendLine();
             md.AppendLine("Attacks (all won by the attacker, who only attacks when sure to win):");
             md.AppendLine();
-            md.AppendLine("| Attacker | Target | Attacks | Acres taken | Most attacks in one day | First day |");
-            md.AppendLine("|---|---|---:|---:|---:|---:|");
+            md.AppendLine("| Attacker | Target | Attacks | Acres taken | Most attacks in one day | First day | Last day |");
+            md.AppendLine("|---|---|---:|---:|---:|---:|---:|");
             foreach (var pair in attacks.GroupBy(a => (a.Attacker, a.Target)).OrderByDescending(g => g.Count()))
             {
                 md.AppendLine(CultureInfo.InvariantCulture,
                     $"| {pair.Key.Attacker} | {pair.Key.Target} | {pair.Count()} | {N(pair.Sum(a => a.Acres))} | " +
-                    $"{pair.GroupBy(a => a.Day).Max(g => g.Count())} | {pair.Min(a => a.Day)} |");
+                    $"{pair.GroupBy(a => a.Day).Max(g => g.Count())} | {pair.Min(a => a.Day)} | {pair.Max(a => a.Day)} |");
             }
         }
 

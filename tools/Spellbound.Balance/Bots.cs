@@ -68,7 +68,8 @@ public sealed class Turtle(string name) : Bot(name, MagicSchool.Tidal)
     public override void Play(Mage me, IReadOnlyList<Mage> others, Sim sim)
     {
         var rules = sim.Rules;
-        if (me.ActiveEffects.All(e => e.SpellId != "barrier") && me.Mana >= 1_000 && me.Turns >= 2)
+        var barrier = SpellBook.Find("barrier")!;
+        if (me.ActiveEffects.All(e => e.SpellId != barrier.Id) && me.Mana >= barrier.ManaCost && me.Turns >= barrier.TurnCost)
         {
             me.Cast("barrier", sim.Now, rules);
         }
