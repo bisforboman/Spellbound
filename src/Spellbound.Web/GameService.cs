@@ -17,6 +17,8 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
 {
     public const int NewsKept = 50;
 
+    private static readonly ActionReport Banned = ActionReport.Fail("Your account is banned.");
+
     public GameRules Rules => rules;
 
     public DateTimeOffset Now => time.GetUtcNow();
@@ -83,9 +85,13 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
     public async Task<IReadOnlyList<Mage>> GetAllMagesAsync()
     {
         using var session = store.OpenAsyncSession();
-        return await CurrentRoundAsync(session) is { } round
-            ? await RavenSetup.LoadRoundMagesAsync(session, round.Number)
-            : [];
+        if (await CurrentRoundAsync(session) is not { } round)
+        {
+            return [];
+        }
+
+        var bans = await RavenSetup.LoadBansAsync(session);
+        return [.. (await RavenSetup.LoadRoundMagesAsync(session, round.Number)).Where(m => !bans.IsBanned(m.OwnerId))];
     }
 
     /// <summary>Another mage in the current round by its public id (never the owner id, which is an account key).</summary>
@@ -98,8 +104,11 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
         }
 
         var mage = await session.Query<Mage>().Where(m => m.Id == mageId).FirstOrDefaultAsync();
-        return mage is not null && session.Advanced.GetDocumentId(mage).StartsWith(
-            RavenSetup.MagePrefix(round.Number), StringComparison.Ordinal) ? mage : null;
+        return mage is not null
+               && session.Advanced.GetDocumentId(mage).StartsWith(RavenSetup.MagePrefix(round.Number), StringComparison.Ordinal)
+               && !(await RavenSetup.LoadBansAsync(session)).IsBanned(mage.OwnerId)
+            ? mage
+            : null;
     }
 
     /// <summary>Every finished round's hall of fame, newest first.</summary>
@@ -134,6 +143,11 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
         if (ClosedReason(await CurrentRoundAsync(session), now, out var round) is { } closed)
         {
             return closed;
+        }
+
+        if ((await RavenSetup.LoadBansAsync(session)).IsBanned(ownerId))
+        {
+            return Banned;
         }
 
         var mage = Mage.Create(ownerId, trimmed, school, now, rules);
@@ -189,6 +203,12 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return ActionReport.Fail("You don't have a mage yet.");
         }
 
+        var bans = await RavenSetup.LoadBansAsync(session);
+        if (bans.IsBanned(ownerId))
+        {
+            return Banned;
+        }
+
         var report = action(mage, now);
         if (!report.Succeeded)
         {
@@ -221,6 +241,12 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return ActionReport.Fail("You don't have a mage yet.");
         }
 
+        var bans = await RavenSetup.LoadBansAsync(session);
+        if (bans.IsBanned(ownerId))
+        {
+            return Banned;
+        }
+
         // The query only finds the target's owner; the mage itself is then loaded by key, which is always current.
         // A mage id from an earlier round finds that owner's current mage, which is a different mage: refuse it.
         var targetOwner = await session.Query<Mage>()
@@ -230,7 +256,7 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
         var target = targetOwner is null ? null
             : targetOwner == ownerId ? mage
             : await session.LoadAsync<Mage>(RavenSetup.MageKey(round.Number, targetOwner));
-        if (target is null || target.Id != targetId)
+        if (target is null || target.Id != targetId || bans.IsBanned(target.OwnerId))
         {
             return ActionReport.Fail("There is no such mage this round.");
         }

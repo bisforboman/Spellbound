@@ -16,6 +16,9 @@ dotnet test
 dotnet run --project src/Spellbound.Web
 ```
 
+To use the admin page (`/admin`), list your account's email under `Admins` in `appsettings.json`, or set it as an
+environment variable: `Admins__0=you@example.com`.
+
 ## Docs
 
 - [Game design](docs/game-design.md)

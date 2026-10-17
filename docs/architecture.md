@@ -77,6 +77,10 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - **Rounds:** `rounds/current` holds the round being played. `RoundKeeper`, a hosted `BackgroundService`, checks it
   every minute: it creates round 1 on first start, and after a round ends it stores `halloffame/{round}` and moves
   `rounds/current` to the next round in one transaction. Optimistic concurrency means two hosts can't both reset.
+- **Admin:** the `Admin` policy allows accounts whose email is in the `Admins` config list; `AdminHandler` reads the
+  list on every check. `admin/bans` holds the ban list. `GameService` checks it on every action and filters banned
+  mages out of rankings and targeting; `RoundKeeper` leaves them out of the hall of fame. A ban also locks the account
+  (lockout until the end of time) and changes its security stamp, so open sessions are signed out when they revalidate.
 - **Identity:** RavenDB.Identity does not save changes itself, so `SavingUserManager` saves after every create,
   update and delete. It finds users by email first because its by-name lookup is an index query. RavenDB.Identity
   has no passkey support, so the template's passkey pages were removed.

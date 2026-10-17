@@ -21,6 +21,8 @@ public static class RavenSetup
 
     public const string HallOfFamePrefix = "halloffame/";
 
+    public const string BansKey = "admin/bans";
+
     /// <summary>One mage per player per round: the round and owner id are the key, so a second mage can't be stored.</summary>
     public static string MageKey(int round, string ownerId) => $"{MagePrefix(round)}{ownerId}";
 
@@ -29,6 +31,9 @@ public static class RavenSetup
     public static string NewsKey(int round, string ownerId) => $"news/{round}/{ownerId}";
 
     public static string HallOfFameKey(int round) => $"{HallOfFamePrefix}{round}";
+
+    public static async Task<BanList> LoadBansAsync(IAsyncDocumentSession session) =>
+        await session.LoadAsync<BanList>(BansKey) ?? new BanList();
 
     /// <summary>Every mage of a round, read by key prefix: consistent and needs no index.</summary>
     public static async Task<IReadOnlyList<Mage>> LoadRoundMagesAsync(IAsyncDocumentSession session, int round)

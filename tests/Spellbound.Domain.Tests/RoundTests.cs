@@ -32,6 +32,17 @@ public class RoundTests
     }
 
     [Fact]
+    public void An_admin_can_move_the_end_but_not_before_the_start()
+    {
+        var round = Round.First(T0, Rules);
+
+        Assert.Equal(T0.AddDays(35), round.WithEnd(T0.AddDays(35)).EndsAt);
+        Assert.True(round.WithEnd(T0.AddDays(1)).HasEnded(T0.AddDays(1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => round.WithEnd(T0));
+        Assert.Equal(T0.AddDays(28), round.EndsAt); // records don't change in place
+    }
+
+    [Fact]
     public void Hall_of_fame_keeps_the_top_mages_by_land_and_networth()
     {
         var rules = Rules with { HallOfFameSize = 2, StartingGold = 200_000 };

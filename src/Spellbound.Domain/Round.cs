@@ -19,6 +19,16 @@ public sealed record Round(int Number, DateTimeOffset StartsAt, DateTimeOffset E
         return new Round(Number + 1, now, now + rules.RoundLength);
     }
 
+    /// <summary>
+    /// The same round with a new end, for an admin extending or shortening it. An end at or before now ends the
+    /// round at the next reset check. It can't be at or before the start.
+    /// </summary>
+    public Round WithEnd(DateTimeOffset endsAt)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(endsAt, StartsAt);
+        return this with { EndsAt = endsAt };
+    }
+
     /// <summary>Whether players can act. Between the end and the reset, nothing can be done.</summary>
     public bool IsOpen(DateTimeOffset now) => now >= StartsAt && now < EndsAt;
 
