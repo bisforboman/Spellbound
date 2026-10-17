@@ -145,6 +145,9 @@ can't be targeted, and they're left out of the hall of fame. Unbanning restores 
 
 ## Open questions
 
+A simulation of a full round answers several of these with numbers, and proposes changes: see
+[balance.md](balance.md).
+
 - Should we add a stored-turns bank (as Earth Empires does) so missing a day hurts less?
 - Should we add population or peasants, or keep the economy as just land and buildings?
 - Should repeated attacks on the same mage take less land (Archmage-style diminishing returns)?

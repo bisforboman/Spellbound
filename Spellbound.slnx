@@ -3,6 +3,9 @@
     <Project Path="src/Spellbound.Domain/Spellbound.Domain.csproj" />
     <Project Path="src/Spellbound.Web/Spellbound.Web.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Spellbound.Balance/Spellbound.Balance.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Spellbound.Domain.Tests/Spellbound.Domain.Tests.csproj" />
     <Project Path="tests/Spellbound.Web.Tests/Spellbound.Web.Tests.csproj" />

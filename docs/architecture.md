@@ -24,6 +24,8 @@ src/
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
     Components/Account/     the template's Identity pages (part of the host, not yet moved into Hosting/)
     Components/Game/, GameService, SpellboundHost, Data/   the game itself
+tools/
+  Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
 tests/
   Spellbound.Domain.Tests/  xUnit tests for the rules
   Spellbound.Web.Tests/     integration tests: real app, in-memory RavenDB (TestDriver)
