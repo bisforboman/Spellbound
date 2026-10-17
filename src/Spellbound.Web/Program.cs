@@ -2,6 +2,7 @@ using Spellbound.Domain;
 using Spellbound.Web;
 using Spellbound.Web.Components;
 using Spellbound.Web.Components.Game;
+using Spellbound.Web.Data;
 using Spellbound.Web.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ builder.AddGameHost();
 builder.Services.AddSingleton(builder.Configuration.GetSection("GameRules").Get<GameRules>() ?? GameRules.Default);
 builder.Services.AddSingleton<IRandomSource, SharedRandom>();
 builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<IGameModel, SpellboundModel>();
 builder.Services.AddSingleton<SpellboundHost>();
 builder.Services.AddSingleton<IRoundLifecycle>(sp => sp.GetRequiredService<SpellboundHost>());
 builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<SpellboundHost>());

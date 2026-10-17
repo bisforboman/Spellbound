@@ -2,14 +2,13 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Raven.Client.Documents;
 using Spellbound.Domain;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
 /// <summary>Round start, end and reset through the real app, with a clock the test moves by hand.</summary>
-public sealed class RoundFlowTests : SpellboundTestDriver
+public sealed class RoundFlowTests : TestDatabase
 {
     private const string Merlin = "ApplicationUsers/1-A";
     private const string Morgana = "ApplicationUsers/2-A";
@@ -17,16 +16,12 @@ public sealed class RoundFlowTests : SpellboundTestDriver
     private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
     private readonly ManualTime time = new(new DateTimeOffset(2026, 10, 17, 12, 0, 0, TimeSpan.Zero));
-    private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
 
     public RoundFlowTests()
     {
-        store = GetDocumentStore();
-        factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.ConfigureTestServices(services =>
+        factory = CreateApp(b => b.ConfigureTestServices(services =>
         {
-            services.RemoveAll<IDocumentStore>();
-            services.AddSingleton(store);
             services.RemoveAll<GameRules>();
             services.AddSingleton(Rules);
             services.RemoveAll<TimeProvider>();

@@ -1,8 +1,6 @@
-using Microsoft.AspNetCore.Identity;
-using Raven.Client.Documents;
-using Raven.Client.Documents.Session;
 using System.Security.Cryptography;
-using Raven.Client.Exceptions;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Spellbound.Domain;
 
 namespace Spellbound.Web.Hosting;
@@ -19,7 +17,7 @@ public sealed record AdminSharedNetwork(string Network, DateTimeOffset LastSeen,
 /// Only reachable through pages behind <see cref="AdminPolicy"/>.
 /// </summary>
 public sealed class AdminService(
-    IDocumentStore store,
+    IDbContextFactory<HostDb> dbs,
     IServiceScopeFactory scopes,
     RoundKeeper rounds,
     BackupKeeper backups,
@@ -31,25 +29,25 @@ public sealed class AdminService(
 
     public async Task<Round?> GetRoundAsync()
     {
-        using var session = store.OpenAsyncSession();
-        return (await session.LoadAsync<CurrentRound>(HostStore.CurrentRoundKey))?.Round;
+        await using var db = await dbs.CreateDbContextAsync();
+        return (await db.LoadCurrentRoundAsync())?.Round;
     }
 
     /// <summary>The current round's players (banned or not), then banned players who don't play this round.</summary>
     public async Task<IReadOnlyList<AdminPlayer>> GetPlayersAsync()
     {
-        using var session = store.OpenAsyncSession();
-        var players = await RoundPlayersAsync(session);
-        var bans = await HostStore.LoadBansAsync(session);
+        await using var db = await dbs.CreateDbContextAsync();
+        var players = await RoundPlayersAsync(db);
+        var bans = await db.LoadBansAsync();
 
         var ownerIds = players.Keys.Concat(bans.Bans.Keys).Distinct().ToList();
-        var users = await session.LoadAsync<ApplicationUser>(ownerIds);
+        var users = await EmailsAsync(db, ownerIds);
 
         return
         [
             .. ownerIds
                 .Select(id => new AdminPlayer(
-                    id, users.GetValueOrDefault(id)?.Email, players.GetValueOrDefault(id), bans.Bans.GetValueOrDefault(id)))
+                    id, users.GetValueOrDefault(id), players.GetValueOrDefault(id), bans.Bans.GetValueOrDefault(id)))
                 .OrderBy(p => p.Player is null)
                 .ThenByDescending(p => p.Player?.Rank ?? 0)
                 .ThenBy(p => p.Email, StringComparer.OrdinalIgnoreCase),
@@ -70,10 +68,23 @@ public sealed class AdminService(
             return $"Give a reason of 1–{MaxReasonLength} characters.";
         }
 
-        var saved = await ChangeBansAsync(bans => bans.Bans[ownerId] = new Ban(time.GetUtcNow(), reason, adminEmail));
-        if (saved is not null)
+        await using (var db = await dbs.CreateDbContextAsync())
         {
-            return saved;
+            var ban = await db.Bans.FindAsync(ownerId);
+            if (ban is null)
+            {
+                ban = db.Bans.Add(new Ban { OwnerId = ownerId }).Entity;
+            }
+
+            (ban.At, ban.Reason, ban.By) = (time.GetUtcNow(), reason, adminEmail);
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (HostStore.IsDuplicateKey(ex))
+            {
+                return "That player was banned at the same moment. Check the list.";
+            }
         }
 
         // Locking the account stops new sign-ins; the new security stamp signs out existing sessions when they revalidate.
@@ -92,9 +103,9 @@ public sealed class AdminService(
     /// </summary>
     public async Task<string> ResetPasswordAsync(string ownerId)
     {
-        using (var session = store.OpenAsyncSession())
+        await using (var db = await dbs.CreateDbContextAsync())
         {
-            if ((await HostStore.LoadBansAsync(session)).IsBanned(ownerId))
+            if (await db.Bans.AnyAsync(b => b.OwnerId == ownerId))
             {
                 return "That player is banned. Unban them first if they should get back in.";
             }
@@ -149,10 +160,9 @@ public sealed class AdminService(
 
     public async Task<string> UnbanAsync(string ownerId)
     {
-        var saved = await ChangeBansAsync(bans => bans.Bans.Remove(ownerId));
-        if (saved is not null)
+        await using (var db = await dbs.CreateDbContextAsync())
         {
-            return saved;
+            await db.Bans.Where(b => b.OwnerId == ownerId).ExecuteDeleteAsync();
         }
 
         return await WithUserAsync(ownerId, async (users, user) =>
@@ -179,7 +189,7 @@ public sealed class AdminService(
                 ? $"Round {after.Number} now ends {after.EndsAt:u}."
                 : $"Round {before.Number} has ended and round {after.Number} has started.";
         }
-        catch (ConcurrencyException)
+        catch (DbUpdateConcurrencyException)
         {
             return "The round changed at the same moment. Check it and try again.";
         }
@@ -194,11 +204,11 @@ public sealed class AdminService(
             return [];
         }
 
-        using var session = store.OpenAsyncSession();
+        await using var db = await dbs.CreateDbContextAsync();
         var ownerIds = shared.SelectMany(n => n.OwnerIds).Distinct().ToList();
-        var users = await session.LoadAsync<ApplicationUser>(ownerIds);
-        var players = await RoundPlayersAsync(session);
-        var bans = await HostStore.LoadBansAsync(session);
+        var users = await EmailsAsync(db, ownerIds);
+        var players = await RoundPlayersAsync(db);
+        var bans = await db.LoadBansAsync();
 
         return
         [
@@ -206,7 +216,7 @@ public sealed class AdminService(
             [
                 .. n.OwnerIds.Select(id => new AdminPlayer(
                     id,
-                    users.GetValueOrDefault(id)?.Email,
+                    users.GetValueOrDefault(id),
                     players.GetValueOrDefault(id),
                     bans.Bans.GetValueOrDefault(id))),
             ])),
@@ -228,35 +238,15 @@ public sealed class AdminService(
         return $"Backed up to {Path.GetFileName(file)}.";
     }
 
-    private async Task<IReadOnlyDictionary<string, PlayerSummary>> RoundPlayersAsync(IAsyncDocumentSession session) =>
-        (await session.LoadAsync<CurrentRound>(HostStore.CurrentRoundKey))?.Round is { } round
-            ? await summaries.GetAsync(session, round)
+    private async Task<IReadOnlyDictionary<string, PlayerSummary>> RoundPlayersAsync(HostDb db) =>
+        (await db.LoadCurrentRoundAsync())?.Round is { } round
+            ? await summaries.GetAsync(db, round)
             : new Dictionary<string, PlayerSummary>();
 
-    private async Task<string?> ChangeBansAsync(Action<BanList> change)
-    {
-        using var session = store.OpenAsyncSession();
-        session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
-        var bans = await session.LoadAsync<BanList>(HostStore.BansKey);
-        if (bans is null)
-        {
-            bans = new BanList();
-            await session.StoreAsync(bans, HostStore.BansKey);
-        }
+    private static async Task<Dictionary<string, string?>> EmailsAsync(HostDb db, IReadOnlyCollection<string> ownerIds) =>
+        await db.Users.Where(u => ownerIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Email);
 
-        change(bans);
-        try
-        {
-            await session.SaveChangesAsync();
-            return null;
-        }
-        catch (ConcurrencyException)
-        {
-            return "The ban list changed at the same moment. Try again.";
-        }
-    }
-
-    /// <summary>Runs an account change in its own scope (UserManager's session must not outlive one change).</summary>
+    /// <summary>Runs an account change in its own scope (UserManager's context must not outlive one change).</summary>
     private async Task<string> WithUserAsync(
         string ownerId, Func<UserManager<ApplicationUser>, ApplicationUser, Task<string>> change)
     {

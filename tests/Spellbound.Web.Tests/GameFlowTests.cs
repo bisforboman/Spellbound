@@ -2,11 +2,10 @@ using System.Net;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Raven.Client.Documents;
-using Raven.Client.Documents.Session;
-using Raven.Client.Exceptions;
 using Spellbound.Domain;
 using Spellbound.Web;
 using Spellbound.Web.Data;
@@ -14,22 +13,17 @@ using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
-/// <summary>Runs the real app against a fresh in-memory RavenDB database per test.</summary>
-public sealed class GameFlowTests : SpellboundTestDriver, IAsyncLifetime
+/// <summary>Runs the real app against a fresh PostgreSQL database per test.</summary>
+public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
 {
     private const string Owner = "ApplicationUsers/1-A";
 
-    private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
+    private readonly BeforeSave beforeSave = new();
 
     public GameFlowTests()
     {
-        store = GetDocumentStore();
-        factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.ConfigureTestServices(services =>
-        {
-            services.RemoveAll<IDocumentStore>();
-            services.AddSingleton(store);
-        }));
+        factory = CreateApp(b => b.ConfigureTestServices(services => services.AddSingleton<IInterceptor>(beforeSave)));
     }
 
     private GameService Game => factory.Services.GetRequiredService<GameService>();
@@ -111,16 +105,19 @@ public sealed class GameFlowTests : SpellboundTestDriver, IAsyncLifetime
 
         // A second tap saves the mage after GameService loaded it but before GameService saves.
         var interfered = false;
-        store.OnBeforeStore += (_, args) =>
+        beforeSave.Action = db =>
         {
-            if (interfered || args.DocumentId != GameKeys.MageKey(1, Owner))
+            if (interfered || !db.ChangeTracker.Entries<MageRecord>().Any(e => e.State == EntityState.Modified))
             {
                 return;
             }
 
             interfered = true;
-            using var other = store.OpenSession();
-            other.Load<Mage>(GameKeys.MageKey(1, Owner)).Meditate(1, DateTimeOffset.UtcNow, rules);
+            using var other = OpenDb();
+            var record = other.Mages().Single(m => m.Round == 1 && m.OwnerId == Owner);
+            var mage = record.Load();
+            mage.Meditate(1, DateTimeOffset.UtcNow, rules);
+            record.Save(mage);
             other.SaveChanges();
         };
 
@@ -180,5 +177,18 @@ public sealed class GameFlowTests : SpellboundTestDriver, IAsyncLifetime
     {
         factory.Dispose();
         base.Dispose();
+    }
+
+    /// <summary>Runs a test's action just before the app saves, to simulate another request getting in first.</summary>
+    private sealed class BeforeSave : SaveChangesInterceptor
+    {
+        public Action<DbContext> Action { get; set; } = _ => { };
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            Action(eventData.Context!);
+            return ValueTask.FromResult(result);
+        }
     }
 }

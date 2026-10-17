@@ -4,8 +4,8 @@
 
 - **.NET 10**, with **Blazor Server** (interactive server rendering) for the UI, all in C#
 - **ASP.NET Core Identity** (individual accounts) for sign-in, from the official Blazor template
-- **RavenDB** (embedded in the web process via `RavenDB.Embedded`) for game data and Identity users
-  (`RavenDB.Identity`). Move to a separate RavenDB server if load or a second host requires it
+- **PostgreSQL 16** through **EF Core** (`Npgsql.EntityFrameworkCore.PostgreSQL`) for game data and Identity users
+  (`Microsoft.AspNetCore.Identity.EntityFrameworkCore`). It runs in its own container next to the app
 - **xUnit** for domain tests, plus `WebApplicationFactory` integration tests for the web app
 
 Blazor Server keeps state on the server and sends small UI diffs over SignalR. That keeps the phone's work light.
@@ -20,15 +20,15 @@ Spellbound.slnx
 src/
   Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook, UnitBook (no dependencies)
   Spellbound.Web/           Blazor app
-    Hosting/                the reusable game host: accounts, RavenDB setup, rounds, admin page, bans, backups,
+    Hosting/                the reusable game host: accounts, the database (HostDb), rounds, admin page, bans, backups,
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
     Components/Account/     the template's Identity pages (part of the host, not yet moved into Hosting/)
-    Components/Game/, GameService, SpellboundHost, Data/   the game itself
+    Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Migrations: the EF Core migrations)
 tools/
   Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
 tests/
   Spellbound.Domain.Tests/  xUnit tests for the rules
-  Spellbound.Web.Tests/     integration tests: real app, in-memory RavenDB (TestDriver)
+  Spellbound.Web.Tests/     integration tests: real app on a real PostgreSQL, a fresh database per test
 docs/                       design, architecture, roadmap
 scripts/bootstrap.ps1       one-time project generation
 ```
@@ -42,14 +42,16 @@ extension points designed for a single game tend to come out wrong.
 - **Hosting never depends on the game.** It may use `Round` from the domain (the round itself knows nothing about
   Spellbound), and nothing else from `Spellbound.Domain` or the game's web code. `HostingBoundaryTests` enforces this
   on both the compiled types and the source files.
-- **The game plugs in** through `Hosting/GameHooks.cs`: `IRoundLifecycle` (round length, and what happens when a round
+- **The game plugs in** through `Hosting/GameHooks.cs`: `IGameModel` (the game's own tables, added to the host's
+  `HostDb`, so both can save in one transaction), `IRoundLifecycle` (round length, and what happens when a round
   ends, inside the reset's transaction; Spellbound records its hall of fame) and `IPlayerSummaries` (how a player shows
   on the admin page), and `IAccountLifecycle` (deleting an account deletes the player's game data in the same
   transaction; Spellbound removes their mages and news from every round). `AdminPageOptions.GameSections` adds game sections to the admin page (Spellbound's rules table).
   `SpellboundHost` implements the hooks.
 - `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
-- **Database keys** are split the same way: `HostStore` (conventions, licence, `rounds/current`, `admin/*`,
-  `signals/*`) and `GameKeys` (`mages/{round}/…`, `news/{round}/…`, `halloffame/…`).
+- **Tables** are split the same way: `HostDb` owns Identity's tables, `current_round`, `bans`, `account_networks` and
+  `server_secrets`; `SpellboundModel` (Data/GameData.cs) adds `mages`, `news` and `hall_of_fame`. The migrations live
+  in `Data/Migrations`, because they name the game's types.
 - **When a second game comes:** move `Hosting/` and `Components/Account/` into a `GameHost` Razor class library,
   register its assembly with the router (`AdditionalAssemblies`), and split the tests. Roughly 2–3 days.
 
@@ -57,24 +59,25 @@ extension points designed for a single game tend to come out wrong.
 
 ```
 page form → GameService.ExploreAsync(userId, turns)
-  1. open a session (one per action: a Blazor Server circuit outlives one action) with optimistic
-     concurrency on, load the current round (rounds/current) and refuse if it has ended,
-     then load the mage by key: mages/{round}/{ownerId}
+  1. create a HostDb (one per action: a Blazor Server circuit outlives one action), load the current round
+     and refuse if it has ended, then load the mage's row by key (round, ownerId) and deserialize the mage
   2. report = mage.Explore(turns, timeProvider.GetUtcNow(), rules)
-  3. if report.Succeeded: add the report to the news log document (news/{round}/{ownerId})
-  4. SaveChangesAsync() saves both in one transaction. On ConcurrencyException, tell the player to try again
+  3. if report.Succeeded: serialize the mage back into its row, and add the report to the news row (round, ownerId)
+  4. SaveChangesAsync() saves both in one transaction, each checked against its row version (xmin).
+     On DbUpdateConcurrencyException, tell the player to try again
   5. render the report
 ```
 
-**Attacks and hexes** change two mages. `GameService.HostileAsync` loads the attacker by key, finds the target's owner
-with a query on the mage's public `Id` (a Guid; owner ids are account keys and never go in URLs), then loads the
-target by key. Both mages and both news logs are saved in one transaction with optimistic concurrency, so if either
+**Attacks and hexes** change two mages. `GameService.HostileAsync` loads the attacker by key and the target by its
+public `Id` (a Guid in the indexed `MageId` column; owner ids are account keys and never go in URLs) within the
+current round. Both mages and both news logs are saved in one transaction with optimistic concurrency, so if either
 player acts at the same moment, nothing happens and the attacker is asked to retry. The domain gets an
 `IRandomSource` (`SharedRandom` in the app, `SeededRandom` in tests).
 
 - `TimeProvider` is registered in DI (`TimeProvider.System`) so tests can fake time.
 - `GameRules` is bound from `appsettings.json` → `"GameRules"` and injected as a singleton.
-- The embedded RavenDB server starts on first use of `IDocumentStore`; data lives in `RavenData/` (gitignored).
+- The database is `ConnectionStrings:Spellbound`. At startup the app runs any pending migrations (`UseGameHostAsync`).
+  In Development it connects to `localhost:5432` (start one with `docker compose -f docker-compose.dev.yml up -d`).
 
 ## Turns: lazy regeneration
 
@@ -84,57 +87,61 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 
 ## Persistence notes
 
-- Documents need no schema or migrations. Adding a property to `Mage` just works; renaming one needs a patch script.
-- `Mage` is stored as-is (RavenDB sets private setters and the private `_activeEffects` and `_recentLosses` lists).
-  Mages saved before `CreatedAt` existed read it as the minimum date, so they are protected by spent turns only.
-  Only string `Id` properties are treated as document keys (`HostStore.IsDocumentKey`), so `Mage.Id`
-  (a Guid) is plain data.
-- **Load by key, never query, on the action path.** Loads are always consistent; queries go through indexes that
-  update a moment after each write. The one exception is finding an attack target's owner by mage id, which never
-  changes; the target itself is then loaded by key.
-- **Rankings** stream the round's mages by key prefix (`mages/{round}/`), which is consistent and needs no index, and
-  sort in memory. That's fine for one server's players; add a static index with a stored networth if it grows past a
-  few thousand.
-- **Alerts:** `NewsLog.Unseen` counts hostile entries. The overview reads it and resets it with a patch, so the reset
-  can't overwrite news that another mage writes at the same moment.
-- **One mage per player per round** comes from the key: creating `mages/{round}/{ownerId}` with an empty change vector
-  fails if it exists. Old rounds' mages and news stay in the database; nothing reads them after the reset.
-- **Rounds:** `rounds/current` holds the round being played. `RoundKeeper`, a hosted `BackgroundService`, checks it
-  every minute: it creates round 1 on first start, and after a round ends it stores `halloffame/{round}` and moves
-  `rounds/current` to the next round in one transaction. Optimistic concurrency means two hosts can't both reset.
+- **Domain objects are jsonb snapshots.** A `mages` row holds the round, owner id and mage id as columns, and the whole
+  `Mage` in a jsonb `Data` column; news and halls of fame work the same way. `DomainJson` stores the private state
+  (private setters and the `_army`, `_activeEffects` and `_recentLosses` fields) without serialization attributes in
+  the domain, and creates objects with their private constructor. So **adding a property or field to `Mage` needs no
+  migration**: old rows read it as its initializer's value (mages saved before `CreatedAt` existed read the minimum
+  date, so they are protected by spent turns only). Renaming one needs a jsonb `UPDATE` in a migration.
+  `DomainJsonTests` checks that nothing is lost.
+- **Changing a table** (the host's, or a column of the game's) needs a migration:
+  `dotnet ef migrations add <Name> --project src/Spellbound.Web --output-dir Data/Migrations` (the tool is in
+  `dotnet-tools.json`; `dotnet tool restore` installs it). CI fails if the model has changes without a migration.
+- **Row versions:** `mages`, `news` and `current_round` use PostgreSQL's `xmin` as a concurrency token, so two saves of
+  the same row can't both win.
+- **Rankings** read the round's mages and sort in memory. That's fine for one server's players; add a networth column
+  if it grows past a few thousand.
+- **Alerts:** `news.Unseen` counts hostile entries. The overview reads it and subtracts what it read in one `UPDATE`,
+  so an attack landing at the same moment still counts next time.
+- **One mage per player per round** comes from the key (round, owner id): a second insert fails as a duplicate. Old
+  rounds' mages and news stay in the database; nothing reads them after the reset.
+- **Times** are stored as UTC (`timestamptz`); `HostDb` converts any `DateTimeOffset` with another offset.
+- **Rounds:** `current_round` holds the round being played, in one row. `RoundKeeper`, a hosted `BackgroundService`,
+  checks it every minute: it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row and
+  moves the round on in one transaction. The row version means two hosts can't both reset.
 - **Abuse protection:** `RateLimits` (config section `RateLimits`) limits requests per IP: account form posts
   (10 per 5 minutes), opening the live game connection, and other non-static requests; static files are unlimited.
   Login locks an account for 5 minutes after 5 wrong passwords. `AccountSignals` stores, per account, keyed hashes of
-  the networks it signed up or logged in from (never the IP itself; the key is `admin/secrets`), and the admin page
+  the networks it signed up or logged in from (never the IP itself; the key is in `server_secrets`), and the admin page
   lists networks shared by several accounts in the last 30 days, as hints, not automatic bans. Deleting an account
   deletes its signals.
 - **Email:** none yet (`IdentityNoOpEmailSender`). "Forgot password" tells players to ask an admin, who gives them a
   temporary password from the admin page (`AdminService.ResetPasswordAsync`). Changing an email address needs a
   confirmation link, so it doesn't work until real email is added.
 - **Admin:** the `Admin` policy allows accounts whose email is in the `Admins` config list; `AdminHandler` reads the
-  list on every check. `admin/bans` holds the ban list. `GameService` checks it on every action and filters banned
+  list on every check. The `bans` table holds banned players. `GameService` checks it on every action and filters banned
   mages out of rankings and targeting; `RoundKeeper` leaves them out of the hall of fame. A ban also locks the account
   (lockout until the end of time) and changes its security stamp, so open sessions are signed out when they revalidate.
-- **Identity:** RavenDB.Identity does not save changes itself, so `SavingUserManager` saves after every create,
-  update and delete. It finds users by email first because its by-name lookup is an index query. RavenDB.Identity
-  has no passkey support, so the template's passkey pages were removed.
-- **Licensing:** production uses a free RavenDB **Community** licence key, set as `RavenDb__License` (or `RAVEN_License`)
-  to the licence JSON. Outside Development the app won't start without one, and RavenDB refuses an invalid one. Without
-  a key the server software falls under the AGPLv3 instead (see the EULA in the `RavenDB.Embedded` package). A Developer
-  key is not allowed in production. Community keys last a year and require the latest RavenDB major version, so renew
-  the key and update the packages each year. Development and tests run without a key.
+- **Identity** uses its EF Core stores on `HostDb`. `HostUserManager` deletes an account's network hashes and, through
+  `IAccountLifecycle`, its game data in the same transaction as the account. The template's passkey pages were
+  removed (from the RavenDB days, which had no passkey support); they can come back with the EF stores.
+- **Tests** need a PostgreSQL server: `SPELLBOUND_TEST_POSTGRES` (default `Host=localhost;Username=postgres;
+  Password=postgres`, as in CI and `docker-compose.dev.yml`). `TestDatabase` migrates a template database once per run
+  and copies it for each test.
 
 ## Hosting plan (M3)
 
 - One small VPS (for example Hetzner, EU) running Docker Compose with the app and **Caddy** for automatic HTTPS
-  (`Dockerfile`, `docker-compose.yml`, `Caddyfile`; steps in [deploy.md](deploy.md)). The app's `/data` volume holds
-  the database and the Data Protection keys (`DataProtection:KeysDirectory`), so restarts and new images keep sign-ins.
+  and PostgreSQL (`Dockerfile`, `docker-compose.yml`, `Caddyfile`; steps in [deploy.md](deploy.md)). The database has
+  its own volume; the app's `/data` volume holds the backups and the Data Protection keys
+  (`DataProtection:KeysDirectory`), so restarts and new images keep sign-ins.
   Only Caddy is published; the app trusts its `X-Forwarded-*` headers (`ForwardedHeaders:Enabled`) so it sees HTTPS.
   The image runs as the non-root `app` user. `/healthz` reports health.
-- **Backups:** `BackupKeeper`, a hosted service, exports the database once a night (`Backup:Directory`, on in the Docker
-  image) with RavenDB's export, which works on every licence, unlike the periodic backup task. It keeps the newest few.
-  `Backup:RestoreFrom` imports a dump at startup, but only into an empty database. Copying the files off the server is a
-  host cron job (see [deploy.md](deploy.md#backups)).
+- **Backups:** `BackupKeeper`, a hosted service, runs `pg_dump` once a night (`Backup:Directory`, on in the Docker
+  image) and keeps the newest few. `pg_dump` must be the server's major version or newer, so the image's client (16)
+  and the compose file's `postgres:16` move together. `Backup:RestoreFrom` runs `pg_restore` at startup, but only into
+  a database no migration has run on, and before the startup migration. Copying the files off the server is a host
+  cron job (see [deploy.md](deploy.md#backups)).
 - **Cloudflare** free tier in front for DNS, DDoS protection and static asset caching.
 - **PWA manifest and service worker**, so the game installs to the home screen without an app store.
 - Global events (round end and reset, hall of fame snapshot) run in the `RoundKeeper` hosted service.

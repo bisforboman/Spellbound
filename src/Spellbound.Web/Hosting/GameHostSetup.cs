@@ -3,17 +3,16 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Raven.Client.Documents;
-using Raven.Embedded;
-using Raven.Identity;
 using Spellbound.Web.Components.Account;
 
 namespace Spellbound.Web.Hosting;
 
 /// <summary>
-/// Wires up the reusable game host: embedded RavenDB, accounts, rounds, admin, backups and abuse protection.
-/// The game adds its own services and implements <see cref="IRoundLifecycle"/> and <see cref="IPlayerSummaries"/>.
+/// Wires up the reusable game host: the PostgreSQL database, accounts, rounds, admin, backups and abuse protection.
+/// The game adds its own services and tables (<see cref="IGameModel"/>) and implements the hooks in GameHooks.cs.
 /// </summary>
 public static class GameHostSetup
 {
@@ -23,7 +22,7 @@ public static class GameHostSetup
         var configuration = builder.Configuration;
         services.TryAddSingleton(TimeProvider.System);
 
-        // Accounts: ASP.NET Core Identity with the template's Blazor account pages, stored in RavenDB.
+        // Accounts: ASP.NET Core Identity with the template's Blazor account pages, stored in PostgreSQL.
         services.AddCascadingAuthenticationState();
         services.AddScoped<IdentityRedirectManager>();
         services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
@@ -34,27 +33,16 @@ public static class GameHostSetup
             })
             .AddIdentityCookies();
 
-        // Embedded RavenDB, started on first use so tests can swap in their own store.
-        services.AddSingleton<IDocumentStore>(_ =>
-        {
-            var settings = configuration.GetSection("RavenDb");
-            EmbeddedServer.Instance.StartServer(new ServerOptions
-            {
-                DataDirectory = Path.Combine(builder.Environment.ContentRootPath, settings["DataDirectory"] ?? "RavenData"),
-                Licensing = HostStore.Licensing(
-                    settings["License"] ?? configuration["RAVEN_License"],
-                    required: !builder.Environment.IsDevelopment()),
-            });
-            return EmbeddedServer.Instance.GetDocumentStore(new DatabaseOptions(settings["Database"] ?? "Game")
-            {
-                Conventions = HostStore.Conventions(),
-            });
-        });
-        services.AddScoped(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession()); // used by RavenDB.Identity
+        // PostgreSQL. Singletons (a Blazor circuit outlives one action) create a context per call from the factory;
+        // Identity uses the scoped one. The connection string is read when first used, so tests can set their own.
+        services.AddDbContextFactory<HostDb>((sp, options) => options
+            .UseNpgsql(HostStore.ConnectionString(sp.GetRequiredService<IConfiguration>()))
+            .AddInterceptors(sp.GetServices<IInterceptor>()));
+        services.TryAddScoped(sp => sp.GetRequiredService<IDbContextFactory<HostDb>>().CreateDbContext());
 
         services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
-            .AddRavenDbIdentityStores<ApplicationUser>(_ => { })
-            .AddUserManager<SavingUserManager>()
+            .AddEntityFrameworkStores<HostDb>()
+            .AddUserManager<HostUserManager>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
@@ -102,7 +90,10 @@ public static class GameHostSetup
         return builder;
     }
 
-    /// <summary>The host's middleware, first in the pipeline; also starts the database and runs a pending restore.</summary>
+    /// <summary>
+    /// The host's middleware, first in the pipeline. Also brings the database up to date: a pending restore goes into an
+    /// empty database first (docs/deploy.md), then any new migrations run.
+    /// </summary>
     public static async Task UseGameHostAsync(this WebApplication app)
     {
         if (app.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
@@ -112,12 +103,13 @@ public static class GameHostSetup
 
         app.UseRateLimiter(); // after forwarded headers, so limits are per player IP, not per proxy
 
-        _ = app.Services.GetRequiredService<IDocumentStore>(); // start embedded RavenDB now, not on the first request
-
         if (app.Configuration["Backup:RestoreFrom"] is { Length: > 0 } restoreFrom)
         {
-            await app.Services.GetRequiredService<BackupKeeper>().RestoreIfEmptyAsync(restoreFrom); // see docs/deploy.md
+            await app.Services.GetRequiredService<BackupKeeper>().RestoreIfEmptyAsync(restoreFrom);
         }
+
+        await using var db = await app.Services.GetRequiredService<IDbContextFactory<HostDb>>().CreateDbContextAsync();
+        await db.Database.MigrateAsync();
     }
 
     /// <summary>The host's endpoints: health, and the extra endpoints the Identity account pages need.</summary>

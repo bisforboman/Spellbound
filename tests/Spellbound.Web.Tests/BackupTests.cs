@@ -1,14 +1,14 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using Raven.Client.Documents;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
-/// <summary>Nightly backup scheduling, export, retention and restore, against real in-memory databases.</summary>
-public sealed class BackupTests : SpellboundTestDriver
+/// <summary>Nightly backup scheduling, pg_dump, retention and restore, against real PostgreSQL databases.</summary>
+public sealed class BackupTests : TestDatabase
 {
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan ThreeAm = TimeSpan.FromHours(3);
@@ -31,9 +31,8 @@ public sealed class BackupTests : SpellboundTestDriver
     [Fact]
     public async Task Backups_export_everything_keep_the_newest_and_restore_into_an_empty_database()
     {
-        using var live = GetDocumentStore();
-        await SeedAsync(live);
-        var keeper = Keeper(live, keep: 2);
+        await SeedAsync();
+        var keeper = Keeper(ConnectionString, keep: 2);
 
         var first = await keeper.TickAsync();
         Assert.NotNull(first);
@@ -48,23 +47,24 @@ public sealed class BackupTests : SpellboundTestDriver
         Assert.DoesNotContain(Path.GetFileName(first), files);
         Assert.Equal(time.GetUtcNow(), keeper.LastBackupAt());
 
-        using var fresh = GetDocumentStore();
+        var fresh = CreateDatabase(); // empty: no migration has run
         Assert.True(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
-        using (var session = fresh.OpenAsyncSession())
+        await using (var db = OpenDb(fresh))
         {
-            Assert.Equal("Merlin", (await session.LoadAsync<Mage>(GameKeys.MageKey(1, "ApplicationUsers/1-A"))).Name);
-            Assert.NotNull(await session.LoadAsync<CurrentRound>(HostStore.CurrentRoundKey));
+            Assert.Equal("Merlin", (await db.Mages().SingleAsync(m => m.Round == 1 && m.OwnerId == "ApplicationUsers/1-A")).Load().Name);
+            Assert.NotNull(await db.LoadCurrentRoundAsync());
+            Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         }
 
         // Once there's data, a restore is refused, so a leftover setting can't overwrite a live game.
         Assert.False(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
+        Assert.False(await Keeper(CreateDatabase(MigratedTemplate)).RestoreIfEmptyAsync(newest!)); // migrated, even with no rows
     }
 
     [Fact]
     public async Task Backups_are_off_without_a_directory()
     {
-        using var live = GetDocumentStore();
-        var keeper = new BackupKeeper(live, time, new ConfigurationBuilder().Build(), NullLogger<BackupKeeper>.Instance);
+        var keeper = new BackupKeeper(new Contexts(this, ConnectionString), time, new ConfigurationBuilder().Build(), NullLogger<BackupKeeper>.Instance);
 
         Assert.Null(keeper.Directory);
         Assert.Null(await keeper.TickAsync());
@@ -81,22 +81,26 @@ public sealed class BackupTests : SpellboundTestDriver
         base.Dispose();
     }
 
-    private BackupKeeper Keeper(IDocumentStore store, int keep = 7) =>
-        new(store, time, new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+    private BackupKeeper Keeper(string connectionString, int keep = 7) =>
+        new(new Contexts(this, connectionString), time, new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
+            [$"ConnectionStrings:{HostStore.ConnectionStringName}"] = connectionString,
             ["Backup:Directory"] = directory,
             ["Backup:Keep"] = keep.ToString(System.Globalization.CultureInfo.InvariantCulture),
             ["Backup:TimeOfDayUtc"] = "03:00:00",
         }).Build(), NullLogger<BackupKeeper>.Instance);
 
-    private static async Task SeedAsync(IDocumentStore store)
+    private async Task SeedAsync()
     {
-        using var session = store.OpenAsyncSession();
-        await session.StoreAsync(new CurrentRound { Round = Round.First(T0, GameRules.Default.RoundLength) }, HostStore.CurrentRoundKey);
-        await session.StoreAsync(
-            Mage.Create("ApplicationUsers/1-A", "Merlin", MagicSchool.Tidal, T0, GameRules.Default),
-            GameKeys.MageKey(1, "ApplicationUsers/1-A"));
-        await session.SaveChangesAsync();
+        await using var db = OpenDb();
+        db.CurrentRound.Add(new CurrentRound { Round = Round.First(T0, GameRules.Default.RoundLength) });
+        db.Mages().Add(MageRecord.For(1, Mage.Create("ApplicationUsers/1-A", "Merlin", MagicSchool.Tidal, T0, GameRules.Default)));
+        await db.SaveChangesAsync();
+    }
+
+    private sealed class Contexts(BackupTests test, string connectionString) : IDbContextFactory<HostDb>
+    {
+        public HostDb CreateDbContext() => test.OpenDb(connectionString);
     }
 
     private sealed class ManualTime(DateTimeOffset start) : TimeProvider

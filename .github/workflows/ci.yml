@@ -8,13 +8,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SPELLBOUND_TEST_POSTGRES: Host=localhost;Username=postgres;Password=postgres
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore Spellbound.slnx
+      - run: dotnet tool restore
       - run: dotnet build Spellbound.slnx --no-restore -c Release
+      - name: Every model change has a migration
+        run: dotnet ef migrations has-pending-model-changes --project src/Spellbound.Web --no-build --configuration Release
       - run: dotnet test Spellbound.slnx --no-build -c Release
       - name: Balance simulation still runs
         run: dotnet run --project tools/Spellbound.Balance --no-build -c Release -- --days 3 --out "$RUNNER_TEMP/balance.md"
@@ -23,14 +37,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check the compose file
-        run: DOMAIN=example.com RAVEN_LICENSE=placeholder docker compose config --quiet
-      - run: docker build -t spellbound .
-      - name: Smoke test the image (Development, so no licence key is needed)
+      - name: Check the compose files
         run: |
-          docker run -d --name spellbound -p 8080:8080 -e ASPNETCORE_ENVIRONMENT=Development spellbound
+          DOMAIN=example.com POSTGRES_PASSWORD=placeholder docker compose config --quiet
+          docker compose -f docker-compose.dev.yml config --quiet
+      - run: docker build -t spellbound .
+      - name: Smoke test the image (migrates a fresh database, then takes its first backup)
+        run: |
+          docker network create smoke
+          docker run -d --name db --network smoke -e POSTGRES_DB=spellbound -e POSTGRES_USER=spellbound \
+            -e POSTGRES_PASSWORD=smoke postgres:16
+          for i in $(seq 1 60); do docker exec db pg_isready -U spellbound -d spellbound && break; sleep 1; done
+          docker exec db pg_isready -U spellbound -d spellbound || { docker logs db; exit 1; }
+          docker run -d --name spellbound --network smoke -p 8080:8080 \
+            -e "ConnectionStrings__Spellbound=Host=db;Database=spellbound;Username=spellbound;Password=smoke" spellbound
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/healthz; then exit 0; fi
+            if curl -fsS http://localhost:8080/healthz && sleep 5 && docker exec spellbound sh -c 'ls /data/backups/*.dump'; then
+              exit 0
+            fi
             sleep 2
           done
           docker logs spellbound

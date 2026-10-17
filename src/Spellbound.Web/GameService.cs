@@ -1,7 +1,4 @@
-using Raven.Client.Documents;
-using Raven.Client.Documents.Linq;
-using Raven.Client.Documents.Session;
-using Raven.Client.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
 using Spellbound.Web.Hosting;
@@ -10,15 +7,17 @@ namespace Spellbound.Web;
 
 /// <summary>
 /// Thin glue between pages and the domain: load the current round and the mage, run one domain action, save.
-/// Opens a session per call (a Blazor Server circuit outlives one action) and only loads by key,
-/// because RavenDB loads are always consistent while queries may lag behind writes.
-/// Mages and news live under the current round's keys, so a new round starts everyone over.
+/// Opens a database context per call, because a Blazor Server circuit outlives one action.
+/// Mages and news are stored per round, so a new round starts everyone over.
 /// </summary>
-public sealed class GameService(IDocumentStore store, TimeProvider time, GameRules rules, IRandomSource random)
+public sealed class GameService(IDbContextFactory<HostDb> dbs, TimeProvider time, GameRules rules, IRandomSource random)
 {
     public const int NewsKept = 50;
 
     private static readonly ActionReport Banned = ActionReport.Fail("Your account is banned.");
+
+    private static readonly ActionReport Busy =
+        ActionReport.Fail("Your mage was busy with another action. Nothing was spent, please try again.");
 
     public GameRules Rules => rules;
 
@@ -27,103 +26,88 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
     /// <summary>The current round, or null before the first one has started.</summary>
     public async Task<Round?> GetRoundAsync()
     {
-        using var session = store.OpenAsyncSession();
-        return await CurrentRoundAsync(session);
+        await using var db = await dbs.CreateDbContextAsync();
+        return (await db.LoadCurrentRoundAsync())?.Round;
     }
 
     /// <summary>Read-only copy of the player's mage in the current round, with turns accrued to now (not saved).</summary>
     public async Task<Mage?> GetMageAsync(string ownerId)
     {
-        using var session = store.OpenAsyncSession();
-        if (await CurrentRoundAsync(session) is not { } round)
+        await using var db = await dbs.CreateDbContextAsync();
+        if ((await db.LoadCurrentRoundAsync())?.Round is not { } round)
         {
             return null;
         }
 
-        var mage = await session.LoadAsync<Mage>(GameKeys.MageKey(round.Number, ownerId));
+        var mage = (await db.Mages().AsNoTracking().SingleOrDefaultAsync(m => m.Round == round.Number && m.OwnerId == ownerId))?.Load();
         mage?.AccrueTurns(Now, rules);
         return mage;
     }
 
     public async Task<IReadOnlyList<NewsEntry>> GetNewsAsync(string ownerId)
     {
-        using var session = store.OpenAsyncSession();
-        if (await CurrentRoundAsync(session) is not { } round)
+        await using var db = await dbs.CreateDbContextAsync();
+        if ((await db.LoadCurrentRoundAsync())?.Round is not { } round)
         {
             return [];
         }
 
-        var log = await session.LoadAsync<NewsLog>(GameKeys.NewsKey(round.Number, ownerId));
-        return log?.Entries ?? [];
+        var news = await db.News().AsNoTracking().SingleOrDefaultAsync(n => n.Round == round.Number && n.OwnerId == ownerId);
+        return news?.Load().Entries ?? [];
     }
 
     /// <summary>How many hostile news entries arrived since the player last looked, and resets the count.</summary>
     public async Task<int> TakeUnseenAlertsAsync(string ownerId)
     {
-        using var session = store.OpenAsyncSession();
-        if (await CurrentRoundAsync(session) is not { } round)
+        await using var db = await dbs.CreateDbContextAsync();
+        if ((await db.LoadCurrentRoundAsync())?.Round is not { } round)
         {
             return 0;
         }
 
-        var key = GameKeys.NewsKey(round.Number, ownerId);
-        var log = await session.LoadAsync<NewsLog>(key);
-        if (log is not { Unseen: > 0 })
+        var news = db.News().Where(n => n.Round == round.Number && n.OwnerId == ownerId);
+        var unseen = await news.Select(n => n.Unseen).SingleOrDefaultAsync();
+        if (unseen > 0)
         {
-            return 0;
+            // Subtract what was read rather than set 0, so an attack landing in between still counts next time.
+            await news.ExecuteUpdateAsync(set => set.SetProperty(n => n.Unseen, n => n.Unseen - unseen));
         }
 
-        var unseen = log.Unseen; // read first: saving refreshes the loaded log with the patched value
-        session.Advanced.Patch<NewsLog, int>(key, l => l.Unseen, 0); // a patch can't overwrite news written meanwhile
-        await session.SaveChangesAsync();
         return unseen;
     }
 
-    /// <summary>
-    /// Every mage in the current round, for rankings and picking targets. Streamed by key prefix, so it needs no
-    /// index and includes a mage created a moment ago. Fine for one server's players; page it if that grows.
-    /// </summary>
+    /// <summary>Every mage in the current round, for rankings and picking targets. Fine for one server's players.</summary>
     public async Task<IReadOnlyList<Mage>> GetAllMagesAsync()
     {
-        using var session = store.OpenAsyncSession();
-        if (await CurrentRoundAsync(session) is not { } round)
+        await using var db = await dbs.CreateDbContextAsync();
+        if ((await db.LoadCurrentRoundAsync())?.Round is not { } round)
         {
             return [];
         }
 
-        var bans = await HostStore.LoadBansAsync(session);
-        return [.. (await GameKeys.LoadRoundMagesAsync(session, round.Number)).Where(m => !bans.IsBanned(m.OwnerId))];
+        var bans = await db.LoadBansAsync();
+        return [.. (await db.LoadRoundMagesAsync(round.Number)).Where(m => !bans.IsBanned(m.OwnerId))];
     }
 
     /// <summary>Another mage in the current round by its public id (never the owner id, which is an account key).</summary>
     public async Task<Mage?> GetRivalAsync(Guid mageId)
     {
-        using var session = store.OpenAsyncSession();
-        if (await CurrentRoundAsync(session) is not { } round)
+        await using var db = await dbs.CreateDbContextAsync();
+        if ((await db.LoadCurrentRoundAsync())?.Round is not { } round)
         {
             return null;
         }
 
-        var mage = await session.Query<Mage>().Where(m => m.Id == mageId).FirstOrDefaultAsync();
-        return mage is not null
-               && session.Advanced.GetDocumentId(mage).StartsWith(GameKeys.MagePrefix(round.Number), StringComparison.Ordinal)
-               && !(await HostStore.LoadBansAsync(session)).IsBanned(mage.OwnerId)
-            ? mage
-            : null;
+        var record = await db.Mages().AsNoTracking().SingleOrDefaultAsync(m => m.Round == round.Number && m.MageId == mageId);
+        return record is not null && !await db.Bans.AnyAsync(b => b.OwnerId == record.OwnerId) ? record.Load() : null;
     }
 
     /// <summary>Every finished round's hall of fame, newest first.</summary>
     public async Task<IReadOnlyList<HallOfFame>> GetHallOfFameAsync()
     {
-        using var session = store.OpenAsyncSession();
-        var all = new List<HallOfFame>();
-        await using var stream = await session.Advanced.StreamAsync<HallOfFame>(startsWith: GameKeys.HallOfFamePrefix);
-        while (await stream.MoveNextAsync())
-        {
-            all.Add(stream.Current.Document);
-        }
-
-        return [.. all.OrderByDescending(f => f.RoundNumber)];
+        await using var db = await dbs.CreateDbContextAsync();
+        var all = await db.HallsOfFame().AsNoTracking().OrderByDescending(f => f.Round).Select(f => f.Data).ToListAsync();
+        return [.. all.Select(DomainJson.Deserialize<HallOfFame>)];
     }
 
     public async Task<ActionReport> CreateMageAsync(string ownerId, string name, MagicSchool school)
@@ -139,26 +123,25 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             return ActionReport.Fail("Choose a school of magic.");
         }
 
-        using var session = store.OpenAsyncSession();
+        await using var db = await dbs.CreateDbContextAsync();
         var now = Now;
-        if (ClosedReason(await CurrentRoundAsync(session), now, out var round) is { } closed)
+        if (ClosedReason((await db.LoadCurrentRoundAsync())?.Round, now, out var round) is { } closed)
         {
             return closed;
         }
 
-        if ((await HostStore.LoadBansAsync(session)).IsBanned(ownerId))
+        if (await db.Bans.AnyAsync(b => b.OwnerId == ownerId))
         {
             return Banned;
         }
 
         var mage = Mage.Create(ownerId, trimmed, school, now, rules);
-        // An empty change vector means the key must not exist yet: one mage per player per round.
-        await session.StoreAsync(mage, changeVector: string.Empty, GameKeys.MageKey(round.Number, ownerId));
+        db.Mages().Add(MageRecord.For(round.Number, mage));
         try
         {
-            await session.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
-        catch (ConcurrencyException)
+        catch (DbUpdateException ex) when (HostStore.IsDuplicateKey(ex)) // the key is (round, owner): one mage per round
         {
             return ActionReport.Fail("You already have a mage.");
         }
@@ -189,92 +172,84 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
 
     private async Task<ActionReport> ActAsync(string ownerId, Func<Mage, DateTimeOffset, ActionReport> action)
     {
-        using var session = store.OpenAsyncSession();
-        session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes; // a double-tap can't spend turns twice
-
+        await using var db = await dbs.CreateDbContextAsync();
         var now = Now;
-        if (ClosedReason(await CurrentRoundAsync(session), now, out var round) is { } closed)
+        if (ClosedReason((await db.LoadCurrentRoundAsync())?.Round, now, out var round) is { } closed)
         {
             return closed;
         }
 
-        var mage = await session.LoadAsync<Mage>(GameKeys.MageKey(round.Number, ownerId));
-        if (mage is null)
+        var record = await db.Mages().SingleOrDefaultAsync(m => m.Round == round.Number && m.OwnerId == ownerId);
+        if (record is null)
         {
             return ActionReport.Fail("You don't have a mage yet.");
         }
 
-        var bans = await HostStore.LoadBansAsync(session);
-        if (bans.IsBanned(ownerId))
+        if (await db.Bans.AnyAsync(b => b.OwnerId == ownerId))
         {
             return Banned;
         }
 
+        var mage = record.Load();
         var report = action(mage, now);
         if (!report.Succeeded)
         {
             return report;
         }
 
-        await AddNewsAsync(session, round.Number, ownerId, new NewsEntry(now, report.Lines));
-        return await SaveAsync(session, report);
+        record.Save(mage);
+        await AddNewsAsync(db, round.Number, ownerId, new NewsEntry(now, report.Lines));
+        return await SaveAsync(db, report);
     }
 
     /// <summary>
-    /// Like <see cref="ActAsync"/>, but changes two mages. Both are loaded by key in one session, so if either
-    /// of them acts at the same moment, the save fails and nothing happens.
+    /// Like <see cref="ActAsync"/>, but changes two mages. Both rows carry their version, so if either mage acts at
+    /// the same moment, the save fails and nothing happens.
     /// </summary>
     private async Task<ActionReport> HostileAsync(
         string ownerId, Guid targetId, Func<Mage, Mage, DateTimeOffset, HostileReport> action)
     {
-        using var session = store.OpenAsyncSession();
-        session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
-
+        await using var db = await dbs.CreateDbContextAsync();
         var now = Now;
-        if (ClosedReason(await CurrentRoundAsync(session), now, out var round) is { } closed)
+        if (ClosedReason((await db.LoadCurrentRoundAsync())?.Round, now, out var round) is { } closed)
         {
             return closed;
         }
 
-        var mage = await session.LoadAsync<Mage>(GameKeys.MageKey(round.Number, ownerId));
-        if (mage is null)
+        var record = await db.Mages().SingleOrDefaultAsync(m => m.Round == round.Number && m.OwnerId == ownerId);
+        if (record is null)
         {
             return ActionReport.Fail("You don't have a mage yet.");
         }
 
-        var bans = await HostStore.LoadBansAsync(session);
+        var bans = await db.LoadBansAsync();
         if (bans.IsBanned(ownerId))
         {
             return Banned;
         }
 
-        // The query only finds the target's owner; the mage itself is then loaded by key, which is always current.
-        // A mage id from an earlier round finds that owner's current mage, which is a different mage: refuse it.
-        var targetOwner = await session.Query<Mage>()
-            .Where(m => m.Id == targetId)
-            .Select(m => m.OwnerId)
-            .FirstOrDefaultAsync();
-        var target = targetOwner is null ? null
-            : targetOwner == ownerId ? mage
-            : await session.LoadAsync<Mage>(GameKeys.MageKey(round.Number, targetOwner));
-        if (target is null || target.Id != targetId || bans.IsBanned(target.OwnerId))
+        var mage = record.Load();
+        var targetRecord = record.MageId == targetId
+            ? record
+            : await db.Mages().SingleOrDefaultAsync(m => m.Round == round.Number && m.MageId == targetId);
+        if (targetRecord is null || bans.IsBanned(targetRecord.OwnerId))
         {
             return ActionReport.Fail("There is no such mage this round.");
         }
 
+        var target = targetRecord == record ? mage : targetRecord.Load();
         var result = action(mage, target, now);
         if (!result.Report.Succeeded)
         {
             return result.Report;
         }
 
-        await AddNewsAsync(session, round.Number, ownerId, new NewsEntry(now, result.Report.Lines));
-        await AddNewsAsync(session, round.Number, targetOwner!, new NewsEntry(now, result.TargetLines, Hostile: true));
-        return await SaveAsync(session, result.Report);
+        record.Save(mage);
+        targetRecord.Save(target);
+        await AddNewsAsync(db, round.Number, ownerId, new NewsEntry(now, result.Report.Lines));
+        await AddNewsAsync(db, round.Number, targetRecord.OwnerId, new NewsEntry(now, result.TargetLines, Hostile: true));
+        return await SaveAsync(db, result.Report);
     }
-
-    private static async Task<Round?> CurrentRoundAsync(IAsyncDocumentSession session) =>
-        (await session.LoadAsync<CurrentRound>(HostStore.CurrentRoundKey))?.Round;
 
     /// <summary>Why nobody can act right now (no round yet, or the round is over and waiting for its reset).</summary>
     private static ActionReport? ClosedReason(Round? current, DateTimeOffset now, out Round round)
@@ -285,28 +260,28 @@ public sealed class GameService(IDocumentStore store, TimeProvider time, GameRul
             : ActionReport.Fail($"Round {current.Number} is over. The next round starts in a moment.");
     }
 
-    private static async Task AddNewsAsync(IAsyncDocumentSession session, int round, string ownerId, NewsEntry entry)
+    private static async Task AddNewsAsync(HostDb db, int round, string ownerId, NewsEntry entry)
     {
-        var newsKey = GameKeys.NewsKey(round, ownerId);
-        var news = await session.LoadAsync<NewsLog>(newsKey);
-        if (news is null)
+        var record = await db.News().SingleOrDefaultAsync(n => n.Round == round && n.OwnerId == ownerId);
+        if (record is null)
         {
-            news = new NewsLog();
-            await session.StoreAsync(news, newsKey);
+            record = db.News().Add(new NewsRecord { Round = round, OwnerId = ownerId }).Entity;
         }
 
-        news.Add(entry, NewsKept);
+        var log = record.Load();
+        log.Add(entry, NewsKept);
+        record.Save(log);
     }
 
-    private static async Task<ActionReport> SaveAsync(IAsyncDocumentSession session, ActionReport report)
+    private static async Task<ActionReport> SaveAsync(HostDb db, ActionReport report)
     {
         try
         {
-            await session.SaveChangesAsync(); // mages and news in one transaction
+            await db.SaveChangesAsync(); // mages and news in one transaction
         }
-        catch (ConcurrencyException)
+        catch (DbUpdateException ex) when (ex is DbUpdateConcurrencyException || HostStore.IsDuplicateKey(ex))
         {
-            return ActionReport.Fail("Your mage was busy with another action. Nothing was spent, please try again.");
+            return Busy;
         }
 
         return report;

@@ -1,16 +1,36 @@
-# Production: the app behind Caddy, which gets and renews the HTTPS certificate. See docs/deploy.md.
-# Settings come from .env next to this file (copy .env.example).
+# Production: the app and its PostgreSQL database behind Caddy, which gets and renews the HTTPS certificate.
+# See docs/deploy.md. Settings come from .env next to this file (copy .env.example).
 services:
   app:
     build: .
     image: spellbound
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      RavenDb__License: ${RAVEN_LICENSE:?Set RAVEN_LICENSE in .env}
+      ConnectionStrings__Spellbound: Host=db;Database=spellbound;Username=spellbound;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       Admins__0: ${ADMIN_EMAIL:-}
     volumes:
       - spellbound-data:/data
     # No ports: only Caddy can reach the app, which is what makes trusting its forwarded headers safe.
+
+  db:
+    # Keep this major version in step with pg_dump in the app image (see Dockerfile).
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: spellbound
+      POSTGRES_USER: spellbound
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spellbound -d spellbound"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No ports: only the app reaches the database.
 
   caddy:
     image: caddy:2
@@ -30,5 +50,6 @@ services:
 
 volumes:
   spellbound-data:
+  postgres-data:
   caddy-data:
   caddy-config:
