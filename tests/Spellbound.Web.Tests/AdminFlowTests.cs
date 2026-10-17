@@ -174,6 +174,20 @@ public sealed class AdminFlowTests : SpellboundTestDriver, IAsyncLifetime
     }
 
     [Fact]
+    public async Task Deleting_an_account_removes_the_players_mage_and_news()
+    {
+        await Game.ExploreAsync(merlinId, 1); // some news too
+        var merlin = (await Game.GetMageAsync(merlinId))!.Id;
+
+        await WithUsersAsync(async users => Assert.True((await users.DeleteAsync((await users.FindByIdAsync(merlinId))!)).Succeeded));
+
+        Assert.Null(await Game.GetMageAsync(merlinId));
+        Assert.Empty(await Game.GetNewsAsync(merlinId));
+        Assert.Null(await Game.GetRivalAsync(merlin));
+        Assert.Equal(["Morgana"], (await Game.GetAllMagesAsync()).Select(m => m.Name)); // nobody else's data
+    }
+
+    [Fact]
     public async Task Admin_can_extend_the_round_or_end_it_now()
     {
         var round = (await Game.GetRoundAsync())!;

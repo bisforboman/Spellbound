@@ -18,7 +18,8 @@ public sealed class SavingUserManager(
     ILookupNormalizer keyNormalizer,
     IdentityErrorDescriber errors,
     IServiceProvider services,
-    ILogger<UserManager<ApplicationUser>> logger)
+    ILogger<UserManager<ApplicationUser>> logger,
+    IAccountLifecycle game)
     : UserManager<ApplicationUser>(store, optionsAccessor, passwordHasher, userValidators, passwordValidators,
         keyNormalizer, errors, services, logger)
 {
@@ -31,6 +32,7 @@ public sealed class SavingUserManager(
         if (result.Succeeded && user.Id is { } id)
         {
             session.Delete(HostStore.SignalKey(id)); // the account's network hashes go with it
+            await game.OnAccountDeletedAsync(session, id); // and the player's game data, in the same save
         }
 
         return await SaveIfSucceeded(result);

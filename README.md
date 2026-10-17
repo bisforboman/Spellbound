@@ -28,3 +28,4 @@ environment variable: `Admins__0=you@example.com`.
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Deploying](docs/deploy.md)
+- [Balance findings](docs/balance.md) (from a simulation; rerun with `dotnet run --project tools/Spellbound.Balance`)
