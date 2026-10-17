@@ -7,8 +7,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using Raven.Client.Exceptions;
-using Raven.Embedded;
-using Raven.TestDriver;
 using Spellbound.Domain;
 using Spellbound.Web;
 using Spellbound.Web.Data;
@@ -16,21 +14,12 @@ using Spellbound.Web.Data;
 namespace Spellbound.Web.Tests;
 
 /// <summary>Runs the real app against a fresh in-memory RavenDB database per test.</summary>
-public sealed class GameFlowTests : RavenTestDriver, IAsyncLifetime
+public sealed class GameFlowTests : SpellboundTestDriver, IAsyncLifetime
 {
     private const string Owner = "ApplicationUsers/1-A";
 
     private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
-
-    static GameFlowTests()
-    {
-        // The test server is embedded and in-memory; like the app's embedded server, run it without a license file.
-        ConfigureServer(new Raven.TestDriver.TestServerOptions
-        {
-            Licensing = new ServerOptions.LicensingOptions { ThrowOnInvalidOrMissingLicense = false },
-        });
-    }
 
     public GameFlowTests()
     {
@@ -47,9 +36,6 @@ public sealed class GameFlowTests : RavenTestDriver, IAsyncLifetime
     public async Task InitializeAsync() => await factory.Services.GetRequiredService<RoundKeeper>().TickAsync(); // round 1
 
     public Task DisposeAsync() => Task.CompletedTask;
-
-    protected override void PreInitialize(IDocumentStore documentStore) =>
-        documentStore.Conventions.FindIdentityProperty = RavenSetup.IsDocumentKey;
 
     [Fact]
     public async Task Action_spends_turns_saves_the_mage_and_writes_news()

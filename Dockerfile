@@ -19,6 +19,7 @@ ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_HTTP_PORTS=8080 \
     RavenDb__DataDirectory=/data/raven \
     DataProtection__KeysDirectory=/data/keys \
+    Backup__Directory=/data/backups \
     ForwardedHeaders__Enabled=true
 VOLUME /data
 EXPOSE 8080

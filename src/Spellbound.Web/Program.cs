@@ -67,6 +67,8 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AdminPolicy.Name, policy => policy.RequireAuthenticatedUser().AddRequirements(new AdminRequirement()));
 builder.Services.AddHostedService(sp => sp.GetRequiredService<RoundKeeper>());
 builder.Services.AddHealthChecks();
+builder.Services.AddSingleton<BackupKeeper>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<BackupKeeper>());
 
 // Hosting (see docs/deploy.md). Behind Caddy, trust its X-Forwarded-* headers so the app sees HTTPS and real client IPs.
 // Only switch this on when the app isn't reachable except through the proxy, as in docker-compose.yml.
@@ -94,6 +96,11 @@ if (app.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
 }
 
 _ = app.Services.GetRequiredService<IDocumentStore>(); // start embedded RavenDB now, not on the first request
+
+if (app.Configuration["Backup:RestoreFrom"] is { Length: > 0 } restoreFrom)
+{
+    await app.Services.GetRequiredService<BackupKeeper>().RestoreIfEmptyAsync(restoreFrom); // see docs/deploy.md
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

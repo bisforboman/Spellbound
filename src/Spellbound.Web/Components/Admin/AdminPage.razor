@@ -48,6 +48,17 @@ else
     }
 }
 
+<h2 class="h4 mt-4">Backups</h2>
+@if (!Admin.BackupsEnabled)
+{
+    <p class="text-muted">Backups are off. Set <code>Backup:Directory</code> to turn on nightly backups.</p>
+}
+else
+{
+    <p>Last backup: @(Admin.LastBackupAt() is { } last ? Utc(last) : "none yet"). A new one is taken every night.</p>
+    <button type="button" class="btn btn-outline-primary btn-lg w-100" disabled="@busy" @onclick="BackUpNowAsync">Back up now</button>
+}
+
 <h2 class="h4 mt-4">Players</h2>
 @if (players.Count == 0)
 {
@@ -139,6 +150,8 @@ else
     private Task BanAsync(string ownerId) => RunAsync(() => Admin.BanAsync(adminOwnerId, adminEmail, ownerId, reason));
 
     private Task UnbanAsync(string ownerId) => RunAsync(() => Admin.UnbanAsync(ownerId));
+
+    private Task BackUpNowAsync() => RunAsync(Admin.BackUpNowAsync);
 
     private async Task RunAsync(Func<Task<string>> action)
     {

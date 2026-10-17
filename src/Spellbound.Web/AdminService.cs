@@ -14,7 +14,8 @@ public sealed record AdminPlayer(string OwnerId, string? Email, Mage? Mage, Ban?
 /// What the admin page can do: list players, ban and unban, and move the current round's end.
 /// Only reachable through pages behind <see cref="AdminPolicy"/>.
 /// </summary>
-public sealed class AdminService(IDocumentStore store, IServiceScopeFactory scopes, RoundKeeper rounds, TimeProvider time)
+public sealed class AdminService(
+    IDocumentStore store, IServiceScopeFactory scopes, RoundKeeper rounds, BackupKeeper backups, TimeProvider time)
 {
     public const int MaxReasonLength = 200;
 
@@ -107,6 +108,21 @@ public sealed class AdminService(IDocumentStore store, IServiceScopeFactory scop
         {
             return "The round changed at the same moment. Check it and try again.";
         }
+    }
+
+    public bool BackupsEnabled => backups.Directory is not null;
+
+    public DateTimeOffset? LastBackupAt() => backups.LastBackupAt();
+
+    public async Task<string> BackUpNowAsync()
+    {
+        if (!BackupsEnabled)
+        {
+            return "Backups are off: set Backup:Directory.";
+        }
+
+        var file = await backups.BackUpNowAsync();
+        return $"Backed up to {Path.GetFileName(file)}.";
     }
 
     private async Task<string?> ChangeBansAsync(Action<BanList> change)

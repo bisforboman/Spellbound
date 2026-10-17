@@ -6,15 +6,13 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
-using Raven.Embedded;
-using Raven.TestDriver;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
 
 namespace Spellbound.Web.Tests;
 
 /// <summary>The admin policy, bans and round changes through the real app, with real accounts.</summary>
-public sealed class AdminFlowTests : RavenTestDriver, IAsyncLifetime
+public sealed class AdminFlowTests : SpellboundTestDriver, IAsyncLifetime
 {
     private const string AdminEmail = "admin@spellbound.test";
 
@@ -25,14 +23,6 @@ public sealed class AdminFlowTests : RavenTestDriver, IAsyncLifetime
     private string adminId = string.Empty;
     private string merlinId = string.Empty;
     private string morganaId = string.Empty;
-
-    static AdminFlowTests()
-    {
-        ConfigureServer(new Raven.TestDriver.TestServerOptions
-        {
-            Licensing = new ServerOptions.LicensingOptions { ThrowOnInvalidOrMissingLicense = false },
-        });
-    }
 
     public AdminFlowTests()
     {
@@ -63,9 +53,6 @@ public sealed class AdminFlowTests : RavenTestDriver, IAsyncLifetime
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
-
-    protected override void PreInitialize(IDocumentStore documentStore) =>
-        documentStore.Conventions.FindIdentityProperty = RavenSetup.IsDocumentKey;
 
     [Fact]
     public async Task Only_listed_emails_are_admins()
