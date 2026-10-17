@@ -2,30 +2,25 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Raven.Client.Documents;
 using Spellbound.Domain;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
 /// <summary>Attacks and hexes through the real app: two mages, no protection, a seeded random source.</summary>
-public sealed class PvpFlowTests : SpellboundTestDriver, IAsyncLifetime
+public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
 {
     private const string Attacker = "ApplicationUsers/1-A";
     private const string Defender = "ApplicationUsers/2-A";
 
     private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
-    private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
 
     public PvpFlowTests()
     {
-        store = GetDocumentStore();
-        factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.ConfigureTestServices(services =>
+        factory = CreateApp(b => b.ConfigureTestServices(services =>
         {
-            services.RemoveAll<IDocumentStore>();
-            services.AddSingleton(store);
             services.RemoveAll<GameRules>();
             services.AddSingleton(Rules);
             services.RemoveAll<IRandomSource>();
@@ -43,7 +38,6 @@ public sealed class PvpFlowTests : SpellboundTestDriver, IAsyncLifetime
     {
         await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.Tidal);
         await Game.CreateMageAsync(Defender, "Morgana", MagicSchool.Radiant);
-        WaitForIndexing(store);
         return (await Game.GetMageAsync(Defender))!.Id;
     }
 

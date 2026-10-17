@@ -1,21 +1,23 @@
+using System.Diagnostics;
 using System.Globalization;
-using Raven.Client.Documents;
-using Raven.Client.Documents.Smuggler;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Spellbound.Web.Hosting;
 
 /// <summary>
-/// Nightly backups: exports the whole database (game data and accounts) to a dump file in Backup:Directory once a day
-/// after Backup:TimeOfDayUtc, and keeps the newest Backup:Keep files. Uses RavenDB's export rather than its backup task,
-/// which may not be available on every licence. Off by default; the Docker image turns it on (see docs/deploy.md).
-/// Restoring is <see cref="RestoreIfEmptyAsync"/>, run at startup when Backup:RestoreFrom is set.
+/// Nightly backups: dumps the whole database (game data and accounts) with pg_dump to a file in Backup:Directory once a
+/// day after Backup:TimeOfDayUtc, and keeps the newest Backup:Keep files. pg_dump must be the server's major version or
+/// newer (Backup:PgDump and Backup:PgRestore name the tools). Off by default; the Docker image turns it on (see
+/// docs/deploy.md). Restoring is <see cref="RestoreIfEmptyAsync"/>, run at startup when Backup:RestoreFrom is set.
 /// </summary>
-public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfiguration configuration, ILogger<BackupKeeper> logger)
+public sealed class BackupKeeper(
+    IDbContextFactory<HostDb> dbs, TimeProvider time, IConfiguration configuration, ILogger<BackupKeeper> logger)
     : BackgroundService
 {
     /// <summary>Start of every backup file's name (Backup:FilePrefix); the game sets its own, e.g. "spellbound-".</summary>
     public string FilePrefix => configuration["Backup:FilePrefix"] is { Length: > 0 } prefix ? prefix : "backup-";
-    public const string FileExtension = ".ravendbdump";
+    public const string FileExtension = ".dump";
 
     public static readonly TimeSpan CheckEvery = TimeSpan.FromMinutes(15);
 
@@ -44,7 +46,7 @@ public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfi
             ? await BackUpNowAsync(cancellationToken)
             : null;
 
-    /// <summary>Exports the database now, then removes the oldest backups beyond Backup:Keep.</summary>
+    /// <summary>Dumps the database now, then removes the oldest backups beyond Backup:Keep.</summary>
     public async Task<string> BackUpNowAsync(CancellationToken cancellationToken = default)
     {
         var directory = Directory ?? throw new InvalidOperationException("Backups are off: Backup:Directory is not set.");
@@ -52,10 +54,9 @@ public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfi
         var at = time.GetUtcNow();
         var file = Path.Combine(directory, $"{FilePrefix}{at.UtcDateTime.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}{FileExtension}");
 
-        // Export to a temporary name first, so a crash never leaves a half-written file that looks like a backup.
+        // Dump to a temporary name first, so a crash never leaves a half-written file that looks like a backup.
         var partial = file + ".partial";
-        var export = await store.Smuggler.ExportAsync(new DatabaseSmugglerExportOptions(), partial, cancellationToken);
-        await export.WaitForCompletionAsync(ExportTimeout);
+        await RunAsync(configuration["Backup:PgDump"] ?? "pg_dump", ["--format=custom", "--no-owner", $"--file={partial}"], cancellationToken);
         File.Move(partial, file, overwrite: true);
 
         foreach (var (old, _) in Backups(directory).Skip(Keep))
@@ -68,22 +69,25 @@ public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfi
     }
 
     /// <summary>
-    /// Imports a backup into an empty database, for restoring onto a fresh data volume. Refuses a database that already
-    /// has a round, so a forgotten Backup:RestoreFrom setting can't overwrite live data.
+    /// Restores a backup into an empty database (one no migration has run on), for restoring onto a fresh server.
+    /// Refuses any other database, so a forgotten Backup:RestoreFrom setting can't overwrite live data. Runs before the
+    /// startup migration, which then brings an older backup up to date.
     /// </summary>
     public async Task<bool> RestoreIfEmptyAsync(string backupFile, CancellationToken cancellationToken = default)
     {
-        using (var session = store.OpenAsyncSession())
+        await using (var db = await dbs.CreateDbContextAsync(cancellationToken))
         {
-            if (await session.Advanced.ExistsAsync(HostStore.CurrentRoundKey, cancellationToken))
+            if (!await HostStore.IsEmptyAsync(db, cancellationToken))
             {
                 logger.LogWarning("Backup:RestoreFrom is set, but the database isn't empty. Skipped the restore; remove the setting.");
                 return false;
             }
         }
 
-        var import = await store.Smuggler.ImportAsync(new DatabaseSmugglerImportOptions(), backupFile, cancellationToken);
-        await import.WaitForCompletionAsync(ExportTimeout);
+        await RunAsync(
+            configuration["Backup:PgRestore"] ?? "pg_restore",
+            ["--no-owner", "--exit-on-error", "--single-transaction", backupFile],
+            cancellationToken);
         logger.LogWarning("Restored the database from {File}. Remove Backup:RestoreFrom before the next start.", backupFile);
         return true;
     }
@@ -108,6 +112,33 @@ public sealed class BackupKeeper(IDocumentStore store, TimeProvider time, IConfi
             }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
+    }
+
+    /// <summary>Runs pg_dump or pg_restore against the app's database. The password goes in the environment, not the arguments.</summary>
+    private async Task RunAsync(string tool, IEnumerable<string> arguments, CancellationToken cancellationToken)
+    {
+        var connection = new NpgsqlConnectionStringBuilder(HostStore.ConnectionString(configuration));
+        var start = new ProcessStartInfo(tool) { RedirectStandardError = true, RedirectStandardOutput = true };
+        start.ArgumentList.Add($"--host={connection.Host}");
+        start.ArgumentList.Add($"--port={connection.Port}");
+        start.ArgumentList.Add($"--username={connection.Username}");
+        start.ArgumentList.Add($"--dbname={connection.Database}");
+        foreach (var argument in arguments)
+        {
+            start.ArgumentList.Add(argument);
+        }
+
+        start.Environment["PGPASSWORD"] = connection.Password ?? string.Empty;
+        using var process = Process.Start(start) ?? throw new InvalidOperationException($"Couldn't start {tool}.");
+        var errors = process.StandardError.ReadToEndAsync(cancellationToken);
+        _ = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(ExportTimeout);
+        await process.WaitForExitAsync(timeout.Token);
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"{tool} failed ({process.ExitCode}): {(await errors).Trim()}");
+        }
     }
 
     /// <summary>Finished backups in the directory, newest first.</summary>

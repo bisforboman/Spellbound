@@ -1,8 +1,7 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using Raven.Client.Documents;
-using Raven.Client.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Spellbound.Web.Hosting;
 
@@ -14,11 +13,13 @@ public sealed record SharedNetwork(string Network, IReadOnlyList<string> OwnerId
 /// itself) with the time. The admin page lists networks that several accounts used recently. Households and mobile
 /// carriers share addresses, so the admin judges; nothing is banned automatically.
 /// </summary>
-public sealed class AccountSignals(IDocumentStore store, TimeProvider time)
+public sealed class AccountSignals(IDbContextFactory<HostDb> dbs, TimeProvider time)
 {
     public const int NetworksKept = 20;
 
     public static readonly TimeSpan Window = TimeSpan.FromDays(30);
+
+    private const string KeyName = "signal-key";
 
     private byte[]? key;
 
@@ -30,42 +31,43 @@ public sealed class AccountSignals(IDocumentStore store, TimeProvider time)
         }
 
         var network = await HashAsync(address);
-        using var session = store.OpenAsyncSession();
-        var signalKey = HostStore.SignalKey(ownerId);
-        var signal = await session.LoadAsync<AccountSignal>(signalKey);
-        if (signal is null)
+        await using var db = await dbs.CreateDbContextAsync();
+        var networks = await db.AccountNetworks.Where(n => n.OwnerId == ownerId).ToListAsync();
+        if (networks.Find(n => n.Network == network) is { } seen)
         {
-            signal = new AccountSignal { OwnerId = ownerId };
-            await session.StoreAsync(signal, signalKey);
+            seen.LastSeen = time.GetUtcNow();
+        }
+        else
+        {
+            networks.Add(db.AccountNetworks.Add(new AccountNetwork { OwnerId = ownerId, Network = network, LastSeen = time.GetUtcNow() }).Entity);
         }
 
-        signal.Networks[network] = time.GetUtcNow();
-        foreach (var old in signal.Networks.OrderByDescending(n => n.Value).Skip(NetworksKept).Select(n => n.Key).ToList())
+        db.AccountNetworks.RemoveRange(networks.OrderByDescending(n => n.LastSeen).Skip(NetworksKept));
+        try
         {
-            signal.Networks.Remove(old);
+            await db.SaveChangesAsync();
         }
-
-        await session.SaveChangesAsync();
+        catch (DbUpdateException ex) when (ex is DbUpdateConcurrencyException || HostStore.IsDuplicateKey(ex))
+        {
+            // The same account signed in twice at once; one record of it is enough.
+        }
     }
 
     /// <summary>Networks two or more accounts used within the window, most recent first.</summary>
     public async Task<IReadOnlyList<SharedNetwork>> GetSharedNetworksAsync()
     {
         var since = time.GetUtcNow() - Window;
-        var uses = new List<(string Network, string OwnerId, DateTimeOffset At)>();
-        using var session = store.OpenAsyncSession();
-        await using var stream = await session.Advanced.StreamAsync<AccountSignal>(startsWith: HostStore.SignalPrefix);
-        while (await stream.MoveNextAsync())
-        {
-            var signal = stream.Current.Document;
-            uses.AddRange(signal.Networks.Where(n => n.Value >= since).Select(n => (n.Key, signal.OwnerId, n.Value)));
-        }
+        await using var db = await dbs.CreateDbContextAsync();
+        var shared = db.AccountNetworks.Where(n => n.LastSeen >= since)
+            .GroupBy(n => n.Network)
+            .Where(g => g.Count() > 1) // the key is (owner, network), so each row is a different account
+            .Select(g => g.Key);
+        var uses = await db.AccountNetworks.Where(n => n.LastSeen >= since && shared.Contains(n.Network)).ToListAsync();
 
         return
         [
             .. uses.GroupBy(u => u.Network)
-                .Where(g => g.Select(u => u.OwnerId).Distinct().Count() > 1)
-                .Select(g => new SharedNetwork(g.Key, [.. g.Select(u => u.OwnerId).Distinct().Order()], g.Max(u => u.At)))
+                .Select(g => new SharedNetwork(g.Key, [.. g.Select(u => u.OwnerId).Order()], g.Max(u => u.LastSeen)))
                 .OrderByDescending(n => n.LastSeen),
         ];
     }
@@ -80,26 +82,25 @@ public sealed class AccountSignals(IDocumentStore store, TimeProvider time)
 
     private async Task<byte[]> LoadOrCreateKeyAsync()
     {
-        using (var session = store.OpenAsyncSession())
+        await using (var db = await dbs.CreateDbContextAsync())
         {
-            if (await session.LoadAsync<ServerSecrets>(HostStore.SecretsKey) is { } existing)
+            if (await db.ServerSecrets.FindAsync(KeyName) is { } existing)
             {
-                return existing.SignalKey;
+                return existing.Value;
             }
 
-            await session.StoreAsync(
-                new ServerSecrets { SignalKey = RandomNumberGenerator.GetBytes(32) }, changeVector: string.Empty, HostStore.SecretsKey);
+            db.ServerSecrets.Add(new ServerSecret { Name = KeyName, Value = RandomNumberGenerator.GetBytes(32) });
             try
             {
-                await session.SaveChangesAsync();
+                await db.SaveChangesAsync();
             }
-            catch (ConcurrencyException)
+            catch (DbUpdateException ex) when (HostStore.IsDuplicateKey(ex))
             {
                 // Another request created it first; use theirs.
             }
         }
 
-        using var fresh = store.OpenAsyncSession();
-        return (await fresh.LoadAsync<ServerSecrets>(HostStore.SecretsKey)).SignalKey;
+        await using var fresh = await dbs.CreateDbContextAsync();
+        return (await fresh.ServerSecrets.FindAsync(KeyName))!.Value;
     }
 }

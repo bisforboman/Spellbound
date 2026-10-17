@@ -23,5 +23,3 @@ appsettings.Development.local.json
 .DS_Store
 Thumbs.db
 
-# Embedded RavenDB data
-RavenData/

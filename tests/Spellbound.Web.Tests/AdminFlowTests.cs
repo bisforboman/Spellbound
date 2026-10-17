@@ -6,20 +6,18 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Raven.Client.Documents;
 using Spellbound.Domain;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
 /// <summary>The admin policy, bans and round changes through the real app, with real accounts.</summary>
-public sealed class AdminFlowTests : SpellboundTestDriver, IAsyncLifetime
+public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
 {
     private const string AdminEmail = "admin@spellbound.test";
 
     private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
-    private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
     private string adminId = string.Empty;
     private string merlinId = string.Empty;
@@ -27,13 +25,10 @@ public sealed class AdminFlowTests : SpellboundTestDriver, IAsyncLifetime
 
     public AdminFlowTests()
     {
-        store = GetDocumentStore();
-        factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b
+        factory = CreateApp(b => b
             .UseSetting("Admins:0", AdminEmail)
             .ConfigureTestServices(services =>
             {
-                services.RemoveAll<IDocumentStore>();
-                services.AddSingleton(store);
                 services.RemoveAll<GameRules>();
                 services.AddSingleton(Rules);
             }));
@@ -193,6 +188,9 @@ public sealed class AdminFlowTests : SpellboundTestDriver, IAsyncLifetime
         var round = (await Game.GetRoundAsync())!;
 
         Assert.Equal($"Round 1 now ends {round.EndsAt.AddDays(7):u}.", await Admin.ChangeRoundEndAsync(round.EndsAt.AddDays(7)));
+        var local = round.EndsAt.AddDays(8).ToOffset(TimeSpan.FromHours(2)); // a time typed in another time zone
+        await Admin.ChangeRoundEndAsync(local);
+        Assert.Equal(local, (await Game.GetRoundAsync())!.EndsAt);
         Assert.StartsWith("Round 1 started", await Admin.ChangeRoundEndAsync(round.StartsAt), StringComparison.Ordinal);
         Assert.Equal(1, (await Game.GetRoundAsync())!.Number);
 

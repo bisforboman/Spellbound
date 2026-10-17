@@ -7,27 +7,22 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Raven.Client.Documents;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
 /// <summary>Rate limits, login lockout and multi-account signals, through the real login form.</summary>
-public sealed partial class SecurityFlowTests : SpellboundTestDriver
+public sealed partial class SecurityFlowTests : TestDatabase
 {
     private const string Password = "Test-Only-1!";
 
-    private readonly IDocumentStore store;
     private readonly WebApplicationFactory<Program> factory;
     private readonly ManualTime time = new(new DateTimeOffset(2026, 10, 17, 12, 0, 0, TimeSpan.Zero));
 
     public SecurityFlowTests()
     {
-        store = GetDocumentStore();
-        factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b.ConfigureTestServices(services =>
+        factory = CreateApp(b => b.ConfigureTestServices(services =>
         {
-            services.RemoveAll<IDocumentStore>();
-            services.AddSingleton(store);
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(time);
             services.AddSingleton<IStartupFilter>(new ClientAddress(IPAddress.Parse("203.0.113.7")));
@@ -44,9 +39,8 @@ public sealed partial class SecurityFlowTests : SpellboundTestDriver
         var response = await LoginAsync(Client(), "merlin@spellbound.test", Password);
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        using var session = store.OpenAsyncSession();
-        var signal = await session.LoadAsync<AccountSignal>(HostStore.SignalKey(id));
-        Assert.Single(signal.Networks);
+        using var db = OpenDb();
+        Assert.Single(db.AccountNetworks.Where(n => n.OwnerId == id));
     }
 
     [Fact]
@@ -110,8 +104,8 @@ public sealed partial class SecurityFlowTests : SpellboundTestDriver
             Assert.True((await users.DeleteAsync((await users.FindByIdAsync(id))!)).Succeeded);
         }
 
-        using var session = store.OpenAsyncSession();
-        Assert.Null(await session.LoadAsync<AccountSignal>(HostStore.SignalKey(id)));
+        using var db = OpenDb();
+        Assert.Empty(db.AccountNetworks.Where(n => n.OwnerId == id));
     }
 
     public override void Dispose()
