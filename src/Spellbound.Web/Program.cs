@@ -51,6 +51,7 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 builder.Services.AddSingleton(builder.Configuration.GetSection("GameRules").Get<GameRules>() ?? GameRules.Default);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IRandomSource, SharedRandom>();
 builder.Services.AddSingleton<GameService>();
 
 var app = builder.Build();

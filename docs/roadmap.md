@@ -21,12 +21,12 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [x] Integration test for the action flow (WebApplicationFactory with in-memory RavenDB)
 
 ## M2: PvP
-- [ ] Units: recruit, upkeep, and an army page
-- [ ] Attack another mage: land taken, losses, battle report (deterministic, seedable RNG)
-- [ ] Offensive spells against a target, with school counter bonuses and barriers
-- [ ] Protection for new mages
-- [ ] Rankings (land and networth)
-- [ ] Notifications when you're attacked (news log, optional web push)
+- [x] Units: recruit, upkeep, and an army page
+- [x] Attack another mage: land taken, losses, battle report (deterministic, seedable RNG)
+- [x] Offensive spells against a target, with school counter bonuses and barriers
+- [x] Protection for new mages
+- [x] Rankings (land and networth)
+- [x] Notifications when you're attacked (news log and overview banner; web push moved to Later)
 
 ## M3: Rounds and hosting
 - [ ] Rounds: start/end dates, reset, hall of fame
@@ -35,4 +35,4 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [ ] Admin page: server settings, ban, reset
 
 ## Later
-- Research, artifacts, guilds and chat, server variants, a stored-turns bank
+- Research, artifacts, guilds and chat, server variants, a stored-turns bank, web push notifications

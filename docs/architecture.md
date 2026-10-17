@@ -18,7 +18,7 @@ domain code doesn't change.
 ```
 Spellbound.slnx
 src/
-  Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook (no dependencies)
+  Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook, UnitBook (no dependencies)
   Spellbound.Web/           Blazor app: pages, Identity, RavenDB setup, GameService, config
 tests/
   Spellbound.Domain.Tests/  xUnit tests for the rules
@@ -42,6 +42,12 @@ page form → GameService.ExploreAsync(userId, turns)
   5. render the report
 ```
 
+**Attacks and hexes** change two mages. `GameService.HostileAsync` loads the attacker by key, finds the target's owner
+with a query on the mage's public `Id` (a Guid; owner ids are account keys and never go in URLs), then loads the
+target by key. Both mages and both news logs are saved in one transaction with optimistic concurrency, so if either
+player acts at the same moment, nothing happens and the attacker is asked to retry. The domain gets an
+`IRandomSource` (`SharedRandom` in the app, `SeededRandom` in tests).
+
 - `TimeProvider` is registered in DI (`TimeProvider.System`) so tests can fake time.
 - `GameRules` is bound from `appsettings.json` → `"GameRules"` and injected as a singleton.
 - The embedded RavenDB server starts on first use of `IDocumentStore`; data lives in `RavenData/` (gitignored).
@@ -58,7 +64,12 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - `Mage` is stored as-is (RavenDB sets private setters and the private `_activeEffects` list). Only string `Id`
   properties are treated as document keys (`RavenSetup.IsDocumentKey`), so `Mage.Id` (a Guid) is plain data.
 - **Load by key, never query, on the action path.** Loads are always consistent; queries go through indexes that
-  update a moment after each write.
+  update a moment after each write. The one exception is finding an attack target's owner by mage id, which never
+  changes; the target itself is then loaded by key.
+- **Rankings** query every mage and sort in memory. That's fine for one server's players; add a static index with a
+  stored networth if it grows past a few thousand.
+- **Alerts:** `NewsLog.Unseen` counts hostile entries. The overview reads it and resets it with a patch, so the reset
+  can't overwrite news that another mage writes at the same moment.
 - **One mage per player** comes from the key: creating `mages/{ownerId}` with an empty change vector fails if it exists.
   In M3 the key becomes `mages/{roundId}/{ownerId}`.
 - **Identity:** RavenDB.Identity does not save changes itself, so `SavingUserManager` saves after every create,

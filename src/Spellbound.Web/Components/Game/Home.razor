@@ -9,7 +9,19 @@
     <h1>@Mage.Name</h1>
     <p class="text-muted">@Mage.School mage</p>
 
+    @if (alerts > 0)
+    {
+        <p class="alert alert-warning" role="alert">
+            <b>You were targeted @(alerts == 1 ? "once" : $"{alerts} times") while you were away.</b> See the news below.
+        </p>
+    }
+
     <TurnsBar Mage="Mage" />
+
+    @if (Mage.IsProtected(Rules))
+    {
+        <p class="text-muted">Protected from attacks and hexes for @N(Rules.ProtectionTurns - Mage.TurnsSpent) more turns. While protected you can't target others either.</p>
+    }
 
     <table class="table stats">
         <tbody>
@@ -18,13 +30,15 @@
             <tr><th>Towns</th><td>@N(Mage.Towns)</td></tr>
             <tr><th>Gold</th><td>@N(Mage.Gold)</td></tr>
             <tr><th>Mana</th><td>@N(Mage.Mana) / @N(Mage.ManaCapacity(Rules))</td></tr>
+            <tr><th>Army</th><td>@N(Mage.TotalUnits) units, @N(Mage.UpkeepPerTurn) gold upkeep per turn</td></tr>
+            <tr><th>Networth</th><td>@N(Mage.Networth(Rules))</td></tr>
         </tbody>
     </table>
 
     <h2>Active spells</h2>
     @if (Mage.ActiveEffects.Count == 0)
     {
-        <p class="text-muted">None. <a href="cast">Cast one</a>.</p>
+        <p class="text-muted">None. <a href="magic">Cast one</a>.</p>
     }
     else
     {
@@ -43,7 +57,7 @@
     }
     @foreach (var entry in news)
     {
-        <div class="news-entry">
+        <div class="news-entry @(entry.Hostile ? "hostile" : null)">
             <small class="text-muted">@Ago(entry.At)</small>
             @foreach (var line in entry.Lines)
             {
@@ -55,6 +69,20 @@
 
 @code {
     private IReadOnlyList<NewsEntry> news = [];
+    private int alerts;
+
+    // Taken after the first interactive render, not on init: prerendering runs init twice and would reset it unseen.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Mage is not null)
+        {
+            alerts = await Game.TakeUnseenAlertsAsync(OwnerId);
+            if (alerts > 0)
+            {
+                StateHasChanged();
+            }
+        }
+    }
 
     protected override async Task LoadAsync()
     {
