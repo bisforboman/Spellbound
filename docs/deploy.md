@@ -26,7 +26,7 @@ One small Linux server runs three containers from `docker-compose.yml`:
    git clone https://github.com/bisforboman/Spellbound.git
    cd Spellbound
    cp .env.example .env
-   nano .env   # DOMAIN, ADMIN_EMAIL, and POSTGRES_PASSWORD (a long random one: openssl rand -hex 24)
+   nano .env   # DOMAIN, ADMIN_EMAIL, and POSTGRES_PASSWORD (letters and digits: openssl rand -hex 24)
    ```
 
    `.env` holds the database password. It is gitignored; never commit it. Set the password before the first start:

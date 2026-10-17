@@ -47,7 +47,8 @@ jobs:
           docker network create smoke
           docker run -d --name db --network smoke -e POSTGRES_DB=spellbound -e POSTGRES_USER=spellbound \
             -e POSTGRES_PASSWORD=smoke postgres:16
-          until docker exec db pg_isready -U spellbound -d spellbound; do sleep 1; done
+          for i in $(seq 1 60); do docker exec db pg_isready -U spellbound -d spellbound && break; sleep 1; done
+          docker exec db pg_isready -U spellbound -d spellbound || { docker logs db; exit 1; }
           docker run -d --name spellbound --network smoke -p 8080:8080 \
             -e "ConnectionStrings__Spellbound=Host=db;Database=spellbound;Username=spellbound;Password=smoke" spellbound
           for i in $(seq 1 60); do
