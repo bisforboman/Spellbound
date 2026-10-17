@@ -45,7 +45,7 @@ New mages are **protected** from attacks until they have spent 120 turns. This m
 | **Meditate** | Chosen by the player | +100 mana per turn on top of normal income, capped by storage |
 | **Cast (self) spell** | Per spell | Costs mana and gives a timed buff, measured in your own spent turns |
 
-Within one spent turn, the action happens first, then the economy tick, then effect durations count down.
+Within one spent turn, the action happens first, then the economy tick (income, then army upkeep), then effect durations count down.
 New buildings count towards income during the turns spent building them.
 
 ## Magic schools
@@ -55,7 +55,7 @@ next and weak against the previous one. The counter bonuses are used by offensiv
 
 `Radiant → Verdant → Tidal → Ember → Umbral → Radiant`
 
-### Milestone 1 self-spells (one per school, known from the start)
+### Self-spells (one per school, known from the start; see Hexes and barriers for Arcane Barrier)
 
 | School | Spell | Mana | Turns | Duration | Effect |
 |---|---|---|---|---|---|
@@ -67,16 +67,72 @@ next and weak against the previous one. The counter bonuses are used by offensiv
 
 Recasting an active spell refreshes its duration; buffs don't stack.
 
+## Army (milestone 2)
+
+Every mage can recruit the same three units. Recruiting takes `ceil(count / 50)` turns.
+
+| Unit | Attack | Defense | Gold | Upkeep (gold per turn) |
+|---|---|---|---|---|
+| Militia | 1 | 3 | 60 | 1 |
+| Soldiers | 3 | 3 | 150 | 2 |
+| Knights | 6 | 2 | 250 | 3 |
+
+- **Upkeep** is paid every turn you spend, right after that turn's income. If you can't pay it all, your gold drops to 0
+  and 10% of every unit type deserts (rounded up) that turn.
+- **Defense** is your units' defense plus **2 per acre** (the land's own guards), so a mage with no army isn't free land.
+
+## Attacks (milestone 2)
+
+An attack costs **4 turns** and resolves in the first of them; the 4 turns then run their economy ticks as usual.
+
+- **Who you can target:** not yourself, and not a protected mage. While *you* are protected you can't attack or hex
+  anyone either. The target must hold at least **60%** of your land, so big mages can't farm small ones.
+- **Power:** attack = your units' attack × school counter (×1.15 if your school is strong against theirs, ×0.85 if
+  weak) × luck. Defense = their defense × luck. Luck is a roll between ×0.9 and ×1.1 for each side.
+- **Win** (attack > defense): you take **10%** of their land (at least 1 acre). Taken land comes from their free acres
+  first; if that's not enough, buildings on it are destroyed, split between nodes and towns by how many they have.
+  The land arrives as free acres for you.
+- **Losses:** the attacker loses 8% of every unit on a win and 12% on a loss. The defender loses 10% when broken and
+  5% when holding.
+- Both sides get a battle report. The defender's lands in their news log as a hostile entry.
+
+Randomness comes from an injected, seedable source, so the same seed replays the same battle.
+
+## Hexes and barriers (milestone 2)
+
+Each school knows one **hex**, an offensive spell cast at another mage (same targeting rules as attacks).
+
+| School | Hex | Mana | Turns | Effect on success |
+|---|---|---|---|---|
+| Radiant | Smite | 2,000 | 2 | Kills 5% of every unit type |
+| Verdant | Locust Swarm | 2,000 | 2 | Destroys 8% of their gold |
+| Tidal | Mana Drain | 2,000 | 2 | Takes 10% of their mana; you keep what fits in your storage |
+| Ember | Firestorm | 2,000 | 2 | Burns 3% of their buildings |
+| Umbral | Nightmare | 2,500 | 2 | They lose 3 turns on hand |
+
+- **Chance to land:** 70%, +15 points if your school is strong against theirs, −15 if weak.
+- **Arcane Barrier** is a self-spell every school knows: 1,000 mana, 2 turns, lasts 30 of your turns, and halves the
+  chance of hexes cast at you. Like every buff, it only counts down as you spend turns.
+- A hex that is turned aside still costs its mana and turns. The target hears about it either way.
+
+## Protection, rankings and networth (milestone 2)
+
+- New mages are protected until they have spent **120 turns** (see Starting mage).
+- **Networth** = 5 per acre + 10 per building + 1 per point of unit attack and defense (a knight adds 8).
+- The **Rivals** page ranks every mage by land or by networth, and is where you pick a target.
+- When you are attacked or hexed, the overview shows a banner with how many times since you last looked, and the
+  entries are marked in the news log. Web push notifications are not built yet.
+
 ## Later (not designed yet)
 
-- **Milestone 2, PvP:** units (recruit, upkeep), attacks that take land, offensive spells against a target
-  (mana drain, plague, fog), barriers, battle reports, a rankings list by land or networth, and protection.
 - **Milestone 3, rounds:** round length, end-of-round event, reset, hall of fame.
-- **Later:** research (new spells, artifacts), guilds, server variants (fast and slow turns, solo or team).
+- **Later:** research (new spells, artifacts), guilds, server variants (fast and slow turns, solo or team),
+  web push notifications for attacks.
 
 ## Open questions
 
 - Should we add a stored-turns bank (as Earth Empires does) so missing a day hurts less?
 - Should we add population or peasants, or keep the economy as just land and buildings?
-- What does networth count, for rankings?
+- Should repeated attacks on the same mage take less land (Archmage-style diminishing returns)?
+- Is upkeep too harsh? 400 knights cost 1,200 gold a turn against a starting income of 650.
 - How long is a round: 4 weeks or 8?
