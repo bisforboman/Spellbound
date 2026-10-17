@@ -45,7 +45,7 @@
     {
         <div class="news-entry">
             <small class="text-muted">@Ago(entry.At)</small>
-            @foreach (var line in entry.Text.Split('\n'))
+            @foreach (var line in entry.Lines)
             {
                 <p class="mb-1">@line</p>
             }
@@ -61,7 +61,7 @@
         await base.LoadAsync();
         if (Mage is not null)
         {
-            news = await Game.GetNewsAsync(Mage.Id);
+            news = await Game.GetNewsAsync(OwnerId);
         }
     }
 

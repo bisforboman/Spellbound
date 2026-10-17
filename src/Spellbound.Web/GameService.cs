@@ -1,4 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+using Raven.Client.Documents;
+using Raven.Client.Documents.Session;
+using Raven.Client.Exceptions;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
 
@@ -6,9 +8,10 @@ namespace Spellbound.Web;
 
 /// <summary>
 /// Thin glue between pages and the domain: load the mage, run one domain action, save.
-/// Uses a fresh DbContext per call, because a Blazor Server circuit outlives a single action.
+/// Opens a session per call (a Blazor Server circuit outlives one action) and only loads by key,
+/// because RavenDB loads are always consistent while queries may lag behind writes.
 /// </summary>
-public sealed class GameService(IDbContextFactory<ApplicationDbContext> dbFactory, TimeProvider time, GameRules rules)
+public sealed class GameService(IDocumentStore store, TimeProvider time, GameRules rules)
 {
     public const int NewsKept = 50;
 
@@ -19,20 +22,17 @@ public sealed class GameService(IDbContextFactory<ApplicationDbContext> dbFactor
     /// <summary>Read-only copy of the player's mage with turns accrued to now (not saved).</summary>
     public async Task<Mage?> GetMageAsync(string ownerId)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var mage = await db.Mages.AsNoTracking().SingleOrDefaultAsync(m => m.OwnerId == ownerId);
+        using var session = store.OpenAsyncSession();
+        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(ownerId));
         mage?.AccrueTurns(Now, rules);
         return mage;
     }
 
-    public async Task<IReadOnlyList<NewsEntry>> GetNewsAsync(Guid mageId)
+    public async Task<IReadOnlyList<NewsEntry>> GetNewsAsync(string ownerId)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        return await db.News.AsNoTracking()
-            .Where(n => n.MageId == mageId)
-            .OrderByDescending(n => n.Id)
-            .Take(NewsKept)
-            .ToListAsync();
+        using var session = store.OpenAsyncSession();
+        var log = await session.LoadAsync<NewsLog>(RavenSetup.NewsKey(ownerId));
+        return log?.Entries ?? [];
     }
 
     public async Task<ActionReport> CreateMageAsync(string ownerId, string name, MagicSchool school)
@@ -48,21 +48,16 @@ public sealed class GameService(IDbContextFactory<ApplicationDbContext> dbFactor
             return ActionReport.Fail("Choose a school of magic.");
         }
 
-        await using var db = await dbFactory.CreateDbContextAsync();
-        if (await db.Mages.AnyAsync(m => m.OwnerId == ownerId))
-        {
-            return ActionReport.Fail("You already have a mage.");
-        }
-
         var mage = Mage.Create(ownerId, trimmed, school, Now, rules);
-        db.Mages.Add(mage);
+        using var session = store.OpenAsyncSession();
+        await session.StoreAsync(mage, changeVector: string.Empty, RavenSetup.MageKey(ownerId)); // empty = must not exist yet
         try
         {
-            await db.SaveChangesAsync();
+            await session.SaveChangesAsync();
         }
-        catch (DbUpdateException)
+        catch (ConcurrencyException)
         {
-            return ActionReport.Fail("You already have a mage."); // lost a race on the unique OwnerId index
+            return ActionReport.Fail("You already have a mage.");
         }
 
         return new ActionReport(true, 0, [$"{mage.Name} of the {mage.School} school awakens."]);
@@ -82,8 +77,10 @@ public sealed class GameService(IDbContextFactory<ApplicationDbContext> dbFactor
 
     private async Task<ActionReport> ActAsync(string ownerId, Func<Mage, DateTimeOffset, ActionReport> action)
     {
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var mage = await db.Mages.SingleOrDefaultAsync(m => m.OwnerId == ownerId);
+        using var session = store.OpenAsyncSession();
+        session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes; // a double-tap can't spend turns twice
+
+        var mage = await session.LoadAsync<Mage>(RavenSetup.MageKey(ownerId));
         if (mage is null)
         {
             return ActionReport.Fail("You don't have a mage yet.");
@@ -96,21 +93,23 @@ public sealed class GameService(IDbContextFactory<ApplicationDbContext> dbFactor
             return report;
         }
 
-        db.News.Add(new NewsEntry { MageId = mage.Id, At = now, Text = string.Join('\n', report.Lines) });
+        var newsKey = RavenSetup.NewsKey(ownerId);
+        var news = await session.LoadAsync<NewsLog>(newsKey);
+        if (news is null)
+        {
+            news = new NewsLog();
+            await session.StoreAsync(news, newsKey);
+        }
+
+        news.Add(new NewsEntry(now, report.Lines), NewsKept);
         try
         {
-            await db.SaveChangesAsync();
+            await session.SaveChangesAsync(); // mage and news in one transaction
         }
-        catch (DbUpdateConcurrencyException)
+        catch (ConcurrencyException)
         {
             return ActionReport.Fail("Your mage was busy with another action. Nothing was spent, please try again.");
         }
-
-        await db.News
-            .Where(n => n.MageId == mage.Id)
-            .OrderByDescending(n => n.Id)
-            .Skip(NewsKept)
-            .ExecuteDeleteAsync();
 
         return report;
     }

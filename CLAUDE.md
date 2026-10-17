@@ -17,7 +17,7 @@ If `src/Spellbound.Web` does not exist yet, the solution has not been bootstrapp
 ./scripts/bootstrap.ps1
 ```
 
-It creates the `.slnx`, the Blazor Server web project (from the official template, with Individual auth and SQLite),
+It creates the `.slnx`, the Blazor Server web project (from the official template, with Individual auth; it has since been moved from EF Core to RavenDB),
 the project files for the domain and test projects, and wires up references. Then build and test.
 
 ## Commands
@@ -25,13 +25,12 @@ the project files for the domain and test projects, and wires up references. The
 ```powershell
 dotnet build
 dotnet test
-dotnet run --project src/Spellbound.Web
-dotnet ef migrations add <Name> --project src/Spellbound.Web   # needs: dotnet tool install -g dotnet-ef
+dotnet run --project src/Spellbound.Web   # first start is slower: it launches the embedded RavenDB server
 ```
 
 ## Architecture rules
 
-- **All game rules live in `Spellbound.Domain`.** It is pure C#. It has no EF Core, ASP.NET or I/O references,
+- **All game rules live in `Spellbound.Domain`.** It is pure C#. It has no database, ASP.NET or I/O references,
   and it never reads the clock. Callers pass `DateTimeOffset now` in.
 - **Balance numbers live only in `GameRules`.** Don't hardcode costs, rates or caps anywhere else. The web app binds
   `GameRules` from configuration (section `"GameRules"`) so a server can be tuned without code changes.
@@ -39,8 +38,8 @@ dotnet ef migrations add <Name> --project src/Spellbound.Web   # needs: dotnet t
   readable text lines. Actions either fully succeed or change nothing.
 - **Turns regenerate lazily.** The app stores `Turns` plus `TurnsAccruedAt` and computes the rest on read.
   There are no per-player timers or background loops. Background jobs are only for global events like round resets.
-- **The web layer is thin:** load the mage, call one domain method with `TimeProvider.GetUtcNow()`, then save. Use an
-  optimistic-concurrency token on `Mage` so a double-tap can't spend the same turns twice.
+- **The web layer is thin:** load the mage, call one domain method with `TimeProvider.GetUtcNow()`, then save. Use RavenDB's
+  optimistic concurrency (`OptimisticConcurrencyMode.Writes`) so a double-tap can't spend the same turns twice.
 - **Make the domain deterministic.** Any randomness (from milestone 2 combat) comes through an injected, seedable source so
   battles can be replayed in tests.
 

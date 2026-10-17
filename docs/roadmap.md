@@ -10,7 +10,7 @@
 Goal: you can sign up on a phone, create a mage and play the economy loop.
 
 - [x] Bind `GameRules` from configuration and register `TimeProvider.System`
-- [x] EF Core mapping for `Mage` (owned `ActiveEffects`, concurrency token, unique `OwnerId`) and a migration
+- [x] Persistence for `Mage` (RavenDB documents keyed by owner, optimistic concurrency)
 - [x] `GameService` in the web project (load → domain action → save, with concurrency handling)
 - [x] "Create your mage" page: name and school, shown after registration if the user has no mage
 - [x] Overview page: land/buildings/gold/mana, turns with "next turn in …" and turn cap, active spells
@@ -18,7 +18,7 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [x] News log: persist the last 50 reports per mage and show them on the overview
 - [x] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll
 - [x] PWA manifest and icons so the game can be added to the home screen
-- [x] Integration test for the action flow (WebApplicationFactory with in-memory SQLite)
+- [x] Integration test for the action flow (WebApplicationFactory with in-memory RavenDB)
 
 ## M2: PvP
 - [ ] Units: recruit, upkeep, and an army page

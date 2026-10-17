@@ -31,7 +31,8 @@ if (-not (Test-Path 'tests/Spellbound.Domain.Tests/Spellbound.Domain.Tests.cspro
     Invoke-Dotnet add tests/Spellbound.Domain.Tests reference src/Spellbound.Domain
 }
 
-# Web: Blazor Web App, interactive server rendering, Individual accounts (SQLite by default)
+# Web: Blazor Web App, interactive server rendering, Individual accounts.
+# Note: the template generates EF Core + SQLite; the project has since moved to RavenDB (see docs/architecture.md).
 if (-not (Test-Path 'src/Spellbound.Web/Spellbound.Web.csproj')) {
     Invoke-Dotnet new blazor -n Spellbound.Web -o src/Spellbound.Web -f net10.0 `
         --interactivity Server --all-interactive --auth Individual

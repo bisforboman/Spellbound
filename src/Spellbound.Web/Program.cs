@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Raven.Client.Documents;
+using Raven.Embedded;
+using Raven.Identity;
 using Spellbound.Domain;
 using Spellbound.Web;
 using Spellbound.Web.Components;
@@ -24,18 +26,24 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-// The factory also registers ApplicationDbContext as scoped, which Identity uses.
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-builder.Services.AddIdentityCore<ApplicationUser>(options =>
+// Embedded RavenDB, started on first use so tests can swap in their own store.
+builder.Services.AddSingleton<IDocumentStore>(_ =>
+{
+    var settings = builder.Configuration.GetSection("RavenDb");
+    EmbeddedServer.Instance.StartServer(new ServerOptions
     {
-        options.SignIn.RequireConfirmedAccount = false;
-        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
+        DataDirectory = Path.Combine(builder.Environment.ContentRootPath, settings["DataDirectory"] ?? "RavenData"),
+    });
+    return EmbeddedServer.Instance.GetDocumentStore(new DatabaseOptions(settings["Database"] ?? "Spellbound")
+    {
+        Conventions = RavenSetup.Conventions(),
+    });
+});
+builder.Services.AddScoped(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession()); // used by RavenDB.Identity
+
+builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
+    .AddRavenDbIdentityStores<ApplicationUser>(_ => { })
+    .AddUserManager<SavingUserManager>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
@@ -47,17 +55,10 @@ builder.Services.AddSingleton<GameService>();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
-}
+_ = app.Services.GetRequiredService<IDocumentStore>(); // start embedded RavenDB now, not on the first request
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseMigrationsEndPoint();
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
