@@ -16,7 +16,7 @@ using Spellbound.Web.Data;
 namespace Spellbound.Web.Tests;
 
 /// <summary>Runs the real app against a fresh in-memory RavenDB database per test.</summary>
-public sealed class GameFlowTests : RavenTestDriver
+public sealed class GameFlowTests : RavenTestDriver, IAsyncLifetime
 {
     private const string Owner = "ApplicationUsers/1-A";
 
@@ -43,6 +43,10 @@ public sealed class GameFlowTests : RavenTestDriver
     }
 
     private GameService Game => factory.Services.GetRequiredService<GameService>();
+
+    public async Task InitializeAsync() => await factory.Services.GetRequiredService<RoundKeeper>().TickAsync(); // round 1
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     protected override void PreInitialize(IDocumentStore documentStore) =>
         documentStore.Conventions.FindIdentityProperty = RavenSetup.IsDocumentKey;
@@ -122,14 +126,14 @@ public sealed class GameFlowTests : RavenTestDriver
         var interfered = false;
         store.OnBeforeStore += (_, args) =>
         {
-            if (interfered || args.DocumentId != RavenSetup.MageKey(Owner))
+            if (interfered || args.DocumentId != RavenSetup.MageKey(1, Owner))
             {
                 return;
             }
 
             interfered = true;
             using var other = store.OpenSession();
-            other.Load<Mage>(RavenSetup.MageKey(Owner)).Meditate(1, DateTimeOffset.UtcNow, rules);
+            other.Load<Mage>(RavenSetup.MageKey(1, Owner)).Meditate(1, DateTimeOffset.UtcNow, rules);
             other.SaveChanges();
         };
 

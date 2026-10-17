@@ -29,7 +29,7 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [x] Notifications when you're attacked (news log and overview banner; web push moved to Later)
 
 ## M3: Rounds and hosting
-- [ ] Rounds: start/end dates, reset, hall of fame
+- [x] Rounds: start/end dates, reset, hall of fame
 - [ ] Dockerfile and docker-compose with Caddy, deployed to a VPS
 - [ ] Backups, Cloudflare, basic rate limiting and anti-multi-account checks
 - [ ] Admin page: server settings, ban, reset

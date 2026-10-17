@@ -1,0 +1,27 @@
+@inject GameService Game
+
+@if (Round is not null)
+{
+    var now = Game.Now;
+    <p class="round-info">
+        @if (Round.IsOpen(now))
+        {
+            <span>Round @Round.Number · @Left(Round.TimeLeft(now)) left</span>
+        }
+        else
+        {
+            <span>Round @Round.Number is over. The next round starts in a moment.</span>
+        }
+        <a href="halloffame">Hall of fame</a>
+    </p>
+}
+
+@code {
+    [Parameter]
+    public Round? Round { get; set; }
+
+    private static string Left(TimeSpan left) =>
+        left.TotalDays >= 1 ? $"{(int)left.TotalDays} d {left.Hours} h"
+        : left.TotalHours >= 1 ? $"{(int)left.TotalHours} h {left.Minutes} min"
+        : $"{Math.Max(1, (int)Math.Ceiling(left.TotalMinutes))} min";
+}

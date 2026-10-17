@@ -3,6 +3,7 @@
 
 <PageTitle>Rivals</PageTitle>
 <h1>Rivals</h1>
+<RoundInfo Round="Round" />
 
 @if (Mage is not null)
 {
@@ -41,7 +42,5 @@
         mages = await Game.GetAllMagesAsync();
     }
 
-    private IEnumerable<Mage> Ranked() => byNetworth
-        ? mages.OrderByDescending(m => m.Networth(Rules)).ThenBy(m => m.Name)
-        : mages.OrderByDescending(m => m.Land).ThenBy(m => m.Name);
+    private IEnumerable<Mage> Ranked() => byNetworth ? Rankings.ByNetworth(mages, Rules) : Rankings.ByLand(mages);
 }

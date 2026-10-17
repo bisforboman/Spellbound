@@ -156,3 +156,27 @@ html, body {
     .rank-row .num {
         text-align: right;
     }
+
+.round-info {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0 1rem;
+}
+
+    .round-info a {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+.fame {
+    border-bottom: 1px solid #eee;
+    padding: 0.5rem 0;
+}
+
+    .fame summary {
+        min-height: 44px;
+        cursor: pointer;
+    }

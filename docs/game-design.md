@@ -123,10 +123,18 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 - When you are attacked or hexed, the overview shows a banner with how many times since you last looked, and the
   entries are marked in the news log. Web push notifications are not built yet.
 
+## Rounds (milestone 3)
+
+- A round lasts **4 weeks** (`RoundLength`). The first one starts when the server first starts.
+- When it ends, actions stop. Within a minute the server records the **hall of fame**: the top 10 mages by land and
+  by networth, with their school. Then the next round starts right away.
+- **Everything resets:** every player creates a new mage with the starting values, and news starts empty.
+  Accounts carry over; mages, armies and spells don't.
+- The overview shows the round number and the time left. Past rounds are on the Hall of fame page.
+
 ## Later (not designed yet)
 
-- **Milestone 3, rounds:** round length, end-of-round event, reset, hall of fame.
-- **Later:** research (new spells, artifacts), guilds, server variants (fast and slow turns, solo or team),
+- research (new spells, artifacts), guilds, server variants (fast and slow turns, solo or team),
   web push notifications for attacks.
 
 ## Open questions
@@ -135,4 +143,4 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 - Should we add population or peasants, or keep the economy as just land and buildings?
 - Should repeated attacks on the same mage take less land (Archmage-style diminishing returns)?
 - Is upkeep too harsh? 400 knights cost 1,200 gold a turn against a starting income of 650.
-- How long is a round: 4 weeks or 8?
+- Should there be a break between rounds, or an end-of-round event in the last days (for example, double land taken)?

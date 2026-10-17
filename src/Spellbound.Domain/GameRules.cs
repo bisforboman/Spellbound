@@ -8,6 +8,10 @@ public sealed record GameRules
 {
     public static GameRules Default { get; } = new();
 
+    // Rounds
+    public TimeSpan RoundLength { get; init; } = TimeSpan.FromDays(28);
+    public int HallOfFameSize { get; init; } = 10;
+
     // Turns
     public TimeSpan TurnInterval { get; init; } = TimeSpan.FromMinutes(6);
     public int MaxTurns { get; init; } = 200;

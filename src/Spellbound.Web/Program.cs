@@ -53,6 +53,8 @@ builder.Services.AddSingleton(builder.Configuration.GetSection("GameRules").Get<
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IRandomSource, SharedRandom>();
 builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<RoundKeeper>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<RoundKeeper>());
 
 var app = builder.Build();
 

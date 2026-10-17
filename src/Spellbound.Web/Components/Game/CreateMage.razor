@@ -5,6 +5,8 @@
 
 <PageTitle>Create your mage</PageTitle>
 <h1>Create your mage</h1>
+<RoundInfo Round="round" />
+<p>Everyone starts equal each round. When it ends, the top mages go into the hall of fame and the world resets.</p>
 
 <form @onsubmit="CreateAsync">
     <label class="form-label" for="name">Name</label>
@@ -39,10 +41,12 @@
     private MagicSchool selected = MagicSchool.Radiant;
     private ActionReport? report;
     private bool busy;
+    private Round? round;
 
     protected override async Task OnInitializedAsync()
     {
         ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        round = await Game.GetRoundAsync();
         if (await Game.GetMageAsync(ownerId) is not null)
         {
             Navigation.NavigateTo("");
