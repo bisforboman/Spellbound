@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Spellbound.Domain/Spellbound.Domain.csproj" />
+    <Project Path="src/Spellbound.Web/Spellbound.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Spellbound.Domain.Tests/Spellbound.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
