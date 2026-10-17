@@ -17,6 +17,14 @@
 <h3>Manage email</h3>
 
 <StatusMessage Message="@message"/>
+@if (EmailSender is IdentityNoOpEmailSender)
+{
+    @* This server sends no email (see IdentityNoOpEmailSender), so a confirmation link would never arrive. *@
+    <p>Your email: <b>@email</b></p>
+    <p>Changing it needs a confirmation email, which this server can't send yet. If it must change, ask the game's admin.</p>
+}
+else
+{
 <div class="row">
     <div class="col-xl-6">
         <form @onsubmit="OnSendEmailVerificationAsync" @formname="send-verification" id="send-verification-form" method="post">
@@ -52,6 +60,7 @@
         </EditForm>
     </div>
 </div>
+}
 
 @code {
     private string? message;

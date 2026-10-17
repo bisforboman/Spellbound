@@ -161,6 +161,19 @@ public sealed class AdminFlowTests : SpellboundTestDriver, IAsyncLifetime
     }
 
     [Fact]
+    public async Task Change_email_page_does_not_promise_an_email_while_none_is_sent()
+    {
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
+        await SignInAsync(client, "merlin@spellbound.test");
+
+        var html = await client.GetStringAsync(new Uri("/Account/Manage/Email", UriKind.Relative));
+
+        Assert.Contains("which this server can't send yet", html, StringComparison.Ordinal);
+        Assert.Contains("merlin@spellbound.test", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Input.NewEmail", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Admin_can_extend_the_round_or_end_it_now()
     {
         var round = (await Game.GetRoundAsync())!;
@@ -193,6 +206,18 @@ public sealed class AdminFlowTests : SpellboundTestDriver, IAsyncLifetime
         var user = new ApplicationUser { UserName = email, Email = email };
         Assert.True((await users.CreateAsync(user, "Test-Only-1!")).Succeeded);
         return user.Id!;
+    }
+
+    /// <summary>Logs in through the real login form, so the client carries the sign-in cookie.</summary>
+    private static async Task SignInAsync(HttpClient client, string email)
+    {
+        var page = await client.GetStringAsync(new Uri("/Account/Login", UriKind.Relative));
+        var fields = Regex.Matches(page, "<input[^>]*type=\"hidden\"[^>]*name=\"(?<n>[^\"]+)\"[^>]*value=\"(?<v>[^\"]*)\"")
+            .ToDictionary(m => System.Net.WebUtility.HtmlDecode(m.Groups["n"].Value), m => System.Net.WebUtility.HtmlDecode(m.Groups["v"].Value));
+        fields["Input.Email"] = email;
+        fields["Input.Password"] = "Test-Only-1!";
+        var response = await client.PostAsync(new Uri("/Account/Login", UriKind.Relative), new FormUrlEncodedContent(fields));
+        Assert.True(response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.Redirect, $"Login failed: {response.StatusCode}");
     }
 
     private async Task WithUsersAsync(Func<UserManager<ApplicationUser>, Task> action)
