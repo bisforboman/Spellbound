@@ -92,11 +92,15 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 
 ## Hosting plan (M3)
 
-- One small VPS (for example Hetzner, EU) running Docker Compose with the app and **Caddy** for automatic HTTPS. The
-  `RavenData` directory lives on a mounted volume.
+- One small VPS (for example Hetzner, EU) running Docker Compose with the app and **Caddy** for automatic HTTPS
+  (`Dockerfile`, `docker-compose.yml`, `Caddyfile`; steps in [deploy.md](deploy.md)). The app's `/data` volume holds
+  the database and the Data Protection keys (`DataProtection:KeysDirectory`), so restarts and new images keep sign-ins.
+  Only Caddy is published; the app trusts its `X-Forwarded-*` headers (`ForwardedHeaders:Enabled`) so it sees HTTPS.
+  The image runs as the non-root `app` user. `/healthz` reports health.
 - Nightly off-site backup with a RavenDB periodic backup task. Check which backup destinations the license tier allows.
 - **Cloudflare** free tier in front for DNS, DDoS protection and static asset caching.
 - **PWA manifest and service worker**, so the game installs to the home screen without an app store.
 - Global events (round end and reset, hall of fame snapshot) run in the `RoundKeeper` hosted service.
   Players never need a per-player job.
-- CI: GitHub Actions builds and tests on every push (`.github/workflows/ci.yml`).
+- CI: GitHub Actions builds and tests on every push, builds the Docker image and checks that it starts
+  (`.github/workflows/ci.yml`).
