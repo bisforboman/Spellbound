@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
@@ -47,6 +48,43 @@ public sealed class AlertTests : TestDatabase
     }
 
     [Fact]
+    public void The_same_problem_in_a_row_is_one_entry_with_a_count()
+    {
+        using var app = App(webhookUrl: null);
+        var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Spellbound.Test");
+
+        for (var i = 0; i < 3; i++)
+        {
+            logger.LogError("Backup failed.");
+        }
+
+        logger.LogError("Something else broke.");
+
+        var recent = app.Services.GetRequiredService<AlertSink>().Recent;
+        Assert.Equal(["Something else broke.", "Backup failed."], recent.Select(p => p.Message));
+        Assert.Equal(3, recent[1].Count);
+    }
+
+    [Fact]
+    public async Task An_unhandled_error_in_a_request_is_listed()
+    {
+        // A page whose dependency throws, as a bug in it would: the privacy page reads its settings.
+        using var app = CreateApp(b => b.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IOptions<PrivacyOptions>>();
+            services.AddSingleton<IOptions<PrivacyOptions>>(new Broken());
+        }));
+        using var client = app.CreateClient();
+
+        var response = await client.GetAsync(new Uri("/privacy", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        var problem = Assert.Single(app.Services.GetRequiredService<AlertSink>().Recent);
+        Assert.Equal(typeof(InvalidOperationException).FullName, problem.Exception);
+        Assert.StartsWith("Microsoft.AspNetCore", problem.Source, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_push_names_where_it_happened_but_never_the_message_and_repeats_wait_an_hour()
     {
         using var app = App("https://ntfy.example/spellbound-secret-topic");
@@ -84,6 +122,11 @@ public sealed class AlertTests : TestDatabase
     }
 
     private sealed record Push(string Url, string Body);
+
+    private sealed class Broken : IOptions<PrivacyOptions>
+    {
+        public PrivacyOptions Value => throw new InvalidOperationException("a bug");
+    }
 
     /// <summary>Stands in for ntfy or Discord: remembers each request and answers OK.</summary>
     private sealed class Webhook : HttpMessageHandler

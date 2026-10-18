@@ -153,6 +153,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
 
         Assert.Contains("Action log", page, StringComparison.Ordinal);
         Assert.Contains("Game rules", page, StringComparison.Ordinal);
+        Assert.Contains("Problems", page, StringComparison.Ordinal);
         Assert.Contains("Account/AccessDenied", refused.Headers.Location!.ToString(), StringComparison.Ordinal);
     }
 

@@ -141,17 +141,25 @@ public sealed class BackupKeeper(TimeProvider time, IConfiguration configuration
         }
     }
 
-    /// <summary>Reports (as an error, so it alerts) when backups are on but the newest one is over a day old.</summary>
+    /// <summary>
+    /// Reports (as an error, so it alerts) when backups are on but the newest one is over a day old. At most once a day,
+    /// so a backup that stays broken reminds the owner daily rather than hourly. Returns whether it reported.
+    /// </summary>
     public bool CheckOverdue()
     {
-        if (Directory is null || LastBackupAt() is not { } last || time.GetUtcNow() - last < OverdueAfter)
+        var now = time.GetUtcNow();
+        if (Directory is null || LastBackupAt() is not { } last || now - last < OverdueAfter
+            || (overdueReportedAt is { } reported && now - reported < TimeSpan.FromDays(1)))
         {
             return false;
         }
 
+        overdueReportedAt = now;
         logger.LogError("The newest backup is from {At:u}, over a day ago.", last);
         return true;
     }
+
+    private DateTimeOffset? overdueReportedAt;
 
     /// <summary>Finished backups in the directory, newest first.</summary>
     private IEnumerable<(string File, DateTimeOffset At)> Backups(string directory) =>

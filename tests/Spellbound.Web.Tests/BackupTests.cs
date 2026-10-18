@@ -67,6 +67,10 @@ public sealed class BackupTests : TestDatabase
         Assert.False(keeper.CheckOverdue());
         time.Advance(BackupKeeper.OverdueAfter + TimeSpan.FromMinutes(1));
         Assert.True(keeper.CheckOverdue()); // logged as an error, which the alerts pick up
+        time.Advance(TimeSpan.FromHours(12));
+        Assert.False(keeper.CheckOverdue()); // reminds once a day, not every check
+        time.Advance(TimeSpan.FromHours(13));
+        Assert.True(keeper.CheckOverdue());
     }
 
     [Fact]
