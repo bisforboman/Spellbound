@@ -118,7 +118,8 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   cast, recruit, attack, hex) writes one row in its own transaction, so the log holds exactly what happened. A row has
   the round, the player and the target's owner, the time, the action's name and inputs, the random numbers it used
   (`RecordingRandom` wraps the luck, so the domain doesn't change), the report lines (and the target's), the mage's
-  main numbers afterwards (`state`, for balance queries) and a hash of the `GameRules` in force. Failed actions change
+  main numbers afterwards (`state`, and `target_state` for the other mage in an attack or hex, for balance queries)
+  and a hash of the `GameRules` in force. Failed actions change
   nothing and aren't logged; nor are alert resets, round resets or admin actions. With a mage as it was before an
   action, the same time, rules and draws reproduce the action exactly (`ActionLogTests` replays an attack and gets
   the same saved mages); a replay tool isn't built. If rules were tuned mid-round, replaying across the change needs
