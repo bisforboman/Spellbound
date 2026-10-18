@@ -30,6 +30,12 @@ public interface IAccountLifecycle
     /// and it goes with the account (or not at all).
     /// </summary>
     Task OnAccountDeletedAsync(DbSession db, string ownerId);
+
+    /// <summary>
+    /// Everything the game stores about the player, for the "download my data" file on the Account page. Return
+    /// something System.Text.Json can write.
+    /// </summary>
+    Task<object> ExportAsync(DbSession db, string ownerId);
 }
 
 /// <summary>How a player looks on the admin page.</summary>

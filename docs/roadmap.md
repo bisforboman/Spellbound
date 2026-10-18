@@ -45,7 +45,7 @@ Goal: real players finish a round, and we learn from it.
 - [x] Sign in with Google instead of passwords (no password storage, resets or lockouts; a Development-only sign-in for
   local runs and tests). Needs the owner's Google OAuth client before deploy
 - [x] Persistence on plain Npgsql instead of EF Core: SQL migration files, row locks for concurrent actions
-- [ ] Privacy notice before sign-up: what's stored (email, hashed network, game data and the action log), why, how
+- [x] Privacy notice before sign-up: what's stored (email, hashed network, game data and the action log), why, how
   long, and how to delete your account
 - [ ] Terms and rules page, and an "ask an admin" contact path (the server sends no email)
 - [ ] Alerts on unhandled errors and failed nightly backups
@@ -60,6 +60,8 @@ Goal: real players finish a round, and we learn from it.
 ### Waiting on the owner
 - [ ] A VPS and a domain pointing at it (see [deploy guide](deploy.md))
 - [ ] A Google OAuth client for sign-in (see [deploy guide](deploy.md))
+- [ ] Read the privacy notice (`/privacy`) and fill in its `PRIVACY_*` settings: operator, contact, hosting, off-site
+  backups (see [deploy guide](deploy.md#privacy-notice))
 
 ## Engineering
 - Persistence: plain Npgsql with Google sign-in, decided 17 Oct 2026 after comparing alternatives and similar games

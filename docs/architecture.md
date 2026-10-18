@@ -129,6 +129,12 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - **Rounds:** `current_round` holds the round being played, in one row. `RoundKeeper`, a hosted `BackgroundService`,
   checks it every minute: it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row and
   moves the round on in one transaction, with the round row locked, so two hosts can't both reset.
+- **Privacy** (`/privacy`, `Hosting/Privacy.cs`): a notice written from what the code stores, filled in from the
+  `Privacy` config section (operator, contact, hosting; the app won't start outside Development without them). It
+  promises things the code does, so keep them true together: network hashes are deleted after 30 days
+  (`AccountSignals`), the app logs no IP addresses, deleting an account deletes its game data and log rows, and
+  **Account → Download my data** (`/Account/Data`) gives everything stored about the player: the account row, the
+  network hashes and, through `IAccountLifecycle.ExportAsync`, the game's data. Bans outlive a deleted account.
 - **Abuse protection:** `RateLimits` (config section `RateLimits`) limits requests per IP: account form posts
   (10 per 5 minutes), opening the live game connection, and other non-static requests; static files are unlimited.
   `AccountSignals` stores, per account, keyed hashes of the networks it signed in from (never the IP itself; the key

@@ -13,6 +13,10 @@ services:
       Admins__0: ${ADMIN_EMAIL:-}
       Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
       Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:?Set GOOGLE_CLIENT_SECRET in .env}
+      Privacy__Operator: ${PRIVACY_OPERATOR:?Set PRIVACY_OPERATOR in .env}
+      Privacy__Contact: ${PRIVACY_CONTACT:?Set PRIVACY_CONTACT in .env}
+      Privacy__Hosting: ${PRIVACY_HOSTING:?Set PRIVACY_HOSTING in .env}
+      Privacy__OffsiteBackups: ${PRIVACY_OFFSITE_BACKUPS:-}
     volumes:
       - spellbound-data:/data
     # No ports: only Caddy can reach the app, which is what makes trusting its forwarded headers safe.

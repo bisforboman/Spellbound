@@ -37,7 +37,7 @@ jobs:
       - name: Check the compose files
         run: |
           DOMAIN=example.com POSTGRES_PASSWORD=placeholder GOOGLE_CLIENT_ID=placeholder GOOGLE_CLIENT_SECRET=placeholder \
-            docker compose config --quiet
+            PRIVACY_OPERATOR=placeholder PRIVACY_CONTACT=placeholder PRIVACY_HOSTING=placeholder docker compose config --quiet
           docker compose -f docker-compose.dev.yml config --quiet
       - run: docker build -t spellbound .
       - name: Smoke test the image (migrates a fresh database, then takes its first backup)
@@ -49,7 +49,8 @@ jobs:
           docker exec db pg_isready -U spellbound -d spellbound || { docker logs db; exit 1; }
           docker run -d --name spellbound --network smoke -p 8080:8080 \
             -e "ConnectionStrings__Spellbound=Host=db;Database=spellbound;Username=spellbound;Password=smoke" \
-            -e Authentication__Google__ClientId=smoke -e Authentication__Google__ClientSecret=smoke spellbound
+            -e Authentication__Google__ClientId=smoke -e Authentication__Google__ClientSecret=smoke \
+            -e Privacy__Operator=smoke -e Privacy__Contact=smoke -e Privacy__Hosting=smoke spellbound
           for i in $(seq 1 60); do
             if curl -fsS http://localhost:8080/healthz && sleep 5 && docker exec spellbound sh -c 'ls /data/backups/*.dump'; then
               exit 0

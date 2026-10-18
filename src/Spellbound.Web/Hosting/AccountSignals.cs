@@ -43,6 +43,8 @@ public sealed class AccountSignals(HostDatabase database, TimeProvider time)
                 (SELECT network FROM account_networks WHERE owner_id = $1 ORDER BY last_seen DESC LIMIT $2)
             """,
             ownerId, NetworksKept);
+        await db.ExecuteAsync( // nobody's network is kept longer than the window the admin page looks at
+            "DELETE FROM account_networks WHERE last_seen < $1", time.GetUtcNow() - Window);
         await db.CommitAsync();
     }
 

@@ -1,0 +1,75 @@
+@page "/privacy"
+
+@using Microsoft.Extensions.Options
+@using Spellbound.Web.Hosting
+
+@inject IOptions<PrivacyOptions> Options
+@inject IConfiguration Configuration
+
+<PageTitle>Privacy</PageTitle>
+
+<h1>Privacy</h1>
+
+<p>
+    Spellbound is run by <b>@Show(Notice.Operator, "the operator")</b>, who decides what happens to your data. Questions
+    or requests: <b>@Show(Notice.Contact, "ask the game's admin")</b>.
+</p>
+
+<h2 class="h5">What the game stores, and why</h2>
+<ul>
+    <li>
+        <b>Your account:</b> the email address and the account id Google gives when you sign in, and when you joined and
+        last signed in. To sign you in and to recognise the game's admins. The game sends no email.
+    </li>
+    <li>
+        <b>Your sign-in networks:</b> a keyed hash of the internet address you sign in from (it can't be turned back into
+        the address), kept for 30 days. To spot one person playing several accounts.
+    </li>
+    <li>
+        <b>Your game:</b> your mages in every round, their news, and every action you take with its result and your numbers
+        afterwards. To run the game, settle disputes and balance it. Kept until you delete your account. Halls of fame
+        of finished rounds keep your mage's name and numbers.
+    </li>
+    <li>
+        <b>Bans:</b> if you're banned, the reason, when, and which admin. Kept even after your account is deleted, so a
+        ban can't be shed that way.
+    </li>
+</ul>
+
+<h2 class="h5">Cookies</h2>
+<p>
+    A sign-in cookie (30 days, renewed while you play), a short one while you sign in with Google, and one that protects
+    forms. No ads, no analytics, no tracking.
+</p>
+
+<h2 class="h5">Who else sees it</h2>
+<ul>
+    <li><b>Other players</b> see your mage: its name, school, land and networth, and the reports of battles with you.</li>
+    <li><b>The game's admins</b> see your email, your mages, which accounts share a network, and the action log.</li>
+    <li><b>Google</b> handles your sign-in, under Google's own privacy policy.</li>
+    <li><b>The hosting provider</b> runs the server: @Show(Notice.Hosting, "a rented server").</li>
+</ul>
+<p>Nothing is sold or shared with anyone else. The server doesn't log internet addresses.</p>
+
+<h2 class="h5">Backups</h2>
+<p>
+    The database is backed up every night, and the server keeps the last @BackupsKept
+    backups@(Notice.OffsiteBackups is { Length: > 0 } offsite ? $"; copies are also kept {offsite}" : "").
+    Data you delete disappears from the backups as they're replaced.
+</p>
+
+<h2 class="h5">Your choices</h2>
+<ul>
+    <li><b>Get a copy</b> of everything stored about you: <a href="Account/Manage">Account</a> → Download my data.</li>
+    <li><b>Delete your account</b> and your game data at once: <a href="Account/Manage">Account</a> → Delete my account.</li>
+    <li><b>Ask</b> the operator anything above, or to correct something.</li>
+    <li>If you're unhappy with the answer, you can complain to the data protection authority in your country.</li>
+</ul>
+
+@code {
+    private PrivacyOptions Notice => Options.Value;
+
+    private int BackupsKept => Math.Max(1, Configuration.GetValue("Backup:Keep", 7)); // as BackupKeeper reads it
+
+    private static string Show(string? value, string otherwise) => string.IsNullOrWhiteSpace(value) ? otherwise : value;
+}
