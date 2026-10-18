@@ -53,22 +53,29 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     /// <summary>How many hostile news entries arrived since the player last looked, and resets the count.</summary>
     public async Task<int> TakeUnseenAlertsAsync(string ownerId)
     {
-        await using var db = await database.BeginAsync();
-        if (await db.LoadCurrentRoundAsync() is not { } round)
+        try
         {
-            return 0;
-        }
+            await using var db = await database.BeginAsync();
+            if (await db.LoadCurrentRoundAsync() is not { } round)
+            {
+                return 0;
+            }
 
-        // Locks the row while reading, so an attack landing at the same moment waits and counts next time.
-        var unseen = await db.ScalarAsync<int>(
-            "SELECT unseen FROM news WHERE round = $1 AND owner_id = $2 FOR UPDATE", round.Number, ownerId);
-        if (unseen > 0)
+            // Locks the row while reading, so an attack landing at the same moment waits and counts next time.
+            var unseen = await db.ScalarAsync<int>(
+                "SELECT unseen FROM news WHERE round = $1 AND owner_id = $2 FOR UPDATE", round.Number, ownerId);
+            if (unseen > 0)
+            {
+                await db.ExecuteAsync("UPDATE news SET unseen = 0 WHERE round = $1 AND owner_id = $2", round.Number, ownerId);
+                await db.CommitAsync();
+            }
+
+            return unseen;
+        }
+        catch (Exception ex) when (HostStore.IsBusy(ex))
         {
-            await db.ExecuteAsync("UPDATE news SET unseen = 0 WHERE round = $1 AND owner_id = $2", round.Number, ownerId);
-            await db.CommitAsync();
+            return 0; // the news is busy being written; the alerts show next time
         }
-
-        return unseen;
     }
 
     /// <summary>Every mage in the current round, for rankings and picking targets. Fine for one server's players.</summary>

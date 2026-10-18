@@ -107,6 +107,24 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     }
 
     [Fact]
+    public async Task An_action_waiting_too_long_for_a_locked_mage_is_busy_and_changes_nothing()
+    {
+        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Verdant);
+        await using var source = Npgsql.NpgsqlDataSource.Create(ConnectionString);
+        await using (var other = await new HostDatabase(source).BeginAsync())
+        {
+            await other.LoadMageAsync(1, Owner, forUpdate: true); // held, never committed
+
+            var report = await Game.ExploreAsync(Owner, 1); // waits for lock_timeout
+
+            Assert.StartsWith("Your mage was busy", report.Lines[0], StringComparison.Ordinal);
+        }
+
+        Assert.Equal(100, (await Game.GetMageAsync(Owner))!.Turns);
+        Assert.Empty(await Game.GetNewsAsync(Owner));
+    }
+
+    [Fact]
     public async Task Game_pages_require_sign_in_and_manifest_is_served()
     {
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions

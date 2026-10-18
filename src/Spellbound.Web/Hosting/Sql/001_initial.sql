@@ -10,7 +10,6 @@ CREATE TABLE accounts (
     last_sign_in_at timestamptz NOT NULL,
     UNIQUE (provider, subject)
 );
-CREATE INDEX accounts_email ON accounts (upper(email));
 
 CREATE TABLE current_round (
     id int PRIMARY KEY CHECK (id = 1),    -- one row
