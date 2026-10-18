@@ -9,7 +9,7 @@
 @if (Mage is not null)
 {
     <TurnsBar Mage="Mage" Rules="Rules" />
-    <p>Mana: @N(Mage.Mana) / @N(Mage.ManaCapacity(Rules)).</p>
+    <ManaVial Mana="Mage.Mana" Capacity="Mage.ManaCapacity(Rules)" />
 
     <h2 class="h4">Meditate</h2>
     <p>Each turn of meditation adds <b>@N(Mage.MeditateManaPerTurn(Rules))</b> mana on top of your nodes' income.</p>

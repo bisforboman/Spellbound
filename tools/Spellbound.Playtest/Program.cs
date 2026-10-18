@@ -255,6 +255,9 @@ namespace Spellbound.Playtest
                     await WaitForCircuitAsync(page);
                     await page.Locator("h1", new PageLocatorOptions { HasTextString = player.Name }).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
                     await Expect(page, $"{player.School} mage");
+                    await ExpectElement(page, ".mage-head .sigil svg");
+                    await ExpectElement(page, ".turns .moon");
+                    await ExpectElement(page, ".vial[role=meter]");
                 });
             }
 
@@ -275,6 +278,7 @@ namespace Spellbound.Playtest
             }));
             await StepAsync(ada, "meditate", page => ActAsync(page, "/magic", async () =>
             {
+                await ExpectElement(page, ".vial[role=meter]");
                 await page.FillAsync("#turns", "3");
                 await page.ClickAsync("button[type=submit]:has-text('Meditate')");
             }));
@@ -297,7 +301,10 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("a.rank-row:has-text('Merlin')");
                 await page.WaitForURLAsync("**/rivals/*");
                 await WaitForCircuitAsync(page);
+                await ExpectElement(page, ".mage-head .sigil svg");
                 await ClickAndReportAsync(page, () => page.ClickAsync("button.btn-danger:has-text('Attack')"));
+                await ExpectElement(page, ".alert[role=status] .stamp"); // luck decides which verdict
+                await page.WaitForTimeoutAsync(500); // let the stamp land before the screenshot
             });
             await StepAsync(ada, "hex", async page =>
             {
@@ -570,6 +577,9 @@ namespace Spellbound.Playtest
                 throw new PlaytestException("The action failed: " + (await report.InnerTextAsync()).Replace('\n', ' '));
             }
         }
+
+        private static Task ExpectElement(IPage page, string selector) =>
+            page.Locator(selector).First.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
 
         private static async Task Expect(IPage page, string text, bool optional = false)
         {

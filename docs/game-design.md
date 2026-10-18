@@ -26,7 +26,8 @@ Design goals:
   like costs.
 - **Art later.** Text-first until the core is fun; art can be reconsidered then. The look (18 Oct 2026): "The Burned Grimoire",
   a dark, gritty spellbook: soot paper with grain, blackletter page titles, iron-plate buttons, and each mage's pages
-  inked in their school's colour. Small geometric symbols for gold, mana, turns, land and army. See [theme.md](theme.md).
+  inked in their school's colour, with a sigil drawn from their name. Turns are a waxing moon, mana a flask, and a
+  battle's report is stamped with its verdict; small geometric symbols mark gold, land and army. See [theme.md](theme.md).
 
 ## Games and rounds
 
