@@ -105,6 +105,8 @@ first, as the beta is with friends)
   ([research](research/persistence.md))
 - jsonb upcasters: game state is versioned JSON; add the first upcaster at the first rename or reshape
 - The `Hosting/` hooks are shaped for one round at a time; M5 makes them per game (round length, round end)
+- Playtest tool (`tools/Spellbound.Playtest`): three players play every page at 360 px in a real browser; not in CI
+  yet (it needs `playwright install --with-deps` there)
 - Tests: most of their time is the app starting once per test; share one app per test class if speed matters
 
 ## Balance
