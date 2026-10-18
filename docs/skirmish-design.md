@@ -46,8 +46,8 @@ game ends and points are counted from several sources, so there's more than one 
 
 - **Players:** 2 to 6, chosen by the creator (4 by default). The game starts when it's full, or at a set time with
   whoever has joined.
-- **Start:** each mage gets one home region (the same terrain for everyone, spread out on the board) and a small amount
-  of gold and mana.
+- **Start:** each mage gets one home region (Terrain 1 for everyone, spread out on the board, never next to another
+  home) with one node and one town, 1,500 gold and 1,000 mana.
 - **Length:** a set number of rounds (12 by default), or earlier if one mage holds half the board.
 - **Round time limit:** set by the creator, for example 12 hours (a game over a week) or 2 minutes (a live game with
   friends). A round ends as soon as everyone is ready.
@@ -66,13 +66,20 @@ game ends and points are counted from several sources, so there's more than one 
 
 | Order | Actions | Effect |
 |---|---|---|
-| **Claim** | 1 | Take a free region next to one of yours, then draw a discovery card |
-| **Build** | 1 | Build up to 2 nodes or towns in free slots of one region (costs gold) |
-| **Recruit** | 1 | Recruit units (costs gold), as in the Realm |
+| **Claim** | 1 | Take a free region next to one you held when the round began, then draw a discovery card |
+| **Build** | 1 | Build 1–2 nodes or towns in free slots of one region (300 gold each); a region claimed earlier in the same round counts |
+| **Recruit** | 1 | Recruit 1–20 units of one kind (the Realm's units and prices) |
 | **Cast** | 1 | A self-spell or a hex, as in the Realm, lasting a number of rounds |
 | **Attack** | 2 | Attack a neighbouring region of another mage; a win takes the region and its buildings |
 
-Income (gold and mana from regions and buildings) and upkeep come once per round, after the orders.
+Income comes once per round, after the orders: 100 gold per region, 60 per town (×1.2 on Terrain 2) and 50 mana per
+node (×1.5 on Terrain 3). Then unit upkeep (the Realm's per-turn upkeep, once a round); if a mage can't pay, its gold
+goes to 0 and 10% of every unit deserts.
+
+**Checking orders.** Saved orders are checked as the round would play them if nobody else got in the way: claims first,
+then builds and recruits against a running gold total, all within the round's actions. When the round plays, each order
+is checked again: one the round made impossible (another mage won the region) is spent and reported, and nothing else
+changes. Orders past the round's actions are not done.
 
 ### Order of play
 
@@ -81,8 +88,9 @@ Everything ordered in a round happens in a fixed order, so simultaneous moves ha
 1. **Casts**, so this round's barriers and buffs count.
 2. **Attacks**, all at once against the defences at the start of the round. A region attacked by two mages goes to the
    stronger winning attack.
-3. **Claims.** Two mages claiming the same free region: a contest, settled by a roll weighted by their armies (shown as
-   a percentage before you commit, like all odds). The loser's action is spent.
+3. **Claims.** Several mages claiming the same free region: a contest, settled by a roll weighted by 10 plus each
+   one's attack power, so an army helps but never decides alone (shown as a percentage before you commit, like all
+   odds). The loser's action is spent; only the winner draws a card.
 4. **Builds and recruits.**
 5. **Income and upkeep.**
 
@@ -94,10 +102,10 @@ Claiming a region draws a card from a shared deck of about 30 cards, shuffled fr
 | Card | Count | Effect |
 |---|---|---|
 | Card 1 | 12 | Nothing: just land |
-| Card 2 | 6 | +1,500 gold |
-| Card 3 | 5 | +1,000 mana |
+| Card 2 | 6 | +600 gold |
+| Card 3 | 5 | +400 mana |
 | Card 4 | 3 | +3 points |
-| Card 5 | 4 | Lose 10% of your army, or nothing if you have none |
+| Card 5 | 4 | Lose 10% of every unit type (rounded up), or nothing if you have none |
 
 Battle luck (×0.9–1.1, as in the Realm) stays, with the odds shown before you attack.
 
@@ -113,8 +121,23 @@ Points from several sources, shown live on the game page:
   worth 5 points each to whoever gets there first
 - Card 4s from the deck
 
-Ties go to the most gold and mana together. The winner's account gets a win on the Skirmish leaderboard; everyone who
+Ties go to the most gold and mana together, then to the earlier seat. The winner's account gets a win on the Skirmish leaderboard; everyone who
 finished gets a game played.
+
+## What the simulation says so far (part A)
+
+`tools/Spellbound.SkirmishSim` plays 1,000 four-seat games with bots ([results](skirmish-sim-results.md)). With part A's
+rules (no attacks yet):
+
+- **Claiming wins.** A region is worth 3 points, a building 1 point for 300 gold, so the bot that claims everything it
+  can wins most games and the one that builds instead almost never does.
+- **Games aren't open yet:** the leader after round 6 usually wins, because the board is full by round 8 or so and
+  nothing changes hands after that. Attacks (part B) are what should change it.
+- **Gold piles up** once every slot is built, and mana has nothing to buy. Part B's spells and hexes are priced from
+  these numbers.
+- Seat order doesn't matter (each seat wins about a quarter), and contested claims happen about 3 times a game.
+
+Tuning waits for part B: attacks, spells and hexes change every one of these.
 
 ## Dropouts
 

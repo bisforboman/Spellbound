@@ -18,7 +18,8 @@ domain code doesn't change.
 ```
 Spellbound.slnx
 src/
-  Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook, UnitBook (no dependencies)
+  Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook, UnitBook (no dependencies);
+    Skirmish/               Skirmish's rules: SkirmishRules, SkirmishBoard, SkirmishGame (seats, orders, PlayRound)
   Spellbound.Web/           Blazor app
     Hosting/                the reusable game host: accounts, the database (HostDatabase, SQL scripts in Sql/), rounds,
                             admin page, bans, backups,
@@ -27,6 +28,7 @@ src/
     Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL scripts)
 tools/
   Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
+  Spellbound.SkirmishSim/   Skirmish simulation: bots play many seeded games (docs/skirmish-sim-results.md)
   Spellbound.Playtest/      plays every page in a phone-sized browser (Playwright) against a fresh app and database,
                             with screenshots and a report (.claude/skills/playtest)
 tests/
