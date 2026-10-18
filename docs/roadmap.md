@@ -35,14 +35,14 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 - [x] Nightly backups with retention and a tested restore ([deploy guide](deploy.md#backups))
 - [x] Basic rate limiting, login lockout and multi-account signals on the admin page
 - [x] Admin page: server settings, ban, reset
-- [x] Password reset by an admin (the server sends no email yet; "Forgot password" points players to the admin)
+- [x] Password reset by an admin (since replaced by Google sign-in, which has no passwords)
 - [x] Balance pass from a round simulation ([balance](balance.md)): diminishing land on repeated attacks, 72 hours of
   protection, turn cap 240
 
 ## M4: First live round
 Goal: real players finish a round, and we learn from it.
 
-- [ ] Sign in with Google instead of passwords (no password storage, resets or lockouts; a Development-only sign-in for
+- [x] Sign in with Google instead of passwords (no password storage, resets or lockouts; a Development-only sign-in for
   local runs and tests). Needs the owner's Google OAuth client before deploy
 - [ ] Persistence on plain Npgsql instead of EF Core: SQL migration files, row locks for concurrent actions
 - [ ] Privacy notice before sign-up: what's stored (email, hashed network, game data), why, how long, and how to delete

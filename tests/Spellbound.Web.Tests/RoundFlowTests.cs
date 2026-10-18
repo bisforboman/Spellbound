@@ -10,8 +10,8 @@ namespace Spellbound.Web.Tests;
 /// <summary>Round start, end and reset through the real app, with a clock the test moves by hand.</summary>
 public sealed class RoundFlowTests : TestDatabase
 {
-    private const string Merlin = "ApplicationUsers/1-A";
-    private const string Morgana = "ApplicationUsers/2-A";
+    private const string Merlin = "account-1";
+    private const string Morgana = "account-2";
 
     private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 

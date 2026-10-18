@@ -10,13 +10,11 @@
             <a href="Account/Manage">Account</a>
             <form action="Account/Logout" method="post">
                 <AntiforgeryToken />
-                <input type="hidden" name="ReturnUrl" value="" />
-                <button type="submit" class="btn btn-link">Log out</button>
+                <button type="submit" class="btn btn-link">Sign out</button>
             </form>
         </Authorized>
         <NotAuthorized>
-            <a href="Account/Login">Log in</a>
-            <a href="Account/Register">Sign up</a>
+            <a href="Account/Login">Sign in</a>
         </NotAuthorized>
     </AuthorizeView>
 </header>

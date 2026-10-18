@@ -11,6 +11,8 @@ services:
     environment:
       ConnectionStrings__Spellbound: Host=db;Database=spellbound;Username=spellbound;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       Admins__0: ${ADMIN_EMAIL:-}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:?Set GOOGLE_CLIENT_SECRET in .env}
     volumes:
       - spellbound-data:/data
     # No ports: only Caddy can reach the app, which is what makes trusting its forwarded headers safe.

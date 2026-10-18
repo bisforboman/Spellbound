@@ -3,9 +3,9 @@
 ## Stack
 
 - **.NET 10**, with **Blazor Server** (interactive server rendering) for the UI, all in C#
-- **ASP.NET Core Identity** (individual accounts) for sign-in, from the official Blazor template
-- **PostgreSQL 16** through **EF Core** (`Npgsql.EntityFrameworkCore.PostgreSQL`) for game data and Identity users
-  (`Microsoft.AspNetCore.Identity.EntityFrameworkCore`). It runs in its own container next to the app
+- **Sign-in with Google** (`Microsoft.AspNetCore.Authentication.Google`) and a cookie; no passwords are stored
+- **PostgreSQL 16** through **EF Core** (`Npgsql.EntityFrameworkCore.PostgreSQL`) for game data and accounts. It runs
+  in its own container next to the app
 - **xUnit** for domain tests, plus `WebApplicationFactory` integration tests for the web app
 
 Blazor Server keeps state on the server and sends small UI diffs over SignalR. That keeps the phone's work light.
@@ -22,7 +22,7 @@ src/
   Spellbound.Web/           Blazor app
     Hosting/                the reusable game host: accounts, the database (HostDb), rounds, admin page, bans, backups,
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
-    Components/Account/     the template's Identity pages (part of the host, not yet moved into Hosting/)
+    Components/Account/     sign-in and account pages (part of the host, not yet moved into Hosting/)
     Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Migrations: the EF Core migrations)
 tools/
   Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
@@ -49,7 +49,7 @@ extension points designed for a single game tend to come out wrong.
   transaction; Spellbound removes their mages and news from every round). `AdminPageOptions.GameSections` adds game sections to the admin page (Spellbound's rules table).
   `SpellboundHost` implements the hooks.
 - `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
-- **Tables** are split the same way: `HostDb` owns Identity's tables, `current_round`, `bans`, `account_networks` and
+- **Tables** are split the same way: `HostDb` owns `accounts`, `current_round`, `bans`, `account_networks` and
   `server_secrets`; `SpellboundModel` (Data/GameData.cs) adds `mages`, `news` and `hall_of_fame`. The migrations live
   in `Data/Migrations`, because they name the game's types.
 - **When a second game comes:** move `Hosting/` and `Components/Account/` into a `GameHost` Razor class library,
@@ -111,20 +111,24 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   moves the round on in one transaction. The row version means two hosts can't both reset.
 - **Abuse protection:** `RateLimits` (config section `RateLimits`) limits requests per IP: account form posts
   (10 per 5 minutes), opening the live game connection, and other non-static requests; static files are unlimited.
-  Login locks an account for 5 minutes after 5 wrong passwords. `AccountSignals` stores, per account, keyed hashes of
-  the networks it signed up or logged in from (never the IP itself; the key is in `server_secrets`), and the admin page
+  `AccountSignals` stores, per account, keyed hashes of the networks it signed in from (never the IP itself; the key
+  is in `server_secrets`), and the admin page
   lists networks shared by several accounts in the last 30 days, as hints, not automatic bans. Deleting an account
   deletes its signals.
-- **Email:** none yet (`IdentityNoOpEmailSender`). "Forgot password" tells players to ask an admin, who gives them a
-  temporary password from the admin page (`AdminService.ResetPasswordAsync`). Changing an email address needs a
-  confirmation link, so it doesn't work until real email is added.
+- **Accounts** (`Hosting/Accounts.cs`, `Hosting/AccountEndpoints.cs`): players sign in with Google, so there are no
+  passwords, resets or lockouts, and the server sends no email. Google's answer lands in a short-lived external cookie;
+  `/Account/SignedIn` finds or creates the `accounts` row and issues the sign-in cookie with our own account id (the
+  owner id everywhere), the email as the name, and nothing from Google beyond that. The id is a hash of the provider
+  and Google's id, so it is stable: signing in again after deleting an account gets the same id, and a ban holds.
+  In Development, `/Account/DevSignIn` signs in with just an email (local runs and tests); it isn't mapped elsewhere,
+  and outside Development the app won't start without `Authentication:Google:ClientId` and `ClientSecret`.
+  Deleting an account (Account page) deletes its network hashes and, through `IAccountLifecycle`, its game data in
+  one transaction with the account.
 - **Admin:** the `Admin` policy allows accounts whose email is in the `Admins` config list; `AdminHandler` reads the
   list on every check. The `bans` table holds banned players. `GameService` checks it on every action and filters banned
-  mages out of rankings and targeting; `RoundKeeper` leaves them out of the hall of fame. A ban also locks the account
-  (lockout until the end of time) and changes its security stamp, so open sessions are signed out when they revalidate.
-- **Identity** uses its EF Core stores on `HostDb`. `HostUserManager` deletes an account's network hashes and, through
-  `IAccountLifecycle`, its game data in the same transaction as the account. The template's passkey pages were
-  removed (from the RavenDB days, which had no passkey support); they can come back with the EF stores.
+  mages out of rankings and targeting; `RoundKeeper` leaves them out of the hall of fame. A banned account can't sign
+  in, and an open sign-in is checked against the database at most once a minute (open game connections every five
+  minutes), so a ban or a deletion signs the player out.
 - **Tests** need a PostgreSQL server: `SPELLBOUND_TEST_POSTGRES` (default `Host=localhost;Username=postgres;
   Password=postgres`, as in CI and `docker-compose.dev.yml`). `TestDatabase` migrates a template database once per run
   and copies it for each test.

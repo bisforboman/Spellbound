@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Spellbound.Domain;
 
@@ -18,7 +16,6 @@ public sealed record AdminSharedNetwork(string Network, DateTimeOffset LastSeen,
 /// </summary>
 public sealed class AdminService(
     IDbContextFactory<HostDb> dbs,
-    IServiceScopeFactory scopes,
     RoundKeeper rounds,
     BackupKeeper backups,
     AccountSignals signals,
@@ -54,7 +51,7 @@ public sealed class AdminService(
         ];
     }
 
-    /// <summary>Bans a player: adds them to the ban list (effective at once in the game) and locks their account.</summary>
+    /// <summary>Bans a player: effective at once in the game, and their sign-in stops working (see AccountEndpoints).</summary>
     public async Task<string> BanAsync(string adminOwnerId, string adminEmail, string ownerId, string reason)
     {
         reason = reason.Trim();
@@ -87,75 +84,8 @@ public sealed class AdminService(
             }
         }
 
-        // Locking the account stops new sign-ins; the new security stamp signs out existing sessions when they revalidate.
-        return await WithUserAsync(ownerId, async (users, user) =>
-        {
-            await users.SetLockoutEnabledAsync(user, true);
-            await users.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
-            await users.UpdateSecurityStampAsync(user);
-            return $"Banned {user.Email}.";
-        });
-    }
-
-    /// <summary>
-    /// Gives a player a new, temporary password, for when they've forgotten theirs (the server sends no email). The
-    /// admin passes it on; the player logs in with it and picks their own under Account. Signs them out elsewhere.
-    /// </summary>
-    public async Task<string> ResetPasswordAsync(string ownerId)
-    {
-        await using (var db = await dbs.CreateDbContextAsync())
-        {
-            if (await db.Bans.AnyAsync(b => b.OwnerId == ownerId))
-            {
-                return "That player is banned. Unban them first if they should get back in.";
-            }
-        }
-
-        return await WithUserAsync(ownerId, async (users, user) =>
-        {
-            var password = TemporaryPassword();
-            var token = await users.GeneratePasswordResetTokenAsync(user);
-            var result = await users.ResetPasswordAsync(user, token, password);
-            if (!result.Succeeded)
-            {
-                return $"Couldn't reset the password: {string.Join(" ", result.Errors.Select(e => e.Description))}";
-            }
-
-            await users.ResetAccessFailedCountAsync(user);
-            await users.SetLockoutEndDateAsync(user, null); // lift a lockout from their wrong guesses (bans are refused above)
-            return $"Temporary password for {user.Email}: {password} (shown once; give it to them privately).";
-        });
-    }
-
-    /// <summary>The same, for any account by email, including players with no mage this round.</summary>
-    public async Task<string> ResetPasswordByEmailAsync(string email)
-    {
-        using var scope = scopes.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        return await users.FindByEmailAsync(email.Trim()) is { Id: { } ownerId }
-            ? await ResetPasswordAsync(ownerId)
-            : "No account has that email.";
-    }
-
-    /// <summary>
-    /// Three groups of four letters and digits separated by dashes, e.g. "Kq7m-Pz2r-Hb9w": easy to read out, and it
-    /// meets Identity's rules (upper, lower, digit and a symbol). Leaves out look-alikes such as 0/O and 1/l/I.
-    /// </summary>
-    public static string TemporaryPassword()
-    {
-        const string upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        const string lower = "abcdefghijkmnopqrstuvwxyz";
-        const string digits = "23456789";
-        var groups = new string[3];
-        for (var g = 0; g < groups.Length; g++)
-        {
-            groups[g] = string.Concat(
-                Pick(upper), Pick(lower), Pick(digits), Pick(lower));
-        }
-
-        return string.Join('-', groups);
-
-        static char Pick(string from) => from[RandomNumberGenerator.GetInt32(from.Length)];
+        // The account's sign-in cookie is checked within a minute (open game connections within a few) and signed out.
+        return $"Banned {await EmailOrIdAsync(ownerId)}.";
     }
 
     public async Task<string> UnbanAsync(string ownerId)
@@ -165,12 +95,7 @@ public sealed class AdminService(
             await db.Bans.Where(b => b.OwnerId == ownerId).ExecuteDeleteAsync();
         }
 
-        return await WithUserAsync(ownerId, async (users, user) =>
-        {
-            await users.SetLockoutEndDateAsync(user, null);
-            await users.ResetAccessFailedCountAsync(user);
-            return $"Unbanned {user.Email}.";
-        });
+        return $"Unbanned {await EmailOrIdAsync(ownerId)}.";
     }
 
     /// <summary>Moves the current round's end. An end at or before now ends the round at once and starts the next.</summary>
@@ -244,16 +169,11 @@ public sealed class AdminService(
             : new Dictionary<string, PlayerSummary>();
 
     private static async Task<Dictionary<string, string?>> EmailsAsync(HostDb db, IReadOnlyCollection<string> ownerIds) =>
-        await db.Users.Where(u => ownerIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Email);
+        await db.Accounts.Where(a => ownerIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => (string?)a.Email);
 
-    /// <summary>Runs an account change in its own scope (UserManager's context must not outlive one change).</summary>
-    private async Task<string> WithUserAsync(
-        string ownerId, Func<UserManager<ApplicationUser>, ApplicationUser, Task<string>> change)
+    private async Task<string> EmailOrIdAsync(string ownerId)
     {
-        using var scope = scopes.CreateScope();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        return await users.FindByIdAsync(ownerId) is { } user
-            ? await change(users, user)
-            : "The ban list is updated, but that account no longer exists.";
+        await using var db = await dbs.CreateDbContextAsync();
+        return await db.Accounts.Where(a => a.Id == ownerId).Select(a => a.Email).SingleOrDefaultAsync() ?? ownerId;
     }
 }

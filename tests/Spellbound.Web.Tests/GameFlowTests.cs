@@ -1,5 +1,4 @@
 using System.Net;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,7 @@ namespace Spellbound.Web.Tests;
 /// <summary>Runs the real app against a fresh PostgreSQL database per test.</summary>
 public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
 {
-    private const string Owner = "ApplicationUsers/1-A";
+    private const string Owner = "account-1";
 
     private readonly WebApplicationFactory<Program> factory;
     private readonly BeforeSave beforeSave = new();
@@ -128,32 +127,6 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
         var mage = await Game.GetMageAsync(Owner);
         Assert.Equal(99, mage!.Turns); // only the other tap's single turn was spent
         Assert.Equal(250, mage.Land);
-    }
-
-    [Fact]
-    public async Task New_account_is_found_by_name_at_once_and_updates_are_saved()
-    {
-        const string email = "merlin@spellbound.test";
-        using (var scope = factory.Services.CreateScope())
-        {
-            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            var created = await users.CreateAsync(new ApplicationUser { UserName = email, Email = email }, "Test-Only-1!");
-            Assert.True(created.Succeeded);
-        }
-
-        using (var scope = factory.Services.CreateScope())
-        {
-            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            var user = await users.FindByNameAsync(email); // what password sign-in uses
-            Assert.NotNull(user);
-            await users.AccessFailedAsync(user);
-        }
-
-        using (var scope = factory.Services.CreateScope())
-        {
-            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            Assert.Equal(1, (await users.FindByEmailAsync(email))!.AccessFailedCount);
-        }
     }
 
     [Fact]
