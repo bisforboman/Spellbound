@@ -137,6 +137,11 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   network hashes and, through `IAccountLifecycle.ExportAsync`, the game's data. Bans outlive a deleted account, and
   other players' news and action rows keep the deleted mage's name and battle numbers. The page is host code, but its
   "Your game" and "Other players" lines describe Spellbound; a second game supplies its own.
+- **Alerts** (`Hosting/Alerts.cs`): a logger provider sends every error-level log entry to `AlertSink`, which keeps
+  the last 50 for the admin page's Problems section; with `Alerts:WebhookUrl` set, `AlertSender` pushes a short notice
+  to an ntfy topic or a Discord webhook (told apart by host). A push names only the source and the exception type, never
+  the message, and each kind is pushed at most once an hour (judged by when it happened). `BackupKeeper` logs an error
+  when the newest backup is over 26 hours old, so a backup that silently stopped also alerts.
 - **Abuse protection:** `RateLimits` (config section `RateLimits`) limits requests per IP: account form posts
   (10 per 5 minutes), opening the live game connection, and other non-static requests; static files are unlimited.
   `AccountSignals` stores, per account, keyed hashes of the networks it signed in from (never the IP itself; the key

@@ -19,6 +19,9 @@ public sealed class BackupKeeper(TimeProvider time, IConfiguration configuration
 
     public static readonly TimeSpan CheckEvery = TimeSpan.FromMinutes(15);
 
+    /// <summary>A newest backup older than this is a problem worth an alert: a day's backup plus some slack.</summary>
+    public static readonly TimeSpan OverdueAfter = TimeSpan.FromHours(26);
+
     private static readonly TimeSpan ExportTimeout = TimeSpan.FromMinutes(30);
 
     public string? Directory => configuration["Backup:Directory"] is { Length: > 0 } directory ? directory : null;
@@ -105,6 +108,8 @@ public sealed class BackupKeeper(TimeProvider time, IConfiguration configuration
             {
                 logger.LogError(ex, "Backup failed; trying again in {Interval}.", CheckEvery);
             }
+
+            CheckOverdue();
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }
@@ -135,6 +140,26 @@ public sealed class BackupKeeper(TimeProvider time, IConfiguration configuration
             throw new InvalidOperationException($"{tool} failed ({process.ExitCode}): {(await errors).Trim()}");
         }
     }
+
+    /// <summary>
+    /// Reports (as an error, so it alerts) when backups are on but the newest one is over a day old. At most once a day,
+    /// so a backup that stays broken reminds the owner daily rather than hourly. Returns whether it reported.
+    /// </summary>
+    public bool CheckOverdue()
+    {
+        var now = time.GetUtcNow();
+        if (Directory is null || LastBackupAt() is not { } last || now - last < OverdueAfter
+            || (overdueReportedAt is { } reported && now - reported < TimeSpan.FromDays(1)))
+        {
+            return false;
+        }
+
+        overdueReportedAt = now;
+        logger.LogError("The newest backup is from {At:u}, over a day ago.", last);
+        return true;
+    }
+
+    private DateTimeOffset? overdueReportedAt;
 
     /// <summary>Finished backups in the directory, newest first.</summary>
     private IEnumerable<(string File, DateTimeOffset At)> Backups(string directory) =>

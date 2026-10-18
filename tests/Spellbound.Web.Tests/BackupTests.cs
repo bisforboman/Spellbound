@@ -58,6 +58,22 @@ public sealed class BackupTests : TestDatabase
     }
 
     [Fact]
+    public async Task A_backup_over_a_day_old_is_reported_as_a_problem()
+    {
+        await SeedAsync();
+        var keeper = Keeper(ConnectionString);
+        await keeper.BackUpNowAsync();
+
+        Assert.False(keeper.CheckOverdue());
+        time.Advance(BackupKeeper.OverdueAfter + TimeSpan.FromMinutes(1));
+        Assert.True(keeper.CheckOverdue()); // logged as an error, which the alerts pick up
+        time.Advance(TimeSpan.FromHours(12));
+        Assert.False(keeper.CheckOverdue()); // reminds once a day, not every check
+        time.Advance(TimeSpan.FromHours(13));
+        Assert.True(keeper.CheckOverdue());
+    }
+
+    [Fact]
     public async Task Backups_are_off_without_a_directory()
     {
         var keeper = new BackupKeeper(time, new ConfigurationBuilder().Build(), NullLogger<BackupKeeper>.Instance);

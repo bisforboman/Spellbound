@@ -5,6 +5,8 @@
 @inject AdminService Admin
 @inject TimeProvider Time
 @inject Microsoft.Extensions.Options.IOptions<AdminPageOptions> Sections
+@inject AlertSink Alerts
+@inject IConfiguration Configuration
 
 <PageTitle>Admin</PageTitle>
 <h1>Admin</h1>
@@ -93,6 +95,25 @@ else
         {
             <button type="button" class="btn btn-outline-danger w-100" disabled="@busy" @onclick="() => { banning = player.OwnerId; reason = string.Empty; }">Ban…</button>
         }
+    </div>
+}
+
+<h2 class="h4 mt-4">Problems</h2>
+<p class="text-muted">
+    Errors since the app last started (unhandled errors, failed backups, a backup over a day old), newest first.
+    @(Configuration["Alerts:WebhookUrl"] is { Length: > 0 }
+        ? "Each kind is also pushed to your alert webhook, at most once an hour."
+        : "Set Alerts:WebhookUrl to get them pushed to your phone or Discord (see docs/deploy.md).")
+</p>
+@if (Alerts.Recent.Count == 0)
+{
+    <p>None.</p>
+}
+@foreach (var problem in Alerts.Recent)
+{
+    <div class="admin-player">
+        <small class="text-muted d-block">@Utc(problem.At) · @problem.Source@(problem.Exception is { } type ? $" · {type}" : "")</small>
+        <div>@problem.Message</div>
     </div>
 }
 

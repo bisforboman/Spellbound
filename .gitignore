@@ -18,6 +18,8 @@ TestResults/
 *.db-wal
 appsettings.Development.local.json
 .env
+.env.*
+!.env.example
 
 # OS
 .DS_Store

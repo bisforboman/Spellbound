@@ -65,17 +65,38 @@ in front, which sees players' addresses, or keep off-site backups longer), updat
 Players sign in with Google; the server stores no passwords. To set it up (once, free):
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create a project (any name, e.g. "Spellbound").
-2. **APIs & Services → OAuth consent screen**: user type **External**, the app name players will see, and your email.
-   Scopes: the defaults (email, profile, openid) are all the game needs. Publish the app, so anyone can sign in
-   (while it's in "Testing", only the test users you list can).
-3. **APIs & Services → Credentials → Create credentials → OAuth client ID**, type **Web application**. Under
-   **Authorized redirect URIs** add `https://your.domain/signin-google` (and `https://localhost:7068/signin-google` to
-   try it locally).
+2. **Google Auth Platform** (older layouts: APIs & Services → OAuth consent screen):
+   - **Branding:** the app name players will see (e.g. "Spellbound") and your support email.
+   - **Audience:** **External**. While it's in "Testing", only the test users you add can sign in: add yourself.
+   - **Data access:** add nothing. The defaults (openid, email, profile) are all the game needs, so there's no review.
+3. **Clients → Create client** (older: Credentials → OAuth client ID), type **Web application**, any name (e.g.
+   "Spellbound web"; only you see it). Under **Authorized redirect URIs** add `https://localhost:7068/signin-google`
+   to try it locally. Leave JavaScript origins empty. Copy the client secret now: it's shown once.
 4. Put the client id and secret in `.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, then `docker compose up -d`.
+
+**When you have the domain**, go back and:
+- add `https://your.domain/signin-google` to the client's redirect URIs;
+- fill in Branding's home page (`https://your.domain`), privacy policy (`https://your.domain/privacy`) and authorized
+  domain;
+- **publish** the app (Audience → Publish), so anyone can sign in, not just your test users.
 
 Without them the app refuses to start outside Development, and the log says why. Locally, `dotnet user-secrets set
 "Authentication:Google:ClientId" …` (and `ClientSecret`) in `src/Spellbound.Web` adds the Google button next to the
 Development sign-in.
+
+## Alerts
+
+Every error the app logs (an unhandled error, a failed or overdue backup, a failed round check) is listed on the
+admin page under **Problems**, since the app last started. To also get a push, set `ALERT_WEBHOOK_URL` in `.env`:
+
+- **ntfy** (a notification on your phone): install the ntfy app, subscribe to a topic with a long, unguessable name,
+  and set `ALERT_WEBHOOK_URL=https://ntfy.sh/<that-topic>`. Anyone who knows the topic can read it, which is why the
+  name should be unguessable.
+- **Discord**: in a channel of yours, Edit channel → Integrations → Webhooks → New webhook → Copy webhook URL, and set
+  it as `ALERT_WEBHOOK_URL`.
+
+A push only says where the error happened and its type, never the message (which can hold player data); the
+details are on the admin page. Each kind is pushed at most once an hour, with a count of the repeats.
 
 ## Updating
 
