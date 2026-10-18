@@ -134,7 +134,9 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   promises things the code does, so keep them true together: network hashes are deleted after 30 days
   (`AccountSignals`), the app logs no IP addresses, deleting an account deletes its game data and log rows, and
   **Account → Download my data** (`/Account/Data`) gives everything stored about the player: the account row, the
-  network hashes and, through `IAccountLifecycle.ExportAsync`, the game's data. Bans outlive a deleted account.
+  network hashes and, through `IAccountLifecycle.ExportAsync`, the game's data. Bans outlive a deleted account, and
+  other players' news and action rows keep the deleted mage's name and battle numbers. The page is host code, but its
+  "Your game" and "Other players" lines describe Spellbound; a second game supplies its own.
 - **Abuse protection:** `RateLimits` (config section `RateLimits`) limits requests per IP: account form posts
   (10 per 5 minutes), opening the live game connection, and other non-static requests; static files are unlimited.
   `AccountSignals` stores, per account, keyed hashes of the networks it signed in from (never the IP itself; the key
