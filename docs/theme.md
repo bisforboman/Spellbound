@@ -53,7 +53,7 @@ They replaced IM Fell English SC and the system sans-serif.
   the C# against SVGs it made (`tests/Spellbound.Web.Tests/Fixtures/sigils.json`), byte for byte.
 - **The turn moon** (`TurnsBar.razor`) waxes from new to full as the wait for the next turn runs out (the share of
   `GameRules.TurnInterval` gone by). At the cap it is a full blood moon in the danger colour. It replaced the ◐ glyph
-  and the progress bar; the count ("107 / 240 turns") and the wait stay as text.
+  and the progress bar; the count ("107 / 150 turns") and the wait stay as text.
 - **The mana vial** (`ManaVial.razor`): a stoppered flask of the school's ink, filled to the share of mana storage in
   use, glowing when full. On the Realm and Magic pages, in place of the mana line.
 - **Battle stamps** (`ReportView.razor`): an attack's report is branded "Conquered" or "Repelled", from the report's

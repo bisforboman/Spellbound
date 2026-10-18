@@ -69,7 +69,7 @@ public class MageTests
     {
         var mage = NewMage();
 
-        var report = mage.Explore(101, T0.AddMinutes(6), Rules);
+        var report = mage.Explore(101, T0 + Rules.TurnInterval, Rules);
 
         Assert.True(report.Succeeded);
         Assert.Equal(0, mage.Turns);

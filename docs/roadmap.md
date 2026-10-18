@@ -114,7 +114,7 @@ it starts. "Needs" names the items that must come first.
   creatures arrive
 
 ### Season and turns
-- [ ] **S1. Turn bank** (S): 1 turn every 10 minutes, cap 150 (a day), 100 to start. Needs F1 (rerun)
+- [x] **S1. Turn bank** (S): 1 turn every 10 minutes, cap 150 (a day), 100 to start. Needs F1 (rerun)
 - [ ] **S2. Season phases** (M): Sanctuary, Growth, Contest, Conjunction, Reckoning as **fractions of the round**, not
   days, so a 7-day Blitz alpha and a 28-day season both work; the Realm page shows the phase
 - [ ] **S3. Explore decay** (S): yield falls with realm size and sharply from the Contest phase, and is better below

@@ -23,6 +23,8 @@ Each step of the rework adds a line here; the order is in [realm-rework.md](real
 - **Net power is published**: the Rivals page prints the formula with the game's weights (`Mage.NetPowerFormula`),
   and the pages say "net power" (the code and stored data keep the name networth). Spell Level and creatures join
   the formula when they arrive.
+- **The turn bank**: 1 turn every 10 minutes, capped at 150, 100 to start (`GameRules`). The opening study's diff is in
+  [balance.md](balance.md), "The turn bank".
 
 ## Summary
 
