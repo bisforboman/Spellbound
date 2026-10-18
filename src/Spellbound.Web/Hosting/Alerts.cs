@@ -78,8 +78,8 @@ public sealed class AlertLoggerProvider(AlertSink sink, TimeProvider time) : ILo
         public IDisposable? BeginScope<TState>(TState state)
             where TState : notnull => null;
 
-        // Errors and worse. (Written as "above Warning": HostingBoundaryTests counts the word for the template's Error
-        // page as a game name.) The sender's own failures are warnings, so an unreachable webhook can't loop.
+        // Errors and worse. (Written as "above Warning" because HostingBoundaryTests reads the level's name as the
+        // template's error page, a non-host type.) The sender's own failures are warnings, so a dead webhook can't loop.
         public bool IsEnabled(LogLevel logLevel) => logLevel > LogLevel.Warning && category != typeof(AlertSender).FullName;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
