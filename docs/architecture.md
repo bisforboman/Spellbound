@@ -96,6 +96,11 @@ reloads every 5 seconds while open, so other players' Ready taps and a played ro
 tab bar is hidden on Skirmish pages; the Spellbound link leads back to the Games page, which lists the player's
 Skirmishes.
 
+**Reminders** go through the notifications below: the last player not ready is nudged once a round (a `nudged` flag
+on the seat), `SkirmishKeeper` reminds players who aren't ready once when time runs short (`reminded_round` on the
+game), and a played round tells everyone but the player whose Ready played it. They're queued only after the
+transaction commits, so a refused or failed change sends nothing.
+
 For now the admin starts Skirmish games from a list of emails (the admin page's "Start a Skirmish"); players creating
 and joining their own replaces it in part 2. A deleted account's seat stays in its games without an owner or orders,
 and goes away, then out, through the rule for players who stop readying up.

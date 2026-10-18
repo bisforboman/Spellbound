@@ -29,12 +29,28 @@ public sealed class SkirmishFlowTests : TestDatabase, IAsyncLifetime
             services.AddSingleton<TimeProvider>(time);
             services.RemoveAll<IRandomSource>();
             services.AddSingleton<IRandomSource>(new SeededRandom(5));
+
+            // Keep notifications in the queue, where the tests read them, instead of sending them.
+            services.Remove(services.Single(d => d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService) && d.ImplementationType == typeof(PushSender)));
         }));
     }
 
     private SkirmishService Skirmishes => factory.Services.GetRequiredService<SkirmishService>();
 
     private AccountService Accounts => factory.Services.GetRequiredService<AccountService>();
+
+    /// <summary>The notifications queued so far, taken from the queue.</summary>
+    private List<PushMessage> Notifications()
+    {
+        var reader = factory.Services.GetRequiredService<PushSink>().Outbox;
+        var taken = new List<PushMessage>();
+        while (reader.TryRead(out var message))
+        {
+            taken.Add(message);
+        }
+
+        return taken;
+    }
 
     public async Task InitializeAsync()
     {
@@ -259,6 +275,76 @@ public sealed class SkirmishFlowTests : TestDatabase, IAsyncLifetime
         Assert.Contains("Merlin, School A", page, StringComparison.Ordinal);
         Assert.Contains("Skirmish 1", games, StringComparison.Ordinal);
         Assert.Contains("not in this game.", refused, StringComparison.Ordinal); // the apostrophe is HTML-encoded
+    }
+
+    [Fact]
+    public async Task The_last_player_not_ready_is_nudged_once()
+    {
+        await Skirmishes.SetReadyAsync(gameId, merlin, 1, true);
+        Assert.Empty(Notifications()); // two still to go
+
+        await Skirmishes.SetReadyAsync(gameId, morgana, 1, true);
+        var nudge = Assert.Single(Notifications());
+        Assert.Equal(ada, nudge.OwnerId);
+        Assert.Equal("Everyone else is ready in Skirmish 1", nudge.Title);
+        Assert.Equal($"/skirmish/{gameId}", nudge.Url);
+
+        await Skirmishes.SetReadyAsync(gameId, morgana, 1, false);
+        await Skirmishes.SetReadyAsync(gameId, morgana, 1, true);
+        Assert.Empty(Notifications()); // not again this round
+    }
+
+    [Fact]
+    public async Task When_a_round_plays_everyone_hears_but_the_player_who_played_it()
+    {
+        await Skirmishes.SetReadyAsync(gameId, merlin, 1, true);
+        await Skirmishes.SetReadyAsync(gameId, morgana, 1, true);
+        Notifications(); // the nudge to Ada
+
+        await Skirmishes.SetReadyAsync(gameId, ada, 1, true);
+
+        var played = Notifications();
+        Assert.Equal([merlin, morgana], played.Select(n => n.OwnerId));
+        Assert.All(played, n => Assert.Equal("Round 1 played in Skirmish 1", n.Title));
+    }
+
+    [Fact]
+    public async Task A_round_played_by_the_clock_tells_everyone()
+    {
+        time.Advance(RoundLength);
+        await Skirmishes.PlayDueAsync();
+
+        Assert.Equal([merlin, morgana, ada], Notifications().Select(n => n.OwnerId));
+    }
+
+    [Fact]
+    public async Task Players_not_ready_are_reminded_once_when_time_runs_short()
+    {
+        await Skirmishes.SetReadyAsync(gameId, merlin, 1, true);
+        Notifications();
+        Assert.Equal(0, await Skirmishes.RemindDueAsync()); // an hour-long round: reminders come with 6 minutes left
+
+        time.Advance(RoundLength - TimeSpan.FromMinutes(5));
+        Assert.Equal(1, await Skirmishes.RemindDueAsync());
+        var reminders = Notifications();
+        Assert.Equal([morgana, ada], reminders.Select(n => n.OwnerId));
+        Assert.All(reminders, n => Assert.Equal("Time is running out in Skirmish 1", n.Title));
+
+        time.Advance(TimeSpan.FromMinutes(1));
+        Assert.Equal(0, await Skirmishes.RemindDueAsync()); // once a round
+        Assert.Empty(Notifications());
+    }
+
+    [Fact]
+    public async Task Nothing_is_sent_for_a_change_that_was_refused()
+    {
+        await Skirmishes.SetReadyAsync(gameId, merlin, 1, true);
+        await Skirmishes.SetReadyAsync(gameId, morgana, 1, true);
+        Notifications();
+
+        Assert.NotNull(await Skirmishes.SetReadyAsync(gameId, ada, 99, true)); // a stale round: refused
+
+        Assert.Empty(Notifications());
     }
 
     public override void Dispose()

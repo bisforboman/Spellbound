@@ -1,8 +1,9 @@
 namespace Spellbound.Web;
 
 /// <summary>
-/// Plays Skirmish rounds whose time limit has run out, whether or not everyone is ready. One job for every game,
-/// checking each minute: there are no per-game timers. Rounds where everyone readied up have already played.
+/// Plays Skirmish rounds whose time limit has run out, whether or not everyone is ready, and reminds players who aren't
+/// ready when it's about to. One job for every game, checking each minute: there are no per-game timers. Rounds where
+/// everyone readied up have already played.
 /// </summary>
 public sealed class SkirmishKeeper(SkirmishService skirmishes, TimeProvider time, ILogger<SkirmishKeeper> logger) : BackgroundService
 {
@@ -16,6 +17,7 @@ public sealed class SkirmishKeeper(SkirmishService skirmishes, TimeProvider time
             try
             {
                 await skirmishes.PlayDueAsync(stoppingToken);
+                await skirmishes.RemindDueAsync(stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
