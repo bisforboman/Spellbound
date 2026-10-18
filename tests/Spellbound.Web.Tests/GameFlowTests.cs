@@ -1,8 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Spellbound.Domain;
@@ -18,11 +16,10 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     private const string Owner = "account-1";
 
     private readonly WebApplicationFactory<Program> factory;
-    private readonly BeforeSave beforeSave = new();
 
     public GameFlowTests()
     {
-        factory = CreateApp(b => b.ConfigureTestServices(services => services.AddSingleton<IInterceptor>(beforeSave)));
+        factory = CreateApp();
     }
 
     private GameService Game => factory.Services.GetRequiredService<GameService>();
@@ -97,36 +94,34 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     }
 
     [Fact]
-    public async Task Concurrent_saves_of_the_same_mage_cannot_both_spend_turns()
+    public async Task Taps_at_the_same_moment_wait_for_each_other_and_never_spend_a_turn_twice()
+    {
+        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Verdant); // 100 turns
+
+        var reports = await Task.WhenAll(Enumerable.Range(0, 25).Select(_ => Task.Run(() => Game.ExploreAsync(Owner, 5))));
+
+        Assert.Equal(20, reports.Count(r => r.Succeeded)); // 20 × 5 turns
+        Assert.All(reports.Where(r => !r.Succeeded), r => Assert.StartsWith("That takes 5 turns", r.Lines[0], StringComparison.Ordinal));
+        Assert.Equal(0, (await Game.GetMageAsync(Owner))!.Turns);
+        Assert.Equal(20, (await Game.GetNewsAsync(Owner)).Count);
+    }
+
+    [Fact]
+    public async Task An_action_waiting_too_long_for_a_locked_mage_is_busy_and_changes_nothing()
     {
         await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Verdant);
-        var rules = factory.Services.GetRequiredService<GameRules>();
-
-        // A second tap saves the mage after GameService loaded it but before GameService saves.
-        var interfered = false;
-        beforeSave.Action = db =>
+        await using var source = Npgsql.NpgsqlDataSource.Create(ConnectionString);
+        await using (var other = await new HostDatabase(source).BeginAsync())
         {
-            if (interfered || !db.ChangeTracker.Entries<MageRecord>().Any(e => e.State == EntityState.Modified))
-            {
-                return;
-            }
+            await other.LoadMageAsync(1, Owner, forUpdate: true); // held, never committed
 
-            interfered = true;
-            using var other = OpenDb();
-            var record = other.Mages().Single(m => m.Round == 1 && m.OwnerId == Owner);
-            var mage = record.Load();
-            mage.Meditate(1, DateTimeOffset.UtcNow, rules);
-            record.Save(mage);
-            other.SaveChanges();
-        };
+            var report = await Game.ExploreAsync(Owner, 1); // waits for lock_timeout
 
-        var report = await Game.ExploreAsync(Owner, 10);
+            Assert.StartsWith("Your mage was busy", report.Lines[0], StringComparison.Ordinal);
+        }
 
-        Assert.True(interfered);
-        Assert.False(report.Succeeded);
-        var mage = await Game.GetMageAsync(Owner);
-        Assert.Equal(99, mage!.Turns); // only the other tap's single turn was spent
-        Assert.Equal(250, mage.Land);
+        Assert.Equal(100, (await Game.GetMageAsync(Owner))!.Turns);
+        Assert.Empty(await Game.GetNewsAsync(Owner));
     }
 
     [Fact]
@@ -150,18 +145,5 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     {
         factory.Dispose();
         base.Dispose();
-    }
-
-    /// <summary>Runs a test's action just before the app saves, to simulate another request getting in first.</summary>
-    private sealed class BeforeSave : SaveChangesInterceptor
-    {
-        public Action<DbContext> Action { get; set; } = _ => { };
-
-        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
-            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
-        {
-            Action(eventData.Context!);
-            return ValueTask.FromResult(result);
-        }
     }
 }

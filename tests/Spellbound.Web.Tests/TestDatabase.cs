@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Spellbound.Web.Data;
 using Spellbound.Web.Hosting;
@@ -41,9 +40,19 @@ public abstract class TestDatabase : IDisposable
             configure?.Invoke(builder);
         });
 
-    /// <summary>A context on this test's database (or another one), outside the app.</summary>
-    protected HostDb OpenDb(string? connectionString = null) =>
-        new(new DbContextOptionsBuilder<HostDb>().UseNpgsql(connectionString ?? ConnectionString).Options, [new SpellboundModel()]);
+    /// <summary>Runs something in one committed transaction on this test's database (or another one), outside the app.</summary>
+    protected async Task<T> WithDbAsync<T>(Func<DbSession, Task<T>> work, string? connectionString = null)
+    {
+        await using var source = NpgsqlDataSource.Create(connectionString ?? ConnectionString);
+        await using var db = await new HostDatabase(source).BeginAsync();
+        var result = await work(db);
+        await db.CommitAsync();
+        return result;
+    }
+
+    /// <summary>The number from a counting query on this test's database, e.g. "SELECT count(*) FROM accounts".</summary>
+    protected Task<long> CountAsync(string sql, params object?[] args) =>
+        WithDbAsync(db => db.ScalarAsync<long>(sql, args));
 
     /// <summary>Another database for this test, dropped with it: a copy of the migrated template, or empty.</summary>
     protected string CreateDatabase(string? template = null)
@@ -71,11 +80,8 @@ public abstract class TestDatabase : IDisposable
         Execute($"DROP DATABASE IF EXISTS {template} WITH (FORCE)");
         Execute($"CREATE DATABASE {template}");
         // No pooling, so no connection is left open: PostgreSQL only copies a template nobody is connected to.
-        var options = new DbContextOptionsBuilder<HostDb>().UseNpgsql(WithDatabase(template) + ";Pooling=false").Options;
-        using (var db = new HostDb(options, [new SpellboundModel()]))
-        {
-            db.Database.Migrate();
-        }
+        SchemaMigrator.MigrateAsync(WithDatabase(template) + ";Pooling=false", [HostStore.Schema, new SpellboundSchema().Schema])
+            .GetAwaiter().GetResult();
 
         AppDomain.CurrentDomain.ProcessExit += (_, _) => Execute($"DROP DATABASE IF EXISTS {template} WITH (FORCE)");
         return template;

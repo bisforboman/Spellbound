@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Globalization;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace Spellbound.Web.Hosting;
@@ -11,8 +10,7 @@ namespace Spellbound.Web.Hosting;
 /// newer (Backup:PgDump and Backup:PgRestore name the tools). Off by default; the Docker image turns it on (see
 /// docs/deploy.md). Restoring is <see cref="RestoreIfEmptyAsync"/>, run at startup when Backup:RestoreFrom is set.
 /// </summary>
-public sealed class BackupKeeper(
-    IDbContextFactory<HostDb> dbs, TimeProvider time, IConfiguration configuration, ILogger<BackupKeeper> logger)
+public sealed class BackupKeeper(TimeProvider time, IConfiguration configuration, ILogger<BackupKeeper> logger)
     : BackgroundService
 {
     /// <summary>Start of every backup file's name (Backup:FilePrefix); the game sets its own, e.g. "spellbound-".</summary>
@@ -75,13 +73,10 @@ public sealed class BackupKeeper(
     /// </summary>
     public async Task<bool> RestoreIfEmptyAsync(string backupFile, CancellationToken cancellationToken = default)
     {
-        await using (var db = await dbs.CreateDbContextAsync(cancellationToken))
+        if (!await SchemaMigrator.IsEmptyAsync(HostStore.ConnectionString(configuration), cancellationToken))
         {
-            if (!await HostStore.IsEmptyAsync(db, cancellationToken))
-            {
-                logger.LogWarning("Backup:RestoreFrom is set, but the database isn't empty. Skipped the restore; remove the setting.");
-                return false;
-            }
+            logger.LogWarning("Backup:RestoreFrom is set, but the database isn't empty. Skipped the restore; remove the setting.");
+            return false;
         }
 
         await RunAsync(

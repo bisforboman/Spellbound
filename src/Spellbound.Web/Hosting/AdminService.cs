@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Spellbound.Domain;
 
 namespace Spellbound.Web.Hosting;
@@ -15,7 +14,7 @@ public sealed record AdminSharedNetwork(string Network, DateTimeOffset LastSeen,
 /// Only reachable through pages behind <see cref="AdminPolicy"/>.
 /// </summary>
 public sealed class AdminService(
-    IDbContextFactory<HostDb> dbs,
+    HostDatabase database,
     RoundKeeper rounds,
     BackupKeeper backups,
     AccountSignals signals,
@@ -26,19 +25,19 @@ public sealed class AdminService(
 
     public async Task<Round?> GetRoundAsync()
     {
-        await using var db = await dbs.CreateDbContextAsync();
-        return (await db.LoadCurrentRoundAsync())?.Round;
+        await using var db = await database.BeginAsync();
+        return await db.LoadCurrentRoundAsync();
     }
 
     /// <summary>The current round's players (banned or not), then banned players who don't play this round.</summary>
     public async Task<IReadOnlyList<AdminPlayer>> GetPlayersAsync()
     {
-        await using var db = await dbs.CreateDbContextAsync();
+        await using var db = await database.BeginAsync();
         var players = await RoundPlayersAsync(db);
         var bans = await db.LoadBansAsync();
 
         var ownerIds = players.Keys.Concat(bans.Bans.Keys).Distinct().ToList();
-        var users = await EmailsAsync(db, ownerIds);
+        var users = await AccountService.EmailsAsync(db, ownerIds);
 
         return
         [
@@ -65,23 +64,15 @@ public sealed class AdminService(
             return $"Give a reason of 1–{MaxReasonLength} characters.";
         }
 
-        await using (var db = await dbs.CreateDbContextAsync())
+        await using (var db = await database.BeginAsync())
         {
-            var ban = await db.Bans.FindAsync(ownerId);
-            if (ban is null)
-            {
-                ban = db.Bans.Add(new Ban { OwnerId = ownerId }).Entity;
-            }
-
-            (ban.At, ban.Reason, ban.By) = (time.GetUtcNow(), reason, adminEmail);
-            try
-            {
-                await db.SaveChangesAsync();
-            }
-            catch (DbUpdateException ex) when (HostStore.IsDuplicateKey(ex))
-            {
-                return "That player was banned at the same moment. Check the list.";
-            }
+            await db.ExecuteAsync(
+                """
+                INSERT INTO bans (owner_id, at, reason, banned_by) VALUES ($1, $2, $3, $4)
+                ON CONFLICT (owner_id) DO UPDATE SET at = excluded.at, reason = excluded.reason, banned_by = excluded.banned_by
+                """,
+                ownerId, time.GetUtcNow(), reason, adminEmail);
+            await db.CommitAsync();
         }
 
         // The account's sign-in cookie is checked within a minute (open game connections within a few) and signed out.
@@ -90,9 +81,10 @@ public sealed class AdminService(
 
     public async Task<string> UnbanAsync(string ownerId)
     {
-        await using (var db = await dbs.CreateDbContextAsync())
+        await using (var db = await database.BeginAsync())
         {
-            await db.Bans.Where(b => b.OwnerId == ownerId).ExecuteDeleteAsync();
+            await db.ExecuteAsync("DELETE FROM bans WHERE owner_id = $1", ownerId);
+            await db.CommitAsync();
         }
 
         return $"Unbanned {await EmailOrIdAsync(ownerId)}.";
@@ -107,17 +99,10 @@ public sealed class AdminService(
             return $"Round {before.Number} started {before.StartsAt:u}; its end must be after that.";
         }
 
-        try
-        {
-            var after = await rounds.ChangeEndAsync(endsAt);
-            return after.Number == before.Number
-                ? $"Round {after.Number} now ends {after.EndsAt:u}."
-                : $"Round {before.Number} has ended and round {after.Number} has started.";
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return "The round changed at the same moment. Check it and try again.";
-        }
+        var after = await rounds.ChangeEndAsync(endsAt);
+        return after.Number == before.Number
+            ? $"Round {after.Number} now ends {after.EndsAt:u}."
+            : $"Round {before.Number} has ended and round {after.Number} has started.";
     }
 
     /// <summary>Networks several accounts used in the last 30 days, with who they are this round.</summary>
@@ -129,9 +114,9 @@ public sealed class AdminService(
             return [];
         }
 
-        await using var db = await dbs.CreateDbContextAsync();
+        await using var db = await database.BeginAsync();
         var ownerIds = shared.SelectMany(n => n.OwnerIds).Distinct().ToList();
-        var users = await EmailsAsync(db, ownerIds);
+        var users = await AccountService.EmailsAsync(db, ownerIds);
         var players = await RoundPlayersAsync(db);
         var bans = await db.LoadBansAsync();
 
@@ -163,17 +148,14 @@ public sealed class AdminService(
         return $"Backed up to {Path.GetFileName(file)}.";
     }
 
-    private async Task<IReadOnlyDictionary<string, PlayerSummary>> RoundPlayersAsync(HostDb db) =>
-        (await db.LoadCurrentRoundAsync())?.Round is { } round
+    private async Task<IReadOnlyDictionary<string, PlayerSummary>> RoundPlayersAsync(DbSession db) =>
+        await db.LoadCurrentRoundAsync() is { } round
             ? await summaries.GetAsync(db, round)
             : new Dictionary<string, PlayerSummary>();
 
-    private static async Task<Dictionary<string, string?>> EmailsAsync(HostDb db, IReadOnlyCollection<string> ownerIds) =>
-        await db.Accounts.Where(a => ownerIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => (string?)a.Email);
-
     private async Task<string> EmailOrIdAsync(string ownerId)
     {
-        await using var db = await dbs.CreateDbContextAsync();
-        return await db.Accounts.Where(a => a.Id == ownerId).Select(a => a.Email).SingleOrDefaultAsync() ?? ownerId;
+        await using var db = await database.BeginAsync();
+        return await db.ScalarAsync<string>("SELECT email FROM accounts WHERE id = $1", ownerId) ?? ownerId;
     }
 }

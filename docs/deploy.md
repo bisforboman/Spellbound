@@ -40,9 +40,7 @@ One small Linux server runs three containers from `docker-compose.yml`:
    docker compose logs -f app   # wait for "Round 1 started", then Ctrl+C
    ```
 
-   The very first start creates the tables. Its log shows one `Failed executing DbCommand` for
-   `__EFMigrationsHistory` just before "Applying migration": that's the check that finds the database empty, not an
-   error.
+   The very first start creates the tables; the log lists each "Applied database script".
 6. **Open `https://your.domain`**, sign in with the Google account whose email is `ADMIN_EMAIL`, and check that the top
    bar shows **Admin**.
 

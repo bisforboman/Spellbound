@@ -1,15 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
 
 namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// Wires up the reusable game host: the PostgreSQL database, accounts, rounds, admin, backups and abuse protection.
-/// The game adds its own services and tables (<see cref="IGameModel"/>) and implements the hooks in GameHooks.cs.
+/// The game adds its own services and tables (<see cref="IGameSchema"/>) and implements the hooks in GameHooks.cs.
 /// </summary>
 public static class GameHostSetup
 {
@@ -22,11 +21,10 @@ public static class GameHostSetup
         // Accounts: sign-in with Google (no passwords stored); see AccountEndpoints.cs and Accounts.cs.
         builder.AddAccounts();
 
-        // PostgreSQL. Singletons (a Blazor circuit outlives one action) create a context per call from the factory.
-        // The connection string is read when first used, so tests can set their own.
-        services.AddDbContextFactory<HostDb>((sp, options) => options
-            .UseNpgsql(HostStore.ConnectionString(sp.GetRequiredService<IConfiguration>()))
-            .AddInterceptors(sp.GetServices<IInterceptor>()));
+        // PostgreSQL through Npgsql's pooled data source. The connection string is read when first used, so tests can
+        // set their own.
+        services.AddSingleton(sp => NpgsqlDataSource.Create(HostStore.ConnectionString(sp.GetRequiredService<IConfiguration>())));
+        services.AddSingleton<HostDatabase>();
 
         // Rounds, admin, backups, multi-account signals.
         services.AddSingleton<RoundKeeper>();
@@ -89,8 +87,13 @@ public static class GameHostSetup
             await app.Services.GetRequiredService<BackupKeeper>().RestoreIfEmptyAsync(restoreFrom);
         }
 
-        await using var db = await app.Services.GetRequiredService<IDbContextFactory<HostDb>>().CreateDbContextAsync();
-        await db.Database.MigrateAsync();
+        var applied = await SchemaMigrator.MigrateAsync(
+            HostStore.ConnectionString(app.Configuration),
+            [HostStore.Schema, .. app.Services.GetServices<IGameSchema>().Select(g => g.Schema)]);
+        foreach (var script in applied)
+        {
+            app.Logger.LogInformation("Applied database script {Script}.", script);
+        }
     }
 
     /// <summary>The host's endpoints: health, and sign-in, sign-out and account deletion.</summary>

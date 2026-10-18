@@ -29,8 +29,8 @@ dotnet test
 dotnet run --project src/Spellbound.Web
 ```
 
-After changing a table (not the jsonb game state), add a migration:
-`dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Spellbound.Web --output-dir Data/Migrations`.
+To change a table (not the jsonb game state), add a numbered SQL script: `src/Spellbound.Web/Hosting/Sql/` for the
+host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the next start. Never edit a released script.
 
 ## Architecture rules
 
@@ -42,8 +42,9 @@ After changing a table (not the jsonb game state), add a migration:
   readable text lines. Actions either fully succeed or change nothing.
 - **Turns regenerate lazily.** The app stores `Turns` plus `TurnsAccruedAt` and computes the rest on read.
   There are no per-player timers or background loops. Background jobs are only for global events like round resets.
-- **The web layer is thin:** load the mage, call one domain method with `TimeProvider.GetUtcNow()`, then save. Rows carry
-  PostgreSQL's row version (`xmin`) for optimistic concurrency, so a double-tap can't spend the same turns twice.
+- **The web layer is thin:** load the mage, call one domain method with `TimeProvider.GetUtcNow()`, then save, in one
+  transaction. The mage's row is locked while it acts (`SELECT … FOR UPDATE`), so a double-tap waits for the first tap
+  and then sees the turns it left: the same turns can't be spent twice.
 - **Make the domain deterministic.** Any randomness (from milestone 2 combat) comes through an injected, seedable source so
   battles can be replayed in tests.
 

@@ -44,8 +44,7 @@ public sealed partial class SecurityFlowTests : TestDatabase
         var id = AccountService.IdFor(AccountEndpoints.DevProvider, Merlin);
         Assert.Equal(Merlin, (await Accounts.FindAsync(id))!.Email);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(new Uri("/Account/Manage", UriKind.Relative))).StatusCode);
-        using var db = OpenDb();
-        Assert.Single(db.AccountNetworks.Where(n => n.OwnerId == id));
+        Assert.Equal(1, await CountAsync("SELECT count(*) FROM account_networks WHERE owner_id = $1", id));
     }
 
     [Fact]
@@ -54,8 +53,7 @@ public sealed partial class SecurityFlowTests : TestDatabase
         await SignInAsync(Client(), Merlin);
         await SignInAsync(Client(), "MERLIN@spellbound.test ");
 
-        using var db = OpenDb();
-        Assert.Single(db.Accounts);
+        Assert.Equal(1, await CountAsync("SELECT count(*) FROM accounts"));
     }
 
     [Fact]
@@ -119,8 +117,7 @@ public sealed partial class SecurityFlowTests : TestDatabase
 
         Assert.Contains("deleted=1", deleted.Headers.Location!.ToString(), StringComparison.Ordinal);
         Assert.Null(await Accounts.FindAsync(id));
-        using var db = OpenDb();
-        Assert.Empty(db.AccountNetworks.Where(n => n.OwnerId == id));
+        Assert.Equal(0, await CountAsync("SELECT count(*) FROM account_networks WHERE owner_id = $1", id));
         Assert.Equal(HttpStatusCode.Redirect, (await client.GetAsync(new Uri("/Account/Manage", UriKind.Relative))).StatusCode);
     }
 

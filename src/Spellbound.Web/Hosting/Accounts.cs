@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
 
 namespace Spellbound.Web.Hosting;
 
@@ -12,75 +11,44 @@ namespace Spellbound.Web.Hosting;
 /// (<see cref="AccountService.IdFor"/>), so signing in again after deleting the account gets the same id, and a ban
 /// on it still holds.
 /// </summary>
-public sealed class Account
-{
-    public string Id { get; set; } = string.Empty;
-
-    /// <summary>The sign-in provider, e.g. "google".</summary>
-    public string Provider { get; set; } = string.Empty;
-
-    /// <summary>The provider's id for the person (Google's "sub"), which never changes.</summary>
-    public string Subject { get; set; } = string.Empty;
-
-    /// <summary>The email the provider gave at the last sign-in. Admins are recognised by it.</summary>
-    public string Email { get; set; } = string.Empty;
-
-    public DateTimeOffset CreatedAt { get; set; }
-
-    public DateTimeOffset LastSignInAt { get; set; }
-}
+/// <param name="Provider">The sign-in provider, e.g. "google".</param>
+/// <param name="Email">The email the provider gave at the last sign-in. Admins are recognised by it.</param>
+public sealed record Account(string Id, string Provider, string Email, DateTimeOffset CreatedAt, DateTimeOffset LastSignInAt);
 
 /// <summary>The result of a sign-in: the account, or why it was refused.</summary>
 public sealed record SignInResult(Account? Account, string? Refused);
 
 /// <summary>Accounts: sign-in, the checks that keep a banned or deleted account signed out, and deletion.</summary>
-public sealed class AccountService(IDbContextFactory<HostDb> dbs, TimeProvider time, IAccountLifecycle game)
+public sealed class AccountService(HostDatabase database, TimeProvider time, IAccountLifecycle game)
 {
     public const string Banned = "Your account is banned.";
 
-    /// <summary>Finds the provider's account, or creates it on first sign-in. Refuses banned accounts.</summary>
-    public async Task<SignInResult> SignInAsync(string provider, string subject, string email) =>
-        await TrySignInAsync(provider, subject, email) ?? await TrySignInAsync(provider, subject, email)
-        ?? new(null, "The sign-in clashed with another one. Please try again.");
+    private const string Columns = "id, provider, email, created_at, last_sign_in_at";
 
-    /// <summary>One attempt; null when another sign-in of the same person created the account at the same moment.</summary>
-    private async Task<SignInResult?> TrySignInAsync(string provider, string subject, string email)
+    /// <summary>Finds the provider's account, or creates it on first sign-in. Refuses banned accounts.</summary>
+    public async Task<SignInResult> SignInAsync(string provider, string subject, string email)
     {
         if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(email))
         {
             return new(null, "The sign-in didn't say who you are. Please try again.");
         }
 
-        await using var db = await dbs.CreateDbContextAsync();
-        var now = time.GetUtcNow();
         var id = IdFor(provider, subject);
-        if (await db.Bans.AnyAsync(b => b.OwnerId == id))
+        await using var db = await database.BeginAsync();
+        if (await db.IsBannedAsync(id))
         {
             return new(null, Banned); // checked first, so it holds even after the account was deleted
         }
 
-        var account = await db.Accounts.SingleOrDefaultAsync(a => a.Id == id);
-        if (account is null)
-        {
-            account = db.Accounts.Add(new Account
-            {
-                Id = id,
-                Provider = provider,
-                Subject = subject,
-                CreatedAt = now,
-            }).Entity;
-        }
-
-        (account.Email, account.LastSignInAt) = (email.Trim(), now);
-        try
-        {
-            await db.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex) when (HostStore.IsDuplicateKey(ex))
-        {
-            return null; // the same person signed in twice at once: the next attempt finds the account
-        }
-
+        var now = time.GetUtcNow();
+        var account = await db.SingleAsync(
+            $"""
+            INSERT INTO accounts (id, provider, subject, email, created_at, last_sign_in_at) VALUES ($1, $2, $3, $4, $5, $5)
+            ON CONFLICT (id) DO UPDATE SET email = excluded.email, last_sign_in_at = excluded.last_sign_in_at
+            RETURNING {Columns}
+            """,
+            Read, id, provider, subject, email.Trim(), now);
+        await db.CommitAsync();
         return new(account, null);
     }
 
@@ -106,22 +74,21 @@ public sealed class AccountService(IDbContextFactory<HostDb> dbs, TimeProvider t
             return false;
         }
 
-        await using var db = await dbs.CreateDbContextAsync();
-        return await db.Accounts.AnyAsync(a => a.Id == id && !db.Bans.Any(b => b.OwnerId == id));
+        await using var db = await database.BeginAsync();
+        return await db.ScalarAsync<bool>(
+            "SELECT EXISTS (SELECT 1 FROM accounts WHERE id = $1) AND NOT EXISTS (SELECT 1 FROM bans WHERE owner_id = $1)", id);
     }
 
     public async Task<Account?> FindAsync(string id)
     {
-        await using var db = await dbs.CreateDbContextAsync();
-        return await db.Accounts.AsNoTracking().SingleOrDefaultAsync(a => a.Id == id);
+        await using var db = await database.BeginAsync();
+        return await db.SingleAsync($"SELECT {Columns} FROM accounts WHERE id = $1", Read, id);
     }
 
-    public async Task<Account?> FindByEmailAsync(string email)
-    {
-        await using var db = await dbs.CreateDbContextAsync();
-        var normalized = email.Trim().ToUpperInvariant();
-        return await db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Email.ToUpper() == normalized);
-    }
+    /// <summary>The emails of these accounts, by id (missing ids are left out).</summary>
+    public static async Task<Dictionary<string, string>> EmailsAsync(DbSession db, IReadOnlyCollection<string> ids) =>
+        (await db.QueryAsync("SELECT id, email FROM accounts WHERE id = ANY($1)", r => (Id: r.GetString(0), Email: r.GetString(1)), (object)ids.ToArray())) // one array parameter
+            .ToDictionary(a => a.Id, a => a.Email);
 
     /// <summary>
     /// Deletes an account with its network hashes and, through <see cref="IAccountLifecycle"/>, the player's game data,
@@ -129,11 +96,13 @@ public sealed class AccountService(IDbContextFactory<HostDb> dbs, TimeProvider t
     /// </summary>
     public async Task DeleteAsync(string id)
     {
-        await using var db = await dbs.CreateDbContextAsync();
-        await using var transaction = await db.Database.BeginTransactionAsync();
-        await db.AccountNetworks.Where(n => n.OwnerId == id).ExecuteDeleteAsync();
+        await using var db = await database.BeginAsync();
+        await db.ExecuteAsync("DELETE FROM account_networks WHERE owner_id = $1", id);
         await game.OnAccountDeletedAsync(db, id);
-        await db.Accounts.Where(a => a.Id == id).ExecuteDeleteAsync();
-        await transaction.CommitAsync();
+        await db.ExecuteAsync("DELETE FROM accounts WHERE id = $1", id);
+        await db.CommitAsync();
     }
+
+    private static Account Read(Npgsql.NpgsqlDataReader r) =>
+        new(r.GetString(0), r.GetString(1), r.GetString(2), r.GetFieldValue<DateTimeOffset>(3), r.GetFieldValue<DateTimeOffset>(4));
 }

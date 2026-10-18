@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Spellbound.Domain;
@@ -49,12 +48,9 @@ public sealed class BackupTests : TestDatabase
 
         var fresh = CreateDatabase(); // empty: no migration has run
         Assert.True(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
-        await using (var db = OpenDb(fresh))
-        {
-            Assert.Equal("Merlin", (await db.Mages().SingleAsync(m => m.Round == 1 && m.OwnerId == "account-1")).Load().Name);
-            Assert.NotNull(await db.LoadCurrentRoundAsync());
-            Assert.Empty(await db.Database.GetPendingMigrationsAsync());
-        }
+        Assert.Equal("Merlin", (await WithDbAsync(db => db.LoadMageAsync(1, "account-1"), fresh))!.Name);
+        Assert.NotNull(await WithDbAsync(db => db.LoadCurrentRoundAsync(), fresh));
+        Assert.Empty(await SchemaMigrator.MigrateAsync(fresh, [HostStore.Schema, new SpellboundSchema().Schema])); // up to date
 
         // Once there's data, a restore is refused, so a leftover setting can't overwrite a live game.
         Assert.False(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
@@ -64,7 +60,7 @@ public sealed class BackupTests : TestDatabase
     [Fact]
     public async Task Backups_are_off_without_a_directory()
     {
-        var keeper = new BackupKeeper(new Contexts(this, ConnectionString), time, new ConfigurationBuilder().Build(), NullLogger<BackupKeeper>.Instance);
+        var keeper = new BackupKeeper(time, new ConfigurationBuilder().Build(), NullLogger<BackupKeeper>.Instance);
 
         Assert.Null(keeper.Directory);
         Assert.Null(await keeper.TickAsync());
@@ -82,7 +78,7 @@ public sealed class BackupTests : TestDatabase
     }
 
     private BackupKeeper Keeper(string connectionString, int keep = 7) =>
-        new(new Contexts(this, connectionString), time, new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        new(time, new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             [$"ConnectionStrings:{HostStore.ConnectionStringName}"] = connectionString,
             ["Backup:Directory"] = directory,
@@ -90,18 +86,13 @@ public sealed class BackupTests : TestDatabase
             ["Backup:TimeOfDayUtc"] = "03:00:00",
         }).Build(), NullLogger<BackupKeeper>.Instance);
 
-    private async Task SeedAsync()
+    private Task SeedAsync() => WithDbAsync(async db =>
     {
-        await using var db = OpenDb();
-        db.CurrentRound.Add(new CurrentRound { Round = Round.First(T0, GameRules.Default.RoundLength) });
-        db.Mages().Add(MageRecord.For(1, Mage.Create("account-1", "Merlin", MagicSchool.Tidal, T0, GameRules.Default)));
-        await db.SaveChangesAsync();
-    }
-
-    private sealed class Contexts(BackupTests test, string connectionString) : IDbContextFactory<HostDb>
-    {
-        public HostDb CreateDbContext() => test.OpenDb(connectionString);
-    }
+        var round = Round.First(T0, GameRules.Default.RoundLength);
+        await db.ExecuteAsync(
+            "INSERT INTO current_round (id, number, starts_at, ends_at) VALUES (1, $1, $2, $3)", round.Number, round.StartsAt, round.EndsAt);
+        return await db.InsertMageAsync(1, Mage.Create("account-1", "Merlin", MagicSchool.Tidal, T0, GameRules.Default));
+    });
 
     private sealed class ManualTime(DateTimeOffset start) : TimeProvider
     {

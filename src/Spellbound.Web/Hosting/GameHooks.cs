@@ -1,12 +1,11 @@
-using Microsoft.EntityFrameworkCore;
 using Spellbound.Domain;
 
 namespace Spellbound.Web.Hosting;
 
-/// <summary>The game's own tables, added to the host's database (<see cref="HostDb"/>).</summary>
-public interface IGameModel
+/// <summary>The game's own tables in the host's database: its SQL scripts, migrated after the host's.</summary>
+public interface IGameSchema
 {
-    void Configure(ModelBuilder model);
+    SchemaModule Schema { get; }
 }
 
 /// <summary>What the hosting code needs from the game about rounds.</summary>
@@ -16,21 +15,21 @@ public interface IRoundLifecycle
     TimeSpan RoundLength { get; }
 
     /// <summary>
-    /// Called once when a round has ended, before the next one starts, with the context that moves the round pointer:
-    /// anything added to <paramref name="db"/> here is saved in the same transaction (or not at all). Banned players
-    /// are in <paramref name="bans"/>; leave them out of anything public, such as a hall of fame.
+    /// Called once when a round has ended, before the next one starts, inside the transaction that moves the round on:
+    /// anything written through <paramref name="db"/> here is saved with it (or not at all). Banned players are in
+    /// <paramref name="bans"/>; leave them out of anything public, such as a hall of fame.
     /// </summary>
-    Task OnRoundEndedAsync(HostDb db, Round ended, BanList bans, CancellationToken cancellationToken);
+    Task OnRoundEndedAsync(DbSession db, Round ended, BanList bans, CancellationToken cancellationToken);
 }
 
 /// <summary>What the hosting code tells the game about accounts.</summary>
 public interface IAccountLifecycle
 {
     /// <summary>
-    /// Called when an account is deleted, inside the transaction that deletes it: delete the player's game data here
-    /// (for example with ExecuteDeleteAsync), and it goes with the account (or not at all).
+    /// Called when an account is deleted, inside the transaction that deletes it: delete the player's game data here,
+    /// and it goes with the account (or not at all).
     /// </summary>
-    Task OnAccountDeletedAsync(HostDb db, string ownerId);
+    Task OnAccountDeletedAsync(DbSession db, string ownerId);
 }
 
 /// <summary>How a player looks on the admin page.</summary>
@@ -43,7 +42,7 @@ public sealed record PlayerSummary(string Name, string Details, long Rank);
 public interface IPlayerSummaries
 {
     /// <summary>Every player in the round, by owner (account) id.</summary>
-    Task<IReadOnlyDictionary<string, PlayerSummary>> GetAsync(HostDb db, Round round);
+    Task<IReadOnlyDictionary<string, PlayerSummary>> GetAsync(DbSession db, Round round);
 }
 
 /// <summary>Game-specific sections the admin page shows after its own (components with no parameters).</summary>

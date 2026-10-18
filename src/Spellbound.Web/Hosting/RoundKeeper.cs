@@ -1,14 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using Spellbound.Domain;
 
 namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// The round job: starts the first round, and when a round ends, lets the game wrap it up (<see cref="IRoundLifecycle"/>)
-/// and starts the next one. Players never need a per-player job. Safe to run on several hosts at once: the round
-/// pointer is saved with optimistic concurrency (and created under a fixed key), so only one of them can move it.
+/// and starts the next one. Players never need a per-player job. Safe to run on several hosts at once: the round row
+/// is locked while it moves (and created with a fixed key), so a second host waits and then finds the work done.
 /// </summary>
-public sealed class RoundKeeper(IDbContextFactory<HostDb> dbs, TimeProvider time, IRoundLifecycle game, ILogger<RoundKeeper> logger)
+public sealed class RoundKeeper(HostDatabase database, TimeProvider time, IRoundLifecycle game, ILogger<RoundKeeper> logger)
     : BackgroundService
 {
     public static readonly TimeSpan CheckEvery = TimeSpan.FromMinutes(1);
@@ -17,41 +16,49 @@ public sealed class RoundKeeper(IDbContextFactory<HostDb> dbs, TimeProvider time
     public async Task<Round> TickAsync(CancellationToken cancellationToken = default)
     {
         var now = time.GetUtcNow();
-        await using var db = await dbs.CreateDbContextAsync(cancellationToken);
+        await using var db = await database.BeginAsync(cancellationToken);
 
-        var current = await db.LoadCurrentRoundAsync(cancellationToken);
+        var current = await db.LoadCurrentRoundAsync(forUpdate: true);
         if (current is null)
         {
-            current = new CurrentRound { Round = Round.First(now, game.RoundLength) };
-            db.CurrentRound.Add(current);
-            return await SaveAsync(db, current.Round, $"Round 1 started, ends {current.Round.EndsAt:u}.");
+            var first = Round.First(now, game.RoundLength);
+            var created = await db.ExecuteAsync(
+                "INSERT INTO current_round (id, number, starts_at, ends_at) VALUES (1, $1, $2, $3) ON CONFLICT (id) DO NOTHING",
+                first.Number, first.StartsAt, first.EndsAt);
+            if (created == 0)
+            {
+                return (await db.LoadCurrentRoundAsync())!; // another host created it first
+            }
+
+            await db.CommitAsync();
+            logger.LogInformation("Round 1 started, ends {EndsAt:u}.", first.EndsAt);
+            return first;
         }
 
-        var ended = current.Round;
-        if (!ended.HasEnded(now))
+        if (!current.HasEnded(now))
         {
-            return ended;
+            return current;
         }
 
-        await game.OnRoundEndedAsync(db, ended, await db.LoadBansAsync(cancellationToken), cancellationToken);
-        current.Round = ended.Next(now, game.RoundLength);
-        return await SaveAsync(
-            db,
-            current.Round,
-            $"Round {ended.Number} ended. Round {current.Round.Number} started, ends {current.Round.EndsAt:u}.");
+        await game.OnRoundEndedAsync(db, current, await db.LoadBansAsync(), cancellationToken);
+        var next = current.Next(now, game.RoundLength);
+        await SaveAsync(db, next);
+        await db.CommitAsync();
+        logger.LogInformation(
+            "Round {Ended} ended. Round {Number} started, ends {EndsAt:u}.", current.Number, next.Number, next.EndsAt);
+        return next;
     }
 
     /// <summary>Moves the current round's end. An end at or before now ends the round right away (with its reset).</summary>
     public async Task<Round> ChangeEndAsync(DateTimeOffset endsAt, CancellationToken cancellationToken = default)
     {
-        await using (var db = await dbs.CreateDbContextAsync(cancellationToken))
+        await using (var db = await database.BeginAsync(cancellationToken))
         {
-            var current = await db.LoadCurrentRoundAsync(cancellationToken)
+            var current = await db.LoadCurrentRoundAsync(forUpdate: true)
                           ?? throw new InvalidOperationException("No round has started yet.");
-            var old = current.Round.EndsAt;
-            current.Round = current.Round.WithEnd(endsAt.ToUniversalTime());
-            await db.SaveChangesAsync(cancellationToken); // a reset racing this one makes it throw: try again
-            logger.LogInformation("Round {Number} end moved from {Old:u} to {New:u}.", current.Round.Number, old, endsAt);
+            await SaveAsync(db, current.WithEnd(endsAt.ToUniversalTime()));
+            await db.CommitAsync();
+            logger.LogInformation("Round {Number} end moved from {Old:u} to {New:u}.", current.Number, current.EndsAt, endsAt);
         }
 
         return await TickAsync(cancellationToken);
@@ -74,20 +81,8 @@ public sealed class RoundKeeper(IDbContextFactory<HostDb> dbs, TimeProvider time
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 
-    private async Task<Round> SaveAsync(HostDb db, Round next, string message)
-    {
-        try
-        {
-            await db.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex) when (ex is DbUpdateConcurrencyException || HostStore.IsDuplicateKey(ex))
-        {
-            // Another host moved (or created) the round first. Its result is the one that counts.
-            await using var fresh = await dbs.CreateDbContextAsync();
-            return (await fresh.LoadCurrentRoundAsync())!.Round;
-        }
-
-        logger.LogInformation("{Message}", message);
-        return next;
-    }
+    private static Task SaveAsync(DbSession db, Round round) =>
+        db.ExecuteAsync(
+            "UPDATE current_round SET number = $1, starts_at = $2, ends_at = $3 WHERE id = 1",
+            round.Number, round.StartsAt, round.EndsAt);
 }

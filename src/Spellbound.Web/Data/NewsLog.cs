@@ -1,6 +1,6 @@
 namespace Spellbound.Web.Data;
 
-/// <summary>A mage's recent action reports, newest first (stored as a <see cref="NewsRecord"/>).</summary>
+/// <summary>A mage's recent action reports, newest first (one row of the news table).</summary>
 public sealed class NewsLog
 {
     public List<NewsEntry> Entries { get; set; } = [];
