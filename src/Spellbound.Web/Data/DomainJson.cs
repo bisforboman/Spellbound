@@ -51,9 +51,10 @@ public static class DomainJson
         {
             var property = info.CreateJsonPropertyInfo(field.FieldType, JsonName(field));
             property.Get = field.GetValue;
-            if (field.IsInitOnly && field.FieldType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(field.FieldType))
+            if (field.FieldType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(field.FieldType))
             {
-                property.ObjectCreationHandling = JsonObjectCreationHandling.Populate; // fill the constructor's collection
+                // Fill the collection the constructor made, so it keeps its comparer (the army's is case-insensitive).
+                property.ObjectCreationHandling = JsonObjectCreationHandling.Populate;
             }
             else
             {

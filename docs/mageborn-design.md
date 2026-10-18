@@ -15,6 +15,9 @@ Each step of the rework adds a line here; the order is in [realm-rework.md](real
 - **The opening study** (`tools/Spellbound.Balance -- --opening`) replays days 1–7 two hundred times with bot
   strategies; [opening-baseline.md](opening-baseline.md) is today's baseline, and each step's diff of it shows what
   that step changed.
+- **The ledger preview**: every peaceful action's form (Explore, Build, Meditate, Cast, Recruit) shows what it would
+  leave you with, and what would desert or fade, by running it on a copy of the mage (`Mage.Preview`). Strikes get
+  theirs from the War Table.
 
 ## Summary
 

@@ -107,7 +107,7 @@ it starts. "Needs" names the items that must come first.
 - [x] The schools renamed Dawn, Grove, Ember, Umbra and Veil, with the wheel order as data
 - [x] **F1. Simulation baseline** (M): `tools/Spellbound.Balance` replays days 1–7 many times with bot strategies,
   with a baseline on today's rules, so every later item is measured
-- [ ] **F2. Ledger preview** (M): every action form shows its projected result before you confirm (acres gained,
+- [x] **F2. Ledger preview** (M): every action form shows its projected result before you confirm (acres gained,
   income after upkeep, what would disband), by running the action on a copy; on today's verbs first
 - [ ] **F3. The Chronicle** (S): a public feed of every hostile act (attacker, target, result) from the action log
 - [ ] **F4. Published net power** (S): the formula and its weights shown on Rivals; extended as Spell Level and

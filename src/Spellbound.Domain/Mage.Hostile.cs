@@ -14,7 +14,7 @@ public sealed record HostileReport(ActionReport Report, IReadOnlyList<string> Ta
 /// <summary>Attacks and hexes against other mages.</summary>
 public sealed partial class Mage
 {
-    private readonly List<DateTimeOffset> _recentLosses = [];
+    private List<DateTimeOffset> _recentLosses = [];
 
     /// <summary>When this mage lost battles (an attacker broke through), within the repeat-attack window.</summary>
     public IReadOnlyList<DateTimeOffset> RecentLosses => _recentLosses;

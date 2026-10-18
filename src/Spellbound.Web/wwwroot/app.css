@@ -584,6 +584,36 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         box-shadow: inset 3px 0 0 var(--school);
     }
 
+/* The ledger preview (LedgerView.razor): what an action would leave you with, between its cost and its button */
+.ledger {
+    margin: -0.25rem 0 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--school);
+    font-size: 0.95rem;
+}
+
+    .ledger p {
+        margin: 0 0 0.25rem;
+    }
+
+.ledger-label {
+    font-family: var(--font-label);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    margin-right: 0.25rem;
+}
+
+.ledger-line {
+    font-variant-numeric: lining-nums tabular-nums;
+}
+
+.ledger-warning, .ledger-problem {
+    color: var(--bs-warning-text-emphasis, var(--bs-warning));
+}
+
 /* A mage's sigil (Sigil.razor), burned in rather than drawn */
 .mage-head {
     display: flex;

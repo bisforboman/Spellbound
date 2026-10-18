@@ -70,6 +70,12 @@ whichever comes later. This matters from milestone 2.
 Within one spent turn, the action happens first, then the economy tick (income, then army upkeep), then effect durations count down.
 New buildings count towards income during the turns spent building them.
 
+**The ledger.** Before you confirm Explore, Build, Meditate, a cast or a recruit, its form shows what it would leave
+you with ("After: 332 acres (+38), 56,974 gold (+3,587)…"), plus anything you shouldn't miss: units that would
+desert, spells that would fade. If the action can't be done, the ledger says why. It is the action itself, run on a
+copy of your mage, so it is exact. Attacks and hexes have no ledger: their outcome depends on luck and on what you
+can't see, and the War Table (M7, W5) is their preview.
+
 ## Magic schools
 
 You pick one of five schools when you create your mage. The schools form a ring: each one is strong against the

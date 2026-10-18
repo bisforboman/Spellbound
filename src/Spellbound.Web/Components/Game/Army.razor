@@ -41,6 +41,7 @@
             Cost: <b>@Turns(Mage.RecruitTurnCost(count, Rules))</b> and <b>@N(count * Unit.GoldCost) gold</b>.
             Upkeep goes up by @N(count * Unit.GoldUpkeep) gold per turn.
         </p>
+        <LedgerView Of="Mage.Preview(Game.Now, Rules, m => m.Recruit(unitId, count, Game.Now, Rules))" />
         <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@Busy">Recruit</button>
     </form>
 

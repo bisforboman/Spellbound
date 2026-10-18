@@ -269,17 +269,20 @@ namespace Spellbound.Playtest
             await StepAsync(ada, "explore", page => ActAsync(page, "/explore", async () =>
             {
                 await page.FillAsync("#turns", "5");
+                await ExpectElement(page, ".ledger .ledger-line");
                 await page.ClickAsync("button[type=submit]:has-text('Explore')");
             }));
             await StepAsync(ada, "build", page => ActAsync(page, "/build", async () =>
             {
                 await page.FillAsync("#count", "10");
+                await ExpectElement(page, ".ledger .ledger-line");
                 await page.ClickAsync("button[type=submit]:has-text('Build')");
             }));
             await StepAsync(ada, "meditate", page => ActAsync(page, "/magic", async () =>
             {
                 await ExpectElement(page, ".vial[role=meter]");
                 await page.FillAsync("#turns", "3");
+                await ExpectElement(page, ".ledger .ledger-line");
                 await page.ClickAsync("button[type=submit]:has-text('Meditate')");
             }));
             await StepAsync(ada, "cast", page => ActAsync(page, "/magic", () =>
@@ -288,6 +291,7 @@ namespace Spellbound.Playtest
             {
                 await page.ClickAsync("label.choice:has(b:text-is('Unit 3'))");
                 await page.FillAsync("#count", "40");
+                await ExpectElement(page, ".ledger .ledger-line");
                 await page.ClickAsync("button[type=submit]:has-text('Recruit')");
             }));
             await StepAsync(ada, "rivals", async page =>

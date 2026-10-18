@@ -21,7 +21,8 @@ public sealed partial class Mage
     public const int MinNameLength = 3;
     public const int MaxNameLength = 24;
 
-    private readonly List<ActiveEffect> _activeEffects = [];
+    // Not readonly: Copy gives a copy its own collections.
+    private List<ActiveEffect> _activeEffects = [];
 
     private Mage()
     {
@@ -147,6 +148,32 @@ public sealed partial class Mage
 
     public TimeSpan? TimeUntilNextTurn(DateTimeOffset now, GameRules rules) =>
         TurnClock.TimeUntilNextTurn(Turns, TurnsAccruedAt, now, rules);
+
+    /// <summary>
+    /// Runs an action on a copy of this mage and returns what it would do (a <see cref="Ledger"/>); this mage is not
+    /// changed. Turns are accrued on the copy first, so "before" matches what the player sees.
+    /// </summary>
+    public Ledger Preview(DateTimeOffset now, GameRules rules, Func<Mage, ActionReport> action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var copy = Copy();
+        copy.AccrueTurns(now, rules);
+        var before = copy.Snapshot();
+        var report = action(copy);
+        return new Ledger(report, before, copy.Snapshot());
+    }
+
+    private MageSnapshot Snapshot() => new(Land, Nodes, Towns, Gold, Mana, Turns, TotalUnits, UpkeepPerTurn);
+
+    /// <summary>A copy that shares nothing with this mage: every field, with its own collections and effects.</summary>
+    private Mage Copy()
+    {
+        var copy = (Mage)MemberwiseClone();
+        copy._activeEffects = [.. _activeEffects.Select(e => new ActiveEffect(e.SpellId, e.RemainingTurns))];
+        copy._army = new Dictionary<string, int>(_army, _army.Comparer);
+        copy._recentLosses = [.. _recentLosses];
+        return copy;
+    }
 
     // ---- Turns ----
 
@@ -375,13 +402,15 @@ public sealed partial class Mage
             lines.Add($"Your army's upkeep cost {N(summary.Upkeep)} gold.");
         }
 
+        var warnings = new List<string>();
         if (summary.Deserted > 0)
         {
-            lines.Add($"You ran out of gold to pay your army: {N(summary.Deserted)} units deserted.");
+            warnings.Add($"You ran out of gold to pay your army: {N(summary.Deserted)} units deserted.");
         }
 
-        lines.AddRange(summary.Faded.Select(name => $"{name} has faded."));
-        return new ActionReport(true, turns, lines);
+        warnings.AddRange(summary.Faded.Select(name => $"{name} has faded."));
+        lines.AddRange(warnings);
+        return new ActionReport(true, turns, lines) { Warnings = warnings };
     }
 
     private static string N(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
