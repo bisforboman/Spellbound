@@ -125,6 +125,10 @@ An attack costs **4 turns** and resolves in the first of them; the 4 turns then 
   The land arrives as free acres for you.
 - **Losses:** the attacker loses 8% of every unit on a win and 12% on a loss. The defender loses 10% when broken and
   5% when holding.
+- **The Chronicle** (Rivals, then "the Chronicle") tells the whole realm of every attack and hex this round, newest
+  first: who struck whom (with both schools), and whether it broke through (and how many acres it took), held, landed
+  or was turned aside. It gives no number that would reveal hidden holdings: no attack or defense power, no units
+  killed, no gold or mana lost. Land is public anyway.
 - Both sides get a battle report. The defender's lands in their news log as a hostile entry.
 
 Randomness comes from an injected, seedable source, so the same seed replays the same battle.

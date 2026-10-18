@@ -101,13 +101,4 @@
             news = await Game.GetNewsAsync(OwnerId);
         }
     }
-
-    private string Ago(DateTimeOffset at)
-    {
-        var age = Game.Now - at;
-        return age.TotalMinutes < 1 ? "just now"
-            : age.TotalHours < 1 ? $"{(int)age.TotalMinutes} min ago"
-            : age.TotalDays < 1 ? $"{(int)age.TotalHours} h ago"
-            : $"{(int)age.TotalDays} d ago";
-    }
 }

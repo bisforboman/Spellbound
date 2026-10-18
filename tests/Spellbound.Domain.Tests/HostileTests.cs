@@ -45,6 +45,7 @@ public class HostileTests
         Assert.Equal("You attacked Morgana and broke through, taking 25 acres.", result.Report.Lines[0]);
         Assert.Equal("Merlin (Dawn) attacked you and broke through. You lost 25 acres.", result.TargetLines[0]);
         Assert.Contains("Of your buildings, 2 nodes and 23 towns were destroyed in the fighting.", result.TargetLines);
+        Assert.Equal("Merlin (Dawn) broke through Morgana (Ember)'s defenses and took 25 acres.", result.Chronicle);
     }
 
     [Fact]
@@ -58,6 +59,7 @@ public class HostileTests
 
         Assert.True(result.Report.Succeeded);
         Assert.False(result.Report.Won);
+        Assert.Equal("Merlin (Dawn) attacked Morgana (Ember), but the defenses held.", result.Chronicle);
         Assert.Equal(250, attacker.Land);
         Assert.Equal(250, defender.Land);
         Assert.Equal(50 - 6, attacker.UnitCount("unit-3")); // 12% lost on a loss
@@ -105,6 +107,7 @@ public class HostileTests
         Assert.False(result.Report.Succeeded);
         Assert.Equal("Morgana is still under protection.", result.Report.Lines[0]);
         Assert.Empty(result.TargetLines);
+        Assert.Null(result.Chronicle);
         Assert.Equal(turns, attacker.Turns);
         Assert.Equal(50, attacker.UnitCount("unit-3"));
         Assert.Equal(250, defender.Land);
@@ -247,6 +250,7 @@ public class HostileTests
         // 2,000 - 2,000 for the spell + 200 drained + 2 turns × 200 node income.
         Assert.Equal(600, caster.Mana);
         Assert.Equal("Merlin (Ember) cast Ember hex at you: 200 of your mana was drained.", result.TargetLines[0]);
+        Assert.Equal("Merlin (Ember) cast Ember hex at Morgana (Dawn).", result.Chronicle); // no numbers: her mana is hidden
     }
 
     [Fact]
@@ -267,6 +271,7 @@ public class HostileTests
         Assert.True(result.Report.Succeeded);
         Assert.Equal(mana, target.Mana);
         Assert.Equal("Merlin (Ember) cast Ember hex at you, but it was turned aside.", result.TargetLines[0]);
+        Assert.Equal("Merlin (Ember) cast Ember hex at Morgana (Dawn), but it was turned aside.", result.Chronicle);
     }
 
     [Fact]
