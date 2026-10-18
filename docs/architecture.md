@@ -57,7 +57,7 @@ extension points designed for a single game tend to come out wrong.
 - `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
 - **Tables** are split the same way: `Hosting/Sql` creates `accounts`, `games`, `bans`, `account_networks` and
   `server_secrets`; `Data/Sql` (through `SpellboundSchema`) creates `mages`, `news`, `hall_of_fame` and `actions`,
-  keyed by game id.
+  keyed by game id, and Skirmish's `skirmish_games`, `skirmish_seats` and `skirmish_rounds`.
 - **When a second game comes:** move `Hosting/` and `Components/Account/` into a `GameHost` Razor class library,
   register its assembly with the router (`AdditionalAssemblies`), and split the tests. Roughly 2–3 days.
 
@@ -71,8 +71,27 @@ server always keeps one running (`AlwaysOnMode`), numbered per mode. Every game 
 uses; the action log's rules hash records which rules an action ran under. Rounds migrated from before games have no
 stored rules (`{}`) and use the configured ones, as they did. Bans stay global (per account); the hall of fame is per
 game. The Games page (`/`) lists the player's games; the Realm's pages (`/realm`, `/explore`, …) mean "the running
-Realm round". Not built yet (part 2, with Skirmish): members, creating and joining games, and page addresses that name
-a game.
+Realm round". Not built yet (part 2): creating and joining games, and page addresses that name a game.
+
+**Skirmish games** are `games` rows with mode `skirmish` and `SkirmishRules` as their rules, plus game-side tables:
+`skirmish_games` (the seed, the `SkirmishGame` as jsonb, the round's time limit and deadline), `skirmish_seats` (which
+account sits where, its saved orders and whether it's ready: the minimal "members") and `skirmish_rounds` (every round
+played: orders, who was ready, the random draws, the report and the state after, so a round can be shown and replayed).
+`SkirmishService` does everything in one transaction holding the game's row:
+
+```
+save orders → refused if the round already played (the page sends the round it planned) or the player is ready;
+              checked with SkirmishGame.CheckOrders; stored on the seat
+ready       → stored; if every seat still playing (with an owner, not banned, not out) is ready, the round plays
+              in the same transaction, so two last taps at once play it once
+play        → SkirmishGame.PlayRound(saved orders, recorded luck, ready seats); the round is recorded, orders and
+              ready flags clear, and the next deadline is set. SkirmishKeeper plays rounds whose deadline passed,
+              once a minute, FOR UPDATE SKIP LOCKED so several hosts can run it
+```
+
+For now the admin starts Skirmish games from a list of emails (the admin page's "Start a Skirmish"); players creating
+and joining their own replaces it in part 2. A deleted account's seat stays in its games without an owner or orders,
+and goes away, then out, through the rule for players who stop readying up.
 
 ## Request flow for a game action
 
@@ -149,6 +168,7 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - **Rounds:** each Realm round is a row in `games`. `RoundKeeper`, a hosted `BackgroundService`, checks every minute:
   it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row, marks the game ended and
   starts the next in one transaction, under a transaction advisory lock per mode, so two hosts can't both reset.
+  `SkirmishKeeper` checks every minute too, for Skirmish rounds whose time limit has passed.
 - **Privacy** (`/privacy`, `Hosting/Privacy.cs`): a notice written from what the code stores, filled in from the
   `Privacy` config section (operator, contact, hosting; the app won't start outside Development without them). It
   promises things the code does, so keep them true together: network hashes are deleted after 30 days

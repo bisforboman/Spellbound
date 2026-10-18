@@ -17,6 +17,8 @@ builder.AddGameHost();
 builder.Services.AddSingleton(builder.Configuration.GetSection("GameRules").Get<GameRules>() ?? GameRules.Default);
 builder.Services.AddSingleton<IRandomSource, SharedRandom>();
 builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<SkirmishService>();
+builder.Services.AddHostedService<SkirmishKeeper>();
 builder.Services.AddSingleton<IGameSchema, SpellboundSchema>();
 builder.Services.AddSingleton<SpellboundHost>();
 builder.Services.AddSingleton<IRoundLifecycle>(sp => sp.GetRequiredService<SpellboundHost>());
@@ -26,6 +28,7 @@ builder.Services.Configure<AdminPageOptions>(options =>
 {
     options.GameSections.Add(typeof(ActionLogAdmin));
     options.GameSections.Add(typeof(GameRulesAdmin));
+    options.GameSections.Add(typeof(SkirmishAdmin));
 });
 
 var app = builder.Build();

@@ -44,7 +44,8 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 - **Every domain action accrues turns first** (`Mage.AccrueTurns`) and returns an `ActionReport` of short,
   readable text lines. Actions either fully succeed or change nothing.
 - **Turns regenerate lazily.** The app stores `Turns` plus `TurnsAccruedAt` and computes the rest on read.
-  There are no per-player timers or background loops. Background jobs are only for global events like round resets.
+  There are no per-player timers or background loops. Background jobs are only for global events: Realm round resets
+  (`RoundKeeper`) and Skirmish rounds whose time ran out (`SkirmishKeeper`), each one job for every game.
 - **The web layer is thin:** load the mage, call one domain method with `TimeProvider.GetUtcNow()`, then save, in one
   transaction. The mage's row is locked while it acts (`SELECT … FOR UPDATE`), so a double-tap waits for the first tap
   and then sees the turns it left: the same turns can't be spent twice.

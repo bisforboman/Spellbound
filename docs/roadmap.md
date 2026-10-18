@@ -97,10 +97,13 @@ first, as the beta is with friends)
 - [x] Rules in the domain, part B: casts, hexes, attacks, dropouts, public objectives, the range rule
 - [x] A simulation in `tools/` ([results](skirmish-sim-results.md)), and a first tuning from it
 - [ ] Tune the numbers until it plays well: in the friends beta (bots can't tell whether people find it open)
-- [ ] Rounds with a ready-up and a time limit; the server plays a round when all are ready or time is up
+- [x] Rounds with a ready-up and a time limit; the server plays a round when all are ready or time is up
+- [x] Storage and a service for Skirmish games (seats, saved orders, a record of every round); the admin starts games
+  from players' emails until part 2's create and join
 - [ ] Reminders by web push (when everyone else is ready, and when time is running out)
 - [ ] The board, orders and scoring pages, at 360 px, text-first
-- [ ] Dropouts (away after 2 missed rounds) and a win record per account
+- [x] Dropouts (away after 2 missed rounds, out after 6)
+- [ ] A win record per account
 - [ ] Friends-only beta on a real server: play Skirmishes, write down what to carry over to the Realm
 - [ ] One luck feature to start (for example "exploring finds things"), as a switch
 

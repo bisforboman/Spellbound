@@ -1,0 +1,285 @@
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Spellbound.Domain;
+using Spellbound.Domain.Skirmish;
+using Spellbound.Web.Data;
+using Spellbound.Web.Hosting;
+
+namespace Spellbound.Web.Tests;
+
+/// <summary>Skirmish games through the real app: orders, ready-up, the round's time limit, replays and accounts.</summary>
+public sealed class SkirmishFlowTests : TestDatabase, IAsyncLifetime
+{
+    private static readonly TimeSpan RoundLength = TimeSpan.FromHours(1);
+
+    private readonly ManualTime time = new(new DateTimeOffset(2026, 10, 18, 12, 0, 0, TimeSpan.Zero));
+    private readonly WebApplicationFactory<Program> factory;
+    private string merlin = string.Empty;
+    private string morgana = string.Empty;
+    private string ada = string.Empty;
+    private long gameId;
+
+    public SkirmishFlowTests()
+    {
+        factory = CreateApp(b => b.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(time);
+            services.RemoveAll<IRandomSource>();
+            services.AddSingleton<IRandomSource>(new SeededRandom(5));
+        }));
+    }
+
+    private SkirmishService Skirmishes => factory.Services.GetRequiredService<SkirmishService>();
+
+    private AccountService Accounts => factory.Services.GetRequiredService<AccountService>();
+
+    public async Task InitializeAsync()
+    {
+        merlin = await CreateUserAsync("merlin@spellbound.test");
+        morgana = await CreateUserAsync("morgana@spellbound.test");
+        ada = await CreateUserAsync("ada@spellbound.test");
+        gameId = await Skirmishes.CreateAsync(
+            [(merlin, "Merlin", MagicSchool.A), (morgana, "Morgana", MagicSchool.B), (ada, "Ada", MagicSchool.C)],
+            SkirmishRules.Default,
+            RoundLength);
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    [Fact]
+    public async Task A_new_game_shows_each_player_their_seat_and_the_first_round()
+    {
+        var view = (await Skirmishes.GetAsync(gameId, morgana))!;
+
+        Assert.Equal(1, view.Seat);
+        Assert.Equal(1, view.Planning);
+        Assert.Equal(3, view.Players);
+        Assert.Equal(time.GetUtcNow() + RoundLength, view.RoundEndsAt);
+        Assert.Null(view.LastReport);
+        Assert.Null(await Skirmishes.GetAsync(gameId, "someone-else"));
+        Assert.Equal("Morgana", Assert.Single(await Skirmishes.GetMineAsync(morgana)).SeatName);
+        Assert.Equal(SkirmishService.Mode, (await WithDbAsync(db => db.LoadGameAsync(gameId)))!.Mode);
+    }
+
+    [Fact]
+    public async Task The_round_plays_when_the_last_player_readies_up()
+    {
+        var claim = await ClaimableAsync(merlin);
+        Assert.Null(await Skirmishes.SaveOrdersAsync(gameId, merlin, 1, [new ClaimOrder(claim)]));
+        Assert.Null(await Skirmishes.SetReadyAsync(gameId, merlin, 1, true));
+        Assert.Null(await Skirmishes.SetReadyAsync(gameId, morgana, 1, true));
+        Assert.Equal(1, (await Skirmishes.GetAsync(gameId, merlin))!.Planning); // still waiting for Ada
+
+        Assert.Null(await Skirmishes.SetReadyAsync(gameId, ada, 1, true));
+
+        var view = (await Skirmishes.GetAsync(gameId, merlin))!;
+        Assert.Equal(2, view.Planning);
+        Assert.Equal(0, view.Game.Board[claim].Owner);
+        Assert.Empty(view.Orders); // a new round starts with no orders
+        Assert.False(view.Ready);
+        Assert.Contains(view.LastReport!.Public, l => l.StartsWith("Merlin claimed", StringComparison.Ordinal));
+        Assert.Equal(time.GetUtcNow() + RoundLength, view.RoundEndsAt);
+    }
+
+    [Fact]
+    public async Task Two_last_ready_taps_at_once_play_the_round_once()
+    {
+        await Skirmishes.SetReadyAsync(gameId, merlin, 1, true);
+
+        var results = await Task.WhenAll(
+            Task.Run(() => Skirmishes.SetReadyAsync(gameId, morgana, 1, true)),
+            Task.Run(() => Skirmishes.SetReadyAsync(gameId, ada, 1, true)));
+
+        Assert.All(results, Assert.Null);
+        Assert.Equal(1, await CountAsync("SELECT count(*) FROM skirmish_rounds WHERE game_id = $1", gameId));
+        Assert.Equal(2, (await Skirmishes.GetAsync(gameId, ada))!.Planning);
+    }
+
+    [Fact]
+    public async Task Orders_for_a_round_that_has_played_are_refused_and_change_nothing()
+    {
+        await PlayRoundAsync();
+        var before = (await Skirmishes.GetAsync(gameId, merlin))!.Orders;
+
+        var result = await Skirmishes.SaveOrdersAsync(gameId, merlin, 1, [new RecruitOrder("unit-1", 1)]);
+
+        Assert.Equal("That round has already played. Have a look at the new one and try again.", result);
+        Assert.Equal(before, (await Skirmishes.GetAsync(gameId, merlin))!.Orders);
+    }
+
+    [Fact]
+    public async Task Orders_the_rules_refuse_are_not_saved()
+    {
+        var result = await Skirmishes.SaveOrdersAsync(gameId, merlin, 1, [new AttackOrder(0)]);
+
+        Assert.NotNull(result);
+        Assert.Empty((await Skirmishes.GetAsync(gameId, merlin))!.Orders);
+    }
+
+    [Fact]
+    public async Task When_time_runs_out_the_round_plays_with_the_saved_orders()
+    {
+        await Skirmishes.SaveOrdersAsync(gameId, morgana, 1, [new RecruitOrder("unit-1", 5)]);
+        Assert.Equal(0, await Skirmishes.PlayDueAsync()); // not yet
+
+        time.Advance(RoundLength);
+        Assert.Equal(1, await Skirmishes.PlayDueAsync());
+
+        var view = (await Skirmishes.GetAsync(gameId, morgana))!;
+        Assert.Equal(2, view.Planning);
+        Assert.Equal(5, view.Game.Seats[1].Units);
+        Assert.Equal(1, view.Game.Seats[0].MissedInARow); // nobody readied up
+        Assert.Equal(0, await Skirmishes.PlayDueAsync());
+    }
+
+    [Fact]
+    public async Task A_played_round_replays_exactly_from_what_was_stored()
+    {
+        await Skirmishes.SaveOrdersAsync(gameId, merlin, 1, [new ClaimOrder(await ClaimableAsync(merlin)), new RecruitOrder("unit-3", 10)]);
+        await Skirmishes.SaveOrdersAsync(gameId, morgana, 1, [new HexOrder("hex-b", 2)]);
+        await PlayRoundAsync();
+
+        var stored = await WithDbAsync(db => db.SingleAsync(
+            """
+            SELECT k.orders::text, k.ready::text, k.draws::text, k.state_after::text, g.seed
+            FROM skirmish_rounds k JOIN skirmish_games g ON g.game_id = k.game_id WHERE k.game_id = $1 AND k.round = 1
+            """,
+            r => new { Orders = r.GetString(0), Ready = r.GetString(1), Draws = r.GetString(2), After = r.GetString(3), Seed = r.GetInt32(4) },
+            gameId));
+        var before = SkirmishGame.Start(
+            [("Merlin", MagicSchool.A), ("Morgana", MagicSchool.B), ("Ada", MagicSchool.C)], SkirmishRules.Default, new SeededRandom(stored!.Seed));
+        var orders = DomainJson.Deserialize<Dictionary<int, List<SkirmishOrder>>>(stored.Orders)
+            .ToDictionary(o => o.Key, o => (IReadOnlyList<SkirmishOrder>)o.Value);
+
+        before.PlayRound(orders, new Replayed(DomainJson.Deserialize<List<double>>(stored.Draws)), DomainJson.Deserialize<HashSet<int>>(stored.Ready));
+
+        // jsonb orders keys its own way, so compare the games, not the text.
+        Assert.Equal(DomainJson.Serialize(DomainJson.Deserialize<SkirmishGame>(stored.After)), DomainJson.Serialize(before));
+    }
+
+    [Fact]
+    public async Task The_last_round_ends_the_game()
+    {
+        var shortGame = await Skirmishes.CreateAsync(
+            [(merlin, "Merlin", MagicSchool.A), (morgana, "Morgana", MagicSchool.B)], SkirmishRules.Default with { Rounds = 1 }, RoundLength);
+
+        await Skirmishes.SetReadyAsync(shortGame, merlin, 1, true);
+        await Skirmishes.SetReadyAsync(shortGame, morgana, 1, true);
+
+        Assert.NotNull(await WithDbAsync(db => db.ScalarAsync<DateTimeOffset?>("SELECT ended_at FROM games WHERE id = $1", shortGame)));
+        Assert.Equal("The game is over.", await Skirmishes.SetReadyAsync(shortGame, merlin, 2, true));
+        var summary = (await Skirmishes.GetMineAsync(merlin)).Single(s => s.GameId == shortGame);
+        Assert.True(summary.Ended);
+        Assert.Equal(0, await Skirmishes.PlayDueAsync());
+    }
+
+    [Fact]
+    public async Task A_banned_player_cannot_act_in_a_skirmish()
+    {
+        await WithDbAsync(db => db.ExecuteAsync("INSERT INTO bans (owner_id, at, reason, banned_by) VALUES ($1, now(), 'test', 'admin')", ada));
+
+        Assert.Equal("Your account is banned.", await Skirmishes.SetReadyAsync(gameId, ada, 1, true));
+        Assert.Equal("Your account is banned.", await Skirmishes.SaveOrdersAsync(gameId, ada, 1, []));
+    }
+
+    [Fact]
+    public async Task A_deleted_account_leaves_its_seat_to_play_on_without_it()
+    {
+        await Skirmishes.SaveOrdersAsync(gameId, ada, 1, [new RecruitOrder("unit-1", 1)]);
+
+        await Accounts.DeleteAsync(ada);
+        await Skirmishes.SetReadyAsync(gameId, merlin, 1, true);
+        await Skirmishes.SetReadyAsync(gameId, morgana, 1, true); // Ada can't ready up any more, so this plays the round
+
+        var view = (await Skirmishes.GetAsync(gameId, merlin))!;
+        Assert.Equal(2, view.Planning);
+        Assert.Equal(0, view.Game.Seats[2].Units); // her saved orders went with the account
+        Assert.Equal(1, view.Game.Seats[2].MissedInARow);
+        Assert.Equal(0, await CountAsync("SELECT count(*) FROM skirmish_seats WHERE owner_id = $1", ada));
+    }
+
+    [Fact]
+    public async Task Orders_cannot_change_while_ready()
+    {
+        await Skirmishes.SetReadyAsync(gameId, merlin, 1, true);
+
+        Assert.Equal("You're ready: take back Ready to change your orders.", await Skirmishes.SaveOrdersAsync(gameId, merlin, 1, []));
+        Assert.Null(await Skirmishes.SetReadyAsync(gameId, merlin, 1, false));
+        Assert.Null(await Skirmishes.SaveOrdersAsync(gameId, merlin, 1, [new RecruitOrder("unit-1", 1)]));
+    }
+
+    [Fact]
+    public async Task A_banned_player_is_not_waited_for()
+    {
+        await WithDbAsync(db => db.ExecuteAsync("INSERT INTO bans (owner_id, at, reason, banned_by) VALUES ($1, now(), 'test', 'admin')", ada));
+        await Skirmishes.SetReadyAsync(gameId, merlin, 1, true);
+        Assert.Equal(2, (await Skirmishes.GetAsync(gameId, merlin))!.Players);
+
+        await Skirmishes.SetReadyAsync(gameId, morgana, 1, true);
+
+        Assert.Equal(2, (await Skirmishes.GetAsync(gameId, merlin))!.Planning);
+    }
+
+    [Fact]
+    public async Task The_admin_starts_a_game_from_emails()
+    {
+        var accounts = factory.Services.GetRequiredService<AccountService>();
+        await factory.Services.GetRequiredService<RoundKeeper>().TickAsync();
+        await factory.Services.GetRequiredService<GameService>().CreateMageAsync(morgana, "Morgana the Grey", MagicSchool.D);
+
+        var (id, problem) = await Skirmishes.CreateForEmailsAsync(["merlin@spellbound.test", " MORGANA@spellbound.test ", ""], TimeSpan.FromMinutes(30), accounts);
+
+        Assert.Null(problem);
+        var game = (await Skirmishes.GetAsync(id!.Value, morgana))!.Game;
+        Assert.Equal(["merlin", "Morgana the Grey"], game.Seats.Select(s => s.Name));
+        Assert.Equal(MagicSchool.D, game.Seats[1].School); // her Realm mage's school
+        Assert.Equal(2, game.Rules.Players);
+        Assert.Equal("A Skirmish needs 2–6 players: one email per line.", (await Skirmishes.CreateForEmailsAsync(["merlin@spellbound.test"], TimeSpan.FromMinutes(30), accounts)).Problem);
+        Assert.Equal("Each player can only take one seat.", (await Skirmishes.CreateForEmailsAsync(["ada@spellbound.test", "Ada@spellbound.test"], TimeSpan.FromMinutes(30), accounts)).Problem);
+        Assert.StartsWith("No account has the email nobody@", (await Skirmishes.CreateForEmailsAsync(["ada@spellbound.test", "nobody@spellbound.test"], TimeSpan.FromMinutes(30), accounts)).Problem, StringComparison.Ordinal);
+    }
+
+    public override void Dispose()
+    {
+        factory.Dispose();
+        base.Dispose();
+    }
+
+    private async Task PlayRoundAsync()
+    {
+        var planning = (await Skirmishes.GetAsync(gameId, merlin))!.Planning;
+        foreach (var owner in new[] { merlin, morgana, ada })
+        {
+            Assert.Null(await Skirmishes.SetReadyAsync(gameId, owner, planning, true));
+        }
+    }
+
+    private async Task<int> ClaimableAsync(string ownerId)
+    {
+        var view = (await Skirmishes.GetAsync(gameId, ownerId))!;
+        return view.Game.Claimable(view.Seat).First().Id;
+    }
+
+    private async Task<string> CreateUserAsync(string email) =>
+        (await Accounts.SignInAsync(AccountEndpoints.DevProvider, email, email)).Account!.Id;
+
+    /// <summary>Gives back recorded draws in order, to replay a round.</summary>
+    private sealed class Replayed(IReadOnlyList<double> draws) : IRandomSource
+    {
+        private int next;
+
+        public double NextDouble() => draws[next++];
+    }
+
+    private sealed class ManualTime(DateTimeOffset start) : TimeProvider
+    {
+        private DateTimeOffset now = start;
+
+        public override DateTimeOffset GetUtcNow() => now;
+
+        public void Advance(TimeSpan by) => now += by;
+    }
+}
