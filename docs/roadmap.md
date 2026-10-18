@@ -50,13 +50,13 @@ until then.
 - [x] Persistence on plain Npgsql instead of EF Core: SQL migration files, row locks for concurrent actions
 - [x] Privacy notice before sign-up: what's stored (email, hashed network, game data and the action log), why, how
   long, and how to delete your account
-- [ ] Terms and rules page, and an "ask an admin" contact path (the server sends no email)
+- [ ] Terms and rules page, and an "ask an admin" contact path (the server sends no email); independent of the
+  rework, doable any time
 - [x] Alerts on unhandled errors and failed nightly backups
 - [x] Action log: an append-only `actions` table written with each save (round, player, time, a named action, its
   inputs, random draws, result and a hash of the rules), like OpenDominion's history. For disputes, audits and real
   balance data
-- [ ] First-round checklist: what to watch (attacks per target, whether once-a-day players stay, the hall of fame), so
-  real data settles the balance questions below
+- [ ] First-round checklist: replaced by what the Mageborn alpha measures (M7, A1)
 - [ ] Deployed to a VPS (needs a server and a domain)
 - [ ] Cloudflare in front (needs the domain)
 
@@ -68,7 +68,8 @@ until then.
 
 ## Order from here
 Decided 18 Oct 2026: the Realm is reworked as Mageborn ([design](mageborn-design.md), [rework plan](realm-rework.md))
-before anything is deployed; Skirmish was removed. So M7 comes next, then the first live round (M4).
+before anything is deployed; Skirmish was removed. M7 is the backlog: its core leads to an **alpha with friends**
+(A1), which is where deploying (M4) comes back; the rest of the design follows the alpha.
 
 ## M5: Games and lobbies
 Goal: a server runs many games, each with its own mode and rules. In two parts, so the risky data change ships alone.
@@ -92,38 +93,107 @@ codes, web push reminders, a win record) and then removed when the owner chose t
 notifications stay; the rest is in the git history.
 
 ## M7: Mageborn
-The Realm reworked to the owner's research ([design](mageborn-design.md)); the steps and what each touches are in
-[realm-rework.md](realm-rework.md). Each step is one PR, with tests, a simulation run where it applies, and a playtest
-step.
+The Realm reworked to the owner's research ([design](mageborn-design.md); what each part changes:
+[realm-rework.md](realm-rework.md)). This list is the backlog and its order.
+
+**Each item is one PR**, done when: domain tests cover the happy path and the "changes nothing on failure" case; the
+Realm simulation is rerun where numbers move; new pages and actions have a playtest step; `game-design.md` and the
+"What's built" list in `mageborn-design.md` are updated; and the privacy notice is updated where what's stored, or
+who sees it, changes. **Sizes:** S a day or less, M a few days, L a week or more; an L item is split into PRs when
+it starts. "Needs" names the items that must come first.
+
+### Foundations
 - [x] The design brought into the repo, decisions recorded, Skirmish removed
 - [x] The schools renamed Dawn, Grove, Ember, Umbra and Veil, with the wheel order as data
-- [ ] The Realm simulation (`tools/Spellbound.Balance`) extended to replay days 1–7 with bot strategies, and a
-  baseline on today's rules, so every later step is measured
-- [ ] Turn bank numbers, season phases and published net power
-- [ ] Buildings as shares, population, yield curves and the ledger preview
-- [ ] The school wheel's costs, research and Spell Level
-- [ ] Creatures, stacked battles and the War Table
-- [ ] Strike kinds, range and hit limits, Shaken, the Chronicle, Wards
-- [ ] The Fall, Vigil and Sanctuary
-- [ ] The Conjunction: Armageddon, the Final War and the titles
-- [ ] Omens, guilds, the Tutor's Plan and the Apprentice season with AI mages
+- [x] **F1. Simulation baseline** (M): `tools/Spellbound.Balance` replays days 1–7 many times with bot strategies,
+  with a baseline on today's rules, so every later item is measured
+- [ ] **F2. Ledger preview** (M): every action form shows its projected result before you confirm (acres gained,
+  income after upkeep, what would disband), by running the action on a copy; on today's verbs first
+- [ ] **F3. The Chronicle** (S): a public feed of every hostile act (attacker, target, result) from the action log
+- [ ] **F4. Published net power** (S): the formula and its weights shown on Rivals; extended as Spell Level and
+  creatures arrive
+
+### Season and turns
+- [ ] **S1. Turn bank** (S): 1 turn every 10 minutes, cap 150 (a day), 100 to start. Needs F1 (rerun)
+- [ ] **S2. Season phases** (M): Sanctuary, Growth, Contest, Conjunction, Reckoning as **fractions of the round**, not
+  days, so a 7-day Blitz alpha and a 28-day season both work; the Realm page shows the phase
+- [ ] **S3. Explore decay** (S): yield falls with realm size and sharply from the Contest phase, and is better below
+  the median. Needs S2
+- [ ] **S4. Vigil** (S): freeze your realm once a season for up to 72 hours
+
+### Economy
+- [ ] **E1. Population and homesteads** (M): population as a resource; homesteads replace towns. Needs F2
+- [ ] **E2. Workshops, forts and ward buildings** (M): build speed, your life, spell resistance. Needs E1.
+  *Naming:* the research uses "Ward" for a building, a battle spell and the defence orders; decide one name each
+  here
+- [ ] **E3. Yield curves** (M): each building's yield per acre on a published curve, the sweet spot shaded on the
+  Build page; batching is honest. Needs E2
+- [ ] **E4. Channel** (S): a turn's worth of extra gold or mana income, replacing Meditate
+
+### Magic
+- [ ] **M1. Wheel costs** (S): no failure rolls; off-school magic costs +50% from a neighbour, +100% from an opposite
+- [ ] **M2. Research** (L): the Study verb, libraries, four tiers, Spell Level. Needs E2 (libraries)
+- [ ] **M3. Spells rebuilt** (L): enchantments with upkeep, sorcery, battle spells, one Apex per school. Needs M2.
+  *Needs the owner:* spell names
+
+### War
+- [ ] **W1. Creatures** (L): per-school creatures and mundane troops, with class, initiative, damage type and one
+  keyword. *Needs the owner:* creature names, and 5 stacks or 6–7
+- [ ] **W2. Battle tournament** (M): a CLI that pits schools' armies against each other until no school's win rate
+  strays; the research's second harness. Needs W1
+- [ ] **W3. Stacked battles** (L): line-up, pairing, initiative, fatigue and counters; deterministic. Needs W1
+- [ ] **W4. AI mages** (M): the simulation's bots play as live, clearly marked mages, one background job for all of
+  them, so a small server has targets in range. Needs W3 (decided: right after battles). It's the first background
+  job that acts for players: amend CLAUDE.md's background-job rule in the same PR
+- [ ] **W5. War Table** (M): both line-ups, the pairing and an outcome band before you strike; scouting ±15%,
+  blind to Wards. Needs W3
+- [ ] **W6. Strike kinds** (M): Assault, Siege and Raid. Needs W3, E2 (forts)
+- [ ] **W7. Limits** (M): range 75–150%, retaliation always in range, one hostile act per target per day, Shaken
+  after 3 losses in 24 hours. Needs W6, F3
+- [ ] **W8. Wards** (M): up to 3 "if the attacker is X% of me, cast Y" orders and a standing battle spell. Needs
+  M3, W3
+- [ ] **W9. Web push when struck** (S): a notification when you're attacked or a Ward fires. Needs W6
+
+### The Fall and the season's end
+- [ ] **D1. The Fall** (M): losing your last fort reincarnates you at half the median land, keeping school and
+  research, with Sanctuary and then a Vengeance mark. Needs E2, M2
+- [ ] **D2. Final War and titles** (M): the stars force the Final War at the end of the Conjunction; the Archmage,
+  Sage, Conqueror and Unbroken titles in the hall of fame. Needs S2, M2, D1
+- [ ] **D3. The product name** (S, *needs the owner*): "Mageborn" is the research's working title; decide the
+  name, and the setting with it, before players see a Mageborn page
+
+### Alpha with friends
+- [ ] **A1. Mageborn alpha** with about 20 players, one Blitz-length season. Needs everything above. **The deploy
+  prerequisites become blocking here** (M4: the VPS and domain, the Google OAuth client, the `PRIVACY_*` settings).
+  Measure what the research names: the share of new players still active on day 7, how many find decoy stacks or the
+  explore-to-war switch, the net power gap between rank 1 and the median late in the season, and how the Final War
+  went
+
+### After the alpha
+- [ ] **L1. Armageddon** (M): five casts by five mages a day apart, Doomsayers attackable by anyone. Needs M2, D2
+- [ ] **L2. Omens** (S): two per season, announced before day 1
+- [ ] **L3. Guilds** (L): up to 8 members, one reinforcing stack, a guild title
+- [ ] **L4. The Tutor's Plan and school labels** (M): a guided first 150 turns; Dawn and Grove marked
+  beginner-friendly, Umbra and Veil hard
+- [ ] **L5. Apprentice season** (M): 7 days against 20 AI mages. Needs W4
 
 ## Engineering
 - Persistence: plain Npgsql with Google sign-in, decided 17 Oct 2026 after comparing alternatives and similar games
   ([research](research/persistence.md))
-- jsonb upcasters: game state is versioned JSON; add the first upcaster at the first rename or reshape
-- The `Hosting/` hooks are shaped for one round at a time; M5 makes them per game (round length, round end)
+- jsonb state: until the first deploy, the rework reshapes stored state freely and a dev database is reset (the
+  school rename did this); from the first deploy on, a reshape comes with an upcaster
 - Playtest tool (`tools/Spellbound.Playtest`): three players play every page at 360 px in a real browser; not in CI
   yet (it needs `playwright install --with-deps` there)
 - Tests: most of their time is the app starting once per test; share one app per test class if speed matters
 
 ## Balance
 See [balance.md](balance.md) and the open questions in [game design](game-design.md).
-- A limit on tiny attacks, then upkeep: decide after the first live round, with real data
-- Population or peasants, and an end-of-round event: design questions, not numbers
+- Superseded by Mageborn: tiny attacks are limited by its hit limits (M7, W7), population is a resource (E1), and the
+  season's end is the Conjunction (D2, L1). Numbers are tuned with the simulation and the alpha
 
 ## Later
-- Artifacts, chat, server variants (Mageborn's Blitz and Long servers)
+- Items, heroes and gods (the research's possible expansions); chat; server variants (Mageborn's Blitz and Long
+  servers)
 - Real email (an SMTP service), if the game ever needs it
 - More sign-in options (Apple, passkeys), linked to the same account
 - Move `Hosting/` into its own reusable project if a separate game is ever planned (see architecture, "The game host

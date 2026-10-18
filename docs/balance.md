@@ -26,6 +26,31 @@ at each check-in, three times a day or once a day:
 
 The conclusions hold across seeds 1–3; the exact numbers move a few percent.
 
+## The opening baseline (Mageborn rework, M7 F1)
+
+The research's first playtest is "replay days 1–7 thousands of times". The opening study does that with the same
+bots: 200 seeded runs of one mixed server (two builders with different node shares, a once-a-day builder, an
+**explore-first** player who only explores for 3 days and then builds, a turtle and a warmonger), each run with its
+check-in times jittered by up to an hour. The results are in [opening-baseline.md](opening-baseline.md). The file
+is regenerated deterministically, so after a rules change **its `git diff` is the comparison**: every Mageborn step
+that moves numbers reruns it, commits the new file, and quotes the diff in its PR.
+
+```sh
+dotnet run --project tools/Spellbound.Balance -- --opening 200
+```
+
+What the baseline (today's rules, 18 Oct 2026) shows:
+
+- **A runaway leader in a week.** The warmonger leads every run, at about 3.8× the median player's networth on day 7,
+  and takes about 26 attacks' worth of land. This is the problem Mageborn's limits (one
+  hostile act per target per day, Shaken, a 75–150% range) and the Fall are meant to fix; the bot sees its targets'
+  true defense, so this is the worst case.
+- **The economy strategies end within a few percent of each other.** Node share and exploring first barely matter
+  in the first week (exploring first is slightly ahead on land but is attacked most), so the economy has no
+  meaningful choices yet: that's what buildings as shares and yield curves (M7, E1–E3) are for.
+- **A once-a-day player loses about 60 turns a week at the cap** and ends a little behind. Mageborn's cap of a full
+  day (S1) should bring that to zero.
+
 ## Changes adopted after the first run
 
 The first run (rules as of PR #13) found four problems. The owner adopted three proposals (PR #14), and after the

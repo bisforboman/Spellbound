@@ -27,7 +27,8 @@ src/
     Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL scripts)
     wwwroot/fonts/          the headings font, self-hosted, with its licence (OFL.txt)
 tools/
-  Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
+  Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md), and the
+                            opening study: many seeded runs of days 1–7 (docs/opening-baseline.md)
   Spellbound.Playtest/      plays every page in a phone-sized browser (Playwright) against a fresh app and database,
                             with screenshots and a report (.claude/skills/playtest)
 tests/
