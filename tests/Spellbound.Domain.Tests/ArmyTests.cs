@@ -82,6 +82,14 @@ public class ArmyTests
     }
 
     [Fact]
+    public void The_published_formula_uses_the_games_own_weights()
+    {
+        Assert.Equal("5 per acre of land, 10 per building, and 1 per point of attack and defense in your army.",
+            Mage.NetPowerFormula(Rules));
+        Assert.StartsWith("7 per acre", Mage.NetPowerFormula(Rules with { NetworthPerAcre = 7 }), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Networth_counts_land_buildings_and_units()
     {
         var mage = NewMage();

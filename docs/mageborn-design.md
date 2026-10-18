@@ -20,6 +20,9 @@ Each step of the rework adds a line here; the order is in [realm-rework.md](real
   theirs from the War Table.
 - **The Chronicle**: every attack and hex is told to the whole server on the Chronicle page, in the third person with
   no hidden numbers, from a public line the domain writes (`HostileReport.Chronicle`) and the action log stores.
+- **Net power is published**: the Rivals page prints the formula with the game's weights (`Mage.NetPowerFormula`),
+  and the pages say "net power" (the code and stored data keep the name networth). Spell Level and creatures join
+  the formula when they arrive.
 
 ## Summary
 

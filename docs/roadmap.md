@@ -110,7 +110,7 @@ it starts. "Needs" names the items that must come first.
 - [x] **F2. Ledger preview** (M): every action form shows its projected result before you confirm (acres gained,
   income after upkeep, what would disband), by running the action on a copy; on today's verbs first
 - [x] **F3. The Chronicle** (S): a public feed of every hostile act (attacker, target, result) from the action log
-- [ ] **F4. Published net power** (S): the formula and its weights shown on Rivals; extended as Spell Level and
+- [x] **F4. Published net power** (S): the formula and its weights shown on Rivals; extended as Spell Level and
   creatures arrive
 
 ### Season and turns

@@ -26,7 +26,7 @@ else if (Mage is not null && rival is not null)
     <table class="table stats">
         <tbody>
             <tr><th><Glyph Kind="GlyphKind.Land" />Land</th><td>@N(rival.Land) acres</td></tr>
-            <tr><th>Networth</th><td>@N(rival.Networth(Rules))</td></tr>
+            <tr><th>Net power</th><td>@N(rival.Networth(Rules))</td></tr>
             <tr><th>Status</th><td>@(rival.IsProtected(Game.Now, Rules) ? "Protected" : "Open to attack")</td></tr>
         </tbody>
     </table>

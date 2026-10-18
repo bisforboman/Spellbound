@@ -150,13 +150,16 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
   chance of hexes cast at you. Like every buff, it only counts down as you spend turns.
 - A hex that is turned aside still costs its mana and turns. The target hears about it either way.
 
-## Protection, rankings and networth (milestone 2)
+## Protection, rankings and net power (milestone 2)
 
 - New mages are protected for **72 hours** and until they have spent **120 turns** (see Starting mage). Mages created
   before the time rule existed are protected by turns only.
 - Because everyone creates a mage when a round starts, every round opens with about **three days without attacks**.
-- **Networth** = 5 per acre + 10 per building + 1 per point of unit attack and defense (a Unit 3 adds 8).
-- The **Rivals** page ranks every mage by land or by networth, and is where you pick a target.
+- **Net power** = 5 per acre + 10 per building + 1 per point of unit attack and defense (a Unit 3 adds 8). It is
+  published: the Rivals page prints the formula with the game's own weights, so anyone can check a ranking by hand.
+  A rival's buildings and army stay hidden; that their total bounds their army's size is accepted, by design.
+  (The code and stored data still call it networth.)
+- The **Rivals** page ranks every mage by land or by net power, and is where you pick a target.
 - When you are attacked or hexed, the overview shows a banner with how many times since you last looked, and the
   entries are marked in the news log. Web push notifications are not built yet.
 
@@ -165,7 +168,7 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 - A round lasts **4 weeks** (`RoundLength`). The first one starts when the server first starts. Each round is a game
   in the Games list, and keeps the rules it started with; changed settings apply from the next round.
 - When it ends, actions stop. Within a minute the server records the **hall of fame**: the top 10 mages by land and
-  by networth, with their school. Then the next round starts right away.
+  by net power, with their school. Then the next round starts right away.
 - **Everything resets:** every player creates a new mage with the starting values, and news starts empty.
   Accounts carry over; mages, armies and spells don't.
 - The overview shows the round number and the time left. Past rounds are on the Hall of fame page.
