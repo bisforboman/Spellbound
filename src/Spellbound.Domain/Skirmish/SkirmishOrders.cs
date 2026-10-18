@@ -25,6 +25,41 @@ public sealed record RecruitOrder(string UnitId, int Count) : SkirmishOrder
     public override int Cost(SkirmishRules rules) => rules.RecruitCost;
 }
 
+/// <summary>Attack a region another mage holds, next to one of yours: a win takes it with its buildings.</summary>
+public sealed record AttackOrder(int RegionId) : SkirmishOrder
+{
+    public override int Cost(SkirmishRules rules) => rules.AttackCost;
+}
+
+/// <summary>Cast one of your school's self-spells, or the ward (see <see cref="SkirmishSpells"/>).</summary>
+public sealed record CastOrder(string SpellId) : SkirmishOrder
+{
+    public override int Cost(SkirmishRules rules) => rules.CastCost;
+}
+
+/// <summary>Cast your school's hex at another mage.</summary>
+public sealed record HexOrder(string HexId, int TargetSeat) : SkirmishOrder
+{
+    public override int Cost(SkirmishRules rules) => rules.CastCost;
+}
+
+/// <summary>A public goal: the first mage(s) to reach it in a round score its points.</summary>
+public enum SkirmishObjective
+{
+    Regions,
+    Buildings,
+    Battles,
+    Nodes,
+    Units,
+    TerrainSet,
+}
+
+/// <summary>A drawn objective and who reached it (empty while it's still open).</summary>
+public sealed record ObjectiveState(SkirmishObjective Objective, IReadOnlyList<int> ReachedBy);
+
+/// <summary>A self-spell running on a seat, and how many more rounds it lasts (counting the current one).</summary>
+public sealed record SkirmishEffect(string SpellId, int RoundsLeft);
+
 /// <summary>A discovery card, drawn when claiming a region.</summary>
 public enum DiscoveryCard
 {

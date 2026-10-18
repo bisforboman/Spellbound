@@ -2,66 +2,12 @@ using System.Globalization;
 
 namespace Spellbound.Domain.Skirmish;
 
-/// <summary>One player's mage in a Skirmish game. Its land is the regions it holds on the board.</summary>
-public sealed class SkirmishSeat
-{
-    public SkirmishSeat(int index, string name, MagicSchool school, SkirmishRules rules)
-    {
-        Index = index;
-        Name = name;
-        School = school;
-        Gold = rules.StartingGold;
-        Mana = rules.StartingMana;
-    }
-
-    /// <summary>For deserialization.</summary>
-    private SkirmishSeat()
-    {
-        Name = string.Empty;
-    }
-
-    public int Index { get; private set; }
-
-    public string Name { get; private set; }
-
-    public MagicSchool School { get; private set; }
-
-    public int Gold { get; internal set; }
-
-    public int Mana { get; internal set; }
-
-    /// <summary>Units by <see cref="UnitDefinition.Id"/>.</summary>
-    public Dictionary<string, int> Army { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>Points from discovery cards.</summary>
-    public int CardPoints { get; internal set; }
-
-    public int Units => Army.Values.Sum();
-
-    public int AttackPower => UnitBook.All.Sum(u => Army.GetValueOrDefault(u.Id) * u.Attack);
-
-    public int UpkeepPerRound(SkirmishRules rules) =>
-        UnitBook.All.Sum(u => Army.GetValueOrDefault(u.Id) * u.GoldUpkeep) * rules.UpkeepPerRound;
-
-    /// <summary>Loses a share of every unit type; returns how many units were lost.</summary>
-    internal int LoseUnits(int percent, bool roundUp)
-    {
-        var lost = 0;
-        foreach (var (id, count) in Army.ToList())
-        {
-            var loss = roundUp ? (int)Math.Ceiling(count * percent / 100.0) : count * percent / 100;
-            Army[id] = count - loss;
-            lost += loss;
-        }
-
-        return lost;
-    }
-}
-
 /// <summary>A seat's points, by source.</summary>
-public sealed record SkirmishScore(int Regions, int RichRegions, int Buildings, int TerrainSet, int Cards)
+public sealed record SkirmishScore(int Regions, int RichRegions, int Buildings, int TerrainSet, int Cards, int Battles, int Objectives)
 {
-    public int Total => Regions + RichRegions + Buildings + TerrainSet + Cards;
+    public static SkirmishScore None { get; } = new(0, 0, 0, 0, 0, 0, 0);
+
+    public int Total => Regions + RichRegions + Buildings + TerrainSet + Cards + Battles + Objectives;
 }
 
 /// <summary>What one round did: lines everyone sees (the board is open), and each seat's own lines.</summary>
@@ -72,12 +18,13 @@ public sealed record SkirmishRoundReport(int Round, IReadOnlyList<string> Public
 /// together (docs/skirmish-design.md). Pure and deterministic: the clock, the ready-up and the time limit belong to the
 /// caller; luck comes only from the <see cref="IRandomSource"/> passed in, so the same seed and orders replay exactly.
 /// </summary>
-public sealed class SkirmishGame
+public sealed partial class SkirmishGame
 {
     private static readonly HashSet<int> NoClaims = [];
 
     private readonly List<SkirmishSeat> seats = [];
     private readonly List<DiscoveryCard> deck = [];
+    private readonly List<ObjectiveState> objectives = [];
 
     /// <summary>For deserialization, and for <see cref="Start"/>.</summary>
     private SkirmishGame()
@@ -97,6 +44,9 @@ public sealed class SkirmishGame
     /// never this, or players would know the next card.
     /// </summary>
     public IReadOnlyList<DiscoveryCard> Deck => deck;
+
+    /// <summary>The public objectives drawn for this game, and who reached each.</summary>
+    public IReadOnlyList<ObjectiveState> Objectives => objectives;
 
     /// <summary>Rounds played so far.</summary>
     public int Round { get; private set; }
@@ -134,6 +84,9 @@ public sealed class SkirmishGame
         }
 
         SkirmishBoard.Shuffle(deck, random);
+        var pool = Enum.GetValues<SkirmishObjective>().ToList();
+        SkirmishBoard.Shuffle(pool, random);
+        game.objectives.AddRange(pool.Take(rules.Objectives).Select(o => new ObjectiveState(o, [])));
         return game;
     }
 
@@ -147,19 +100,27 @@ public sealed class SkirmishGame
     public IEnumerable<SkirmishRegion> Claimable(int seat) =>
         Board.Regions.Where(r => r.Owner is null && r.Neighbours.Any(n => Board[n].Owner == seat));
 
+    /// <summary>How many actions the seat has in the next round: the usual, plus or minus what spells and hexes did.</summary>
+    public int ActionsFor(int seat) => Math.Max(0, Rules.ActionsPerRound + Seats[seat].ActionBonus);
+
     /// <summary>
     /// The chance each claimant wins a region claimed by several seats in the same round, by seat. The weight is
-    /// 10 plus the seat's attack power, so an army helps but never decides it alone.
+    /// 10 plus the seat's attack power (times School B's spell, if running), so an army helps but never decides alone.
     /// </summary>
     public IReadOnlyDictionary<int, double> ClaimOdds(IEnumerable<int> claimants)
     {
-        var weights = claimants.Distinct().ToDictionary(s => s, s => 10.0 + Seats[s].AttackPower);
+        var weights = claimants.Distinct().ToDictionary(s => s, s => (10.0 + Seats[s].AttackPower) * Seats[s].Multiplier(EffectKind.ExploreYield));
         var total = weights.Values.Sum();
         return weights.ToDictionary(w => w.Key, w => w.Value / total);
     }
 
     public SkirmishScore Score(int seat)
     {
+        if (Seats[seat].Out)
+        {
+            return SkirmishScore.None;
+        }
+
         var held = RegionsOf(seat).ToList();
         var allTerrains = Enum.GetValues<SkirmishTerrain>().All(t => held.Any(r => r.Terrain == t));
         return new SkirmishScore(
@@ -167,7 +128,9 @@ public sealed class SkirmishGame
             held.Count(r => r.Terrain is SkirmishTerrain.T3 or SkirmishTerrain.T4) * Rules.PointsPerRichRegion,
             held.Sum(r => r.Buildings) * Rules.PointsPerBuilding,
             allTerrains ? Rules.PointsForTerrainSet : 0,
-            Seats[seat].CardPoints);
+            Seats[seat].CardPoints,
+            Seats[seat].BattlesWon * Rules.PointsPerBattleWon,
+            objectives.Count(o => o.ReachedBy.Contains(seat)) * Rules.PointsPerObjective);
     }
 
     /// <summary>Seats from first to last: by score, then by gold and mana together, then by seat order.</summary>
@@ -185,10 +148,15 @@ public sealed class SkirmishGame
             return "The game is over.";
         }
 
-        var cost = orders.Sum(o => o.Cost(Rules));
-        if (cost > Rules.ActionsPerRound)
+        if (Seats[seat].Out)
         {
-            return $"Those orders need {cost} actions; you have {Rules.ActionsPerRound} a round.";
+            return "You're out of this game.";
+        }
+
+        var cost = orders.Sum(o => o.Cost(Rules));
+        if (cost > ActionsFor(seat))
+        {
+            return $"Those orders need {cost} actions; you have {ActionsFor(seat)} this round.";
         }
 
         // As the round would play them if nobody else got in the way: claims first (so building in a region claimed
@@ -205,15 +173,17 @@ public sealed class SkirmishGame
         }
 
         var gold = Seats[seat].Gold;
+        var mana = Seats[seat].Mana;
         var used = new Dictionary<int, int>();
         foreach (var order in orders.Where(o => o is not ClaimOrder))
         {
-            if (Problem(seat, order, NoClaims, claimed, gold, used) is { } problem)
+            if (Problem(seat, order, NoClaims, claimed, gold, used, mana) is { } problem)
             {
                 return problem;
             }
 
-            gold -= GoldCost(order);
+            gold -= GoldCost(seat, order);
+            mana -= ManaCost(order);
             if (order is BuildOrder build)
             {
                 used[build.RegionId] = used.GetValueOrDefault(build.RegionId) + build.Count;
@@ -224,11 +194,14 @@ public sealed class SkirmishGame
     }
 
     /// <summary>
-    /// Plays one round: every seat's orders at once, in a fixed order (claims, then builds and recruits), then income and
-    /// upkeep, then checks whether the game has ended. An order the round made impossible (someone else got the region
-    /// first) is spent and reported; nothing else changes for it. Orders past a seat's actions are ignored.
+    /// Plays one round: every seat's orders at once, in a fixed order (casts, hexes, attacks, claims, then builds and
+    /// recruits), then income and upkeep, objectives, and whether the game has ended. An order the round made impossible
+    /// (someone else got the region first) is spent and reported; nothing else changes for it. Orders past a seat's
+    /// actions are ignored. <paramref name="ready"/> are the seats whose players readied up (null: everyone); the rest
+    /// still play the orders they saved, but missing rounds makes them away, then out.
     /// </summary>
-    public SkirmishRoundReport PlayRound(IReadOnlyDictionary<int, IReadOnlyList<SkirmishOrder>> orders, IRandomSource random)
+    public SkirmishRoundReport PlayRound(
+        IReadOnlyDictionary<int, IReadOnlyList<SkirmishOrder>> orders, IRandomSource random, IReadOnlySet<int>? ready = null)
     {
         if (Ended)
         {
@@ -238,8 +211,15 @@ public sealed class SkirmishGame
         Round++;
         var shared = new List<string>();
         var mine = Seats.Select(_ => new List<string>()).ToList();
-        var accepted = Seats.Select(s => Budget(s.Index, orders.GetValueOrDefault(s.Index) ?? [], mine[s.Index])).ToList();
+        PlayAttendance(ready, shared);
+        var accepted = Seats.Select(s => s.Out ? [] : Budget(s.Index, orders.GetValueOrDefault(s.Index) ?? [], mine[s.Index])).ToList();
+        foreach (var seat in Seats)
+        {
+            seat.ActionBonus = 0; // spent; this round's spells and hexes set the next one's
+        }
 
+        PlayCasts(accepted, shared, mine, random);
+        PlayAttacks(accepted, shared, mine, random);
         PlayClaims(accepted, shared, mine, random);
         foreach (var seat in Seats)
         {
@@ -251,12 +231,14 @@ public sealed class SkirmishGame
             }
         }
 
-        foreach (var seat in Seats)
+        foreach (var seat in Seats.Where(s => !s.Out))
         {
             mine[seat.Index].AddRange(Income(seat));
         }
 
-        var leader = Seats.FirstOrDefault(s => RegionsOf(s.Index).Count() >= Rules.BoardShareToWin * Board.Regions.Count);
+        TickEffects();
+        PlayObjectives(shared);
+        var leader = Seats.FirstOrDefault(s => !s.Out && RegionsOf(s.Index).Count() >= Rules.BoardShareToWin * Board.Regions.Count);
         if (Round >= Rules.Rounds || leader is not null)
         {
             Ended = true;
@@ -269,10 +251,57 @@ public sealed class SkirmishGame
         return new SkirmishRoundReport(Round, shared, [.. mine]);
     }
 
+    /// <summary>Whether the seat has reached the objective.</summary>
+    public bool Reached(int seat, SkirmishObjective objective)
+    {
+        var held = RegionsOf(seat).ToList();
+        return objective switch
+        {
+            SkirmishObjective.Regions => held.Count >= Rules.ObjectiveRegions,
+            SkirmishObjective.Buildings => held.Sum(r => r.Buildings) >= Rules.ObjectiveBuildings,
+            SkirmishObjective.Battles => Seats[seat].BattlesWon >= Rules.ObjectiveBattles,
+            SkirmishObjective.Nodes => held.Sum(r => r.Nodes) >= Rules.ObjectiveNodes,
+            SkirmishObjective.Units => Seats[seat].Units >= Rules.ObjectiveUnits,
+            SkirmishObjective.TerrainSet => Enum.GetValues<SkirmishTerrain>().All(t => held.Any(r => r.Terrain == t)),
+            _ => false,
+        };
+    }
+
+    /// <summary>What the objective asks, for the page and the report.</summary>
+    public string Describe(SkirmishObjective objective) => objective switch
+    {
+        SkirmishObjective.Regions => $"Hold {Rules.ObjectiveRegions} regions",
+        SkirmishObjective.Buildings => $"Have {Rules.ObjectiveBuildings} buildings",
+        SkirmishObjective.Battles => $"Win {Rules.ObjectiveBattles} battles",
+        SkirmishObjective.Nodes => $"Have {Rules.ObjectiveNodes} nodes",
+        SkirmishObjective.Units => $"Have {Rules.ObjectiveUnits} units",
+        SkirmishObjective.TerrainSet => "Hold one region of every terrain",
+        _ => objective.ToString(),
+    };
+
+    /// <summary>Open objectives go to every seat that reached them this round.</summary>
+    private void PlayObjectives(List<string> shared)
+    {
+        for (var i = 0; i < objectives.Count; i++)
+        {
+            if (objectives[i].ReachedBy.Count > 0)
+            {
+                continue;
+            }
+
+            var reached = Seats.Where(s => !s.Out && Reached(s.Index, objectives[i].Objective)).Select(s => s.Index).ToList();
+            if (reached.Count > 0)
+            {
+                objectives[i] = objectives[i] with { ReachedBy = reached };
+                shared.Add($"{string.Join(" and ", reached.Select(s => Seats[s].Name))} reached \"{Describe(objectives[i].Objective)}\": +{Rules.PointsPerObjective} points.");
+            }
+        }
+    }
+
     /// <summary>The orders that fit in the seat's actions, in the order given.</summary>
     private List<SkirmishOrder> Budget(int seat, IReadOnlyList<SkirmishOrder> orders, List<string> lines)
     {
-        var left = Rules.ActionsPerRound;
+        var left = ActionsFor(seat);
         var accepted = new List<SkirmishOrder>();
         foreach (var order in orders)
         {
@@ -383,10 +412,12 @@ public sealed class SkirmishGame
         IReadOnlySet<int> claimedThisRound,
         IReadOnlySet<int>? willHold = null,
         int? gold = null,
-        IReadOnlyDictionary<int, int>? slotsUsed = null)
+        IReadOnlyDictionary<int, int>? slotsUsed = null,
+        int? mana = null)
     {
         var who = Seats[seat];
         var available = gold ?? who.Gold;
+        var manaLeft = mana ?? who.Mana;
         switch (order)
         {
             case ClaimOrder claim:
@@ -426,7 +457,7 @@ public sealed class SkirmishGame
                     return $"{Board[build.RegionId].Name} has room for {room} more.";
                 }
 
-                var cost = GoldCost(build);
+                var cost = GoldCost(seat, build);
                 return available < cost ? $"It costs {N(cost)} gold, but you'd have {N(available)}." : null;
 
             case RecruitOrder recruit:
@@ -440,17 +471,80 @@ public sealed class SkirmishGame
                     return $"Recruit 1–{Rules.UnitsPerOrder} at a time.";
                 }
 
-                var price = GoldCost(recruit);
+                var price = GoldCost(seat, recruit);
                 return available < price ? $"It costs {N(price)} gold, but you'd have {N(available)}." : null;
+
+            case AttackOrder attack:
+                if (!Rules.Attacks)
+                {
+                    return "Attacks are off in this game.";
+                }
+
+                if (attack.RegionId < 0 || attack.RegionId >= Board.Regions.Count
+                    || Board[attack.RegionId].Owner is not { } defender || defender == seat)
+                {
+                    return "You can only attack a region another mage holds.";
+                }
+
+                if (!Board[attack.RegionId].Neighbours.Any(n => Board[n].Owner == seat))
+                {
+                    return $"{Board[attack.RegionId].Name} isn't next to one of your regions.";
+                }
+
+                if (Rules.HomeIsSafe && Board.Homes[defender] == attack.RegionId)
+                {
+                    return $"{Board[attack.RegionId].Name} is {Seats[defender].Name}'s home: homes can't be attacked.";
+                }
+
+                if (RegionsOf(defender).Count() * 100 < RegionsOf(seat).Count() * Rules.AttackRangePercent)
+                {
+                    return $"{Seats[defender].Name} is too small to attack: they need at least {Rules.AttackRangePercent}% of your regions.";
+                }
+
+                return who.AttackPower == 0 ? "You have no army to attack with." : null;
+
+            case CastOrder cast:
+                if (SpellBook.Find(cast.SpellId) is not { } spell || (spell.School is { } school && school != who.School))
+                {
+                    return "You don't know that spell.";
+                }
+
+                var spellCost = SkirmishSpells.ManaCost(spell, Rules);
+                return manaLeft < spellCost ? $"It costs {N(spellCost)} mana, but you'd have {N(manaLeft)}." : null;
+
+            case HexOrder hex:
+                if (!Rules.Hexes)
+                {
+                    return "Hexes are off in this game.";
+                }
+
+                if (SpellBook.FindHex(hex.HexId) is not { } known || known.School != who.School)
+                {
+                    return "You don't know that hex.";
+                }
+
+                if (hex.TargetSeat < 0 || hex.TargetSeat >= Seats.Count || hex.TargetSeat == seat || Seats[hex.TargetSeat].Out)
+                {
+                    return "Choose another mage still in the game.";
+                }
+
+                return manaLeft < Rules.HexMana ? $"It costs {N(Rules.HexMana)} mana, but you'd have {N(manaLeft)}." : null;
 
             default:
                 return "That order isn't known.";
         }
     }
 
-    private int GoldCost(SkirmishOrder order) => order switch
+    private int ManaCost(SkirmishOrder order) => order switch
     {
-        BuildOrder b => b.Count * Rules.BuildingGoldCost,
+        CastOrder c when SpellBook.Find(c.SpellId) is { } spell => SkirmishSpells.ManaCost(spell, Rules),
+        HexOrder => Rules.HexMana,
+        _ => 0,
+    };
+
+    private int GoldCost(int seat, SkirmishOrder order) => order switch
+    {
+        BuildOrder b => (int)Math.Ceiling(b.Count * Rules.BuildingGoldCost * Seats[seat].Multiplier(EffectKind.BuildCost)),
         RecruitOrder r when UnitBook.Find(r.UnitId) is { } unit => r.Count * unit.GoldCost,
         _ => 0,
     };
@@ -461,7 +555,7 @@ public sealed class SkirmishGame
         {
             case BuildOrder build:
                 var region = Board[build.RegionId];
-                var cost = build.Count * Rules.BuildingGoldCost;
+                var cost = GoldCost(seat.Index, build);
                 seat.Gold -= cost;
                 if (build.Type == BuildingType.Node)
                 {
@@ -490,9 +584,11 @@ public sealed class SkirmishGame
     {
         var lines = new List<string>();
         var held = RegionsOf(seat.Index).ToList();
-        var gold = held.Sum(r => Rules.GoldPerRegion
-                                 + (int)(r.Towns * Rules.GoldPerTown * (r.Terrain == SkirmishTerrain.T2 ? Rules.Terrain2TownGold : 1)));
-        var mana = held.Sum(r => (int)(r.Nodes * Rules.ManaPerNode * (r.Terrain == SkirmishTerrain.T3 ? Rules.Terrain3NodeMana : 1)));
+        var gold = (int)(held.Sum(r => Rules.GoldPerRegion
+                                       + (r.Towns * Rules.GoldPerTown * (r.Terrain == SkirmishTerrain.T2 ? Rules.Terrain2TownGold : 1)))
+                         * seat.Multiplier(EffectKind.GoldIncome));
+        var mana = (int)(held.Sum(r => r.Nodes * Rules.ManaPerNode * (r.Terrain == SkirmishTerrain.T3 ? Rules.Terrain3NodeMana : 1))
+                         * seat.Multiplier(EffectKind.ManaIncome));
         seat.Gold += gold;
         seat.Mana += mana;
         lines.Add($"Your regions brought in {N(gold)} gold and {N(mana)} mana.");
@@ -519,6 +615,10 @@ public sealed class SkirmishGame
         ClaimOrder => "Claim",
         BuildOrder b => $"Build {b.Count} {(b.Type == BuildingType.Node ? "node" : "town")}{(b.Count == 1 ? "" : "s")}",
         RecruitOrder r => $"Recruit {r.Count} {UnitBook.Find(r.UnitId)?.Name ?? r.UnitId}",
+        AttackOrder a when a.RegionId >= 0 && a.RegionId < Board.Regions.Count => $"Attack {Board[a.RegionId].Name}",
+        AttackOrder => "Attack",
+        CastOrder c => $"Cast {SpellBook.Find(c.SpellId)?.Name ?? c.SpellId}",
+        HexOrder h => $"Cast {SpellBook.FindHex(h.HexId)?.Name ?? h.HexId}",
         _ => order.GetType().Name,
     };
 

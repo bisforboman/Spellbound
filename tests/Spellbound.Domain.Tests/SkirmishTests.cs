@@ -50,7 +50,7 @@ public sealed class SkirmishBoardTests
 public sealed class SkirmishGameTests
 {
     /// <summary>Two seats on a ring of four regions and no extra links: homes 0 and 2, and 1 and 3 between them.</summary>
-    private static readonly SkirmishRules Small = SkirmishRules.Default with { RegionsPerPlayer = 2, ExtraLinks = 0 };
+    private static readonly SkirmishRules Small = SkirmishRules.Default with { RegionsPerPlayer = 2, ExtraLinks = 0, BoardShareToWin = 0.5 };
 
     /// <summary>Two seats on a ring of six: homes 0 and 3; 1 and 5 are next to seat 0, 2 and 4 next to seat 1.</summary>
     private static readonly SkirmishRules Six = SkirmishRules.Default with { RegionsPerPlayer = 3, ExtraLinks = 0 };
@@ -204,7 +204,8 @@ public sealed class SkirmishGameTests
     [Fact]
     public void Orders_the_check_accepts_play_out_when_nobody_gets_in_the_way()
     {
-        for (var seed = 0; seed < 200; seed++)
+        var checkedOrders = 0;
+        for (var seed = 0; seed < 400; seed++)
         {
             var game = SkirmishGame.Start([("A", MagicSchool.A), ("B", MagicSchool.B), ("C", MagicSchool.C)], SkirmishRules.Default, new SeededRandom(seed));
             var orders = RandomOrders(game, 0, new Random(seed));
@@ -216,7 +217,10 @@ public sealed class SkirmishGameTests
             var report = game.PlayRound(new Dictionary<int, IReadOnlyList<SkirmishOrder>> { [0] = orders }, new SeededRandom(seed));
 
             Assert.DoesNotContain(report.BySeat[0], l => l.Contains("not done", StringComparison.Ordinal));
+            checkedOrders++;
         }
+
+        Assert.True(checkedOrders > 50, $"only {checkedOrders} order sets passed the check");
     }
 
     [Fact]
@@ -299,8 +303,8 @@ public sealed class SkirmishGameTests
 
         var score = game.Score(0);
 
-        Assert.Equal(new SkirmishScore(3, 0, 2, 0, 0), score); // one T1 region with a node and a town
-        Assert.Equal(5, score.Total);
+        Assert.Equal(new SkirmishScore(3, 0, 4, 0, 0, 0, 0), score); // one T1 region with a node and a town
+        Assert.Equal(7, score.Total);
         Assert.Equal(SkirmishTerrain.T1, game.Board[home].Terrain);
     }
 
@@ -327,18 +331,25 @@ public sealed class SkirmishGameTests
         Assert.Equal(Play(), Play());
     }
 
-    /// <summary>A few plausible orders for the seat: claims next to its land, a build at home, a recruit.</summary>
+    /// <summary>A few plausible orders for the seat: claims, builds, recruits, attacks, spells and hexes.</summary>
     private static List<SkirmishOrder> RandomOrders(SkirmishGame game, int seat, Random random)
     {
         var orders = new List<SkirmishOrder>();
         var claimable = game.Claimable(seat).ToList();
+        var attackable = game.Board.Regions
+            .Where(r => r.Owner is { } o && o != seat && r.Neighbours.Any(n => game.Board[n].Owner == seat)).ToList();
+        var school = game.Seats[seat].School;
+        var others = game.Seats.Where(s => s.Index != seat && !s.Out).ToList();
         for (var i = 0; i < 3; i++)
         {
-            orders.Add(random.Next(3) switch
+            orders.Add(random.Next(6) switch
             {
                 0 when claimable.Count > 0 => new ClaimOrder(claimable[random.Next(claimable.Count)].Id),
-                1 => new BuildOrder(game.RegionsOf(seat).First().Id, random.Next(2) == 0 ? BuildingType.Node : BuildingType.Town, 1 + random.Next(2)),
-                _ => new RecruitOrder(UnitBook.All[random.Next(3)].Id, 1 + random.Next(10)),
+                1 when game.RegionsOf(seat).Any() => new BuildOrder(game.RegionsOf(seat).First().Id, random.Next(2) == 0 ? BuildingType.Node : BuildingType.Town, 1 + random.Next(2)),
+                2 when attackable.Count > 0 => new AttackOrder(attackable[random.Next(attackable.Count)].Id),
+                3 => new CastOrder(random.Next(2) == 0 ? "ward" : SpellBook.ForSchool(school).First(sp => sp.School == school).Id),
+                4 when others.Count > 0 => new HexOrder(SpellBook.HexesForSchool(school).First().Id, others[random.Next(others.Count)].Index),
+                _ => new RecruitOrder(UnitBook.All[random.Next(3)].Id, 1 + random.Next(20)),
             });
         }
 
@@ -351,7 +362,7 @@ public sealed class SkirmishGameTests
 
     private static string Snapshot(SkirmishGame game) =>
         string.Join(';', game.Board.Regions.Select(r => $"{r.Owner}/{r.Nodes}/{r.Towns}"))
-        + "|" + string.Join(';', game.Seats.Select(s => $"{s.Gold}/{s.Mana}/{s.Units}/{s.CardPoints}"))
+        + "|" + string.Join(';', game.Seats.Select(s => $"{s.Gold}/{s.Mana}/{s.Units}/{s.CardPoints}/{s.BattlesWon}/{s.ActionBonus}/{s.Effects.Count}/{s.Out}"))
         + "|" + game.Deck.Count;
 
     private sealed class FixedRandom(double value) : IRandomSource

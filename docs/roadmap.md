@@ -94,9 +94,9 @@ first, as the beta is with friends)
 - [x] Rules in the domain, part A, with tests: the board, seats, claim, build and recruit orders, contested claims, the
   discovery deck, income and upkeep, scoring, the end; playing a round from every player's orders and a seeded random
   source
-- [ ] Rules in the domain, part B: casts, hexes, attacks, dropouts, public objectives
-- [x] A simulation in `tools/` ([results](skirmish-sim-results.md)); tuning waits for part B
-- [ ] Tune the numbers until it plays well
+- [x] Rules in the domain, part B: casts, hexes, attacks, dropouts, public objectives, the range rule
+- [x] A simulation in `tools/` ([results](skirmish-sim-results.md)), and a first tuning from it
+- [ ] Tune the numbers until it plays well: in the friends beta (bots can't tell whether people find it open)
 - [ ] Rounds with a ready-up and a time limit; the server plays a round when all are ready or time is up
 - [ ] Reminders by web push (when everyone else is ready, and when time is running out)
 - [ ] The board, orders and scoring pages, at 360 px, text-first

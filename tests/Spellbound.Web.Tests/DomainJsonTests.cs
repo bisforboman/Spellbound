@@ -38,8 +38,10 @@ public sealed class DomainJsonTests
             new Dictionary<int, IReadOnlyList<SkirmishOrder>>
             {
                 [0] = [new ClaimOrder(claim), new BuildOrder(home, BuildingType.Town, 2), new RecruitOrder("unit-3", 2)],
+                [1] = [new CastOrder("self-b"), new HexOrder("hex-b", 2)],
             },
-            new SeededRandom(4));
+            new SeededRandom(4),
+            ready: new HashSet<int> { 0, 1 }); // Ada missed the round
 
         var json = DomainJson.Serialize(game);
         var copy = DomainJson.Deserialize<SkirmishGame>(JsonNode.Parse(json)!.ToJsonString());
@@ -52,6 +54,10 @@ public sealed class DomainJsonTests
         Assert.Equal(game.Deck, copy.Deck);
         Assert.Equal(2, copy.Seats[0].Army["UNIT-3"]); // the case-insensitive comparer survived
         Assert.Equal(game.Score(0), copy.Score(0));
+        Assert.Equal(game.Seats[1].Effects, copy.Seats[1].Effects);
+        Assert.Equal(1, copy.Seats[2].MissedInARow);
+        Assert.Equal(game.Objectives.Select(o => o.Objective), copy.Objectives.Select(o => o.Objective));
+        Assert.Equal(game.Seats.Select(s => s.ActionBonus), copy.Seats.Select(s => s.ActionBonus));
 
         // And it plays on exactly as the original does.
         var next = new Dictionary<int, IReadOnlyList<SkirmishOrder>> { [1] = [new ClaimOrder(game.Claimable(1).First().Id)] };
