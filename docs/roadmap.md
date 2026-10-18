@@ -98,8 +98,9 @@ The Realm reworked to the owner's research ([design](mageborn-design.md); what e
 
 **Each item is one PR**, done when: domain tests cover the happy path and the "changes nothing on failure" case; the
 Realm simulation is rerun where numbers move; new pages and actions have a playtest step; `game-design.md` and the
-"What's built" list in `mageborn-design.md` are updated. **Sizes:** S a day or less, M a few days, L a week or more.
-"Needs" names the items that must come first.
+"What's built" list in `mageborn-design.md` are updated; and the privacy notice is updated where what's stored, or
+who sees it, changes. **Sizes:** S a day or less, M a few days, L a week or more; an L item is split into PRs when
+it starts. "Needs" names the items that must come first.
 
 ### Foundations
 - [x] The design brought into the repo, decisions recorded, Skirmish removed
@@ -142,7 +143,8 @@ Realm simulation is rerun where numbers move; new pages and actions have a playt
   strays; the research's second harness. Needs W1
 - [ ] **W3. Stacked battles** (L): line-up, pairing, initiative, fatigue and counters; deterministic. Needs W1
 - [ ] **W4. AI mages** (M): the simulation's bots play as live, clearly marked mages, one background job for all of
-  them, so a small server has targets in range. Needs W3 (decided: right after battles)
+  them, so a small server has targets in range. Needs W3 (decided: right after battles). It's the first background
+  job that acts for players: amend CLAUDE.md's background-job rule in the same PR
 - [ ] **W5. War Table** (M): both line-ups, the pairing and an outcome band before you strike; scouting ±15%,
   blind to Wards. Needs W3
 - [ ] **W6. Strike kinds** (M): Assault, Siege and Raid. Needs W3, E2 (forts)
