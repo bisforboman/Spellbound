@@ -1,0 +1,26 @@
+@* The name and school a player takes into a Skirmish, when setting one up or joining. *@
+<label class="form-label" for="skirmish-name">Your mage's name</label>
+<input id="skirmish-name" class="form-control mb-3" maxlength="@Mage.MaxNameLength" autocomplete="off"
+       value="@Name" @oninput="e => NameChanged.InvokeAsync((string?)e.Value ?? string.Empty)" />
+
+<label class="form-label" for="skirmish-school">School</label>
+<select id="skirmish-school" class="form-select mb-3" value="@School" @onchange="e => SchoolChanged.InvokeAsync(Enum.Parse<MagicSchool>((string)e.Value!))">
+    @foreach (var school in Enum.GetValues<MagicSchool>())
+    {
+        <option value="@school">@school.DisplayName(): strong against @school.StrongAgainst().DisplayName()</option>
+    }
+</select>
+
+@code {
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> NameChanged { get; set; }
+
+    [Parameter]
+    public MagicSchool School { get; set; }
+
+    [Parameter]
+    public EventCallback<MagicSchool> SchoolChanged { get; set; }
+}

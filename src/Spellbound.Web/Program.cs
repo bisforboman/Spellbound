@@ -18,6 +18,8 @@ builder.Services.AddSingleton(builder.Configuration.GetSection("GameRules").Get<
 builder.Services.AddSingleton<IRandomSource, SharedRandom>();
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<SkirmishService>();
+builder.Services.AddSingleton(builder.Configuration.GetSection("Skirmish").Get<SkirmishOptions>() ?? new SkirmishOptions());
+builder.Services.AddSingleton<SkirmishLobbyService>();
 builder.Services.AddHostedService<SkirmishKeeper>();
 builder.Services.AddSingleton<IGameSchema, SpellboundSchema>();
 builder.Services.AddSingleton<SpellboundHost>();

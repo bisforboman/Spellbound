@@ -369,4 +369,14 @@ public sealed class SkirmishGameTests
     {
         public double NextDouble() => value;
     }
+
+    [Fact]
+    public void A_creator_chooses_switches_within_their_limits()
+    {
+        Assert.Null(SkirmishRules.Default.CreatorProblem());
+        Assert.Null((SkirmishRules.Default with { Players = 2, Rounds = 24, ActionsPerRound = 5 }).CreatorProblem());
+        Assert.Equal("A Skirmish has 2–6 players.", (SkirmishRules.Default with { Players = 1 }).CreatorProblem());
+        Assert.Equal("A Skirmish lasts 4–24 rounds.", (SkirmishRules.Default with { Rounds = 3 }).CreatorProblem());
+        Assert.Equal("Players get 2–5 actions a round.", (SkirmishRules.Default with { ActionsPerRound = 6 }).CreatorProblem());
+    }
 }

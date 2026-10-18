@@ -84,8 +84,9 @@ Goal: a server runs many games, each with its own mode and rules. In two parts, 
 
 **Part 2: creating and joining** (built with Skirmish, since until then there is nothing new to create; invite codes
 first, as the beta is with friends)
-- [ ] Create a game (mode, players, switches within limits, public or private) with a cap per player
-- [ ] Join from the public list, or with a code or link; the game page lists its rules
+- [x] Create a game (mode, players, switches within limits, public or private) with a cap per player (Skirmish; the
+  Realm is one game the server runs)
+- [x] Join from the public list, or with a code or link; the game page lists its rules
 - [ ] Multi-account signals per game on the admin page
 - [ ] Page addresses that name a game (`/games/{id}/…` or similar), once Skirmish pages exist beside the Realm's
 
@@ -98,8 +99,8 @@ first, as the beta is with friends)
 - [x] A simulation in `tools/` ([results](skirmish-sim-results.md)), and a first tuning from it
 - [ ] Tune the numbers until it plays well: in the friends beta (bots can't tell whether people find it open)
 - [x] Rounds with a ready-up and a time limit; the server plays a round when all are ready or time is up
-- [x] Storage and a service for Skirmish games (seats, saved orders, a record of every round); the admin starts games
-  from players' emails until part 2's create and join
+- [x] Storage and a service for Skirmish games (seats, saved orders, a record of every round); players set up and join
+  games with invite codes (the admin can still start one from players' emails)
 - [x] Web push notifications: turn them on per device on the Account page, with a test button
 - [x] Skirmish reminders by web push (when everyone else is ready, when time is running out, when a round played)
 - [x] The board, orders and scoring pages, at 360 px, text-first (one game page, and Skirmishes on the Games page)

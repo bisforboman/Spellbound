@@ -8,6 +8,14 @@ public sealed record SkirmishRules
 {
     public static SkirmishRules Default { get; } = new();
 
+    // What a game's creator may choose
+    public const int MinPlayers = 2;
+    public const int MaxPlayers = 6;
+    public const int MinRounds = 4;
+    public const int MaxRounds = 24;
+    public const int MinActions = 2;
+    public const int MaxActions = 5;
+
     // A game (switches)
     public int Players { get; init; } = 4;
     public int Rounds { get; init; } = 12;
@@ -148,4 +156,11 @@ public sealed record SkirmishRules
 
     /// <summary>The game ends early when one mage holds at least this share of the board after a round.</summary>
     public double BoardShareToWin { get; init; } = 0.75;
+
+    /// <summary>Why a creator can't start a game with these switches, or null: each one must be within its limits.</summary>
+    public string? CreatorProblem() =>
+        Players is < MinPlayers or > MaxPlayers ? $"A Skirmish has {MinPlayers}–{MaxPlayers} players."
+        : Rounds is < MinRounds or > MaxRounds ? $"A Skirmish lasts {MinRounds}–{MaxRounds} rounds."
+        : ActionsPerRound is < MinActions or > MaxActions ? $"Players get {MinActions}–{MaxActions} actions a round."
+        : null;
 }

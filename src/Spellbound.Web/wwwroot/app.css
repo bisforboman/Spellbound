@@ -215,3 +215,9 @@ html, body {
         padding: 0.5rem;
     }
 
+
+.invite-code {
+    font-family: monospace;
+    font-size: 1.25rem;
+    letter-spacing: 0.1em;
+}

@@ -139,7 +139,8 @@ updates them when it starts. Players see a short reconnect while the app restart
 - **Health**: `https://your.domain/healthz` answers `Healthy` while the app is up.
 - **Change a setting** (`GameRules__...`, admins): add it to the `environment` list of `app` in
   `docker-compose.yml` or to `.env`, then `docker compose up -d`. Game rules apply from the **next round**: a round keeps
-  the rules it started with. The admin page's Game rules section shows both where they differ.
+  the rules it started with. The admin page's Game rules section shows both where they differ. `Skirmish__MaxGamesPerPlayer`
+  (default 3) is how many Skirmishes a player can be in at once, counting games waiting for players.
 - **Sign-in problems** are Google's to solve (a forgotten Google password, a lost phone); the game has nothing to reset.
   A player who loses their Google account loses their game account with it.
 - **PostgreSQL version**: the compose file pins `postgres:16`, the same major version as the backup tools in the app

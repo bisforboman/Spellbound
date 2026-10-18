@@ -19,6 +19,7 @@ public sealed record SkirmishView(
     int Players,
     int Planning,
     DateTimeOffset RoundEndsAt,
+    TimeSpan RoundLength,
     SkirmishRoundReport? LastReport);
 
 /// <summary>One of the player's Skirmish games, for the Games page.</summary>
@@ -44,11 +45,21 @@ public sealed class SkirmishService(
     public DateTimeOffset Now => time.GetUtcNow() is var now ? now.AddTicks(-(now.Ticks % 10)) : default;
 
     /// <summary>
-    /// Starts a game for these accounts, in this seat order, at once. For now only the admin creates games (the
-    /// interim before players create and join their own, roadmap M5 part 2).
+    /// Starts a game for these accounts, in this seat order, at once: the admin's shortcut. Players set up their own
+    /// games through <see cref="SkirmishLobbyService"/>.
     /// </summary>
     public async Task<long> CreateAsync(
         IReadOnlyList<(string OwnerId, string Name, MagicSchool School)> players, SkirmishRules rules, TimeSpan roundLength)
+    {
+        await using var db = await database.BeginAsync();
+        var hosted = await StartAsync(db, players, rules, roundLength);
+        await db.CommitAsync();
+        return hosted.Id;
+    }
+
+    /// <summary>Starts a game in the caller's transaction, which commits it (a lobby starts its game as the last player joins).</summary>
+    internal async Task<HostedGame> StartAsync(
+        DbSession db, IReadOnlyList<(string OwnerId, string Name, MagicSchool School)> players, SkirmishRules rules, TimeSpan roundLength)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(players.Count, 2);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(roundLength, TimeSpan.Zero);
@@ -56,7 +67,6 @@ public sealed class SkirmishService(
         var seed = (int)(random.NextDouble() * int.MaxValue);
         var game = SkirmishGame.Start([.. players.Select(p => (p.Name, p.School))], rules, new SeededRandom(seed));
 
-        await using var db = await database.BeginAsync();
         await db.LockGamesOfModeAsync(Mode);
         var hosted = await db.InsertGameAsync(new NewGame(Mode, roundLength * rules.Rounds, DomainJson.Serialize(rules)), now);
         await db.ExecuteAsync(
@@ -68,9 +78,8 @@ public sealed class SkirmishService(
                 "INSERT INTO skirmish_seats (game_id, seat, owner_id) VALUES ($1, $2, $3)", hosted.Id, seat, players[seat].OwnerId);
         }
 
-        await db.CommitAsync();
-        logger.LogInformation("Skirmish {Number} started with {Players} players.", hosted.Round.Number, players.Count);
-        return hosted.Id;
+        logger.LogInformation("Skirmish {Number} starts with {Players} players.", hosted.Round.Number, players.Count);
+        return hosted;
     }
 
     /// <summary>
@@ -163,7 +172,7 @@ public sealed class SkirmishService(
         var playing = Playing(row, await db.LoadBansAsync());
         return new SkirmishView(
             gameId, row.Number, row.Game, seat.Seat, seat.Orders, seat.Ready, playing.Count(s => s.Ready),
-            playing.Count, row.Game.Round + 1, row.RoundEndsAt, report);
+            playing.Count, row.Game.Round + 1, row.RoundEndsAt, row.RoundLength, report);
     }
 
     /// <summary>
