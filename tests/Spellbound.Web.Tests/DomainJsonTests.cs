@@ -27,6 +27,18 @@ public sealed class DomainJsonTests
     }
 
     [Fact]
+    public void Rules_round_trip_through_a_game_row_with_the_same_hash()
+    {
+        var json = DomainJson.Serialize(Rules);
+        var stored = JsonNode.Parse(json)!.ToJsonString(); // PostgreSQL reformats jsonb; only the values must survive
+        var copy = DomainJson.Deserialize<GameRules>(stored);
+
+        Assert.Equal(Rules, copy);
+        Assert.Equal(ActionLog.RulesHash(Rules), ActionLog.RulesHash(copy));
+        Assert.Equal(Rules.RoundLength, copy.RoundLength);
+    }
+
+    [Fact]
     public void A_field_missing_from_older_json_keeps_its_default()
     {
         var json = JsonNode.Parse(DomainJson.Serialize(BusyMage()))!.AsObject();

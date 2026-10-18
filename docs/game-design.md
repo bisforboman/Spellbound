@@ -19,7 +19,7 @@ Design goals:
   out, or with ways to recover. Odds are shown before the player confirms, like costs.
 - **Art later.** Text-first until the core is fun; art can be reconsidered then.
 
-## Modes (decided 18 Oct 2026, not built yet)
+## Modes (decided 18 Oct 2026; the games list exists, Skirmish is not built yet)
 
 Spellbound has two modes that share one core (mages, schools, spells, turns, armies):
 
@@ -174,7 +174,8 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 
 ## Rounds (milestone 3)
 
-- A round lasts **4 weeks** (`RoundLength`). The first one starts when the server first starts.
+- A round lasts **4 weeks** (`RoundLength`). The first one starts when the server first starts. Each round is a game
+  in the Games list, and keeps the rules it started with; changed settings apply from the next round.
 - When it ends, actions stop. Within a minute the server records the **hall of fame**: the top 10 mages by land and
   by networth, with their school. Then the next round starts right away.
 - **Everything resets:** every player creates a new mage with the starting values, and news starts empty.

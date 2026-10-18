@@ -1,4 +1,4 @@
-@page "/"
+@page "/realm"
 @using Spellbound.Web.Data
 @inherits GamePage
 
@@ -17,7 +17,7 @@
         </p>
     }
 
-    <TurnsBar Mage="Mage" />
+    <TurnsBar Mage="Mage" Rules="Rules" />
 
     @if (Mage.IsProtected(Game.Now, Rules))
     {

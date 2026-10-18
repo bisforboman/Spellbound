@@ -19,6 +19,7 @@ public sealed class AdminService(
     BackupKeeper backups,
     AccountSignals signals,
     IPlayerSummaries summaries,
+    IRoundLifecycle game,
     TimeProvider time)
 {
     public const int MaxReasonLength = 200;
@@ -26,7 +27,7 @@ public sealed class AdminService(
     public async Task<Round?> GetRoundAsync()
     {
         await using var db = await database.BeginAsync();
-        return await db.LoadCurrentRoundAsync();
+        return (await db.LoadRunningGameAsync(game.AlwaysOnMode))?.Round;
     }
 
     /// <summary>The current round's players (banned or not), then banned players who don't play this round.</summary>
@@ -93,13 +94,13 @@ public sealed class AdminService(
     /// <summary>Moves the current round's end. An end at or before now ends the round at once and starts the next.</summary>
     public async Task<string> ChangeRoundEndAsync(DateTimeOffset endsAt)
     {
-        var before = await rounds.TickAsync();
+        var before = (await rounds.TickAsync()).Round;
         if (endsAt <= before.StartsAt)
         {
             return $"Round {before.Number} started {before.StartsAt:u}; its end must be after that.";
         }
 
-        var after = await rounds.ChangeEndAsync(endsAt);
+        var after = (await rounds.ChangeEndAsync(endsAt)).Round;
         return after.Number == before.Number
             ? $"Round {after.Number} now ends {after.EndsAt:u}."
             : $"Round {before.Number} has ended and round {after.Number} has started.";
@@ -149,8 +150,8 @@ public sealed class AdminService(
     }
 
     private async Task<IReadOnlyDictionary<string, PlayerSummary>> RoundPlayersAsync(DbSession db) =>
-        await db.LoadCurrentRoundAsync() is { } round
-            ? await summaries.GetAsync(db, round)
+        await db.LoadRunningGameAsync(game.AlwaysOnMode) is { } running
+            ? await summaries.GetAsync(db, running)
             : new Dictionary<string, PlayerSummary>();
 
     private async Task<string> EmailOrIdAsync(string ownerId)

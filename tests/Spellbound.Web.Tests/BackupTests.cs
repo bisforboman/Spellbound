@@ -49,7 +49,7 @@ public sealed class BackupTests : TestDatabase
         var fresh = CreateDatabase(); // empty: no migration has run
         Assert.True(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
         Assert.Equal("Merlin", (await WithDbAsync(db => db.LoadMageAsync(1, "account-1"), fresh))!.Name);
-        Assert.NotNull(await WithDbAsync(db => db.LoadCurrentRoundAsync(), fresh));
+        Assert.NotNull(await WithDbAsync(db => db.LoadRunningGameAsync(SpellboundHost.RealmMode), fresh));
         Assert.Empty(await SchemaMigrator.MigrateAsync(fresh, [HostStore.Schema, new SpellboundSchema().Schema])); // up to date
 
         // Once there's data, a restore is refused, so a leftover setting can't overwrite a live game.
@@ -106,7 +106,8 @@ public sealed class BackupTests : TestDatabase
     {
         var round = Round.First(T0, GameRules.Default.RoundLength);
         await db.ExecuteAsync(
-            "INSERT INTO current_round (id, number, starts_at, ends_at) VALUES (1, $1, $2, $3)", round.Number, round.StartsAt, round.EndsAt);
+            "INSERT INTO games (id, mode, number, starts_at, ends_at, rules, created_at) VALUES (1, $1, $2, $3, $4, '{}', $3)",
+            SpellboundHost.RealmMode, round.Number, round.StartsAt, round.EndsAt);
         return await db.InsertMageAsync(1, Mage.Create("account-1", "Merlin", MagicSchool.Tidal, T0, GameRules.Default));
     });
 

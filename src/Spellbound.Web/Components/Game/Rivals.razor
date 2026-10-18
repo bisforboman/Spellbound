@@ -17,7 +17,7 @@
         {
             var you = rival.Id == Mage.Id;
             <li>
-                <a class="rank-row @(you ? "you" : null)" href="@(you ? "" : $"rivals/{rival.Id}")">
+                <a class="rank-row @(you ? "you" : null)" href="@(you ? "realm" : $"rivals/{rival.Id}")">
                     <span class="rank">@rank</span>
                     <span class="who">
                         <b>@rival.Name</b>

@@ -41,13 +41,13 @@ public sealed record LoggedAction(
 /// </summary>
 public static class ActionLog
 {
-    /// <summary>A short fingerprint of the rules in force. They can be tuned mid-round; a replay must use the same ones.</summary>
+    /// <summary>A short fingerprint of the rules in force (each game's own); a replay must use the same ones.</summary>
     public static string RulesHash(GameRules rules) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(DomainJson.Serialize(rules))))[..16];
 
     public static Task WriteAsync(
         this DbSession db,
-        int round,
+        long gameId,
         Mage mage,
         DateTimeOffset at,
         string action,
@@ -55,15 +55,14 @@ public static class ActionLog
         IReadOnlyList<double> draws,
         ActionReport report,
         GameRules rules,
-        string rulesHash,
         Mage? target = null,
         IReadOnlyList<string>? targetLines = null) =>
         db.ExecuteAsync(
             """
-            INSERT INTO actions (round, owner_id, at, action, target_owner_id, inputs, draws, result, state, target_state, rules_hash)
+            INSERT INTO actions (game_id, owner_id, at, action, target_owner_id, inputs, draws, result, state, target_state, rules_hash)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             """,
-            round,
+            gameId,
             mage.OwnerId,
             at,
             action,
@@ -73,16 +72,16 @@ public static class ActionLog
             new Jsonb(DomainJson.Serialize(new { lines = report.Lines, targetLines })),
             new Jsonb(DomainJson.Serialize(MageState.Of(mage, rules))),
             target is null ? null : new Jsonb(DomainJson.Serialize(MageState.Of(target, rules))),
-            rulesHash);
+            RulesHash(rules));
 
-    /// <summary>A player's latest actions in a round, newest first, including attacks and hexes against them.</summary>
-    public static Task<List<LoggedAction>> LoadAsync(this DbSession db, int round, string ownerId, int limit) =>
+    /// <summary>A player's latest actions in a game, newest first, including attacks and hexes against them.</summary>
+    public static Task<List<LoggedAction>> LoadAsync(this DbSession db, long gameId, string ownerId, int limit) =>
         db.QueryAsync(
             """
             SELECT at, action, owner_id <> $2, CASE WHEN owner_id = $2 THEN target_owner_id ELSE owner_id END, inputs::text,
                    coalesce(nullif(CASE WHEN owner_id = $2 THEN result -> 'lines' ELSE result -> 'targetLines' END, 'null'), '[]')::text
             FROM actions
-            WHERE round = $1 AND (owner_id = $2 OR target_owner_id = $2)
+            WHERE game_id = $1 AND (owner_id = $2 OR target_owner_id = $2)
             ORDER BY at DESC, id DESC
             LIMIT $3
             """,
@@ -93,5 +92,5 @@ public static class ActionLog
                 r.IsDBNull(3) ? null : r.GetString(3),
                 r.GetString(4),
                 DomainJson.Deserialize<List<string>>(r.GetString(5))),
-            round, ownerId, limit);
+            gameId, ownerId, limit);
 }

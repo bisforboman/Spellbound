@@ -1,7 +1,7 @@
 @inherits LayoutComponentBase
 
 <header class="top-bar">
-    <a class="brand" href="">Spellbound</a>
+    <a class="brand" href="" title="Your games">Spellbound</a>
     <AuthorizeView>
         <Authorized>
             <AuthorizeView Policy="@AdminPolicy.Name" Context="admin">
@@ -27,8 +27,8 @@
 </main>
 
 <AuthorizeView>
-    <nav class="bottom-nav" aria-label="Game">
-        <NavLink href="" Match="NavLinkMatch.All">Home</NavLink>
+    <nav class="bottom-nav" aria-label="Realm">
+        <NavLink href="realm">Realm</NavLink>
         <NavLink href="explore">Explore</NavLink>
         <NavLink href="build">Build</NavLink>
         <NavLink href="magic">Magic</NavLink>

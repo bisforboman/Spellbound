@@ -1,0 +1,57 @@
+@page "/"
+@using System.Globalization
+@using System.Security.Claims
+@inject GameService Game
+
+@* The first page after signing in: the player's games. For now that's the current Realm round; Skirmishes join the list
+   later (roadmap M5, part 2). Not a GamePage: a player without a mage belongs here too. *@
+
+<PageTitle>Your games · Spellbound</PageTitle>
+
+<h1>Your games</h1>
+
+@if (!loaded)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (realm is null)
+{
+    <p>The first round hasn't started yet. Try again in a minute.</p>
+}
+else
+{
+    <ul class="rank-list">
+        <li>
+            <a class="rank-row" href="@(mage is null ? "create" : "realm")">
+                <span class="who">
+                    <b>The Realm</b>
+                    <small class="text-muted d-block">
+                        @(mage is null ? "You have no mage this round yet: create one" : $"{mage.Name}, {mage.School} mage")
+                    </small>
+                </span>
+                @if (mage is not null)
+                {
+                    <span class="num">@mage.Land.ToString("N0", CultureInfo.InvariantCulture)<small class="text-muted d-block">acres</small></span>
+                }
+            </a>
+        </li>
+    </ul>
+    <RoundInfo Round="realm.Round" />
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private bool loaded;
+    private PlayedGame? realm;
+    private Mage? mage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        realm = await Game.GetRealmAsync();
+        mage = realm is null ? null : await Game.GetMageAsync(ownerId);
+        loaded = true;
+    }
+}

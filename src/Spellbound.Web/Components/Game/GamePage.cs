@@ -29,7 +29,8 @@ public abstract class GamePage : ComponentBase
 
     protected bool Busy { get; private set; }
 
-    protected GameRules Rules => Game.Rules;
+    /// <summary>The round's rules. Set with <see cref="Round"/>; only read once there is a mage, so a round.</summary>
+    protected GameRules Rules { get; private set; } = null!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -43,7 +44,8 @@ public abstract class GamePage : ComponentBase
 
     protected virtual async Task LoadAsync()
     {
-        Round = await Game.GetRoundAsync();
+        var realm = await Game.GetRealmAsync();
+        (Round, Rules) = (realm?.Round, realm?.Rules!);
         Mage = await Game.GetMageAsync(OwnerId);
     }
 

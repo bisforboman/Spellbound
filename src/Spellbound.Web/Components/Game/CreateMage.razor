@@ -49,7 +49,7 @@
         round = await Game.GetRoundAsync();
         if (await Game.GetMageAsync(ownerId) is not null)
         {
-            Navigation.NavigateTo("");
+            Navigation.NavigateTo("realm");
         }
     }
 
@@ -65,7 +65,7 @@
         busy = false;
         if (report.Succeeded)
         {
-            Navigation.NavigateTo("");
+            Navigation.NavigateTo("realm");
         }
     }
 }

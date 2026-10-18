@@ -27,11 +27,20 @@ public static class HostStore
     public static bool IsBusy(Exception exception) =>
         exception is PostgresException { SqlState: PostgresErrorCodes.LockNotAvailable or PostgresErrorCodes.DeadlockDetected };
 
-    /// <summary>The round being played, or null before the first one. With <paramref name="forUpdate"/>, locks it.</summary>
-    public static Task<Round?> LoadCurrentRoundAsync(this DbSession db, bool forUpdate = false) =>
+    /// <summary>
+    /// The running game of a mode (the newest one not yet wrapped up), or null before the first one. With
+    /// <paramref name="forUpdate"/>, locks its row.
+    /// </summary>
+    public static Task<HostedGame?> LoadRunningGameAsync(this DbSession db, string mode, bool forUpdate = false) =>
         db.SingleAsync(
-            "SELECT number, starts_at, ends_at FROM current_round WHERE id = 1" + (forUpdate ? " FOR UPDATE" : ""),
-            r => new Round(r.GetInt32(0), r.GetFieldValue<DateTimeOffset>(1), r.GetFieldValue<DateTimeOffset>(2)));
+            "SELECT id, mode, number, starts_at, ends_at, rules::text FROM games WHERE mode = $1 AND ended_at IS NULL"
+            + " ORDER BY id DESC LIMIT 1" + (forUpdate ? " FOR UPDATE" : ""),
+            ReadGame,
+            mode);
+
+    /// <summary>A game by id, running or ended.</summary>
+    public static Task<HostedGame?> LoadGameAsync(this DbSession db, long id) =>
+        db.SingleAsync("SELECT id, mode, number, starts_at, ends_at, rules::text FROM games WHERE id = $1", ReadGame, id);
 
     public static async Task<BanList> LoadBansAsync(this DbSession db) =>
         new((await db.QueryAsync(
@@ -41,4 +50,8 @@ public static class HostStore
 
     public static async Task<bool> IsBannedAsync(this DbSession db, string ownerId) =>
         await db.ScalarAsync<bool>("SELECT EXISTS (SELECT 1 FROM bans WHERE owner_id = $1)", ownerId);
+
+    private static HostedGame ReadGame(NpgsqlDataReader r) =>
+        new(r.GetInt64(0), r.GetString(1),
+            new Round(r.GetInt32(2), r.GetFieldValue<DateTimeOffset>(3), r.GetFieldValue<DateTimeOffset>(4)), r.GetString(5));
 }

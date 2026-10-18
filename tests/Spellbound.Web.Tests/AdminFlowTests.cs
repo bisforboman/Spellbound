@@ -157,6 +157,26 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         Assert.Contains("Account/AccessDenied", refused.Headers.Location!.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task The_games_page_comes_first_and_leads_to_the_Realm()
+    {
+        using var merlin = Client();
+        using var newcomer = Client();
+        await SignInAsync(merlin, "merlin@spellbound.test");
+        await SignInAsync(newcomer, "newcomer@spellbound.test");
+
+        var withMage = await merlin.GetStringAsync(new Uri("/", UriKind.Relative));
+        var withoutMage = await newcomer.GetStringAsync(new Uri("/", UriKind.Relative));
+        var overview = await merlin.GetStringAsync(new Uri("/realm", UriKind.Relative));
+
+        Assert.Contains("Your games", withMage, StringComparison.Ordinal);
+        Assert.Contains("Merlin, Tidal mage", withMage, StringComparison.Ordinal);
+        Assert.Contains("href=\"realm\"", withMage, StringComparison.Ordinal);
+        Assert.Contains("Round 1", withMage, StringComparison.Ordinal);
+        Assert.Contains("href=\"create\"", withoutMage, StringComparison.Ordinal);
+        Assert.Contains("<h1>Merlin</h1>", overview, StringComparison.Ordinal);
+    }
+
     public override void Dispose()
     {
         factory.Dispose();

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Spellbound.Domain;
+using Spellbound.Web.Data;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
@@ -40,6 +41,21 @@ public sealed class RoundFlowTests : TestDatabase
         time.Advance(TimeSpan.FromDays(27));
 
         Assert.Equal(first, await Keeper.TickAsync());
+    }
+
+    [Fact]
+    public async Task A_round_plays_by_the_rules_stored_with_it()
+    {
+        var round = await Keeper.TickAsync();
+        Assert.Equal(Rules, (await Game.GetRealmAsync())!.Rules); // started with the configured rules
+
+        await WithDbAsync(db => db.ExecuteAsync(
+            "UPDATE games SET rules = $2 WHERE id = $1",
+            round.Id, new Jsonb(DomainJson.Serialize(Rules with { StartingGold = 1_234 }))));
+        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.Tidal);
+
+        Assert.Equal(1_234, (await Game.GetMageAsync(Merlin))!.Gold); // the round's rules, not the configured ones
+        Assert.Equal(1_234, (await Game.GetRealmAsync())!.Rules.StartingGold);
     }
 
     [Fact]
