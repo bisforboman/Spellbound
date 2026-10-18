@@ -98,7 +98,7 @@ public sealed partial class Mage
             target.RecordLoss(now, rules);
             Land += acres;
             ours.Add($"You attacked {target.Name} and broke through, taking {N(acres)} acres.");
-            theirs.Add($"{Name} ({School.DisplayName()}) attacked you and broke through. You lost {N(acres)} acres.");
+            theirs.Add($"{Who()} attacked you and broke through. You lost {N(acres)} acres.");
             if (losses > 0)
             {
                 var times = losses == 1 ? "once" : $"{N(losses)} times";
@@ -116,7 +116,7 @@ public sealed partial class Mage
         else
         {
             ours.Add($"You attacked {target.Name}, but their defenses held.");
-            theirs.Add($"{Name} ({School.DisplayName()}) attacked you, but your defenses held.");
+            theirs.Add($"{Who()} attacked you, but your defenses held.");
         }
 
         ours.Add($"Your attack power was {N((int)attack)} against their defense of {N((int)defense)}.");
@@ -176,7 +176,7 @@ public sealed partial class Mage
         else
         {
             ours = $"You cast {hex.Name} at {target.Name}, but it was turned aside.";
-            theirs = $"{Name} ({School.DisplayName()}) cast {hex.Name} at you, but it was turned aside.";
+            theirs = $"{Who()} cast {hex.Name} at you, but it was turned aside.";
         }
 
         var chronicle = landed
@@ -226,7 +226,7 @@ public sealed partial class Mage
 
     private (string Ours, string Theirs) ApplyHex(HexDefinition hex, Mage target, GameRules rules)
     {
-        var by = $"{Name} ({School.DisplayName()}) cast {hex.Name} at you";
+        var by = $"{Who()} cast {hex.Name} at you";
         switch (hex.Effect)
         {
             case HexEffect.KillUnits:
