@@ -170,7 +170,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
             return ActionReport.Fail("You already have a mage.");
         }
 
-        var report = new ActionReport(true, 0, [$"{mage.Name} of the {mage.School} school awakens."]);
+        var report = new ActionReport(true, 0, [$"{mage.Name} of {mage.School.DisplayName()} awakens."]);
         await db.WriteAsync(game.Id, mage, now, "create", new { name = trimmed, school }, [], report, rules);
         await db.CommitAsync();
         return report;

@@ -52,7 +52,7 @@ public sealed class RoundFlowTests : TestDatabase
         await WithDbAsync(db => db.ExecuteAsync(
             "UPDATE games SET rules = $2 WHERE id = $1",
             round.Id, new Jsonb(DomainJson.Serialize(Rules with { StartingGold = 1_234 }))));
-        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.Tidal);
+        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.C);
 
         Assert.Equal(1_234, (await Game.GetMageAsync(Merlin))!.Gold); // the round's rules, not the configured ones
         Assert.Equal(1_234, (await Game.GetRealmAsync())!.Rules.StartingGold);
@@ -62,8 +62,8 @@ public sealed class RoundFlowTests : TestDatabase
     public async Task Round_end_records_the_hall_of_fame_and_everyone_starts_over()
     {
         await Keeper.TickAsync();
-        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.Tidal);
-        await Game.CreateMageAsync(Morgana, "Morgana", MagicSchool.Ember);
+        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.C);
+        await Game.CreateMageAsync(Morgana, "Morgana", MagicSchool.D);
         await Game.ExploreAsync(Merlin, 10);
         var oldMorgana = (await Game.GetMageAsync(Morgana))!.Id;
 
@@ -89,12 +89,12 @@ public sealed class RoundFlowTests : TestDatabase
         Assert.Empty(await Game.GetNewsAsync(Merlin));
         Assert.Empty(await Game.GetAllMagesAsync());
 
-        Assert.True((await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.Umbral)).Succeeded);
+        Assert.True((await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.E)).Succeeded);
         Assert.Equal(250, (await Game.GetMageAsync(Merlin))!.Land);
 
         // A mage id from the last round doesn't reach the owner's new mage.
-        await Game.CreateMageAsync(Morgana, "Morgana", MagicSchool.Ember);
-        await Game.RecruitAsync(Merlin, "knights", 100);
+        await Game.CreateMageAsync(Morgana, "Morgana", MagicSchool.D);
+        await Game.RecruitAsync(Merlin, "unit-3", 100);
         var attack = await Game.AttackAsync(Merlin, oldMorgana);
         Assert.False(attack.Succeeded);
         Assert.Null(await Game.GetRivalAsync(oldMorgana));

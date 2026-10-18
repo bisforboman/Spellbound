@@ -53,33 +53,33 @@ public abstract class Bot(string name, MagicSchool school)
 }
 
 /// <summary>Grows land and buildings, never fights.</summary>
-public sealed class Builder(string name) : Bot(name, MagicSchool.Radiant)
+public sealed class Builder(string name) : Bot(name, MagicSchool.A)
 {
     public override string Strategy => "economy only";
 
     public override void Play(Mage me, IReadOnlyList<Mage> others, Sim sim) => Grow(me, sim);
 }
 
-/// <summary>Grows, keeps militia at one per acre and a Barrier up.</summary>
-public sealed class Turtle(string name) : Bot(name, MagicSchool.Tidal)
+/// <summary>Grows, keeps unit 1 at one per acre and a ward up.</summary>
+public sealed class Turtle(string name) : Bot(name, MagicSchool.C)
 {
-    public override string Strategy => "economy + militia (1/acre) + barrier";
+    public override string Strategy => "economy + unit 1 (1/acre) + ward";
 
     public override void Play(Mage me, IReadOnlyList<Mage> others, Sim sim)
     {
         var rules = sim.Rules;
-        var barrier = SpellBook.Find("barrier")!;
+        var barrier = SpellBook.Find("ward")!;
         if (me.ActiveEffects.All(e => e.SpellId != barrier.Id) && me.Mana >= barrier.ManaCost && me.Turns >= barrier.TurnCost)
         {
-            me.Cast("barrier", sim.Now, rules);
+            me.Cast("ward", sim.Now, rules);
         }
 
-        var wanted = me.Land - me.UnitCount("militia");
-        var affordable = me.Gold / UnitBook.Find("militia")!.GoldCost;
+        var wanted = me.Land - me.UnitCount("unit-1");
+        var affordable = me.Gold / UnitBook.Find("unit-1")!.GoldCost;
         var count = Math.Min(wanted, Math.Min(affordable, me.Turns * rules.UnitsRecruitedPerTurn));
         if (count > 0)
         {
-            me.Recruit("militia", count, sim.Now, rules);
+            me.Recruit("unit-1", count, sim.Now, rules);
         }
 
         Grow(me, sim);
@@ -87,12 +87,12 @@ public sealed class Turtle(string name) : Bot(name, MagicSchool.Tidal)
 }
 
 /// <summary>
-/// Grows, puts half its spare gold into knights, and attacks the biggest target it can surely beat, again and again
+/// Grows, puts half its spare gold into unit 3, and attacks the biggest target it can surely beat, again and again
 /// while it has turns. Sees targets' true defense (players can't; this is the worst case for defenders).
 /// </summary>
-public sealed class Warmonger(string name) : Bot(name, MagicSchool.Ember)
+public sealed class Warmonger(string name) : Bot(name, MagicSchool.D)
 {
-    public override string Strategy => "economy + knights + attacks when it beats exploring";
+    public override string Strategy => "economy + unit 3 + attacks when it beats exploring";
 
     public override void Play(Mage me, IReadOnlyList<Mage> others, Sim sim)
     {
@@ -123,11 +123,11 @@ public sealed class Warmonger(string name) : Bot(name, MagicSchool.Ember)
             sim.RecordAttack(this, target, landBefore - target.Land);
         }
 
-        var knights = (me.Gold / 2) / UnitBook.Find("knights")!.GoldCost;
-        knights = Math.Min(knights, me.Turns * rules.UnitsRecruitedPerTurn);
-        if (knights > 0)
+        var units = (me.Gold / 2) / UnitBook.Find("unit-3")!.GoldCost;
+        units = Math.Min(units, me.Turns * rules.UnitsRecruitedPerTurn);
+        if (units > 0)
         {
-            me.Recruit("knights", knights, sim.Now, rules);
+            me.Recruit("unit-3", units, sim.Now, rules);
         }
 
         Grow(me, sim);
@@ -135,7 +135,7 @@ public sealed class Warmonger(string name) : Bot(name, MagicSchool.Ember)
 }
 
 /// <summary>Signs up and never plays again.</summary>
-public sealed class Idle(string name) : Bot(name, MagicSchool.Verdant)
+public sealed class Idle(string name) : Bot(name, MagicSchool.B)
 {
     public override string Strategy => "signs up, never plays";
 

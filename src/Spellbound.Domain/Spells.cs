@@ -59,39 +59,40 @@ public sealed record HexDefinition(
     string Description);
 
 /// <summary>
-/// All spells in the game: one self-buff per school, a Barrier every mage knows, and one hex per school.
+/// All spells in the game: one self-buff per school, a ward every mage knows, and one hex per school.
 /// All are known from the start.
 /// </summary>
+// Names are placeholders until they're decided (docs/game-design.md, "Names to decide"); ids are stored, so they're neutral.
 public static class SpellBook
 {
     public static IReadOnlyList<SpellDefinition> All { get; } =
     [
-        new("blessed-harvest", "Blessed Harvest", MagicSchool.Radiant, 1_500, 2, 30, EffectKind.GoldIncome, 1.25,
-            "Your lands prosper: gold income +25%."),
-        new("overgrowth", "Overgrowth", MagicSchool.Verdant, 1_500, 2, 30, EffectKind.ExploreYield, 1.5,
-            "The wilds open up to you: exploring yields +50% land."),
-        new("wellspring", "Wellspring", MagicSchool.Tidal, 1_200, 2, 30, EffectKind.ManaIncome, 1.3,
-            "Mana flows freely: node income +30%."),
-        new("forge-fire", "Forge Fire", MagicSchool.Ember, 1_500, 2, 30, EffectKind.BuildCost, 0.8,
-            "Your builders work by magic flame: buildings cost 20% less gold."),
-        new("night-whispers", "Night Whispers", MagicSchool.Umbral, 1_200, 2, 30, EffectKind.MeditateYield, 1.5,
-            "Voices in the dark guide your meditation: +50% meditation mana."),
-        new("barrier", "Arcane Barrier", null, 1_000, 2, 30, EffectKind.HexWard, 0.5,
-            "A shimmering ward: hexes cast at you succeed half as often."),
+        new("self-a", "Self-spell A", MagicSchool.A, 1_500, 2, 30, EffectKind.GoldIncome, 1.25,
+            "Gold income +25%."),
+        new("self-b", "Self-spell B", MagicSchool.B, 1_500, 2, 30, EffectKind.ExploreYield, 1.5,
+            "Exploring yields +50% land."),
+        new("self-c", "Self-spell C", MagicSchool.C, 1_200, 2, 30, EffectKind.ManaIncome, 1.3,
+            "Node mana income +30%."),
+        new("self-d", "Self-spell D", MagicSchool.D, 1_500, 2, 30, EffectKind.BuildCost, 0.8,
+            "Buildings cost 20% less gold."),
+        new("self-e", "Self-spell E", MagicSchool.E, 1_200, 2, 30, EffectKind.MeditateYield, 1.5,
+            "Meditation gives +50% mana."),
+        new("ward", "Ward spell", null, 1_000, 2, 30, EffectKind.HexWard, 0.5,
+            "Hexes cast at you succeed half as often."),
     ];
 
     public static IReadOnlyList<HexDefinition> Hexes { get; } =
     [
-        new("smite", "Smite", MagicSchool.Radiant, 2_000, 2, HexEffect.KillUnits, 0.05,
-            "Holy fire falls on their army: 5% of their units die."),
-        new("locust-swarm", "Locust Swarm", MagicSchool.Verdant, 2_000, 2, HexEffect.DestroyGold, 0.08,
-            "Locusts devour their stores: 8% of their gold is lost."),
-        new("mana-drain", "Mana Drain", MagicSchool.Tidal, 2_000, 2, HexEffect.StealMana, 0.10,
-            "Siphon their pools: take 10% of their mana."),
-        new("firestorm", "Firestorm", MagicSchool.Ember, 2_000, 2, HexEffect.BurnBuildings, 0.03,
-            "Rain fire on their lands: 3% of their buildings burn."),
-        new("nightmare", "Nightmare", MagicSchool.Umbral, 2_500, 2, HexEffect.DrainTurns, 3,
-            "Haunt their sleep: they lose 3 turns."),
+        new("hex-a", "Hex A", MagicSchool.A, 2_000, 2, HexEffect.KillUnits, 0.05,
+            "5% of their units die."),
+        new("hex-b", "Hex B", MagicSchool.B, 2_000, 2, HexEffect.DestroyGold, 0.08,
+            "8% of their gold is destroyed."),
+        new("hex-c", "Hex C", MagicSchool.C, 2_000, 2, HexEffect.StealMana, 0.10,
+            "Take 10% of their mana."),
+        new("hex-d", "Hex D", MagicSchool.D, 2_000, 2, HexEffect.BurnBuildings, 0.03,
+            "3% of their buildings are destroyed."),
+        new("hex-e", "Hex E", MagicSchool.E, 2_500, 2, HexEffect.DrainTurns, 3,
+            "They lose 3 turns."),
     ];
 
     public static SpellDefinition? Find(string spellId) =>

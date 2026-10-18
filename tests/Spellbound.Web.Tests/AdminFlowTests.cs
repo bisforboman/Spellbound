@@ -44,8 +44,8 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         adminId = await CreateUserAsync(AdminEmail);
         merlinId = await CreateUserAsync("merlin@spellbound.test");
         morganaId = await CreateUserAsync("morgana@spellbound.test");
-        await Game.CreateMageAsync(merlinId, "Merlin", MagicSchool.Tidal);
-        await Game.CreateMageAsync(morganaId, "Morgana", MagicSchool.Ember);
+        await Game.CreateMageAsync(merlinId, "Merlin", MagicSchool.C);
+        await Game.CreateMageAsync(morganaId, "Morgana", MagicSchool.D);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -73,7 +73,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal("Your account is banned.", (await Game.ExploreAsync(morganaId, 1)).Lines[0]);
         Assert.DoesNotContain(await Game.GetAllMagesAsync(), m => m.OwnerId == morganaId);
         Assert.Null(await Game.GetRivalAsync(morgana));
-        await Game.RecruitAsync(merlinId, "knights", 100);
+        await Game.RecruitAsync(merlinId, "unit-3", 100);
         Assert.False((await Game.AttackAsync(merlinId, morgana)).Succeeded);
         var player = Assert.Single(await Admin.GetPlayersAsync(), p => p.OwnerId == morganaId);
         Assert.Equal("Multi-accounting", player.Ban!.Reason);
@@ -170,7 +170,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         var overview = await merlin.GetStringAsync(new Uri("/realm", UriKind.Relative));
 
         Assert.Contains("Your games", withMage, StringComparison.Ordinal);
-        Assert.Contains("Merlin, Tidal mage", withMage, StringComparison.Ordinal);
+        Assert.Contains("Merlin, School C mage", withMage, StringComparison.Ordinal);
         Assert.Contains("href=\"realm\"", withMage, StringComparison.Ordinal);
         Assert.Contains("Round 1", withMage, StringComparison.Ordinal);
         Assert.Contains("href=\"create\"", withoutMage, StringComparison.Ordinal);

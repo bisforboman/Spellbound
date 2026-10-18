@@ -70,7 +70,7 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
             m => m.OwnerId,
             m => new PlayerSummary(
                 m.Name,
-                $"{m.School} · {m.Land.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} acres",
+                $"{m.School.DisplayName()} · {m.Land.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} acres",
                 m.Land));
 
     private static System.Text.Json.JsonElement Json(string json) => System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();

@@ -48,7 +48,7 @@ public sealed partial class Mage
         : School.WeakAgainst() == target.School ? -1
         : 0;
 
-    /// <summary>Chance a hex lands on the target, before any Barrier they may have up.</summary>
+    /// <summary>Chance a hex lands on the target, before any ward they may have up.</summary>
     public double HexChance(Mage target, GameRules rules) =>
         Math.Clamp(rules.HexBaseSuccessChance + (CounterSign(target) * rules.HexCounterBonus), 0, 1);
 
@@ -91,7 +91,7 @@ public sealed partial class Mage
             target.RecordLoss(now, rules);
             Land += acres;
             ours.Add($"You attacked {target.Name} and broke through, taking {N(acres)} acres.");
-            theirs.Add($"{Name} ({School}) attacked you and broke through. You lost {N(acres)} acres.");
+            theirs.Add($"{Name} ({School.DisplayName()}) attacked you and broke through. You lost {N(acres)} acres.");
             if (losses > 0)
             {
                 var times = losses == 1 ? "once" : $"{N(losses)} times";
@@ -109,7 +109,7 @@ public sealed partial class Mage
         else
         {
             ours.Add($"You attacked {target.Name}, but their defenses held.");
-            theirs.Add($"{Name} ({School}) attacked you, but your defenses held.");
+            theirs.Add($"{Name} ({School.DisplayName()}) attacked you, but your defenses held.");
         }
 
         ours.Add($"Your attack power was {N((int)attack)} against their defense of {N((int)defense)}.");
@@ -137,7 +137,7 @@ public sealed partial class Mage
 
         if (hex.School != School)
         {
-            return HostileReport.Fail($"{hex.Name} belongs to the {hex.School} school.");
+            return HostileReport.Fail($"{hex.Name} belongs to {hex.School.DisplayName()}.");
         }
 
         if (TargetProblem(target, now, rules) is { } invalid)
@@ -165,7 +165,7 @@ public sealed partial class Mage
         else
         {
             ours = $"You cast {hex.Name} at {target.Name}, but it was turned aside.";
-            theirs = $"{Name} ({School}) cast {hex.Name} at you, but it was turned aside.";
+            theirs = $"{Name} ({School.DisplayName()}) cast {hex.Name} at you, but it was turned aside.";
         }
 
         var summary = SpendTurns(hex.TurnCost, rules);
@@ -209,7 +209,7 @@ public sealed partial class Mage
 
     private (string Ours, string Theirs) ApplyHex(HexDefinition hex, Mage target, GameRules rules)
     {
-        var by = $"{Name} ({School}) cast {hex.Name} at you";
+        var by = $"{Name} ({School.DisplayName()}) cast {hex.Name} at you";
         switch (hex.Effect)
         {
             case HexEffect.KillUnits:
@@ -219,8 +219,8 @@ public sealed partial class Mage
             case HexEffect.DestroyGold:
                 var gold = (int)(target.Gold * hex.Strength);
                 target.Gold -= gold;
-                return ($"{hex.Name} devoured {N(gold)} of {target.Name}'s gold.",
-                    $"{by}: {N(gold)} of your gold was devoured.");
+                return ($"{hex.Name} destroyed {N(gold)} of {target.Name}'s gold.",
+                    $"{by}: {N(gold)} of your gold was destroyed.");
             case HexEffect.StealMana:
                 var mana = (int)(target.Mana * hex.Strength);
                 target.Mana -= mana;
@@ -234,7 +234,7 @@ public sealed partial class Mage
             case HexEffect.DrainTurns:
                 var turns = Math.Min(target.Turns, (int)hex.Strength);
                 target.Turns -= turns;
-                return ($"{hex.Name} haunted {target.Name}: they lost {N(turns)} turns.",
+                return ($"{hex.Name} hit {target.Name}: they lost {N(turns)} turns.",
                     $"{by}: you lost {N(turns)} turns.");
             default:
                 throw new ArgumentOutOfRangeException(nameof(hex), hex.Effect, null);
@@ -243,8 +243,8 @@ public sealed partial class Mage
 
     private string? CounterLine(Mage target) => CounterSign(target) switch
     {
-        1 => $"Your {School} magic had the edge over their {target.School} magic.",
-        -1 => $"Their {target.School} magic had the edge over your {School} magic.",
+        1 => $"Your {School.DisplayName()} magic had the edge over their {target.School.DisplayName()} magic.",
+        -1 => $"Their {target.School.DisplayName()} magic had the edge over your {School.DisplayName()} magic.",
         _ => null,
     };
 

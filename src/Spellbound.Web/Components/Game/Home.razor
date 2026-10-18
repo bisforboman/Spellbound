@@ -7,7 +7,7 @@
 @if (Mage is not null)
 {
     <h1>@Mage.Name</h1>
-    <p class="text-muted">@Mage.School mage</p>
+    <p class="text-muted">@Mage.School.DisplayName() mage</p>
     <RoundInfo Round="Round" />
 
     @if (alerts > 0)

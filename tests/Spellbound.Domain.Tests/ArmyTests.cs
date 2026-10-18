@@ -6,18 +6,18 @@ public class ArmyTests
     private static readonly GameRules Rules = GameRules.Default;
 
     private static Mage NewMage(GameRules? rules = null) =>
-        Mage.Create("user-1", "Merlin", MagicSchool.Radiant, T0, rules ?? Rules);
+        Mage.Create("user-1", "Merlin", MagicSchool.A, T0, rules ?? Rules);
 
     [Fact]
     public void Recruit_costs_gold_and_turns_and_adds_units()
     {
         var mage = NewMage();
 
-        var report = mage.Recruit("soldiers", 50, T0, Rules);
+        var report = mage.Recruit("unit-2", 50, T0, Rules);
 
         Assert.True(report.Succeeded);
         Assert.Equal(1, report.TurnsSpent);
-        Assert.Equal(50, mage.UnitCount("soldiers"));
+        Assert.Equal(50, mage.UnitCount("unit-2"));
         // 10,000 - 7,500 for the soldiers + 650 income - 100 upkeep (50 × 2).
         Assert.Equal(3_050, mage.Gold);
         Assert.Equal(150, mage.AttackPower);
@@ -37,7 +37,7 @@ public class ArmyTests
     {
         var mage = NewMage();
 
-        var report = mage.Recruit("knights", 41, T0, Rules);
+        var report = mage.Recruit("unit-3", 41, T0, Rules);
 
         Assert.False(report.Succeeded);
         Assert.Equal(0, mage.TotalUnits);
@@ -58,7 +58,7 @@ public class ArmyTests
     public void Upkeep_is_paid_every_turn_spent()
     {
         var mage = NewMage();
-        mage.Recruit("soldiers", 50, T0, Rules);
+        mage.Recruit("unit-2", 50, T0, Rules);
         var gold = mage.Gold;
 
         mage.Meditate(3, T0, Rules);
@@ -72,11 +72,11 @@ public class ArmyTests
         var rules = Rules with { StartingGold = 6_000, GoldPerAcrePerTurn = 0, GoldPerTownPerTurn = 0 };
         var mage = NewMage(rules);
 
-        var report = mage.Recruit("militia", 100, T0, rules);
+        var report = mage.Recruit("unit-1", 100, T0, rules);
 
         // Two turns with no gold: 10% leave each turn (rounded up), 100 → 90 → 81.
         Assert.True(report.Succeeded);
-        Assert.Equal(81, mage.UnitCount("militia"));
+        Assert.Equal(81, mage.UnitCount("unit-1"));
         Assert.Equal(0, mage.Gold);
         Assert.Contains("You ran out of gold to pay your army: 19 units deserted.", report.Lines);
     }
@@ -87,7 +87,7 @@ public class ArmyTests
         var mage = NewMage();
         Assert.Equal((250 * 5) + (60 * 10), mage.Networth(Rules));
 
-        mage.Recruit("knights", 10, T0, Rules);
+        mage.Recruit("unit-3", 10, T0, Rules);
 
         Assert.Equal((250 * 5) + (60 * 10) + (10 * 8), mage.Networth(Rules));
     }

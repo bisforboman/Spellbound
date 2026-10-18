@@ -20,8 +20,8 @@
             <label class="choice">
                 <input type="radio" name="school" checked="@(selected == school)" @onchange="() => selected = school" />
                 <span>
-                    <b>@school</b>: @spell.Name. @spell.Description<br />
-                    <small class="text-muted">Strong against @school.StrongAgainst(), weak against @school.WeakAgainst().</small>
+                    <b>@school.DisplayName()</b>: @spell.Name. @spell.Description<br />
+                    <small class="text-muted">Strong against @school.StrongAgainst().DisplayName(), weak against @school.WeakAgainst().DisplayName().</small>
                 </span>
             </label>
         }
@@ -38,7 +38,7 @@
 
     private string ownerId = string.Empty;
     private string name = string.Empty;
-    private MagicSchool selected = MagicSchool.Radiant;
+    private MagicSchool selected = MagicSchool.A;
     private ActionReport? report;
     private bool busy;
     private Round? round;
