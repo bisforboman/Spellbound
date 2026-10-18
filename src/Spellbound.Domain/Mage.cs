@@ -151,7 +151,8 @@ public sealed partial class Mage
 
     /// <summary>
     /// Runs an action on a copy of this mage and returns what it would do (a <see cref="Ledger"/>); this mage is not
-    /// changed. Turns are accrued on the copy first, so "before" matches what the player sees.
+    /// changed. Turns are accrued on the copy first, so "before" matches what the player sees. Only this mage is
+    /// copied: an action that also touches another mage (a target) would change that one.
     /// </summary>
     public Ledger Preview(DateTimeOffset now, GameRules rules, Func<Mage, ActionReport> action)
     {

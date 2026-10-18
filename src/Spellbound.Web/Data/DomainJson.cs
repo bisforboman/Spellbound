@@ -55,6 +55,10 @@ public static class DomainJson
             {
                 // Fill the collection the constructor made, so it keeps its comparer (the army's is case-insensitive).
                 property.ObjectCreationHandling = JsonObjectCreationHandling.Populate;
+                if (!field.IsInitOnly)
+                {
+                    property.Set = field.SetValue; // for a field the constructor leaves null
+                }
             }
             else
             {
