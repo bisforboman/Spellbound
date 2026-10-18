@@ -224,4 +224,14 @@ public class MageTests
         Assert.Equal(strongAgainst, school.StrongAgainst());
         Assert.Equal(weakAgainst, school.WeakAgainst());
     }
+
+    [Theory]
+    [InlineData("Ada", null)]
+    [InlineData("  Merlin  ", null)]
+    [InlineData("Mo", "Name must be 3–24 characters.")]
+    [InlineData("A name that is far too long", "Name must be 3–24 characters.")]
+    public void A_name_is_checked_the_same_way_everywhere(string name, string? problem)
+    {
+        Assert.Equal(problem, Mage.NameProblem(name));
+    }
 }

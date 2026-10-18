@@ -26,7 +26,7 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
 
     /// <summary>
     /// Deletes the player's mage, news and logged actions from every round, so a deleted account leaves no mage in
-    /// Rivals to farm, and leaves their Skirmish seats without an owner. Other players' logged attacks on them stay, without their account id. Halls of fame keep their
+    /// Rivals to farm, and leaves their Skirmish seats without an owner, and calls off the Skirmishes they set up that haven't started. Other players' logged attacks on them stay, without their account id. Halls of fame keep their
     /// names: they're a record of finished rounds.
     /// </summary>
     public async Task OnAccountDeletedAsync(DbSession db, string ownerId)
@@ -37,9 +37,13 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
         await db.ExecuteAsync("UPDATE actions SET target_owner_id = NULL WHERE target_owner_id = $1", ownerId); // others' stay
         // A Skirmish seat stays in its game (the others play on) without its owner or saved orders, and goes away.
         await db.ExecuteAsync("UPDATE skirmish_seats SET owner_id = NULL, orders = '[]', ready = false WHERE owner_id = $1", ownerId);
+        // Games they set up that haven't started are called off; they leave the ones they joined.
+        await db.ExecuteAsync("DELETE FROM skirmish_lobbies WHERE creator_id = $1 AND game_id IS NULL", ownerId);
+        await db.ExecuteAsync("UPDATE skirmish_lobbies SET creator_id = NULL WHERE creator_id = $1", ownerId);
+        await db.ExecuteAsync("DELETE FROM skirmish_lobby_players WHERE owner_id = $1", ownerId);
     }
 
-    /// <summary>The player's mages (as stored, every round), news and logged actions, by round number; and their Skirmish seats and the rounds of those games.</summary>
+    /// <summary>The player's mages (as stored, every round), news and logged actions, by round number; their Skirmish seats and the rounds of those games; and the Skirmishes they set up or are waiting in.</summary>
     public async Task<object> ExportAsync(DbSession db, string ownerId) => new
     {
         mages = await db.QueryAsync(
@@ -60,6 +64,22 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
             JOIN skirmish_seats s ON s.game_id = k.game_id WHERE s.owner_id = $1 ORDER BY k.game_id, k.round
             """,
             r => new { gameId = r.GetInt64(0), round = r.GetInt32(1), playedAt = r.GetFieldValue<DateTimeOffset>(2), report = Json(r.GetString(3)) },
+            ownerId),
+        skirmishLobbies = await db.QueryAsync(
+            """
+            SELECT l.code, l.created_at, l.creator_id = $1, l.game_id, p.name, p.school FROM skirmish_lobbies l
+            LEFT JOIN skirmish_lobby_players p ON p.lobby_id = l.id AND p.owner_id = $1
+            WHERE l.creator_id = $1 OR p.owner_id = $1 ORDER BY l.id
+            """,
+            r => new
+            {
+                code = r.GetString(0),
+                createdAt = r.GetFieldValue<DateTimeOffset>(1),
+                setUpByYou = !r.IsDBNull(2) && r.GetBoolean(2),
+                gameId = r.IsDBNull(3) ? (long?)null : r.GetInt64(3),
+                name = r.IsDBNull(4) ? null : r.GetString(4),
+                school = r.IsDBNull(5) ? null : r.GetString(5),
+            },
             ownerId),
         actions = await db.QueryAsync(
             """

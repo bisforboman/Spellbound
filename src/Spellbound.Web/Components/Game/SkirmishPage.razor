@@ -161,6 +161,9 @@ else
     +@game.Rules.Card4Points points, Card 5 loses @game.Rules.Card5ArmyLossPercent% of your units.
 </p>
 
+<h2 class="h4 mt-4">Rules</h2>
+<SkirmishRulesList Rules="game.Rules" RoundLength="view.RoundLength" />
+
 @code {
     private static readonly TimeSpan Refresh = TimeSpan.FromSeconds(5);
 

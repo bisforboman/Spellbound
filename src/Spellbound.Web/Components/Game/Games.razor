@@ -3,9 +3,12 @@
 @using System.Security.Claims
 @inject GameService Game
 @inject SkirmishService Skirmishes
+@inject SkirmishLobbyService Lobbies
+@inject NavigationManager Navigation
 
-@* The first page after signing in: the player's games, the current Realm round and their Skirmishes. Not a GamePage:
-   a player without a mage belongs here too. *@
+@* The first page after signing in: the player's games, the current Realm round and their Skirmishes, and the ways
+   into a new Skirmish: set one up, join with a code, or join an open one. Not a GamePage: a player without a mage
+   belongs here too. *@
 
 <PageTitle>Your games · Spellbound</PageTitle>
 
@@ -62,6 +65,56 @@ else
     </ul>
 }
 
+@if (waiting.Count > 0)
+{
+    <h2 class="h4 mt-4">Waiting for players</h2>
+    <ul class="rank-list">
+        @foreach (var lobby in waiting)
+        {
+            <li>
+                <a class="rank-row" href="skirmish/join/@lobby.Code">
+                    <span class="who">
+                        <b>Skirmish @lobby.Code</b>
+                        <small class="text-muted d-block">@lobby.Players.Count of @lobby.Rules.Players joined · invite with the code</small>
+                    </span>
+                </a>
+            </li>
+        }
+    </ul>
+}
+
+<h2 class="h4 mt-4">Play a Skirmish</h2>
+<a class="btn btn-primary btn-lg w-100 mb-3" href="skirmish/new">Set up a new game</a>
+<form class="join-code mb-3" @onsubmit="JoinWithCode">
+    <label class="form-label" for="join-code">Got an invite code?</label>
+    <div class="d-flex gap-2">
+        <input id="join-code" class="form-control text-uppercase" maxlength="200" autocomplete="off" autocapitalize="characters"
+               placeholder="ABC234" @bind="code" @bind:event="oninput" />
+        <button type="submit" class="btn btn-outline-primary" disabled="@string.IsNullOrWhiteSpace(code)">Find</button>
+    </div>
+</form>
+
+@if (open.Count > 0)
+{
+    <h3 class="h5">Open games</h3>
+    <ul class="rank-list">
+        @foreach (var lobby in open)
+        {
+            <li>
+                <a class="rank-row" href="skirmish/join/@lobby.Code">
+                    <span class="who">
+                        <b>@string.Join(", ", lobby.Players.Select(p => p.Name))</b>
+                        <small class="text-muted d-block">
+                            @lobby.Players.Count of @lobby.Rules.Players joined · @lobby.Rules.Rounds rounds of @SkirmishRulesList.Describe(lobby.RoundLength)
+                        </small>
+                    </span>
+                    <span class="num">Join</span>
+                </a>
+            </li>
+        }
+    </ul>
+}
+
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> AuthState { get; set; } = default!;
@@ -70,13 +123,23 @@ else
     private PlayedGame? realm;
     private Mage? mage;
     private IReadOnlyList<SkirmishSummary> skirmishes = [];
+    private IReadOnlyList<SkirmishLobby> waiting = [];
+    private IReadOnlyList<SkirmishLobby> open = [];
+    private string ownerId = string.Empty;
+    private string code = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        var ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
         realm = await Game.GetRealmAsync();
         mage = realm is null ? null : await Game.GetMageAsync(ownerId);
         skirmishes = await Skirmishes.GetMineAsync(ownerId);
+        waiting = await Lobbies.GetMineAsync(ownerId);
+        open = [.. (await Lobbies.ListOpenAsync()).Where(l => !l.Has(ownerId) && l.Players.Count < l.Rules.Players)];
         loaded = true;
     }
+
+    /// <summary>Opens the game for a typed code, or for a pasted invite link (its last part is the code).</summary>
+    private void JoinWithCode() =>
+        Navigation.NavigateTo($"skirmish/join/{Uri.EscapeDataString(code.Trim().TrimEnd('/').Split('/')[^1])}");
 }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 using Npgsql;
 using Spellbound.Playtest;
@@ -385,6 +386,53 @@ namespace Spellbound.Playtest
                 await Expect(page, "Your orders for round 2");
                 await Expect(page, "claimed");
             });
+
+            // Players set up their own Skirmish: Merlin sets up a public one, Morgana joins with its code, Ada finds it
+            // in the open games and fills it, and Merlin's waiting page moves on to the game by itself.
+            var code = string.Empty;
+            await StepAsync(merlin, "skirmish-new", async page =>
+            {
+                await GoAsync(page, "/skirmish/new");
+                await page.SelectOptionAsync("#skirmish-players", "3");
+                await page.SelectOptionAsync("#skirmish-length", "10");
+                await page.ClickAsync("label.choice:has-text('Public')");
+            });
+            await StepAsync(merlin, "skirmish-lobby", async page =>
+            {
+                await page.ClickAsync("button:has-text('Set up the game')");
+                await page.WaitForURLAsync("**/skirmish/join/*");
+                await Expect(page, "1 of 3");
+                code = (await page.InnerTextAsync(".invite-code")).Trim();
+            });
+            await StepAsync(morgana, "skirmish-join-code", async page =>
+            {
+                await GoAsync(page, "/");
+                await page.FillAsync("#join-code", $"{options.Url}/skirmish/join/{code.ToLowerInvariant()}"); // a pasted link works too
+                await page.ClickAsync("button:has-text('Find')");
+                await page.WaitForURLAsync("**/skirmish/join/*");
+                await WaitForCircuitAsync(page);
+                await page.ClickAsync("button:has-text('Join the game')");
+                await Expect(page, "2 of 3");
+            });
+            await StepAsync(ada, "skirmish-join-open", async page =>
+            {
+                await GoAsync(page, "/");
+                await Expect(page, "Open games");
+                await page.ClickAsync("a.rank-row:has-text('Join')");
+                await page.WaitForURLAsync("**/skirmish/join/*");
+                await WaitForCircuitAsync(page);
+                await Expect(page, "10 minutes");
+                await page.ClickAsync("button:has-text('Join the game')");
+                await page.WaitForURLAsync(new Regex("/skirmish/[0-9]+$"));
+                await Expect(page, "Your orders for round 1");
+            });
+            await StepAsync(merlin, "skirmish-lobby-started", async page =>
+            {
+                await page.WaitForURLAsync(new Regex("/skirmish/[0-9]+$"), new PageWaitForURLOptions { Timeout = 15_000 });
+                await Expect(page, "Skirmish 2");
+                await Expect(page, "Your orders for round 1");
+            });
+
             await StepAsync(ada, "end-round", async page =>
             {
                 await GoAsync(page, "/admin");

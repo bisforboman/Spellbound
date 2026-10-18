@@ -64,18 +64,22 @@ public sealed partial class Mage
 
     public int FreeLand => Land - BuiltLand;
 
+    /// <summary>Why a mage can't have this name, or null. Skirmish mages follow the same rule.</summary>
+    public static string? NameProblem(string name) =>
+        name.Trim().Length is < MinNameLength or > MaxNameLength ? $"Name must be {MinNameLength}–{MaxNameLength} characters." : null;
+
     public static Mage Create(string ownerId, string name, MagicSchool school, DateTimeOffset now, GameRules rules)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerId);
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(rules);
 
-        var trimmed = name.Trim();
-        if (trimmed.Length is < MinNameLength or > MaxNameLength)
+        if (NameProblem(name) is { } problem)
         {
-            throw new ArgumentException(
-                $"Name must be {MinNameLength}–{MaxNameLength} characters.", nameof(name));
+            throw new ArgumentException(problem, nameof(name));
         }
+
+        var trimmed = name.Trim();
 
         var mage = new Mage
         {

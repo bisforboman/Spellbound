@@ -44,8 +44,13 @@ game ends and points are counted from several sources, so there's more than one 
 
 ## A game
 
-- **Players:** 2 to 6, chosen by the creator (4 by default). The game starts when it's full, or at a set time with
-  whoever has joined.
+- **Players:** 2 to 6, chosen by the creator (4 by default). The game starts when it's full, or when the creator
+  starts it with whoever has joined (at least 2). Starting at a set time is not built.
+- **Setting one up:** the creator picks the players, rounds (4–24), the round time, actions a round (2–5), whether
+  attacks, hexes and discoveries are on, and whether the game is public. Each player joins under a name (the Realm's
+  rule: 3–24 characters, not taken in that game) and a school, suggested from their Realm mage. Seats go in the order
+  players joined. A player can be in 3 Skirmishes at once (a server setting), counting games still waiting. If the
+  creator leaves before the start, the game is called off.
 - **Start:** each mage gets one home region (Terrain 1 for everyone, spread out on the board, never next to another
   home) with one node and one town, 1,500 gold and 1,000 mana.
 - **Length:** a set number of rounds (12 by default), or earlier if one mage holds three quarters of the board.
@@ -207,9 +212,9 @@ rating.
 The rules (in the domain), storage, a service that plays rounds when everyone is ready or the time limit passes, and
 the game page (`/skirmish/{id}`): orders with their cost and odds, Ready, the last round's report, players and scores,
 the board as text, objectives and the deck. It refreshes itself every few seconds.
-For now **the admin starts games** from the players' emails on the admin page; players use their Realm mage's name
-and school when they have one. Players creating and joining their own games (with invite codes) comes next, after the
-game page. Saved orders can't change while the player is ready: they take back Ready first.
+**Players set up and join games** (`/skirmish/new`, then `/skirmish/join/{code}`, the link to share): the code is 6
+letters and digits, without look-alikes (0/O, 1/I/L). The Games page has a box for a code and lists open public games.
+The admin can still start a game at once from the players' emails on the admin page. Saved orders can't change while the player is ready: they take back Ready first.
 
 **What players see of each other:** regions, buildings, armies, points and who's ready (attack and hex odds depend
 on them), but not each other's gold, mana or orders. The deck shows how many of each card are left, never their order.

@@ -1,0 +1,115 @@
+@page "/skirmish/new"
+@using System.Security.Claims
+@using Spellbound.Domain.Skirmish
+@inject SkirmishLobbyService Lobbies
+@inject NavigationManager Navigation
+
+@* Setting up a Skirmish: the switches within their limits, and the creator's own name and school. The game waits for
+   players on its lobby page, which has the invite code and link. *@
+
+<PageTitle>New Skirmish · Spellbound</PageTitle>
+
+<h1>New Skirmish</h1>
+<p>Set up a game and invite friends with its code. It starts when it's full, or when you start it with whoever has joined.</p>
+
+<form @onsubmit="CreateAsync">
+    <SkirmishMageFields @bind-Name="name" @bind-School="school" />
+
+    <label class="form-label" for="skirmish-players">Players</label>
+    <select id="skirmish-players" class="form-select mb-3" @bind="players">
+        @for (var n = SkirmishRules.MinPlayers; n <= SkirmishRules.MaxPlayers; n++)
+        {
+            <option value="@n">@n players</option>
+        }
+    </select>
+
+    <label class="form-label" for="skirmish-rounds">Rounds</label>
+    <select id="skirmish-rounds" class="form-select mb-3" @bind="rounds">
+        @foreach (var n in RoundChoices)
+        {
+            <option value="@n">@n rounds</option>
+        }
+    </select>
+
+    <label class="form-label" for="skirmish-length">Time for each round</label>
+    <select id="skirmish-length" class="form-select mb-3" @bind="minutes">
+        @foreach (var length in LengthChoices)
+        {
+            <option value="@((int)length.TotalMinutes)">@SkirmishRulesList.Describe(length)</option>
+        }
+    </select>
+
+    <label class="form-label" for="skirmish-actions">Actions a round</label>
+    <select id="skirmish-actions" class="form-select mb-3" @bind="actions">
+        @for (var n = SkirmishRules.MinActions; n <= SkirmishRules.MaxActions; n++)
+        {
+            <option value="@n">@n actions</option>
+        }
+    </select>
+
+    <fieldset class="mb-3">
+        <legend class="form-label">Switches</legend>
+        <label class="choice"><input type="checkbox" @bind="attacks" /><span><b>Attacks</b>: mages can take each other's regions</span></label>
+        <label class="choice"><input type="checkbox" @bind="hexes" /><span><b>Hexes</b>: mages can curse each other</span></label>
+        <label class="choice"><input type="checkbox" @bind="discoveries" /><span><b>Discoveries</b>: claiming a region draws a card</span></label>
+        <label class="choice"><input type="checkbox" @bind="isPublic" /><span><b>Public</b>: listed on everyone's Games page, so anyone can join. Otherwise only people with the code can.</span></label>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@busy">Set up the game</button>
+</form>
+
+@if (problem is not null)
+{
+    <p class="alert alert-danger mt-3" role="alert">@problem</p>
+}
+
+@code {
+    private static readonly int[] RoundChoices = [6, 9, 12, 18, 24];
+
+    private static readonly TimeSpan[] LengthChoices =
+        [TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(10), TimeSpan.FromHours(1), TimeSpan.FromHours(12), TimeSpan.FromDays(1)];
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private string ownerId = string.Empty;
+    private string name = string.Empty;
+    private MagicSchool school = MagicSchool.A;
+    private int players = SkirmishRules.Default.Players;
+    private int rounds = SkirmishRules.Default.Rounds;
+    private int minutes = 12 * 60;
+    private int actions = SkirmishRules.Default.ActionsPerRound;
+    private bool attacks = SkirmishRules.Default.Attacks;
+    private bool hexes = SkirmishRules.Default.Hexes;
+    private bool discoveries = SkirmishRules.Default.Discoveries;
+    private bool isPublic;
+    private bool busy;
+    private string? problem;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        (name, school) = await Lobbies.SuggestAsync(ownerId);
+    }
+
+    private async Task CreateAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        var rules = SkirmishRules.Default with
+        {
+            Players = players, Rounds = rounds, ActionsPerRound = actions, Attacks = attacks, Hexes = hexes, Discoveries = discoveries,
+        };
+        var (code, refused) = await Lobbies.CreateAsync(ownerId, name, school, rules, TimeSpan.FromMinutes(minutes), isPublic);
+        problem = refused;
+        busy = false;
+        if (code is not null)
+        {
+            Navigation.NavigateTo($"skirmish/join/{code}");
+        }
+    }
+}

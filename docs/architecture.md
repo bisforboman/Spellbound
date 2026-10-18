@@ -72,7 +72,7 @@ server always keeps one running (`AlwaysOnMode`), numbered per mode. Every game 
 uses; the action log's rules hash records which rules an action ran under. Rounds migrated from before games have no
 stored rules (`{}`) and use the configured ones, as they did. Bans stay global (per account); the hall of fame is per
 game. The Games page (`/`) lists the player's games; the Realm's pages (`/realm`, `/explore`, …) mean "the running
-Realm round". Not built yet (part 2): creating and joining games, and page addresses that name a game.
+Realm round". Not built yet: page addresses that name a game (Skirmish's already do: `/skirmish/{id}`).
 
 **Skirmish games** are `games` rows with mode `skirmish` and `SkirmishRules` as their rules, plus game-side tables:
 `skirmish_games` (the seed, the `SkirmishGame` as jsonb, the round's time limit and deadline), `skirmish_seats` (which
@@ -101,8 +101,13 @@ on the seat), `SkirmishKeeper` reminds players who aren't ready once when time r
 game), and a played round tells everyone but the player whose Ready played it. They're queued only after the
 transaction commits, so a refused or failed change sends nothing.
 
-For now the admin starts Skirmish games from a list of emails (the admin page's "Start a Skirmish"); players creating
-and joining their own replaces it in part 2. A deleted account's seat stays in its games without an owner or orders,
+**Setting up and joining** (`SkirmishLobbyService`, game-side tables `skirmish_lobbies` and
+`skirmish_lobby_players`): a player sets up a game (the switches within `SkirmishRules`' creator limits, a round
+length, public or private) and gets an invite code; it's shared as `/skirmish/join/{code}`, or listed on the Games page
+if public. The join that fills the last seat starts the game in the same transaction (`SkirmishService.StartAsync`),
+holding the lobby's row so two players can't both take it; the creator can also start early with at least 2. A
+per-player advisory lock keeps the cap on games at once (`Skirmish:MaxGamesPerPlayer`, 3) from being raced. The admin
+page's "Start a Skirmish" from a list of emails stays as a shortcut. A deleted account's seat stays in its games without an owner or orders,
 and goes away, then out, through the rule for players who stop readying up.
 
 ## Request flow for a game action
