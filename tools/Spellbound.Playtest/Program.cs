@@ -298,6 +298,7 @@ namespace Spellbound.Playtest
             {
                 await GoAsync(page, "/rivals");
                 await Expect(page, "Merlin");
+                await Expect(page, "Net power counts");
             });
             await StepAsync(ada, "attack", async page =>
             {

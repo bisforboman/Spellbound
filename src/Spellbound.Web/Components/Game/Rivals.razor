@@ -10,8 +10,9 @@
 {
     <div class="btn-group w-100 mb-3" role="group" aria-label="Rank by">
         <button type="button" class="btn @(byNetworth ? "btn-outline-primary" : "btn-primary")" @onclick="() => byNetworth = false">By land</button>
-        <button type="button" class="btn @(byNetworth ? "btn-primary" : "btn-outline-primary")" @onclick="() => byNetworth = true">By networth</button>
+        <button type="button" class="btn @(byNetworth ? "btn-primary" : "btn-outline-primary")" @onclick="() => byNetworth = true">By net power</button>
     </div>
+    <p class="text-muted">Net power counts @Mage.NetPowerFormula(Rules)</p>
 
     <ol class="rank-list">
         @foreach (var (rival, rank) in Ranked().Select((m, i) => (m, i + 1)))
@@ -26,7 +27,7 @@
                             @rival.School.DisplayName()@(you ? " · you" : null)@(rival.IsProtected(Game.Now, Rules) ? " · protected" : null)@(!you && !Mage.InRange(rival, Rules) ? " · out of range" : null)
                         </small>
                     </span>
-                    <span class="num">@N(byNetworth ? rival.Networth(Rules) : rival.Land)<small class="text-muted d-block">@(byNetworth ? "networth" : "acres")</small></span>
+                    <span class="num">@N(byNetworth ? rival.Networth(Rules) : rival.Land)<small class="text-muted d-block">@(byNetworth ? "net power" : "acres")</small></span>
                 </a>
             </li>
         }

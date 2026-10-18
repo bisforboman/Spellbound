@@ -20,10 +20,18 @@ public sealed partial class Mage
 
     public int UpkeepPerTurn => UnitBook.All.Sum(u => UnitCount(u.Id) * u.GoldUpkeep);
 
+    /// <summary>Net power, as players see it (the code keeps the older name): the published formula is
+    /// <see cref="NetPowerFormula"/>, so anyone can check a ranking by hand.</summary>
     public int Networth(GameRules rules) =>
         (Land * rules.NetworthPerAcre)
         + (BuiltLand * rules.NetworthPerBuilding)
         + UnitBook.All.Sum(u => UnitCount(u.Id) * (u.Attack + u.Defense) * rules.NetworthPerUnitPower);
+
+    /// <summary>How net power is counted, with this game's weights, in words. Grows as the rework adds parts to it
+    /// (Spell Level, creatures).</summary>
+    public static string NetPowerFormula(GameRules rules) =>
+        $"{rules.NetworthPerAcre} per acre of land, {rules.NetworthPerBuilding} per building, and " +
+        $"{rules.NetworthPerUnitPower} per point of attack and defense in your army.";
 
     public static int RecruitTurnCost(int count, GameRules rules) =>
         (count + rules.UnitsRecruitedPerTurn - 1) / rules.UnitsRecruitedPerTurn;
