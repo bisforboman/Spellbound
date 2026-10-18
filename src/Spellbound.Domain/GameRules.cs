@@ -12,6 +12,14 @@ public sealed record GameRules
     public TimeSpan RoundLength { get; init; } = TimeSpan.FromDays(28);
     public int HallOfFameSize { get; init; } = 10;
 
+    // Season phases (docs/mageborn-design.md), as the share of the round gone by when each one ends, so a short round
+    // has the same shape as a long one. On a 28-day round: Sanctuary days 1–3, Growth 4–10, Contest 11–17,
+    // Conjunction 18–27, then the Reckoning on day 28.
+    public double SanctuaryEnds { get; init; } = 3 / 28.0;
+    public double GrowthEnds { get; init; } = 10 / 28.0;
+    public double ContestEnds { get; init; } = 17 / 28.0;
+    public double ConjunctionEnds { get; init; } = 27 / 28.0;
+
     // Turns
     // The turn bank (docs/mageborn-design.md): 1 turn every 10 minutes, capped at 150, a little over a day, so one
     // visit a day loses nothing.

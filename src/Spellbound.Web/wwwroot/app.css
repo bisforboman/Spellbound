@@ -163,6 +163,24 @@ html, body {
         align-items: center;
     }
 
+/* The season's phase under the round line (RoundInfo.razor) */
+.round-info:has(+ .season-phase) {
+    margin-bottom: 0;
+}
+
+.season-phase {
+    margin-top: -0.25rem;
+    color: var(--ink-soft);
+}
+
+    .season-phase b {
+        color: var(--school);
+        font-family: var(--font-label);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.9rem;
+    }
+
 .fame {
     border-bottom: 1px solid var(--bs-border-color);
     padding: 0.5rem 0;
