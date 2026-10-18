@@ -43,6 +43,9 @@ players know what they joined.
   its own kind of mage that reuses the spell and unit books, rather than the Realm's mage with optional parts.
 - **The Realm stays classic.** It keeps its small battle and hex luck and stays otherwise predictable, like Archmage.
   The board-game luck (discoveries, drafts, events) is what makes Skirmish different.
+- **Skirmish is the lab.** It's the explorative mode, and the first thing to beta-test with friends. Short games make
+  ideas cheap to try; what works there can move to the Realm as a switch. The two modes may grow into completely
+  separate games, so the shared core stays small and nothing in one mode should depend on the other.
 - **Small communities first.** A Skirmish must be fun for 2 or 3 friends and never wait for a crowd: 2 players is
   enough to start one. The game must work on a server with ten accounts.
 - **Each Realm round is a game.** As now, a Realm round lasts 4 weeks and ends with a hall of fame, and the server

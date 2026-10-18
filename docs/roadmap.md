@@ -66,6 +66,10 @@ Goal: real players finish a round, and we learn from it.
 - [ ] Read the privacy notice (`/privacy`) and fill in its `PRIVACY_*` settings: operator, contact, hosting, off-site
   backups (see [deploy guide](deploy.md#privacy-notice))
 
+## Order from here
+Skirmish comes first: a friends-only beta of Skirmish games, whose lessons also shape the Realm. So M5 (both parts) and
+M6 lead to that beta; the Realm's public launch (M4) follows.
+
 ## M5: Games and lobbies
 Goal: a server runs many games, each with its own mode and rules. In two parts, so the risky data change ships alone.
 
@@ -76,7 +80,8 @@ Goal: a server runs many games, each with its own mode and rules. In two parts, 
 - [ ] Mages, news, actions and hall of fame keyed by game instead of round
 - [ ] A Games page after sign-in, listing the player's games (for now, the current Realm round)
 
-**Part 2: creating and joining** (built with Skirmish, since until then there is nothing new to create)
+**Part 2: creating and joining** (built with Skirmish, since until then there is nothing new to create; invite codes
+first, as the beta is with friends)
 - [ ] Create a game (mode, players, switches within limits, public or private) with a cap per player
 - [ ] Join from the public list, or with a code or link; the game page lists its rules
 - [ ] Multi-account signals per game on the admin page
@@ -89,6 +94,7 @@ Goal: a server runs many games, each with its own mode and rules. In two parts, 
 - [ ] Reminders by web push (when everyone else is ready, and when time is running out)
 - [ ] The board, orders and scoring pages, at 360 px, text-first
 - [ ] Dropouts (away after 2 missed rounds) and a win record per account
+- [ ] Friends-only beta on a real server: play Skirmishes, write down what to carry over to the Realm
 - [ ] One luck feature to start (for example "exploring finds things"), as a switch
 
 ## Engineering
