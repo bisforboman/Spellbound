@@ -265,6 +265,7 @@ namespace Spellbound.Playtest
             {
                 await GoAsync(page, "/");
                 await Expect(page, "Ada, Dawn mage");
+                await Expect(page, "Sanctuary");
             });
             await StepAsync(ada, "explore", page => ActAsync(page, "/explore", async () =>
             {

@@ -175,6 +175,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         Assert.Contains("Round 1", withMage, StringComparison.Ordinal);
         Assert.Contains("href=\"create\"", withoutMage, StringComparison.Ordinal);
         Assert.Contains("<h1 class=\"mage-name\">Merlin</h1>", overview, StringComparison.Ordinal);
+        Assert.Contains("<b>Sanctuary</b>", overview, StringComparison.Ordinal); // a new round opens in its first phase
 
         // Net power is published: the formula, with this game's weights, is on Rivals.
         var rivals = await merlin.GetStringAsync(new Uri("/rivals", UriKind.Relative));

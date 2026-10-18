@@ -25,6 +25,9 @@ Each step of the rework adds a line here; the order is in [realm-rework.md](real
   the formula when they arrive.
 - **The turn bank**: 1 turn every 10 minutes, capped at 150, 100 to start (`GameRules`). The opening study's diff is in
   [balance.md](balance.md), "The turn bank".
+- **Season phases**: Sanctuary, Growth, Contest, Conjunction and Reckoning as shares of the round (`Season`,
+  boundaries in `GameRules`), shown under the round line. They don't change rules yet; S3 and the W- and D-items read
+  them.
 
 ## Summary
 
