@@ -24,10 +24,27 @@
     <p class="text-muted">Your email comes from your sign-in and updates each time you sign in.</p>
 }
 
+<h2 class="h4 mt-4">Notifications</h2>
+<p>
+    Get notifications about your games on this phone or computer (Skirmish reminders are coming). Turn them on separately
+    on each device.
+</p>
+<p role="status" data-push-status>Checking…</p>
+@if (Push == "sent")
+{
+    <p class="alert alert-success" role="status">A test notification is on its way to every device where they're on.</p>
+}
+<form id="push-form" action="Account/Push/Test" method="post">
+    <AntiforgeryToken />
+    <button type="button" class="btn btn-primary btn-lg w-100" data-push="on">Turn on notifications here</button>
+    <button type="submit" class="btn btn-outline-primary btn-lg w-100 mt-2">Send me a test notification</button>
+    <button type="button" class="btn btn-link w-100" data-push="off">Turn them off here</button>
+</form>
+
 <h2 class="h4 mt-4">Your data</h2>
 <p>
     Download everything the game stores about you as one file: your account, your recent sign-in networks (as hashes),
-    and your mages, news and actions in every round. See the <a href="privacy">privacy notice</a> for what each is for.
+    your mages, news and actions in every round, your Skirmish games, and the devices where notifications are on. See the <a href="privacy">privacy notice</a> for what each is for.
 </p>
 <a class="btn btn-outline-primary btn-lg w-100" href="Account/Data" download>Download my data</a>
 
@@ -55,6 +72,9 @@
 
     [SupplyParameterFromQuery]
     private string? Error { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Push { get; set; }
 
     protected override async Task OnInitializedAsync() =>
         account = await Accounts.FindAsync(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);

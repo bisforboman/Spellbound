@@ -98,6 +98,17 @@ admin page under **Problems**, since the app last started. To also get a push, s
 A push only says where the error happened and its type, never the message (which can hold player data); the
 details are on the admin page. Each kind is pushed at most once an hour, with a count of the repeats.
 
+## Notifications
+
+Players can turn on notifications on the Account page (Skirmish reminders, and a test button). Nothing needs setting
+up: the server makes its own key (VAPID) on first use and keeps it in the database, and the privacy notice's contact
+(`PRIVACY_CONTACT`) is given to push services as the server's contact. It needs HTTPS, which Caddy provides. **Keep the
+database's `server_secrets` table** (backups include it): a new key would silently stop every player's notifications
+until they turn them on again.
+
+On iPhone and iPad, notifications only work from the home-screen app (Safari's Share, then Add to Home Screen, iOS 16.4
+or later); the Account page says so. Use **Send me a test notification** on your own phone once after deploying.
+
 ## Updating
 
 ```sh

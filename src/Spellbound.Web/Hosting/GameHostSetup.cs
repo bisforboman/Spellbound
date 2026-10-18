@@ -32,6 +32,10 @@ public static class GameHostSetup
         services.AddSingleton<ILoggerProvider>(sp => new AlertLoggerProvider(sp.GetRequiredService<AlertSink>(), sp.GetRequiredService<TimeProvider>()));
         services.AddHttpClient(AlertSender.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(10));
         services.AddHostedService<AlertSender>();
+        services.AddSingleton<PushSink>();
+        services.AddSingleton<PushStore>();
+        services.AddHttpClient(PushSender.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(15));
+        services.AddHostedService<PushSender>();
 
         // Rounds, admin, backups, multi-account signals.
         services.AddSingleton<RoundKeeper>();
