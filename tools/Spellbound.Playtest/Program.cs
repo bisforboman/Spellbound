@@ -395,6 +395,7 @@ namespace Spellbound.Playtest
                 await GoAsync(page, "/skirmish/new");
                 await page.SelectOptionAsync("#skirmish-players", "3");
                 await page.SelectOptionAsync("#skirmish-length", "10");
+                await page.SelectOptionAsync("#skirmish-rounds", "6"); // short, so the players can finish it below
                 await page.ClickAsync("label.choice:has-text('Public')");
             });
             await StepAsync(merlin, "skirmish-lobby", async page =>
@@ -431,6 +432,33 @@ namespace Spellbound.Playtest
                 await page.WaitForURLAsync(new Regex("/skirmish/[0-9]+$"), new PageWaitForURLOptions { Timeout = 15_000 });
                 await Expect(page, "Skirmish 2");
                 await Expect(page, "Your orders for round 1");
+            });
+
+            // Everyone readies up with no orders until the game ends, so the win record and the leaderboard have rows.
+            var game = merlin.Page.Url;
+            await StepAsync(merlin, "skirmish-to-the-end", async page =>
+            {
+                for (var round = 1; round <= 6; round++)
+                {
+                    foreach (var player in new[] { merlin, morgana, ada })
+                    {
+                        await GoAsync(player.Page, new Uri(game).AbsolutePath);
+                        await Expect(player.Page, $"Your orders for round {round}");
+                        await player.Page.ClickAsync("button:has-text(\"I'm ready\")");
+                        await Expect(player.Page, player == ada ? (round == 6 ? "The game is over" : $"round {round + 1}") : "You're ready");
+                    }
+                }
+
+                await GoAsync(page, new Uri(game).AbsolutePath);
+                await Expect(page, "The game is over");
+            });
+            await StepAsync(merlin, "skirmish-leaderboard", async page =>
+            {
+                await GoAsync(page, "/");
+                await Expect(page, "in 1 game");
+                await page.ClickAsync("a:has-text('Leaderboard')");
+                await page.WaitForURLAsync("**/skirmish/leaders");
+                await Expect(page, "1 game played");
             });
 
             await StepAsync(ada, "end-round", async page =>

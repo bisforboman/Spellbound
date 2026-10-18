@@ -163,8 +163,10 @@ Points from several sources, shown live on the game page:
   worth 5 points each to whoever gets there first
 - Card 4s from the deck
 
-Ties go to the most gold and mana together, then to the earlier seat. The winner's account gets a win on the Skirmish leaderboard; everyone who
-finished gets a game played.
+Ties go to the most gold and mana together, then to the earlier seat. The winner's account gets a win on the Skirmish leaderboard; every player
+still in the game's seats at the end gets a game played, including those who dropped out (they lost it). The
+leaderboard (`/skirmish/leaders`) ranks by wins, then fewer games played, under each player's latest mage name; the
+Games page shows a player's own record. Banned players are left off it; a deleted account's record goes with it.
 
 ## What the simulation says
 

@@ -4,6 +4,7 @@
 @inject GameService Game
 @inject SkirmishService Skirmishes
 @inject SkirmishLobbyService Lobbies
+@inject SkirmishRecordService Records
 @inject NavigationManager Navigation
 
 @* The first page after signing in: the player's games, the current Realm round and their Skirmishes, and the ways
@@ -84,6 +85,10 @@ else
 }
 
 <h2 class="h4 mt-4">Play a Skirmish</h2>
+<p class="round-info">
+    <span>Your record: <b>@record.Won</b> @(record.Won == 1 ? "win" : "wins") in @record.Played @(record.Played == 1 ? "game" : "games")</span>
+    <a href="skirmish/leaders">Leaderboard</a>
+</p>
 <a class="btn btn-primary btn-lg w-100 mb-3" href="skirmish/new">Set up a new game</a>
 <form class="join-code mb-3" @onsubmit="JoinWithCode">
     <label class="form-label" for="join-code">Got an invite code?</label>
@@ -127,6 +132,7 @@ else
     private IReadOnlyList<SkirmishLobby> open = [];
     private string ownerId = string.Empty;
     private string code = string.Empty;
+    private SkirmishRecord record = new(0, 0);
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,6 +141,7 @@ else
         mage = realm is null ? null : await Game.GetMageAsync(ownerId);
         skirmishes = await Skirmishes.GetMineAsync(ownerId);
         waiting = await Lobbies.GetMineAsync(ownerId);
+        record = await Records.GetAsync(ownerId);
         open = [.. (await Lobbies.ListOpenAsync()).Where(l => !l.Has(ownerId) && l.Players.Count < l.Rules.Players)];
         loaded = true;
     }

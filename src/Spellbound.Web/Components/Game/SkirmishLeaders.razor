@@ -1,0 +1,49 @@
+@page "/skirmish/leaders"
+@using System.Security.Claims
+@inject SkirmishRecordService Records
+
+@* The Skirmish leaderboard: every player's games won and played, most wins first. *@
+
+<PageTitle>Skirmish leaderboard · Spellbound</PageTitle>
+
+<h1>Skirmish leaderboard</h1>
+
+@if (leaders is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (leaders.Count == 0)
+{
+    <p class="text-muted">No Skirmish has ended yet. Win one to lead the board.</p>
+}
+else
+{
+    <p>Most wins first; with the same wins, fewer games played ranks higher. Each player shows under their latest mage's name.</p>
+    <ol class="rank-list">
+        @for (var i = 0; i < leaders.Count; i++)
+        {
+            var leader = leaders[i];
+            <li class="rank-row @(leader.OwnerId == ownerId ? "you" : "")">
+                <span class="rank">@(i + 1)</span>
+                <span class="who"><b>@leader.Name</b><small class="text-muted d-block">@leader.Played @(leader.Played == 1 ? "game" : "games") played</small></span>
+                <span class="num">@leader.Won<small class="text-muted d-block">@(leader.Won == 1 ? "win" : "wins")</small></span>
+            </li>
+        }
+    </ol>
+}
+
+<p><a class="btn btn-link px-0" href="">Back to your games</a></p>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private IReadOnlyList<SkirmishLeader>? leaders;
+    private string ownerId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        leaders = await Records.GetLeadersAsync();
+    }
+}

@@ -312,6 +312,7 @@ public sealed class SkirmishService(
         if (row.Game.Ended)
         {
             await db.EndGameAsync(row.GameId, now);
+            await RecordResultsAsync(db, row, now);
             logger.LogInformation("Skirmish {Number} ended after round {Round}.", row.Number, report.Round);
         }
 
@@ -321,6 +322,30 @@ public sealed class SkirmishService(
             notifications.Add(row.Game.Ended
                 ? Message(row, seat.OwnerId!, $"Skirmish {row.Number} is over", $"{winner.Name} wins with {row.Game.Score(winner.Index).Total} points.")
                 : Message(row, seat.OwnerId!, $"Round {report.Round} played in Skirmish {row.Number}", $"Plan round {report.Round + 1}."));
+        }
+    }
+
+    /// <summary>
+    /// The win record: a row for every seat that still has an account, out or not (dropping out counts as a game played
+    /// and lost). The winner is the top of the standings, as the round report announced.
+    /// </summary>
+    private static async Task RecordResultsAsync(DbSession db, GameRow row, DateTimeOffset now)
+    {
+        var standings = row.Game.Standings();
+        for (var place = 0; place < standings.Count; place++)
+        {
+            var seat = standings[place];
+            if (row.Seats.Single(s => s.Seat == seat.Index).OwnerId is not { } ownerId)
+            {
+                continue;
+            }
+
+            await db.ExecuteAsync(
+                """
+                INSERT INTO skirmish_results (game_id, owner_id, seat, name, place, points, won, ended_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                """,
+                row.GameId, ownerId, seat.Index, seat.Name, place + 1, row.Game.Score(seat.Index).Total, place == 0, now);
         }
     }
 
