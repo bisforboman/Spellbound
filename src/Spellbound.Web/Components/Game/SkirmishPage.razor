@@ -23,6 +23,7 @@
     var used = view.Orders.Sum(o => o.Cost(game.Rules));
 }
 
+<div class="seat-stripe seat-@view.Seat" aria-hidden="true"></div>
 <h1>Skirmish @view.Number</h1>
 @if (game.Ended)
 {
@@ -109,9 +110,9 @@ else
     @foreach (var seat in game.Standings())
     {
         var regions = game.RegionsOf(seat.Index).ToList();
-        <li class="rank-row @(seat.Index == view.Seat ? "you" : null)">
+        <li class="rank-row seated seat-@seat.Index @(seat.Index == view.Seat ? "you" : null)">
             <span class="who">
-                <b>@seat.Name</b>
+                <b class="seat-name">@seat.Name</b>
                 <small class="text-muted d-block">
                     @seat.School.DisplayName() · @Count(regions.Count, "region") · @Count(seat.Units, "unit")@(Status(seat))
                 </small>
@@ -126,11 +127,18 @@ else
 <ul class="rank-list">
     @foreach (var region in BoardOrder(game, view.Seat))
     {
-        <li class="rank-row @(region.Owner == view.Seat ? "you" : null)">
+        <li class="rank-row @(region.Owner is { } held ? $"seated seat-{held}" : null) @(region.Owner == view.Seat ? "you" : null)">
             <span class="who">
                 <b>@region.Name</b> · @region.Terrain.DisplayName()
                 <small class="text-muted d-block">
-                    @(region.Owner is { } owner ? game.Seats[owner].Name : "Free") ·
+                    @if (region.Owner is { } owner)
+                    {
+                        <span class="seat-name">@game.Seats[owner].Name</span>
+                    }
+                    else
+                    {
+                        <text>Free</text>
+                    } ·
                     @Count(region.Nodes, "node"), @Count(region.Towns, "town") (room for @region.FreeSlots(game.Rules)) ·
                     next to @string.Join(", ", region.Neighbours.Select(n => game.Board[n].Name.Replace("Region ", "", StringComparison.Ordinal)))
                 </small>

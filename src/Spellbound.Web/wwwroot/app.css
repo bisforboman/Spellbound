@@ -2,18 +2,62 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* The dark theme: Bootstrap's dark mode (data-bs-theme="dark" on <html>) in gritty warm greys, with a faint grain */
+[data-bs-theme=dark] {
+    --bs-body-bg: #141312;
+    --bs-body-bg-rgb: 20, 19, 18;
+    --bs-body-color: #dcd7ce;
+    --bs-body-color-rgb: 220, 215, 206;
+    --bs-secondary-color: rgba(220, 215, 206, 0.6);
+    --bs-secondary-bg: #24221f;
+    --bs-tertiary-bg: #1c1a18;
+    --bs-border-color: #35322e;
+    --bs-link-color: #e3ddd2;
+    --bs-link-color-rgb: 227, 221, 210;
+    --bs-link-hover-color: #ffffff;
+    --bs-link-hover-color-rgb: 255, 255, 255;
+    --sb-highlight: #2a2724;
+}
+
+body {
+    /* grain: SVG noise, barely visible, so the dark grey isn't flat */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+
 a, .btn-link {
-    color: #006bb7;
+    color: var(--bs-link-color);
 }
 
 .btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    --bs-btn-color: #f2eee7;
+    --bs-btn-bg: #3d3a35;
+    --bs-btn-border-color: #57524a;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #4a463f;
+    --bs-btn-hover-border-color: #6a645a;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #2f2c28;
+    --bs-btn-active-border-color: #6a645a;
+    --bs-btn-disabled-color: #f2eee7;
+    --bs-btn-disabled-bg: #3d3a35;
+    --bs-btn-disabled-border-color: #57524a;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--bs-link-color);
+    --bs-btn-border-color: #57524a;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #3d3a35;
+    --bs-btn-hover-border-color: #6a645a;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #2f2c28;
+    --bs-btn-active-border-color: #6a645a;
+    --bs-btn-disabled-color: var(--bs-secondary-color);
+    --bs-btn-disabled-border-color: #35322e;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem var(--bs-body-bg), 0 0 0 0.25rem #8c867b;
 }
 
 .content {
@@ -74,7 +118,7 @@ html, body {
     align-items: flex-start;
     padding: 0.75rem;
     min-height: 44px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--bs-border-color);
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
 }
@@ -112,7 +156,7 @@ html, body {
 }
 
 .news-entry {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--bs-border-color);
     padding: 0.5rem 0;
 }
 
@@ -132,13 +176,13 @@ html, body {
     gap: 0.75rem;
     min-height: 56px;
     padding: 0.5rem 0.25rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--bs-border-color);
     color: inherit;
     text-decoration: none;
 }
 
     .rank-row.you {
-        background: #f3ecfb;
+        background: var(--sb-highlight);
     }
 
     .rank-row .rank {
@@ -172,7 +216,7 @@ html, body {
     }
 
 .fame {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--bs-border-color);
     padding: 0.5rem 0;
 }
 
@@ -182,7 +226,7 @@ html, body {
     }
 
 .admin-player {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--bs-border-color);
     padding: 0.75rem 0;
     overflow-wrap: anywhere;
 }
@@ -202,7 +246,7 @@ html, body {
         align-items: center;
         gap: 0.5rem;
         min-height: 44px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--bs-border-color);
     }
 
 .kinds {
@@ -220,4 +264,37 @@ html, body {
     font-family: monospace;
     font-size: 1.25rem;
     letter-spacing: 0.1em;
+}
+
+/* Native controls (radios, checkboxes, the turns bar) in the theme's stone grey */
+:root {
+    accent-color: #a39d92;
+}
+
+/* Skirmish seat colours: each seat has its own (seats join in order, up to 6), shown by its name, on the regions it
+   holds, and as the player's own stripe at the top of their game page. Readable on the dark background. */
+.seat-0 { --seat: #ff6b6b; }
+.seat-1 { --seat: #5aa9ff; }
+.seat-2 { --seat: #5fd38d; }
+.seat-3 { --seat: #ffd166; }
+.seat-4 { --seat: #ff9f43; }
+.seat-5 { --seat: #f78fe0; }
+
+.seat-name {
+    color: var(--seat);
+}
+
+.rank-row.seated {
+    border-left: 4px solid var(--seat);
+    padding-left: 0.5rem;
+}
+
+    .rank-row.seated.you {
+        background: color-mix(in srgb, var(--seat) 16%, transparent);
+    }
+
+.seat-stripe {
+    height: 4px;
+    margin: -1.1rem -1rem 1rem;
+    background: var(--seat);
 }

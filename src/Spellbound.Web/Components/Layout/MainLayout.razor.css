@@ -7,12 +7,13 @@
     gap: 1rem;
     min-height: 3rem;
     padding: 0 1rem;
-    background: #2b0f3f;
+    background: #1f1d1b;
     color: #fff;
+    border-bottom: 1px solid #35322e;
 }
 
     .top-bar a, .top-bar ::deep .btn-link {
-        color: #e8d9ff;
+        color: #d6d0c5;
         text-decoration: none;
         padding: 0;
         min-height: 44px;
@@ -42,7 +43,7 @@
         min-height: 2.75rem; /* 44 px tap target */
         line-height: 2.75rem;
         padding: 0 1rem;
-        color: #6c757d;
+        color: var(--bs-secondary-color);
     }
 
 .bottom-nav {
@@ -52,7 +53,8 @@
     right: 0;
     z-index: 10;
     display: flex;
-    background: #2b0f3f;
+    background: #1f1d1b;
+    border-top: 1px solid #35322e;
     padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -62,7 +64,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #cdb8ea;
+        color: #a8a297;
         text-decoration: none;
         font-size: 0.85rem;
     }
@@ -70,12 +72,13 @@
     .bottom-nav ::deep a.active {
         color: #fff;
         font-weight: 700;
-        background: #44195f;
+        background: #34312c;
     }
 
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
+    color: #212529;
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;

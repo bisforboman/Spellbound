@@ -218,6 +218,10 @@ the board as text, objectives and the deck. It refreshes itself every few second
 letters and digits, without look-alikes (0/O, 1/I/L). The Games page has a box for a code and lists open public games.
 The admin can still start a game at once from the players' emails on the admin page. Saved orders can't change while the player is ready: they take back Ready first.
 
+**Player colours:** each seat has its own colour (red, blue, green, yellow, orange, pink, in seat order, which is
+the order players joined), shown by their name, on the regions they hold, and as a stripe at the top of their own game
+page. The lobby shows the same colours, so players know theirs before the game starts.
+
 **What players see of each other:** regions, buildings, armies, points and who's ready (attack and hex odds depend
 on them), but not each other's gold, mana or orders. The deck shows how many of each card are left, never their order.
 A contested claim's odds depend on who else claims, which nobody knows in advance, so the page shows a player's own
