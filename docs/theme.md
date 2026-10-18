@@ -8,10 +8,14 @@ inked in their school's colour. It is all CSS on top of Bootstrap's dark mode; n
 
 - `src/Spellbound.Web/wwwroot/app.css`, section "The Burned Grimoire": the fonts, the tokens, and the rules that use
   them. The tokens are mapped onto Bootstrap's `--bs-*` variables, so plain Bootstrap markup picks them up.
-- `src/Spellbound.Web/Components/Layout/MainLayout.razor`: wraps every page in `<div class="school-ink"
-  data-school="…">` with the signed-in mage's school, which sets `--school`. Before a mage exists, `--school` falls
-  back to the soft ink.
-- `MainLayout.razor.css`: the top bar and the bottom navigation as iron plates.
+- `src/Spellbound.Web/Components/Layout/MainLayout.razor`: wraps every page in `<div class="school-ink">`. The old game
+  set `data-school="…"` on it to the signed-in mage's school, which sets `--school`; without one, `--school` is the
+  soft ink. The new game can use the same hook, or drop it.
+- `MainLayout.razor.css`: the top bar (and the old game's bottom navigation) as iron plates.
+- `GrimFilters.razor`: the SVG filters, once in the layout.
+
+The game was scrapped on 18 Oct 2026 (see the roadmap); the theme stays. The school inks and the game pieces below
+were made for the old game.
 
 ## Tokens
 
@@ -46,28 +50,15 @@ They replaced IM Fell English SC and the system sans-serif.
 
 ## Sigils, the turn moon, the mana vial, battle stamps
 
-- **Sigils** (`SigilGenerator.cs`, `Sigil.razor`): each mage's brand is drawn from their name (trimmed and
-  lowercased, so case and spaces don't matter) with their school's mark in the middle, in their school's ink. It sits
-  beside the name on the Realm page and on a rival's page. It is a port of the proposal's JavaScript, with the same
-  hash (FNV-1a), the same PRNG (mulberry32) and the same draw order. That script is the spec: `SigilTests` checks
-  the C# against SVGs it made (`tests/Spellbound.Web.Tests/Fixtures/sigils.json`), byte for byte.
-- **The turn moon** (`TurnsBar.razor`) waxes from new to full as the wait for the next turn runs out (the share of
-  `GameRules.TurnInterval` gone by). At the cap it is a full blood moon in the danger colour. It replaced the ◐ glyph
-  and the progress bar; the count ("107 / 150 turns") and the wait stay as text.
-- **The mana vial** (`ManaVial.razor`): a stoppered flask of the school's ink, filled to the share of mana storage in
-  use, glowing when full. On the Realm and Magic pages, in place of the mana line.
-- **Battle stamps** (`ReportView.razor`): an attack's report is branded "Conquered" or "Repelled", from the report's
-  `Won`. Hexes aren't battles and get none.
-- **SVG filters** (`GrimFilters.razor`, once in the layout): `#grim-rough-sm` roughens the sigils and the moon, and
-  `#grim-worn` wears the stamps. The proposal also roughens every card and wears every page title (`#grim-rough`,
-  and `#grim-worn` on `h1`); that waits for the phone check (T4), since it puts a filter on most of every page.
-
-Motion: the vial's surface drifts and the stamp lands with a bounce; both stop under "reduce motion".
+Built for the old game and removed with it; they are in the git history at `b171e46`: `SigilGenerator.cs` (a mage's
+brand drawn from its name, a byte-for-byte port of the proposal's script, with `SigilTests` and its fixtures),
+`Sigil.razor`, the turn moon in `TurnsBar.razor`, `ManaVial.razor` and the battle stamps in `ReportView.razor`. Their
+CSS is still in `app.css` (`.sigil`, `.turns .moon`, `.vial`, `.stamp`), unused until something uses it again. The
+SVG filters stay in the layout.
 
 ## Phases
 
-See the roadmap, M7 "Look and feel": phase 1 is fonts, palette, cards, buttons and school inks; phase 2 adds
-the generated sigils, the turn moon, the mana vial, battle stamps and SVG filters; the rest of the motion (a flare
-after a cast, numbers that flash when they change, reports that burn in) and a light variant come later.
-Still to check on a real phone: that blackletter reads well at 360 px, that SVG filters are fast enough, and that
-the glyphs render.
+Phase 1 (fonts, palette, cards, buttons, school inks) and phase 2 (the game pieces above and the SVG filters) were
+built for the old game. Still open, for whatever the new game needs: the rest of the motion (a flare after an action,
+numbers that flash when they change, reports that burn in), a light variant, and a check on a real phone that
+blackletter reads well at 360 px, that the SVG filters are fast enough, and that the glyphs render.

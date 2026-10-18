@@ -1,8 +1,9 @@
 # Spellbound
 
-A turn-based, text-first multiplayer strategy game for phones, inspired by Archmage. It is a hobby project.
+A text-first multiplayer game for phones. It is a hobby project.
 
-- **Gameplay:** spend regenerating turns to explore, build, meditate and cast spells. PvP comes in milestone 2.
+- **Gameplay:** being designed again from the bottom (18 Oct 2026). The platform it runs on is built: sign-in,
+  accounts, rounds, the admin page, backups and notifications. The old game is in the git history (see the roadmap).
 - **Stack:** .NET 10, Blazor Server (interactive server rendering), PostgreSQL (plain Npgsql), sign-in with Google.
 - **Hosting plan:** one small VPS running Docker Compose with Caddy, installable on phones as a PWA.
 
@@ -23,8 +24,7 @@ page (`/admin`), list that email under `Admins` in `appsettings.json`, or set it
 
 ## Docs
 
-- [Game design](docs/game-design.md)
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Deploying](docs/deploy.md)
-- [Balance findings](docs/balance.md) (from a simulation; rerun with `dotnet run --project tools/Spellbound.Balance`)
+- [Theme](docs/theme.md)

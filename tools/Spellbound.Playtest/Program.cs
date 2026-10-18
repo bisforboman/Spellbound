@@ -86,12 +86,6 @@ static Process StartApp(Options options)
         ["ASPNETCORE_URLS"] = options.Url,
         ["ConnectionStrings__Spellbound"] = database,
         ["Admins__0"] = Playtest.AdminEmail,
-        // Fast rules: a new round copies the configured rules, so the playtest round runs on these.
-        ["GameRules__TurnInterval"] = "00:00:01",
-        ["GameRules__ProtectionTurns"] = "0",
-        ["GameRules__ProtectionDuration"] = "00:00:00",
-        ["GameRules__StartingGold"] = "50000",
-        ["GameRules__StartingMana"] = "8000",
         // Three players from one address would trip the per-address limits.
         ["RateLimits__AccountPosts"] = "1000",
         ["RateLimits__ConnectionRequestsPerMinute"] = "10000",
@@ -208,7 +202,7 @@ namespace Spellbound.Playtest
     }
 
     /// <summary>One player's browser: a phone-sized context with its own sign-in cookie.</summary>
-    internal sealed record Player(string Name, string Email, string School, IBrowserContext Context, IPage Page)
+    internal sealed record Player(string Name, string Email, IBrowserContext Context, IPage Page)
     {
         public List<string> Console { get; } = [];
 
@@ -227,9 +221,9 @@ namespace Spellbound.Playtest
 
         public async Task PlayAsync()
         {
-            var ada = await PlayerAsync("Ada", AdminEmail, "Dawn");
-            var merlin = await PlayerAsync("Merlin", "merlin@playtest.local", "Grove");
-            var morgana = await PlayerAsync("Morgana", "morgana@playtest.local", "Ember");
+            var ada = await PlayerAsync("Ada", AdminEmail);
+            var merlin = await PlayerAsync("Merlin", "merlin@playtest.local");
+            var morgana = await PlayerAsync("Morgana", "morgana@playtest.local");
 
             foreach (var player in new[] { ada, merlin, morgana })
             {
@@ -240,102 +234,18 @@ namespace Spellbound.Playtest
                     await page.ClickAsync("form[action='Account/DevSignIn'] button[type=submit]");
                     await page.WaitForURLAsync($"{options.Url}/");
                     await WaitForCircuitAsync(page);
-                    await Expect(page, "Your games");
-                    await Expect(page, "You have no mage this round yet");
-                });
-                await StepAsync(player, "create-mage", async page =>
-                {
-                    await page.ClickAsync("a[href='create']");
-                    await page.WaitForURLAsync("**/create");
-                    await WaitForCircuitAsync(page);
-                    await page.FillAsync("#name", player.Name);
-                    await page.ClickAsync($"label.choice:has(b:text-is('{player.School}'))");
-                    await page.ClickAsync("button[type=submit]:has-text('Begin')");
-                    await page.WaitForURLAsync("**/realm");
-                    await WaitForCircuitAsync(page);
-                    await page.Locator("h1", new PageLocatorOptions { HasTextString = player.Name }).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
-                    await Expect(page, $"{player.School} mage");
-                    await ExpectElement(page, ".mage-head .sigil svg");
-                    await ExpectElement(page, ".turns .moon");
-                    await ExpectElement(page, ".vial[role=meter]");
+                    await Expect(page, "The game is being designed again");
+                    await Expect(page, "Round 1 runs until");
                 });
             }
 
-            await StepAsync(ada, "games-with-mage", async page =>
-            {
-                await GoAsync(page, "/");
-                await Expect(page, "Ada, Dawn mage");
-                await Expect(page, "Sanctuary");
-            });
-            await StepAsync(ada, "explore", page => ActAsync(page, "/explore", async () =>
-            {
-                await page.FillAsync("#turns", "5");
-                await ExpectElement(page, ".ledger .ledger-line");
-                await page.ClickAsync("button[type=submit]:has-text('Explore')");
-            }));
-            await StepAsync(ada, "build", page => ActAsync(page, "/build", async () =>
-            {
-                await page.FillAsync("#count", "10");
-                await ExpectElement(page, ".ledger .ledger-line");
-                await page.ClickAsync("button[type=submit]:has-text('Build')");
-            }));
-            await StepAsync(ada, "meditate", page => ActAsync(page, "/magic", async () =>
-            {
-                await ExpectElement(page, ".vial[role=meter]");
-                await page.FillAsync("#turns", "3");
-                await ExpectElement(page, ".ledger .ledger-line");
-                await page.ClickAsync("button[type=submit]:has-text('Meditate')");
-            }));
-            await StepAsync(ada, "cast", page => ActAsync(page, "/magic", () =>
-                page.Locator("button.btn-primary:not([type=submit])").First.ClickAsync()));
-            await StepAsync(ada, "recruit", page => ActAsync(page, "/army", async () =>
-            {
-                await page.ClickAsync("label.choice:has(b:text-is('Unit 3'))");
-                await page.FillAsync("#count", "40");
-                await ExpectElement(page, ".ledger .ledger-line");
-                await page.ClickAsync("button[type=submit]:has-text('Recruit')");
-            }));
-            await StepAsync(ada, "rivals", async page =>
-            {
-                await GoAsync(page, "/rivals");
-                await Expect(page, "Merlin");
-                await Expect(page, "Net power counts");
-            });
-            await StepAsync(ada, "attack", async page =>
-            {
-                await GoAsync(page, "/rivals");
-                await page.ClickAsync("a.rank-row:has-text('Merlin')");
-                await page.WaitForURLAsync("**/rivals/*");
-                await WaitForCircuitAsync(page);
-                await ExpectElement(page, ".mage-head .sigil svg");
-                await ClickAndReportAsync(page, () => page.ClickAsync("button.btn-danger:has-text('Attack')"));
-                await ExpectElement(page, ".alert[role=status] .stamp"); // luck decides which verdict
-                await page.WaitForTimeoutAsync(500); // let the stamp land before the screenshot
-            });
-            await StepAsync(ada, "hex", async page =>
-            {
-                await page.ReloadAsync();
-                await WaitForCircuitAsync(page);
-                await ClickAndReportAsync(page, () => page.Locator("button.btn-danger").Last.ClickAsync());
-            });
-            await StepAsync(merlin, "attacked-banner", async page =>
-            {
-                await GoAsync(page, "/realm");
-                await Expect(page, "You were targeted");
-            });
-            await StepAsync(merlin, "chronicle", async page =>
-            {
-                await GoAsync(page, "/chronicle");
-                await Expect(page, "Ada (Dawn) cast Dawn hex at Merlin (Grove)");
-            });
-            await StepAsync(merlin, "hall-of-fame", page => GoAsync(page, "/halloffame"));
             await StepAsync(merlin, "account", async page =>
             {
                 await GoAsync(page, "/Account/Manage");
                 var data = await page.Context.APIRequest.GetAsync($"{options.Url}/Account/Data");
-                if (!data.Ok || !(await data.TextAsync()).Contains("Merlin", StringComparison.Ordinal))
+                if (!data.Ok || !(await data.TextAsync()).Contains(merlin.Email, StringComparison.Ordinal))
                 {
-                    throw new PlaytestException($"Download my data answered {data.Status} without Merlin's mage.");
+                    throw new PlaytestException($"Download my data answered {data.Status} without Merlin's account.");
                 }
             });
             await StepAsync(merlin, "notifications", async page =>
@@ -360,30 +270,6 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("A player who isn't an admin saw the admin page.");
                 }
             });
-            await StepAsync(morgana, "vigil", async page =>
-            {
-                await GoAsync(page, "/realm");
-                await page.FillAsync("#vigil-hours", "1");
-                await ExpectElement(page, ".ledger .ledger-line");
-                await ClickAndReportAsync(page, () => page.ClickAsync("button[type=submit]:has-text('Keep a Vigil')"));
-                await Expect(page, "You are keeping a Vigil");
-                await Expect(page, "frozen by your Vigil");
-            });
-            await StepAsync(ada, "rival-in-vigil", async page =>
-            {
-                await GoAsync(page, "/rivals");
-                await Expect(page, "keeping a Vigil");
-                await page.ClickAsync("a.rank-row:has-text('Morgana')");
-                await page.WaitForURLAsync("**/rivals/*");
-                await WaitForCircuitAsync(page);
-                await Expect(page, "Morgana is keeping a Vigil and can't be struck");
-            });
-            await StepAsync(morgana, "end-vigil", async page =>
-            {
-                await GoAsync(page, "/realm");
-                await ClickAndReportAsync(page, () => page.ClickAsync("button:has-text('End the Vigil now')"));
-                await Expect(page, "You end your Vigil");
-            });
             await StepAsync(ada, "admin", async page =>
             {
                 await GoAsync(page, "/admin");
@@ -396,13 +282,10 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Yes, end round')");
                 await Expect(page, "round 2 has started");
             });
-            await StepAsync(ada, "games-after-reset", async page =>
+            await StepAsync(ada, "home-after-reset", async page =>
             {
                 await GoAsync(page, "/");
-                await Expect(page, "Round 2");
-                await Expect(page, "You have no mage this round yet");
-                await GoAsync(page, "/halloffame");
-                await Expect(page, "Round 1");
+                await Expect(page, "Round 2 runs until");
             });
             await StepAsync(ada, "problems", async page =>
             {
@@ -471,7 +354,7 @@ namespace Spellbound.Playtest
             return text.ToString();
         }
 
-        private async Task<Player> PlayerAsync(string name, string email, string school)
+        private async Task<Player> PlayerAsync(string name, string email)
         {
             var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
@@ -481,7 +364,7 @@ namespace Spellbound.Playtest
                 DeviceScaleFactor = 2,
             });
             var page = await context.NewPageAsync();
-            var player = new Player(name, email, school, context, page);
+            var player = new Player(name, email, context, page);
             page.Console += (_, message) =>
             {
                 // Playwright's windows are private, where Chrome refuses push subscriptions and says so in the console.
@@ -594,27 +477,6 @@ namespace Spellbound.Playtest
             await page.WaitForFunctionAsync("() => window.Blazor !== undefined", null, new PageWaitForFunctionOptions { Timeout = 15_000 });
             await page.WaitForTimeoutAsync(800);
         }
-
-        private async Task ActAsync(IPage page, string path, Func<Task> act)
-        {
-            await GoAsync(page, path);
-            await ClickAndReportAsync(page, act);
-        }
-
-        /// <summary>Does an action and waits for its report; a report saying it failed fails the step.</summary>
-        private static async Task ClickAndReportAsync(IPage page, Func<Task> act)
-        {
-            await act();
-            var report = page.Locator(".alert[role=status]").Last;
-            await report.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
-            if (await report.GetAttributeAsync("class") is { } css && css.Contains("alert-danger", StringComparison.Ordinal))
-            {
-                throw new PlaytestException("The action failed: " + (await report.InnerTextAsync()).Replace('\n', ' '));
-            }
-        }
-
-        private static Task ExpectElement(IPage page, string selector) =>
-            page.Locator(selector).First.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
 
         private static async Task Expect(IPage page, string text, bool optional = false)
         {

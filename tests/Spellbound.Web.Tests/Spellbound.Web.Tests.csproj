@@ -20,10 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\src\Spellbound.Web\Spellbound.Web.csproj" />
   </ItemGroup>
 

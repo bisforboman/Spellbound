@@ -1,8 +1,5 @@
-using Spellbound.Domain;
 using Spellbound.Web;
 using Spellbound.Web.Components;
-using Spellbound.Web.Components.Game;
-using Spellbound.Web.Data;
 using Spellbound.Web.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,20 +10,12 @@ builder.Services.AddRazorComponents()
 // The reusable host (Hosting/): accounts, database, rounds, admin, backups and abuse protection.
 builder.AddGameHost();
 
-// Spellbound itself, and its answers to the host's questions.
-builder.Services.AddSingleton(builder.Configuration.GetSection("GameRules").Get<GameRules>() ?? GameRules.Default);
-builder.Services.AddSingleton<IRandomSource, SharedRandom>();
-builder.Services.AddSingleton<GameService>();
-builder.Services.AddSingleton<IGameSchema, SpellboundSchema>();
-builder.Services.AddSingleton<SpellboundHost>();
-builder.Services.AddSingleton<IRoundLifecycle>(sp => sp.GetRequiredService<SpellboundHost>());
-builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<SpellboundHost>());
-builder.Services.AddSingleton<IAccountLifecycle>(sp => sp.GetRequiredService<SpellboundHost>());
-builder.Services.Configure<AdminPageOptions>(options =>
-{
-    options.GameSections.Add(typeof(ActionLogAdmin));
-    options.GameSections.Add(typeof(GameRulesAdmin));
-});
+// The game's place while it is designed again: it answers the host's questions and keeps a round going.
+builder.Services.AddSingleton<PlaceholderGame>();
+builder.Services.AddSingleton<IGameSchema>(sp => sp.GetRequiredService<PlaceholderGame>());
+builder.Services.AddSingleton<IRoundLifecycle>(sp => sp.GetRequiredService<PlaceholderGame>());
+builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<PlaceholderGame>());
+builder.Services.AddSingleton<IAccountLifecycle>(sp => sp.GetRequiredService<PlaceholderGame>());
 
 var app = builder.Build();
 

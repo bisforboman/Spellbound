@@ -123,23 +123,10 @@ updates them when it starts. Players see a short reconnect while the app restart
 ## Day to day
 
 - **Logs**: `docker compose logs -f app` (or `db`, `caddy`).
-- **Look at the data**: `docker compose exec db psql -U spellbound` (for example `select id, number, ends_at from games where mode = 'realm' and ended_at is null;`, the Realm round being played).
-- **What did a player do?** The admin page's **Action log** shows a mage's latest actions. For more, query the
-  `actions` table, for example everything one mage did today, or attacks per target this round:
-
-  ```sql
-  \set game '(select id from games where mode = \'realm\' and ended_at is null)'
-  select at, action, inputs, result->'lines'->>0 from actions
-    where game_id = :game and owner_id = (select owner_id from mages
-      where game_id = :game and data->>'name' = 'Merlin')
-      and at > now() - interval '1 day' order by at;
-  select target_owner_id, count(*) from actions where game_id = :game and action = 'attack'
-    group by 1 order by 2 desc;
-  ```
+- **Look at the data**: `docker compose exec db psql -U spellbound` (for example `select id, mode, number, ends_at from games where ended_at is null;`, the round being run).
 - **Health**: `https://your.domain/healthz` answers `Healthy` while the app is up.
-- **Change a setting** (`GameRules__...`, admins): add it to the `environment` list of `app` in
-  `docker-compose.yml` or to `.env`, then `docker compose up -d`. Game rules apply from the **next round**: a round keeps
-  the rules it started with. The admin page's Game rules section shows both where they differ.
+- **Change a setting** (admins, rate limits, …): add it to the `environment` list of `app` in
+  `docker-compose.yml` or to `.env`, then `docker compose up -d`.
 - **Sign-in problems** are Google's to solve (a forgotten Google password, a lost phone); the game has nothing to reset.
   A player who loses their Google account loses their game account with it.
 - **PostgreSQL version**: the compose file pins `postgres:16`, the same major version as the backup tools in the app
