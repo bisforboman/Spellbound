@@ -25,8 +25,9 @@ Spellbound has two modes that share one core (mages, schools, spells, turns, arm
 
 - **Realm**: the game described below. An open world without a map, land grows without limit, long rounds;
   closest to Archmage.
-- **Skirmish**: a short game on a limited, shared board for a fixed number of players, with a clear end and scoring
-  from several sources, like a board game. *Not designed yet*: see [skirmish-design.md](skirmish-design.md).
+- **Skirmish**: a short game on a limited, shared board for a fixed number of players, played in rounds that everyone
+  plans at the same time and readies up for (with a time limit and reminders), with a clear end and scoring from several
+  sources, like a board game. *Not designed yet*: see [skirmish-design.md](skirmish-design.md).
 
 Players **create and join games**, and many run at once; the Realm can be one always-on game in the same list. A mode
 is a preset of **rule switches** (for example "exploring finds things", "attacks on"), and whoever creates a game may

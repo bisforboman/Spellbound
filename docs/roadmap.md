@@ -78,8 +78,12 @@ existing test still checks "one game in the list".
 
 ## M6: Skirmish
 - [ ] Rules draft ([skirmish design](skirmish-design.md)), agreed with the owner
-- [ ] Rules in the domain, with tests, and a simulation in `tools/` until it plays well
-- [ ] The board and scoring pages, at 360 px, text-first
+- [ ] Rules in the domain, with tests: orders, and playing a round from every player's orders and a seeded random source
+- [ ] A simulation in `tools/` until it plays well
+- [ ] Rounds with a ready-up and a time limit; the server plays a round when all are ready or time is up
+- [ ] Reminders by web push (when everyone else is ready, and when time is running out)
+- [ ] The board, orders and scoring pages, at 360 px, text-first
+- [ ] Dropouts (away after 2 missed rounds) and a win record per account
 - [ ] One luck feature to start (for example "exploring finds things"), as a switch
 
 ## Engineering
@@ -95,7 +99,7 @@ See [balance.md](balance.md) and the open questions in [game design](game-design
 - Population or peasants, and an end-of-round event: design questions, not numbers
 
 ## Later
-- Research, artifacts, guilds and chat, server variants, web push notifications
+- Research, artifacts, guilds and chat, server variants, web push for Realm attacks (Skirmish reminders bring it in M6)
 - Real email (an SMTP service), if the game ever needs it
 - More sign-in options (Apple, passkeys), linked to the same account
 - Move `Hosting/` into its own reusable project if a separate game is ever planned (see architecture, "The game host
