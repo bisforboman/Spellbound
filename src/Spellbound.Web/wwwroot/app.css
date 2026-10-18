@@ -1,80 +1,3 @@
-html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
-
-/* Headings: IM Fell English SC, self-hosted (wwwroot/fonts, SIL Open Font License: fonts/OFL.txt). Only the regular
-   weight exists, so headings are set to 400 rather than letting the browser fake a bold. */
-@font-face {
-    font-family: 'IM Fell English SC';
-    src: url("fonts/im-fell-english-sc-latin.woff2") format("woff2");
-    font-weight: 400;
-    font-display: swap;
-}
-
-h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
-    font-family: 'IM Fell English SC', Georgia, serif;
-    font-weight: 400;
-    letter-spacing: 0.01em;
-}
-
-/* The dark theme: Bootstrap's dark mode (data-bs-theme="dark" on <html>) in gritty warm greys, with a faint grain */
-[data-bs-theme=dark] {
-    --bs-body-bg: #141312;
-    --bs-body-bg-rgb: 20, 19, 18;
-    --bs-body-color: #dcd7ce;
-    --bs-body-color-rgb: 220, 215, 206;
-    --bs-secondary-color: rgba(220, 215, 206, 0.6);
-    --bs-secondary-bg: #24221f;
-    --bs-tertiary-bg: #1c1a18;
-    --bs-border-color: #35322e;
-    --bs-link-color: #e3ddd2;
-    --bs-link-color-rgb: 227, 221, 210;
-    --bs-link-hover-color: #ffffff;
-    --bs-link-hover-color-rgb: 255, 255, 255;
-    --sb-highlight: #2a2724;
-}
-
-body {
-    /* grain: SVG noise, barely visible, so the dark grey isn't flat */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
-}
-
-a, .btn-link {
-    color: var(--bs-link-color);
-}
-
-.btn-primary {
-    --bs-btn-color: #f2eee7;
-    --bs-btn-bg: #3d3a35;
-    --bs-btn-border-color: #57524a;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #4a463f;
-    --bs-btn-hover-border-color: #6a645a;
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #2f2c28;
-    --bs-btn-active-border-color: #6a645a;
-    --bs-btn-disabled-color: #f2eee7;
-    --bs-btn-disabled-bg: #3d3a35;
-    --bs-btn-disabled-border-color: #57524a;
-}
-
-.btn-outline-primary {
-    --bs-btn-color: var(--bs-link-color);
-    --bs-btn-border-color: #57524a;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #3d3a35;
-    --bs-btn-hover-border-color: #6a645a;
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #2f2c28;
-    --bs-btn-active-border-color: #6a645a;
-    --bs-btn-disabled-color: var(--bs-secondary-color);
-    --bs-btn-disabled-border-color: #35322e;
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem var(--bs-body-bg), 0 0 0 0.25rem #8c867b;
-}
-
 .content {
     padding-top: 1.1rem;
 }
@@ -197,7 +120,7 @@ html, body {
 }
 
     .rank-row.you {
-        background: var(--sb-highlight);
+        background: color-mix(in srgb, var(--school) 14%, var(--paper-deep));
     }
 
     .rank-row .rank {
@@ -250,11 +173,6 @@ html, body {
         margin-top: 0.5rem;
     }
 
-/* Native controls (radios, checkboxes, the turns bar) in the theme's stone grey */
-:root {
-    accent-color: #a39d92;
-}
-
 /* Muted action colours, to sit in the greys: olive for good news and Ready, rust for danger, ochre for warnings */
 [data-bs-theme=dark] {
     --bs-success: #6f8a4e;
@@ -304,17 +222,6 @@ html, body {
     --bs-btn-active-border-color: #8c3930;
 }
 
-.btn-outline-secondary {
-    --bs-btn-color: var(--bs-body-color);
-    --bs-btn-border-color: #57524a;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #3d3a35;
-    --bs-btn-hover-border-color: #6a645a;
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #2f2c28;
-    --bs-btn-active-border-color: #6a645a;
-}
-
 /* Tables let the grain show through instead of sitting on a black slab */
 .table {
     --bs-table-bg: transparent;
@@ -323,6 +230,7 @@ html, body {
 /* A link inside a sentence gets a taller tap area (44 px) without moving the text around it */
 p a:not(.btn), li > a:not(.btn):not(.rank-row) {
     display: inline-block;
+    min-width: 44px;
     padding-block: 12px;
     margin-block: -12px;
 }
@@ -355,6 +263,321 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row) {
     font-weight: 400;
 }
 
-.glyph-Gold { color: #b39a5e; }
-.glyph-Mana { color: #7f93a8; }
+.glyph-Gold { color: var(--radiant-ink); }
+.glyph-Mana { color: var(--tidal-ink); }
 .glyph-Turns { font-size: 1.35em; line-height: 1; vertical-align: -0.08em; }
+
+/* ==========================================================================
+   The Burned Grimoire (docs/theme.md): soot, iron and worn print. Dark, with no image files: the grain and soot are
+   generated noise. Its tokens are mapped onto Bootstrap's variables, so every page (account and admin included)
+   follows them without its own markup changing. The player's school tints the accents: data-school on the layout.
+   ========================================================================== */
+
+@font-face {
+    font-family: 'Grenze Gotisch';
+    src: url("fonts/grenze-gotisch-latin.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Grenze';
+    src: url("fonts/grenze-latin.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Alegreya';
+    src: url("fonts/alegreya-latin.woff2") format("woff2");
+    font-weight: 400 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Alegreya';
+    src: url("fonts/alegreya-italic-latin.woff2") format("woff2");
+    font-weight: 400 900;
+    font-style: italic;
+    font-display: swap;
+}
+
+:root {
+    /* Soot and bone */
+    --paper: #14110e;      /* the page: soot */
+    --paper-deep: #1e1a15; /* cards: charred leather */
+    --paper-edge: #3b3229; /* rules and frames: old iron */
+    --ink: #dbcfb7;        /* text: bone */
+    --ink-soft: #9d8f78;   /* secondary: ash */
+    --ink-faint: #6b6051;
+    --on-ink: #f1e7d3;     /* text on a school-ink fill */
+    --shadow: rgba(0, 0, 0, 0.6);
+    --stain: rgba(0, 0, 0, 0.35);
+    --rivet: #4d4135;
+    --rivet-hi: #7a6a56;
+    --plate-top: #2a241e;  /* iron button plate */
+    --plate-bot: #191511;
+
+    /* The schools' inks: tarnished, not bright */
+    --radiant-ink: #c49a3e; /* Dawn: tarnished brass */
+    --verdant-ink: #7e9a52; /* Grove: lichen */
+    --ember-ink: #c2502f;   /* Ember: forge rust */
+    --umbral-ink: #9273a8;  /* Umbra: bruise */
+    --tidal-ink: #5f8da2;   /* Veil: cold brine */
+
+    /* The ink of the school you're looking at; ash when there's none (no mage yet, account pages) */
+    --school: var(--ink-soft);
+
+    --font-display: 'Grenze Gotisch', Georgia, serif;
+    --font-label: 'Grenze', Georgia, serif;
+    --font-body: 'Alegreya', 'Iowan Old Style', Georgia, serif;
+
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0.11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --soot: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.6 1.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+
+    accent-color: var(--ink-soft); /* native radios, checkboxes, the turns bar */
+}
+
+[data-school="dawn"] { --school: var(--radiant-ink); }
+[data-school="grove"] { --school: var(--verdant-ink); }
+[data-school="ember"] { --school: var(--ember-ink); }
+[data-school="umbra"] { --school: var(--umbral-ink); }
+[data-school="veil"] { --school: var(--tidal-ink); }
+
+[data-bs-theme=dark] {
+    --bs-body-bg: #14110e;
+    --bs-body-bg-rgb: 20, 17, 14;
+    --bs-body-color: #dbcfb7;
+    --bs-body-color-rgb: 219, 207, 183;
+    --bs-secondary-color: #9d8f78;
+    --bs-secondary-bg: #1e1a15;
+    --bs-tertiary-bg: #1a1612;
+    --bs-border-color: #3b3229;
+    --bs-emphasis-color: #f1e7d3;
+    /* Links stay bone: the school inks are for accents, not text (Ember and Umbra are too dark for body links) */
+    --bs-link-color: #dbcfb7;
+    --bs-link-color-rgb: 219, 207, 183;
+    --bs-link-hover-color: #f1e7d3;
+    --bs-link-hover-color-rgb: 241, 231, 211;
+    --bs-body-font-family: var(--font-body);
+    --bs-body-font-size: 1.0625rem;
+}
+
+body {
+    background-color: var(--paper);
+    background-image: var(--grain), radial-gradient(ellipse at 50% 30%, transparent 40%, var(--shadow) 120%), var(--soot);
+    background-attachment: fixed;
+    font-variant-numeric: lining-nums proportional-nums;
+}
+
+a, .btn-link {
+    color: var(--bs-link-color);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+/* Type: blackletter for page titles and section headings; the label face for mage names (typed by players, up to
+   24 characters, so they must read at 360 px), labels and buttons */
+h1, h2, .h1, .h2, .h3, .h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+}
+
+h1 { font-size: 2rem; }
+
+h1.mage-name {
+    font-family: var(--font-label);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+h3, h5, h6, .h5, .h6, .form-label, legend, .stats th, .round-info, .cost {
+    font-family: var(--font-label);
+}
+
+h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+}
+
+.num, .stats td, .rank-row .num, .turns-line {
+    font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Cards: an iron-bound folio of charred leather with soot stains and four rivets. The stats tables are drawn as one;
+   .folio is the general version, with edges roughened by the SVG filter in the layout. */
+.table.stats, .folio {
+    background-color: var(--paper-deep);
+    background-image:
+        radial-gradient(circle, var(--rivet-hi) 0 1px, var(--rivet) 1.5px 3px, transparent 3.5px),
+        radial-gradient(circle, var(--rivet-hi) 0 1px, var(--rivet) 1.5px 3px, transparent 3.5px),
+        radial-gradient(circle, var(--rivet-hi) 0 1px, var(--rivet) 1.5px 3px, transparent 3.5px),
+        radial-gradient(circle, var(--rivet-hi) 0 1px, var(--rivet) 1.5px 3px, transparent 3.5px),
+        radial-gradient(ellipse 40% 30% at 85% 15%, var(--stain), transparent 70%),
+        radial-gradient(ellipse 30% 45% at 8% 90%, var(--stain), transparent 70%),
+        var(--grain);
+    background-size: 18px 18px, 18px 18px, 18px 18px, 18px 18px, auto, auto, auto;
+    background-position: 0 0, 100% 0, 0 100%, 100% 100%, 0 0, 0 0, 0 0;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+    border: 1px solid var(--paper-edge);
+    border-radius: 3px;
+    box-shadow: 0 6px 14px -6px var(--shadow), inset 0 0 24px var(--stain);
+}
+
+.table.stats {
+    --bs-table-bg: transparent;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .table.stats > :not(caption) > * > * {
+        border-bottom: 1px dashed var(--paper-edge);
+        padding: 0.55rem 0.9rem;
+    }
+
+    .table.stats tr:last-child > * {
+        border-bottom: 0;
+    }
+
+    .stats th {
+        border-left: 0;
+        vertical-align: middle;
+        overflow-wrap: anywhere; /* long labels, such as the admin page's rule names, wrap instead of widening the page */
+    }
+
+.folio {
+    position: relative;
+    padding: 1.1rem 1.15rem;
+    margin-bottom: 1rem;
+}
+
+    .folio--accent {
+        border-left: 3px solid var(--school);
+    }
+
+/* Buttons: iron plates. The main action is cast in the school's ink; the rest are bare iron edged in it. */
+.btn:not(.btn-link) {
+    font-family: var(--font-label);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-radius: 3px;
+    border-bottom-width: 3px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 0 var(--shadow);
+}
+
+    .btn:not(.btn-link):active {
+        transform: translateY(2px);
+        box-shadow: inset 0 2px 4px var(--shadow);
+    }
+
+    .btn-lg:not(.btn-link) {
+        font-size: 1.05rem;
+    }
+
+.btn-primary {
+    --bs-btn-color: var(--on-ink);
+    --bs-btn-bg: color-mix(in srgb, var(--school) 58%, #000);
+    --bs-btn-border-color: color-mix(in srgb, var(--school) 45%, #000);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--school) 66%, #000);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--school) 50%, #000);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: color-mix(in srgb, var(--school) 48%, #000);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--school) 40%, #000);
+    --bs-btn-disabled-color: var(--on-ink);
+    --bs-btn-disabled-bg: color-mix(in srgb, var(--school) 40%, #000);
+    --bs-btn-disabled-border-color: color-mix(in srgb, var(--school) 30%, #000);
+    background-image: linear-gradient(rgba(255, 255, 255, 0.07), rgba(0, 0, 0, 0.22));
+    border-bottom-color: color-mix(in srgb, var(--school) 30%, #000);
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.btn-outline-primary, .btn-outline-secondary {
+    --bs-btn-color: var(--ink);
+    --bs-btn-bg: var(--plate-bot);
+    --bs-btn-border-color: var(--paper-edge);
+    --bs-btn-hover-color: var(--on-ink);
+    --bs-btn-hover-bg: var(--plate-top);
+    --bs-btn-hover-border-color: var(--paper-edge);
+    --bs-btn-active-color: var(--on-ink);
+    --bs-btn-active-bg: var(--plate-bot);
+    --bs-btn-active-border-color: var(--paper-edge);
+    --bs-btn-disabled-color: var(--ink-faint);
+    --bs-btn-disabled-bg: var(--plate-bot);
+    --bs-btn-disabled-border-color: var(--paper-edge);
+    background-image: linear-gradient(var(--plate-top), var(--plate-bot));
+    border-bottom-color: var(--school);
+}
+
+.btn-success, .btn-danger {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.07), rgba(0, 0, 0, 0.22));
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.btn:focus-visible, .form-control:focus, .form-select:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem var(--paper), 0 0 0 0.25rem var(--school);
+}
+
+/* Fields: sunk into the page */
+.form-control, .form-select {
+    background-color: var(--paper);
+    border-color: var(--paper-edge);
+    border-radius: 3px;
+    box-shadow: inset 0 2px 4px var(--shadow);
+}
+
+/* Choices: little leather plates; the chosen one is edged in the school's ink */
+.choice {
+    background-color: var(--paper-deep);
+    border-color: var(--paper-edge);
+    border-radius: 3px;
+}
+
+    .choice:has(input:checked) {
+        border-color: var(--school);
+        box-shadow: inset 3px 0 0 var(--school);
+    }
+
+/* An ornament between sections: <div class="ornament" aria-hidden="true"><span>✣</span></div> */
+.ornament {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+    color: var(--school);
+    line-height: 1;
+}
+
+    .ornament::before, .ornament::after {
+        content: "";
+        flex: 1;
+        height: 2px;
+        background: repeating-linear-gradient(90deg, var(--paper-edge) 0 7px, transparent 7px 9px, var(--paper-edge) 9px 11px, transparent 11px 14px);
+    }
+
+/* News: entries with a hairline between them; hostile ones edged in old blood */
+.news-entry {
+    border-bottom: 1px dashed var(--paper-edge);
+}
+
+.rank-row {
+    border-bottom: 1px dashed var(--paper-edge);
+}
+
+    .rank-row.you {
+        box-shadow: inset 3px 0 0 var(--school);
+    }
+
+@media (prefers-reduced-motion: reduce) {
+    .btn:not(.btn-link):active {
+        transform: none;
+    }
+}

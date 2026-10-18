@@ -25,7 +25,7 @@ src/
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
     Components/Account/     sign-in and account pages (part of the host, not yet moved into Hosting/)
     Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL scripts)
-    wwwroot/fonts/          the headings font, self-hosted, with its licence (OFL.txt)
+    wwwroot/fonts/          the theme's fonts, self-hosted, with their licences (OFL-*.txt); see theme.md
 tools/
   Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md), and the
                             opening study: many seeded runs of days 1–7 (docs/opening-baseline.md)

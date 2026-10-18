@@ -24,9 +24,9 @@ Design goals:
 - **Luck before decisions, not after.** Prefer randomness the player sees and plans around (Mageborn's Omens, hidden
   information) over rolls that decide after they've committed; whatever the odds, show them before the player confirms,
   like costs.
-- **Art later.** Text-first until the core is fun; art can be reconsidered then. The look for now (18 Oct 2026): dark
-  and gritty, warm dark greys with a faint grain, headings in IM Fell English SC, muted olive, rust and ochre for
-  actions, small geometric symbols for gold, mana, turns, land and army.
+- **Art later.** Text-first until the core is fun; art can be reconsidered then. The look (18 Oct 2026): "The Burned Grimoire",
+  a dark, gritty spellbook: soot paper with grain, blackletter page titles, iron-plate buttons, and each mage's pages
+  inked in their school's colour. Small geometric symbols for gold, mana, turns, land and army. See [theme.md](theme.md).
 
 ## Games and rounds
 
