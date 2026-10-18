@@ -1,0 +1,54 @@
+@page "/Account/Manage"
+
+@using System.Globalization
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Spellbound.Web.Hosting
+
+@attribute [Authorize]
+@inject AccountService Accounts
+
+<PageTitle>Account</PageTitle>
+
+<h1>Account</h1>
+
+@if (account is not null)
+{
+    <table class="table stats">
+        <tbody>
+            <tr><th>Email</th><td>@account.Email</td></tr>
+            <tr><th>Signs in with</th><td>@(account.Provider == AccountEndpoints.GoogleProvider ? "Google" : account.Provider)</td></tr>
+            <tr><th>Since</th><td>@account.CreatedAt.UtcDateTime.ToString("d MMM yyyy", CultureInfo.InvariantCulture)</td></tr>
+        </tbody>
+    </table>
+    <p class="text-muted">Your email comes from your sign-in and updates each time you sign in.</p>
+}
+
+<h2 class="h4 mt-4">Delete your account</h2>
+<p>
+    This deletes your account and your mages and news in every round, at once and for good. Halls of fame from finished
+    rounds keep your mage's name.
+</p>
+@if (Error == "confirm")
+{
+    <p class="alert alert-danger" role="alert">Type "delete" to confirm.</p>
+}
+<form action="Account/Delete" method="post">
+    <AntiforgeryToken />
+    <label class="form-label" for="confirm">Type <b>delete</b> to confirm</label>
+    <input id="confirm" name="confirm" class="form-control" autocomplete="off" required />
+    <button type="submit" class="btn btn-danger btn-lg w-100 mt-2">Delete my account</button>
+</form>
+
+@code {
+    private Account? account;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? Error { get; set; }
+
+    protected override async Task OnInitializedAsync() =>
+        account = await Accounts.FindAsync(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);
+}

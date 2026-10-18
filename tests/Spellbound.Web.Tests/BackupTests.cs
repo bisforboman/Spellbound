@@ -51,7 +51,7 @@ public sealed class BackupTests : TestDatabase
         Assert.True(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
         await using (var db = OpenDb(fresh))
         {
-            Assert.Equal("Merlin", (await db.Mages().SingleAsync(m => m.Round == 1 && m.OwnerId == "ApplicationUsers/1-A")).Load().Name);
+            Assert.Equal("Merlin", (await db.Mages().SingleAsync(m => m.Round == 1 && m.OwnerId == "account-1")).Load().Name);
             Assert.NotNull(await db.LoadCurrentRoundAsync());
             Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         }
@@ -94,7 +94,7 @@ public sealed class BackupTests : TestDatabase
     {
         await using var db = OpenDb();
         db.CurrentRound.Add(new CurrentRound { Round = Round.First(T0, GameRules.Default.RoundLength) });
-        db.Mages().Add(MageRecord.For(1, Mage.Create("ApplicationUsers/1-A", "Merlin", MagicSchool.Tidal, T0, GameRules.Default)));
+        db.Mages().Add(MageRecord.For(1, Mage.Create("account-1", "Merlin", MagicSchool.Tidal, T0, GameRules.Default)));
         await db.SaveChangesAsync();
     }
 

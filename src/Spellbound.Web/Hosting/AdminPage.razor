@@ -61,11 +61,6 @@ else
 }
 
 <h2 class="h4 mt-4">Players</h2>
-<form class="mb-3" @onsubmit="ResetByEmailAsync">
-    <label class="form-label" for="reset-email">Reset a password by email (works for any account)</label>
-    <input id="reset-email" type="email" class="form-control" autocomplete="off" @bind="resetEmail" @bind:event="oninput" />
-    <button type="submit" class="btn btn-outline-secondary w-100 mt-2" disabled="@(busy || string.IsNullOrWhiteSpace(resetEmail))">Reset password</button>
-</form>
 @if (players.Count == 0)
 {
     <p class="text-muted">Nobody has a mage this round.</p>
@@ -98,23 +93,12 @@ else
         {
             <button type="button" class="btn btn-outline-danger w-100" disabled="@busy" @onclick="() => { banning = player.OwnerId; reason = string.Empty; }">Ban…</button>
         }
-
-        @if (resetting == player.OwnerId)
-        {
-            <p class="mb-1 mt-2">Give @(player.Email ?? "this player") a new temporary password? Their current one stops working.</p>
-            <button type="button" class="btn btn-warning w-100" disabled="@busy" @onclick="() => ResetPasswordAsync(player.OwnerId)">Yes, reset the password</button>
-            <button type="button" class="btn btn-link w-100" @onclick="() => resetting = null">Cancel</button>
-        }
-        else if (player.Ban is null)
-        {
-            <button type="button" class="btn btn-outline-secondary w-100" disabled="@busy" @onclick="() => resetting = player.OwnerId">Reset password…</button>
-        }
     </div>
 }
 
 <h2 class="h4 mt-4">Shared networks</h2>
 <p class="text-muted">
-    Accounts that signed up or logged in from the same network in the last 30 days. Families, schools and mobile
+    Accounts that signed in from the same network in the last 30 days. Families, schools and mobile
     carriers share networks too, so this is a hint to look closer, not proof.
 </p>
 @if (sharedNetworks.Count == 0)
@@ -157,8 +141,6 @@ else
     private DateTime newEnd;
     private bool confirmEnd;
     private string? banning;
-    private string? resetting;
-    private string resetEmail = string.Empty;
     private string reason = string.Empty;
     private string? status;
     private bool busy;
@@ -191,14 +173,6 @@ else
 
     private Task UnbanAsync(string ownerId) => RunAsync(() => Admin.UnbanAsync(ownerId));
 
-    private Task ResetPasswordAsync(string ownerId) => RunAsync(() => Admin.ResetPasswordAsync(ownerId));
-
-    private async Task ResetByEmailAsync()
-    {
-        await RunAsync(() => Admin.ResetPasswordByEmailAsync(resetEmail));
-        resetEmail = string.Empty;
-    }
-
     private Task BackUpNowAsync() => RunAsync(Admin.BackUpNowAsync);
 
     private async Task RunAsync(Func<Task<string>> action)
@@ -214,7 +188,6 @@ else
             status = await action();
             confirmEnd = false;
             banning = null;
-            resetting = null;
             await LoadAsync();
         }
         finally

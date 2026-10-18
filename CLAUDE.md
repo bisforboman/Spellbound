@@ -17,7 +17,7 @@ If `src/Spellbound.Web` does not exist yet, the solution has not been bootstrapp
 ./scripts/bootstrap.ps1
 ```
 
-It creates the `.slnx`, the Blazor Server web project (from the official template, with Individual auth; it now stores everything in PostgreSQL through EF Core),
+It creates the `.slnx`, the Blazor Server web project (from the official template; it has since moved to Google sign-in and PostgreSQL),
 the project files for the domain and test projects, and wires up references. Then build and test.
 
 ## Commands

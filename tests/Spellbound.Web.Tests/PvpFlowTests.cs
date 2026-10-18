@@ -10,8 +10,8 @@ namespace Spellbound.Web.Tests;
 /// <summary>Attacks and hexes through the real app: two mages, no protection, a seeded random source.</summary>
 public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
 {
-    private const string Attacker = "ApplicationUsers/1-A";
-    private const string Defender = "ApplicationUsers/2-A";
+    private const string Attacker = "account-1";
+    private const string Defender = "account-2";
 
     private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 

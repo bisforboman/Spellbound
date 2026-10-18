@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -9,9 +8,10 @@ namespace Spellbound.Web.Hosting;
 /// tables the game adds through <see cref="IGameModel"/>. One context, so the host and the game can save in one
 /// transaction (a round reset, an account deletion).
 /// </summary>
-public sealed class HostDb(DbContextOptions<HostDb> options, IEnumerable<IGameModel> games)
-    : IdentityDbContext<ApplicationUser>(options)
+public sealed class HostDb(DbContextOptions<HostDb> options, IEnumerable<IGameModel> games) : DbContext(options)
 {
+    public DbSet<Account> Accounts => Set<Account>();
+
     public DbSet<CurrentRound> CurrentRound => Set<CurrentRound>();
 
     public DbSet<Ban> Bans => Set<Ban>();
@@ -31,6 +31,12 @@ public sealed class HostDb(DbContextOptions<HostDb> options, IEnumerable<IGameMo
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<Account>(account =>
+        {
+            account.ToTable("accounts");
+            account.HasIndex(a => new { a.Provider, a.Subject }).IsUnique();
+            account.HasIndex(a => a.Email);
+        });
         builder.Entity<CurrentRound>(round =>
         {
             round.ToTable("current_round");

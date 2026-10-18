@@ -3,7 +3,7 @@
 A turn-based, text-first multiplayer strategy game for phones, inspired by Archmage. It is a hobby project.
 
 - **Gameplay:** spend regenerating turns to explore, build, meditate and cast spells. PvP comes in milestone 2.
-- **Stack:** .NET 10, Blazor Server (interactive server rendering), PostgreSQL with EF Core, ASP.NET Core Identity.
+- **Stack:** .NET 10, Blazor Server (interactive server rendering), PostgreSQL with EF Core, sign-in with Google.
 - **Hosting plan:** one small VPS running Docker Compose with Caddy, installable on phones as a PWA.
 
 ## Getting started
@@ -17,8 +17,9 @@ dotnet test
 dotnet run --project src/Spellbound.Web
 ```
 
-To use the admin page (`/admin`), list your account's email under `Admins` in `appsettings.json`, or set it as an
-environment variable: `Admins__0=you@example.com`.
+Locally, sign in with the Development sign-in on the sign-in page (any email; no Google needed). To use the admin
+page (`/admin`), list that email under `Admins` in `appsettings.json`, or set it as an environment variable:
+`Admins__0=you@example.com`. Outside Development, sign-in needs a Google OAuth client (see [Deploying](docs/deploy.md)).
 
 ## Docs
 

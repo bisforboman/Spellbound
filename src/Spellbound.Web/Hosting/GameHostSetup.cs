@@ -1,12 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Spellbound.Web.Components.Account;
 
 namespace Spellbound.Web.Hosting;
 
@@ -22,30 +19,14 @@ public static class GameHostSetup
         var configuration = builder.Configuration;
         services.TryAddSingleton(TimeProvider.System);
 
-        // Accounts: ASP.NET Core Identity with the template's Blazor account pages, stored in PostgreSQL.
-        services.AddCascadingAuthenticationState();
-        services.AddScoped<IdentityRedirectManager>();
-        services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-        services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = IdentityConstants.ApplicationScheme;
-                options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-            })
-            .AddIdentityCookies();
+        // Accounts: sign-in with Google (no passwords stored); see AccountEndpoints.cs and Accounts.cs.
+        builder.AddAccounts();
 
-        // PostgreSQL. Singletons (a Blazor circuit outlives one action) create a context per call from the factory;
-        // Identity uses the scoped one. The connection string is read when first used, so tests can set their own.
+        // PostgreSQL. Singletons (a Blazor circuit outlives one action) create a context per call from the factory.
+        // The connection string is read when first used, so tests can set their own.
         services.AddDbContextFactory<HostDb>((sp, options) => options
             .UseNpgsql(HostStore.ConnectionString(sp.GetRequiredService<IConfiguration>()))
             .AddInterceptors(sp.GetServices<IInterceptor>()));
-        services.TryAddScoped(sp => sp.GetRequiredService<IDbContextFactory<HostDb>>().CreateDbContext());
-
-        services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
-            .AddEntityFrameworkStores<HostDb>()
-            .AddUserManager<HostUserManager>()
-            .AddSignInManager()
-            .AddDefaultTokenProviders();
-        services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
         // Rounds, admin, backups, multi-account signals.
         services.AddSingleton<RoundKeeper>();
@@ -112,10 +93,10 @@ public static class GameHostSetup
         await db.Database.MigrateAsync();
     }
 
-    /// <summary>The host's endpoints: health, and the extra endpoints the Identity account pages need.</summary>
+    /// <summary>The host's endpoints: health, and sign-in, sign-out and account deletion.</summary>
     public static void MapGameHost(this WebApplication app)
     {
         app.MapHealthChecks("/healthz");
-        app.MapAdditionalIdentityEndpoints();
+        app.MapAccounts();
     }
 }

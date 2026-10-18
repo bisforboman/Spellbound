@@ -12,6 +12,7 @@ One small Linux server runs three containers from `docker-compose.yml`:
 
 - A VPS with **2 vCPU and 4 GB RAM** or more, running Ubuntu 24.04 (for example a Hetzner CX22 in the EU).
 - A **domain** (or subdomain) for the game.
+- A **Google OAuth client** for sign-in (free; see [Google sign-in](#google-sign-in) below).
 
 ## First deployment
 
@@ -26,10 +27,11 @@ One small Linux server runs three containers from `docker-compose.yml`:
    git clone https://github.com/bisforboman/Spellbound.git
    cd Spellbound
    cp .env.example .env
-   nano .env   # DOMAIN, ADMIN_EMAIL, and POSTGRES_PASSWORD (letters and digits: openssl rand -hex 24)
+   nano .env   # DOMAIN, ADMIN_EMAIL, POSTGRES_PASSWORD (letters and digits: openssl rand -hex 24),
+               # GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
    ```
 
-   `.env` holds the database password. It is gitignored; never commit it. Set the password before the first start:
+   `.env` holds the database password and the Google client secret. It is gitignored; never commit it. Set the password before the first start:
    the database keeps the one it was created with.
 5. **Start**:
 
@@ -41,7 +43,25 @@ One small Linux server runs three containers from `docker-compose.yml`:
    The very first start creates the tables. Its log shows one `Failed executing DbCommand` for
    `__EFMigrationsHistory` just before "Applying migration": that's the check that finds the database empty, not an
    error.
-6. **Open `https://your.domain`**, register with the `ADMIN_EMAIL` address, and check that the top bar shows **Admin**.
+6. **Open `https://your.domain`**, sign in with the Google account whose email is `ADMIN_EMAIL`, and check that the top
+   bar shows **Admin**.
+
+## Google sign-in
+
+Players sign in with Google; the server stores no passwords. To set it up (once, free):
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project (any name, e.g. "Spellbound").
+2. **APIs & Services → OAuth consent screen**: user type **External**, the app name players will see, and your email.
+   Scopes: the defaults (email, profile, openid) are all the game needs. Publish the app, so anyone can sign in
+   (while it's in "Testing", only the test users you list can).
+3. **APIs & Services → Credentials → Create credentials → OAuth client ID**, type **Web application**. Under
+   **Authorized redirect URIs** add `https://your.domain/signin-google` (and `https://localhost:7068/signin-google` to
+   try it locally).
+4. Put the client id and secret in `.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, then `docker compose up -d`.
+
+Without them the app refuses to start outside Development, and the log says why. Locally, `dotnet user-secrets set
+"Authentication:Google:ClientId" …` (and `ClientSecret`) in `src/Spellbound.Web` adds the Google button next to the
+Development sign-in.
 
 ## Updating
 
@@ -61,10 +81,8 @@ updates them when it starts. Players see a short reconnect while the app restart
 - **Health**: `https://your.domain/healthz` answers `Healthy` while the app is up.
 - **Change a setting** (`GameRules__...`, admins): add it to the `environment` list of `app` in
   `docker-compose.yml` or to `.env`, then `docker compose up -d`.
-- **Forgotten passwords**: the server sends no email, so players ask you. On the admin page, enter their email under
-  Players → **Reset a password by email** (or tap **Reset password…** on their row): you get a temporary password,
-  shown once, to give them privately. They log in with it and choose a new one under Account. This also lifts a
-  lockout from wrong guesses (not a ban).
+- **Sign-in problems** are Google's to solve (a forgotten Google password, a lost phone); the game has nothing to reset.
+  A player who loses their Google account loses their game account with it.
 - **PostgreSQL version**: the compose file pins `postgres:16`, the same major version as the backup tools in the app
   image. Minor updates come with `docker compose pull db && docker compose up -d`. A new major version needs a dump
   and restore (as in Restoring, below) and a newer client in the `Dockerfile`, so it's a planned change, not an update.
