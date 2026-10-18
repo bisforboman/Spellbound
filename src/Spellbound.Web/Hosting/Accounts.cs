@@ -110,6 +110,14 @@ public sealed class AccountService(HostDatabase database, TimeProvider time, IAc
         return await db.SingleAsync($"SELECT {Columns} FROM accounts WHERE id = $1", Read, id);
     }
 
+    /// <summary>The account with this email (any letter case), or null.</summary>
+    public async Task<Account?> FindByEmailAsync(string email)
+    {
+        await using var db = await database.BeginAsync();
+        return (await db.QueryAsync($"SELECT {Columns} FROM accounts WHERE lower(email) = lower($1) ORDER BY id", Read, email.Trim()))
+            .FirstOrDefault();
+    }
+
     /// <summary>The emails of these accounts, by id (missing ids are left out).</summary>
     public static async Task<Dictionary<string, string>> EmailsAsync(DbSession db, IReadOnlyCollection<string> ids) =>
         (await db.QueryAsync("SELECT id, email FROM accounts WHERE id = ANY($1)", r => (Id: r.GetString(0), Email: r.GetString(1)), (object)ids.ToArray())) // one array parameter

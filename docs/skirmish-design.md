@@ -201,6 +201,18 @@ Players (2–6), rounds (6–20), round time limit, actions per round, attacks o
 Trade between players, world events, a starting draft (pick 1 of 3 boons), a drawn map picture, alliances, a skill
 rating.
 
+## What's built
+
+The rules (in the domain), storage and a service that plays rounds when everyone is ready or the time limit passes.
+For now **the admin starts games** from the players' emails on the admin page; players use their Realm mage's name
+and school when they have one. Players creating and joining their own games (with invite codes) comes next, after the
+game page. Saved orders can't change while the player is ready: they take back Ready first.
+
+**What players see of each other:** regions, buildings, armies, points and who's ready (attack and hex odds depend
+on them), but not each other's gold, mana or orders. The deck shows how many of each card are left, never their order.
+A contested claim's odds depend on who else claims, which nobody knows in advance, so the page shows a player's own
+weight and how it works, not a percentage.
+
 ## Decided in code, to review in the beta
 
 The design left these open; part B picked something so the game can be played:

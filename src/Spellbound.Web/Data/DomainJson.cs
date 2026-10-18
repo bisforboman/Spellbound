@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Spellbound.Domain;
+using Spellbound.Domain.Skirmish;
 
 namespace Spellbound.Web.Data;
 
@@ -14,6 +15,7 @@ namespace Spellbound.Web.Data;
 /// instance field is stored instead of the public properties, and objects are created with that constructor: a field
 /// missing from older JSON keeps its initializer. Read-only collection fields are filled in place, so a dictionary
 /// keeps its comparer. Everything else (records such as <see cref="HallOfFame"/>) serializes the usual way.
+/// Skirmish orders are a record hierarchy; they're stored with a "kind" field naming the order.
 /// </summary>
 public static class DomainJson
 {
@@ -28,7 +30,7 @@ public static class DomainJson
     {
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
-            TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { StoreFields } },
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver { Modifiers = { StoreFields, NameOrderKinds } },
         };
         options.Converters.Add(new JsonStringEnumConverter());
         options.MakeReadOnly();
@@ -62,6 +64,29 @@ public static class DomainJson
 
             info.Properties.Add(property);
         }
+    }
+
+    /// <summary>A Skirmish order is stored with its kind, e.g. {"kind":"claim","regionId":3}, so a list of orders reads back.</summary>
+    private static void NameOrderKinds(JsonTypeInfo info)
+    {
+        if (info.Type != typeof(SkirmishOrder))
+        {
+            return;
+        }
+
+        info.PolymorphismOptions = new JsonPolymorphismOptions
+        {
+            TypeDiscriminatorPropertyName = "kind",
+            DerivedTypes =
+            {
+                new JsonDerivedType(typeof(ClaimOrder), "claim"),
+                new JsonDerivedType(typeof(BuildOrder), "build"),
+                new JsonDerivedType(typeof(RecruitOrder), "recruit"),
+                new JsonDerivedType(typeof(AttackOrder), "attack"),
+                new JsonDerivedType(typeof(CastOrder), "cast"),
+                new JsonDerivedType(typeof(HexOrder), "hex"),
+            },
+        };
     }
 
     /// <summary>"&lt;Land&gt;k__BackingField" and "_army" become "land" and "army".</summary>

@@ -65,6 +65,22 @@ public sealed class DomainJsonTests
     }
 
     [Fact]
+    public void Skirmish_orders_round_trip_with_their_kind()
+    {
+        List<SkirmishOrder> orders =
+        [
+            new ClaimOrder(3), new BuildOrder(1, BuildingType.Node, 2), new RecruitOrder("unit-2", 5),
+            new AttackOrder(4), new CastOrder("ward"), new HexOrder("hex-c", 2),
+        ];
+
+        var json = DomainJson.Serialize(orders);
+        var copy = DomainJson.Deserialize<List<SkirmishOrder>>(json);
+
+        Assert.Equal(orders, copy);
+        Assert.Contains("\"kind\":\"claim\"", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Rules_round_trip_through_a_game_row_with_the_same_hash()
     {
         var json = DomainJson.Serialize(Rules);

@@ -18,7 +18,7 @@ public sealed class RoundKeeper(HostDatabase database, TimeProvider time, IRound
     {
         var now = time.GetUtcNow();
         await using var db = await database.BeginAsync(cancellationToken);
-        await LockModeAsync(db, game.AlwaysOnMode);
+        await db.LockGamesOfModeAsync(game.AlwaysOnMode);
 
         var current = await db.LoadRunningGameAsync(game.AlwaysOnMode, forUpdate: true);
         if (current is not null && !current.Round.HasEnded(now))
@@ -29,10 +29,10 @@ public sealed class RoundKeeper(HostDatabase database, TimeProvider time, IRound
         if (current is not null)
         {
             await game.OnGameEndedAsync(db, current, await db.LoadBansAsync(), cancellationToken);
-            await db.ExecuteAsync("UPDATE games SET ended_at = $2 WHERE id = $1", current.Id, now);
+            await db.EndGameAsync(current.Id, now);
         }
 
-        var next = await StartAsync(db, game.NextAlwaysOn(), now);
+        var next = await db.InsertGameAsync(game.NextAlwaysOn(), now);
         await db.CommitAsync();
         if (current is null)
         {
@@ -55,7 +55,7 @@ public sealed class RoundKeeper(HostDatabase database, TimeProvider time, IRound
     {
         await using (var db = await database.BeginAsync(cancellationToken))
         {
-            await LockModeAsync(db, game.AlwaysOnMode);
+            await db.LockGamesOfModeAsync(game.AlwaysOnMode);
             var current = await db.LoadRunningGameAsync(game.AlwaysOnMode, forUpdate: true)
                           ?? throw new InvalidOperationException("No round has started yet.");
             var moved = current.Round.WithEnd(endsAt.ToUniversalTime());
@@ -84,25 +84,4 @@ public sealed class RoundKeeper(HostDatabase database, TimeProvider time, IRound
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }
-
-    /// <summary>
-    /// Starts a game of the given mode, numbered after the mode's last one. Call it holding the mode's lock.
-    /// </summary>
-    private static async Task<HostedGame> StartAsync(DbSession db, NewGame start, DateTimeOffset now)
-    {
-        var number = await db.ScalarAsync<int>("SELECT coalesce(max(number), 0) + 1 FROM games WHERE mode = $1", start.Mode);
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(start.Length, TimeSpan.Zero);
-        var round = new Round(number, now, now + start.Length);
-        var id = await db.ScalarAsync<long>(
-            """
-            INSERT INTO games (mode, number, starts_at, ends_at, rules, created_at) VALUES ($1, $2, $3, $4, $5, $3)
-            RETURNING id
-            """,
-            start.Mode, round.Number, round.StartsAt, round.EndsAt, new Jsonb(start.RulesJson));
-        return (await db.LoadGameAsync(id))!; // as stored: PostgreSQL normalises the rules' JSON
-    }
-
-    /// <summary>Holds a lock on starting and ending games of a mode until the transaction ends.</summary>
-    private static Task LockModeAsync(DbSession db, string mode) =>
-        db.ExecuteAsync("SELECT pg_advisory_xact_lock(hashtext('games:' || $1))", mode);
 }

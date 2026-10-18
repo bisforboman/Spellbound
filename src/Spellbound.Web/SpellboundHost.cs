@@ -26,7 +26,7 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
 
     /// <summary>
     /// Deletes the player's mage, news and logged actions from every round, so a deleted account leaves no mage in
-    /// Rivals to farm. Other players' logged attacks on them stay, without their account id. Halls of fame keep their
+    /// Rivals to farm, and leaves their Skirmish seats without an owner. Other players' logged attacks on them stay, without their account id. Halls of fame keep their
     /// names: they're a record of finished rounds.
     /// </summary>
     public async Task OnAccountDeletedAsync(DbSession db, string ownerId)
@@ -35,9 +35,11 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
         await db.ExecuteAsync("DELETE FROM news WHERE owner_id = $1", ownerId);
         await db.ExecuteAsync("DELETE FROM actions WHERE owner_id = $1", ownerId); // their own actions go
         await db.ExecuteAsync("UPDATE actions SET target_owner_id = NULL WHERE target_owner_id = $1", ownerId); // others' stay
+        // A Skirmish seat stays in its game (the others play on) without its owner or saved orders, and goes away.
+        await db.ExecuteAsync("UPDATE skirmish_seats SET owner_id = NULL, orders = '[]', ready = false WHERE owner_id = $1", ownerId);
     }
 
-    /// <summary>The player's mages (as stored, every round), news and logged actions, by round number.</summary>
+    /// <summary>The player's mages (as stored, every round), news and logged actions, by round number; and their Skirmish seats and the rounds of those games.</summary>
     public async Task<object> ExportAsync(DbSession db, string ownerId) => new
     {
         mages = await db.QueryAsync(
@@ -47,6 +49,17 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
         news = await db.QueryAsync(
             "SELECT g.number, n.entries::text FROM news n JOIN games g ON g.id = n.game_id WHERE n.owner_id = $1 ORDER BY g.id",
             r => new { round = r.GetInt32(0), entries = Json(r.GetString(1)) },
+            ownerId),
+        skirmishSeats = await db.QueryAsync(
+            "SELECT game_id, seat, orders::text, ready FROM skirmish_seats WHERE owner_id = $1 ORDER BY game_id",
+            r => new { gameId = r.GetInt64(0), seat = r.GetInt32(1), orders = Json(r.GetString(2)), ready = r.GetBoolean(3) },
+            ownerId),
+        skirmishRounds = await db.QueryAsync(
+            """
+            SELECT k.game_id, k.round, k.played_at, k.report::text FROM skirmish_rounds k
+            JOIN skirmish_seats s ON s.game_id = k.game_id WHERE s.owner_id = $1 ORDER BY k.game_id, k.round
+            """,
+            r => new { gameId = r.GetInt64(0), round = r.GetInt32(1), playedAt = r.GetFieldValue<DateTimeOffset>(2), report = Json(r.GetString(3)) },
             ownerId),
         actions = await db.QueryAsync(
             """
