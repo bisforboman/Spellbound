@@ -7,15 +7,21 @@ namespace Spellbound.Web;
 /// <summary>Spellbound's answers to the hosting code's questions (see Hosting/GameHooks.cs).</summary>
 public sealed class SpellboundHost(GameRules rules) : IRoundLifecycle, IPlayerSummaries, IAccountLifecycle
 {
-    public TimeSpan RoundLength => rules.RoundLength;
+    /// <summary>The Realm's mode name: each Realm round is a game of this mode, and the server always runs one.</summary>
+    public const string RealmMode = "realm";
+
+    public string AlwaysOnMode => RealmMode;
+
+    /// <summary>The next Realm round, under the rules configured now.</summary>
+    public NewGame NextAlwaysOn() => new(RealmMode, rules.RoundLength, DomainJson.Serialize(rules));
 
     /// <summary>Records the round's hall of fame, leaving banned players out.</summary>
-    public async Task OnRoundEndedAsync(DbSession db, Round ended, BanList bans, CancellationToken cancellationToken)
+    public async Task OnGameEndedAsync(DbSession db, HostedGame ended, BanList bans, CancellationToken cancellationToken)
     {
-        var mages = (await db.LoadRoundMagesAsync(ended.Number)).Where(m => !bans.IsBanned(m.OwnerId)).ToList();
-        var fame = HallOfFame.Record(ended, mages, rules);
+        var mages = (await db.LoadGameMagesAsync(ended.Id)).Where(m => !bans.IsBanned(m.OwnerId)).ToList();
+        var fame = HallOfFame.Record(ended.Round, mages, rules);
         await db.ExecuteAsync(
-            "INSERT INTO hall_of_fame (round, data) VALUES ($1, $2)", ended.Number, new Jsonb(DomainJson.Serialize(fame)));
+            "INSERT INTO hall_of_fame (game_id, data) VALUES ($1, $2)", ended.Id, new Jsonb(DomainJson.Serialize(fame)));
     }
 
     /// <summary>
@@ -31,19 +37,22 @@ public sealed class SpellboundHost(GameRules rules) : IRoundLifecycle, IPlayerSu
         await db.ExecuteAsync("UPDATE actions SET target_owner_id = NULL WHERE target_owner_id = $1", ownerId); // others' stay
     }
 
-    /// <summary>The player's mages (as stored, every round), news and logged actions.</summary>
+    /// <summary>The player's mages (as stored, every round), news and logged actions, by round number.</summary>
     public async Task<object> ExportAsync(DbSession db, string ownerId) => new
     {
         mages = await db.QueryAsync(
-            "SELECT round, data::text FROM mages WHERE owner_id = $1 ORDER BY round",
+            "SELECT g.number, m.data::text FROM mages m JOIN games g ON g.id = m.game_id WHERE m.owner_id = $1 ORDER BY g.id",
             r => new { round = r.GetInt32(0), mage = Json(r.GetString(1)) },
             ownerId),
         news = await db.QueryAsync(
-            "SELECT round, entries::text FROM news WHERE owner_id = $1 ORDER BY round",
+            "SELECT g.number, n.entries::text FROM news n JOIN games g ON g.id = n.game_id WHERE n.owner_id = $1 ORDER BY g.id",
             r => new { round = r.GetInt32(0), entries = Json(r.GetString(1)) },
             ownerId),
         actions = await db.QueryAsync(
-            "SELECT round, at, action, inputs::text, result::text, state::text FROM actions WHERE owner_id = $1 ORDER BY id",
+            """
+            SELECT g.number, a.at, a.action, a.inputs::text, a.result::text, a.state::text
+            FROM actions a JOIN games g ON g.id = a.game_id WHERE a.owner_id = $1 ORDER BY a.id
+            """,
             r => new
             {
                 round = r.GetInt32(0),
@@ -56,8 +65,8 @@ public sealed class SpellboundHost(GameRules rules) : IRoundLifecycle, IPlayerSu
             ownerId),
     };
 
-    public async Task<IReadOnlyDictionary<string, PlayerSummary>> GetAsync(DbSession db, Round round) =>
-        (await db.LoadRoundMagesAsync(round.Number)).ToDictionary(
+    public async Task<IReadOnlyDictionary<string, PlayerSummary>> GetAsync(DbSession db, HostedGame game) =>
+        (await db.LoadGameMagesAsync(game.Id)).ToDictionary(
             m => m.OwnerId,
             m => new PlayerSummary(
                 m.Name,

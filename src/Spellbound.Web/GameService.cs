@@ -8,7 +8,8 @@ namespace Spellbound.Web;
 /// Thin glue between pages and the domain: load the current round and the mage, run one domain action, save.
 /// Each call is one database transaction (a Blazor Server circuit outlives one action). An action locks its mage's row
 /// (an attack locks both mages, in owner order), so a second tap waits for the first and then acts on what it left:
-/// no turn is spent twice. Mages and news are stored per round, so a new round starts everyone over.
+/// no turn is spent twice. Mages and news are stored per game, and each Realm round is a game, so a new round starts everyone
+/// over.
 /// </summary>
 public sealed class GameService(HostDatabase database, TimeProvider time, GameRules rules, IRandomSource random)
 {
@@ -33,19 +34,19 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     public async Task<Round?> GetRoundAsync()
     {
         await using var db = await database.BeginAsync();
-        return await db.LoadCurrentRoundAsync();
+        return (await LoadRealmAsync(db))?.Round;
     }
 
     /// <summary>Read-only copy of the player's mage in the current round, with turns accrued to now (not saved).</summary>
     public async Task<Mage?> GetMageAsync(string ownerId)
     {
         await using var db = await database.BeginAsync();
-        if (await db.LoadCurrentRoundAsync() is not { } round)
+        if (await LoadRealmAsync(db) is not { } game)
         {
             return null;
         }
 
-        var mage = await db.LoadMageAsync(round.Number, ownerId);
+        var mage = await db.LoadMageAsync(game.Id, ownerId);
         mage?.AccrueTurns(Now, rules);
         return mage;
     }
@@ -53,7 +54,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     public async Task<IReadOnlyList<NewsEntry>> GetNewsAsync(string ownerId)
     {
         await using var db = await database.BeginAsync();
-        return await db.LoadCurrentRoundAsync() is { } round ? (await db.LoadNewsAsync(round.Number, ownerId)).Entries : [];
+        return await LoadRealmAsync(db) is { } game ? (await db.LoadNewsAsync(game.Id, ownerId)).Entries : [];
     }
 
     /// <summary>How many hostile news entries arrived since the player last looked, and resets the count.</summary>
@@ -62,17 +63,17 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
         try
         {
             await using var db = await database.BeginAsync();
-            if (await db.LoadCurrentRoundAsync() is not { } round)
+            if (await LoadRealmAsync(db) is not { } game)
             {
                 return 0;
             }
 
             // Locks the row while reading, so an attack landing at the same moment waits and counts next time.
             var unseen = await db.ScalarAsync<int>(
-                "SELECT unseen FROM news WHERE round = $1 AND owner_id = $2 FOR UPDATE", round.Number, ownerId);
+                "SELECT unseen FROM news WHERE game_id = $1 AND owner_id = $2 FOR UPDATE", game.Id, ownerId);
             if (unseen > 0)
             {
-                await db.ExecuteAsync("UPDATE news SET unseen = 0 WHERE round = $1 AND owner_id = $2", round.Number, ownerId);
+                await db.ExecuteAsync("UPDATE news SET unseen = 0 WHERE game_id = $1 AND owner_id = $2", game.Id, ownerId);
                 await db.CommitAsync();
             }
 
@@ -88,25 +89,25 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     public async Task<IReadOnlyList<Mage>> GetAllMagesAsync()
     {
         await using var db = await database.BeginAsync();
-        if (await db.LoadCurrentRoundAsync() is not { } round)
+        if (await LoadRealmAsync(db) is not { } game)
         {
             return [];
         }
 
         var bans = await db.LoadBansAsync();
-        return [.. (await db.LoadRoundMagesAsync(round.Number)).Where(m => !bans.IsBanned(m.OwnerId))];
+        return [.. (await db.LoadGameMagesAsync(game.Id)).Where(m => !bans.IsBanned(m.OwnerId))];
     }
 
     /// <summary>Another mage in the current round by its public id (never the owner id, which is an account key).</summary>
     public async Task<Mage?> GetRivalAsync(Guid mageId)
     {
         await using var db = await database.BeginAsync();
-        if (await db.LoadCurrentRoundAsync() is not { } round)
+        if (await LoadRealmAsync(db) is not { } game)
         {
             return null;
         }
 
-        var mage = await db.LoadMageByIdAsync(round.Number, mageId);
+        var mage = await db.LoadMageByIdAsync(game.Id, mageId);
         return mage is not null && !await db.IsBannedAsync(mage.OwnerId) ? mage : null;
     }
 
@@ -117,14 +118,14 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     public async Task<(Mage? Mage, IReadOnlyList<LoggedAction> Actions)> GetActionLogAsync(string mageName, int limit = 50)
     {
         await using var db = await database.BeginAsync();
-        if (await db.LoadCurrentRoundAsync() is not { } round)
+        if (await LoadRealmAsync(db) is not { } game)
         {
             return (null, []);
         }
 
-        var mage = (await db.LoadRoundMagesAsync(round.Number))
+        var mage = (await db.LoadGameMagesAsync(game.Id))
             .FirstOrDefault(m => string.Equals(m.Name, mageName.Trim(), StringComparison.OrdinalIgnoreCase));
-        return mage is null ? (null, []) : (mage, await db.LoadAsync(round.Number, mage.OwnerId, limit));
+        return mage is null ? (null, []) : (mage, await db.LoadAsync(game.Id, mage.OwnerId, limit));
     }
 
     /// <summary>Every finished round's hall of fame, newest first.</summary>
@@ -132,7 +133,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     {
         await using var db = await database.BeginAsync();
         return await db.QueryAsync(
-            "SELECT data FROM hall_of_fame ORDER BY round DESC", r => DomainJson.Deserialize<HallOfFame>(r.GetString(0)));
+            "SELECT data FROM hall_of_fame ORDER BY game_id DESC", r => DomainJson.Deserialize<HallOfFame>(r.GetString(0)));
     }
 
     public async Task<ActionReport> CreateMageAsync(string ownerId, string name, MagicSchool school)
@@ -150,7 +151,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
 
         await using var db = await database.BeginAsync();
         var now = Now;
-        if (ClosedReason(await db.LoadCurrentRoundAsync(), now, out var round) is { } closed)
+        if (ClosedReason(await LoadRealmAsync(db), now, out var game) is { } closed)
         {
             return closed;
         }
@@ -161,13 +162,13 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
         }
 
         var mage = Mage.Create(ownerId, trimmed, school, now, rules);
-        if (!await db.InsertMageAsync(round.Number, mage)) // the key is (round, owner): one mage per round
+        if (!await db.InsertMageAsync(game.Id, mage)) // the key is (game, owner): one mage per round
         {
             return ActionReport.Fail("You already have a mage.");
         }
 
         var report = new ActionReport(true, 0, [$"{mage.Name} of the {mage.School} school awakens."]);
-        await db.WriteAsync(round.Number, mage, now, "create", new { name = trimmed, school }, [], report, rules, rulesHash);
+        await db.WriteAsync(game.Id, mage, now, "create", new { name = trimmed, school }, [], report, rules, rulesHash);
         await db.CommitAsync();
         return report;
     }
@@ -197,12 +198,12 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
         LockedAsync(async db =>
         {
             var now = Now;
-            if (ClosedReason(await db.LoadCurrentRoundAsync(), now, out var round) is { } closed)
+            if (ClosedReason(await LoadRealmAsync(db), now, out var game) is { } closed)
             {
                 return closed;
             }
 
-            if (await db.LoadMageAsync(round.Number, ownerId, forUpdate: true) is not { } mage)
+            if (await db.LoadMageAsync(game.Id, ownerId, forUpdate: true) is not { } mage)
             {
                 return ActionReport.Fail("You don't have a mage yet.");
             }
@@ -218,9 +219,9 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
                 return report;
             }
 
-            await db.SaveMageAsync(round.Number, mage);
-            await db.AddNewsAsync(round.Number, ownerId, new NewsEntry(now, report.Lines), NewsKept);
-            await db.WriteAsync(round.Number, mage, now, name, inputs, [], report, rules, rulesHash);
+            await db.SaveMageAsync(game.Id, mage);
+            await db.AddNewsAsync(game.Id, ownerId, new NewsEntry(now, report.Lines), NewsKept);
+            await db.WriteAsync(game.Id, mage, now, name, inputs, [], report, rules, rulesHash);
             await db.CommitAsync(); // mage, news and the log row in one transaction
             return report;
         });
@@ -234,12 +235,12 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
         LockedAsync(async db =>
         {
             var now = Now;
-            if (ClosedReason(await db.LoadCurrentRoundAsync(), now, out var round) is { } closed)
+            if (ClosedReason(await LoadRealmAsync(db), now, out var game) is { } closed)
             {
                 return closed;
             }
 
-            var locked = await db.LockMagesAsync(round.Number, ownerId, targetId);
+            var locked = await db.LockMagesAsync(game.Id, ownerId, targetId);
             if (locked.Find(m => m.OwnerId == ownerId) is not { } mage)
             {
                 return ActionReport.Fail("You don't have a mage yet.");
@@ -263,10 +264,10 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
                 return result.Report;
             }
 
-            await db.SaveMageAsync(round.Number, mage);
+            await db.SaveMageAsync(game.Id, mage);
             if (target != mage)
             {
-                await db.SaveMageAsync(round.Number, target);
+                await db.SaveMageAsync(game.Id, target);
             }
 
             var news = new[]
@@ -276,11 +277,11 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
             };
             foreach (var (owner, entry) in news.OrderBy(n => n.Owner, StringComparer.Ordinal))
             {
-                await db.AddNewsAsync(round.Number, owner, entry, NewsKept);
+                await db.AddNewsAsync(game.Id, owner, entry, NewsKept);
             }
 
             await db.WriteAsync(
-                round.Number, mage, now, name, inputs, luck.Draws, result.Report, rules, rulesHash, target, result.TargetLines);
+                game.Id, mage, now, name, inputs, luck.Draws, result.Report, rules, rulesHash, target, result.TargetLines);
             await db.CommitAsync();
             return result.Report;
         });
@@ -299,12 +300,15 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
         }
     }
 
+    /// <summary>The Realm round being played: the game the server always keeps running.</summary>
+    private static Task<HostedGame?> LoadRealmAsync(DbSession db) => db.LoadRunningGameAsync(SpellboundHost.RealmMode);
+
     /// <summary>Why nobody can act right now (no round yet, or the round is over and waiting for its reset).</summary>
-    private static ActionReport? ClosedReason(Round? current, DateTimeOffset now, out Round round)
+    private static ActionReport? ClosedReason(HostedGame? current, DateTimeOffset now, out HostedGame game)
     {
-        round = current!;
+        game = current!;
         return current is null ? ActionReport.Fail("The first round hasn't started yet. Try again in a minute.")
-            : current.IsOpen(now) ? null
-            : ActionReport.Fail($"Round {current.Number} is over. The next round starts in a moment.");
+            : current.Round.IsOpen(now) ? null
+            : ActionReport.Fail($"Round {current.Round.Number} is over. The next round starts in a moment.");
     }
 }

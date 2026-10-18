@@ -128,7 +128,7 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
     }
 
     private Task<string> StoredJsonAsync(string ownerId) =>
-        WithDbAsync(async db => (await db.ScalarAsync<string>("SELECT data::text FROM mages WHERE round = 1 AND owner_id = $1", ownerId))!)
+        WithDbAsync(async db => (await db.ScalarAsync<string>("SELECT data::text FROM mages WHERE game_id = 1 AND owner_id = $1", ownerId))!)
             .ContinueWith(t => DomainJson.Serialize(DomainJson.Deserialize<Mage>(t.Result)), TaskScheduler.Default); // same key order
 
     private Task<List<Row>> RowsAsync(string ownerId) =>
