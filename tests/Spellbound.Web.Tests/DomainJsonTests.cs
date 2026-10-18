@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Spellbound.Domain;
+using Spellbound.Domain.Skirmish;
 using Spellbound.Web.Data;
 
 namespace Spellbound.Web.Tests;
@@ -24,6 +25,37 @@ public sealed class DomainJsonTests
         Assert.Single(copy.RecentLosses);
         Assert.Equal(mage.CreatedAt, copy.CreatedAt);
         Assert.Equal(mage.Networth(Rules), copy.Networth(Rules));
+    }
+
+    [Fact]
+    public void A_skirmish_game_in_progress_round_trips()
+    {
+        var game = SkirmishGame.Start(
+            [("Merlin", MagicSchool.A), ("Morgana", MagicSchool.B), ("Ada", MagicSchool.C)], SkirmishRules.Default, new SeededRandom(3));
+        var home = game.Board.Homes[0];
+        var claim = game.Claimable(0).First().Id;
+        game.PlayRound(
+            new Dictionary<int, IReadOnlyList<SkirmishOrder>>
+            {
+                [0] = [new ClaimOrder(claim), new BuildOrder(home, BuildingType.Town, 2), new RecruitOrder("unit-3", 2)],
+            },
+            new SeededRandom(4));
+
+        var json = DomainJson.Serialize(game);
+        var copy = DomainJson.Deserialize<SkirmishGame>(JsonNode.Parse(json)!.ToJsonString());
+
+        Assert.Equal(json, DomainJson.Serialize(copy));
+        Assert.Equal(1, copy.Round);
+        Assert.Equal(game.Rules, copy.Rules);
+        Assert.Equal(0, copy.Board[claim].Owner);
+        Assert.Equal(game.Board[claim].Neighbours, copy.Board[claim].Neighbours);
+        Assert.Equal(game.Deck, copy.Deck);
+        Assert.Equal(2, copy.Seats[0].Army["UNIT-3"]); // the case-insensitive comparer survived
+        Assert.Equal(game.Score(0), copy.Score(0));
+
+        // And it plays on exactly as the original does.
+        var next = new Dictionary<int, IReadOnlyList<SkirmishOrder>> { [1] = [new ClaimOrder(game.Claimable(1).First().Id)] };
+        Assert.Equal(game.PlayRound(next, new SeededRandom(5)).Public, copy.PlayRound(next, new SeededRandom(5)).Public);
     }
 
     [Fact]
