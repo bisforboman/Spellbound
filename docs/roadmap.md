@@ -177,6 +177,14 @@ it starts. "Needs" names the items that must come first.
   beginner-friendly, Umbra and Veil hard
 - [ ] **L5. Apprentice season** (M): 7 days against 20 AI mages. Needs W4
 
+### Look and feel
+The owner's art theme "The Burned Grimoire" ([theme.md](theme.md)), adopted 18 Oct 2026 and built before F2.
+- [x] **T1. Theme, phase 1** (S): fonts, palette, cards, buttons, school inks
+- [ ] **T2. Theme, phase 2** (M): each mage's sigil (generated from their name), the turn moon, the mana vial, battle
+  stamps, SVG filters
+- [ ] **T3. Theme, later** (S): motion, a light variant
+- [ ] **T4. Checked on a real phone** (owner): blackletter readable at 360 px, SVG filters fast enough, glyphs render
+
 ## Engineering
 - Persistence: plain Npgsql with Google sign-in, decided 17 Oct 2026 after comparing alternatives and similar games
   ([research](research/persistence.md))

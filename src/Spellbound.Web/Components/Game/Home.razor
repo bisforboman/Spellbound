@@ -6,7 +6,7 @@
 
 @if (Mage is not null)
 {
-    <h1>@Mage.Name</h1>
+    <h1 class="mage-name">@Mage.Name</h1>
     <p class="text-muted">@Mage.School.DisplayName() mage</p>
     <RoundInfo Round="Round" />
 
@@ -71,12 +71,15 @@
 @code {
     private IReadOnlyList<NewsEntry> news = [];
     private int alerts;
+    private bool alertsTaken;
 
-    // Taken after the first interactive render, not on init: prerendering runs init twice and would reset it unseen.
+    // Taken after an interactive render, not on init: prerendering runs init twice and would reset it unseen. Not only
+    // on the first render either: that one can come before the mage has loaded, and the banner would never show.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && Mage is not null)
+        if (!alertsTaken && Mage is not null)
         {
+            alertsTaken = true;
             alerts = await Game.TakeUnseenAlertsAsync(OwnerId);
             if (alerts > 0)
             {

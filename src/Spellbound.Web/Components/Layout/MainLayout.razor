@@ -1,5 +1,10 @@
 @inherits LayoutComponentBase
+@using System.Security.Claims
 @inject NavigationManager Navigation
+@inject GameService Game
+
+@* The player's school tints the accents (docs/theme.md): data-school on a wrapper that takes no space. *@
+<div class="school-ink" data-school="@school">
 
 <header class="top-bar">
     <a class="brand" href="" title="Your games">Spellbound</a>
@@ -43,6 +48,8 @@
     }
 </AuthorizeView>
 
+</div>
+
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
@@ -50,6 +57,22 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private string? school;
+
+    /// <summary>The signed-in player's school this round, lowercased for data-school; none without a mage.</summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (school is null && AuthState is not null
+            && (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) is { } ownerId
+            && await Game.GetMageAsync(ownerId) is { } mage)
+        {
+            school = mage.School.ToString().ToLowerInvariant();
+        }
+    }
+
     private static readonly HashSet<string> RealmPages =
         ["realm", "explore", "build", "magic", "cast", "meditate", "army", "rivals", "halloffame"];
 

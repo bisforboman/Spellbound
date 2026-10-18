@@ -174,7 +174,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         Assert.Contains("href=\"realm\"", withMage, StringComparison.Ordinal);
         Assert.Contains("Round 1", withMage, StringComparison.Ordinal);
         Assert.Contains("href=\"create\"", withoutMage, StringComparison.Ordinal);
-        Assert.Contains("<h1>Merlin</h1>", overview, StringComparison.Ordinal);
+        Assert.Contains("<h1 class=\"mage-name\">Merlin</h1>", overview, StringComparison.Ordinal);
     }
 
     public override void Dispose()

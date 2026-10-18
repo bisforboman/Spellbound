@@ -13,7 +13,7 @@ else if (Mage is not null && rival is not null)
     var problem = Mage.TargetProblem(rival, Game.Now, Rules);
     var counter = Mage.CounterSign(rival);
 
-    <h1>@rival.Name</h1>
+    <h1 class="mage-name">@rival.Name</h1>
     <p class="text-muted">@rival.School.DisplayName() mage</p>
 
     <TurnsBar Mage="Mage" Rules="Rules" />
