@@ -13,6 +13,28 @@ Design goals:
 - **Text-first.** It runs on any phone browser, needs no art budget, and battle reports are words.
 - **Fair to async players.** Turns are the universal currency, so checking in constantly gives no advantage beyond the turn cap.
 - **No pay-to-win.**
+- **A board-game feel.** Strategy and min-maxing matter, but luck is a real part of the game: even a great plan can be
+  shafted, as in Catan or 7 Wonders. Prefer luck that comes *before* a decision (you see what you got and plan around
+  it) over luck that decides *after* you've committed. Over a long game, luck should come as many small rolls that even
+  out, or with ways to recover. Odds are shown before the player confirms, like costs.
+- **Art later.** Text-first until the core is fun; art can be reconsidered then.
+
+## Modes (decided 18 Oct 2026, not built yet)
+
+Spellbound has two modes that share one core (mages, schools, spells, turns, armies):
+
+- **Realm**: the game described below. An open world without a map, land grows without limit, long rounds;
+  closest to Archmage.
+- **Skirmish**: a short game on a limited, shared board for a fixed number of players, played in rounds that everyone
+  plans at the same time and readies up for (with a time limit and reminders), with a clear end and scoring from several
+  sources, like a board game. *Not designed yet*: see [skirmish-design.md](skirmish-design.md).
+
+Players **create and join games**, and many run at once; the Realm can be one always-on game in the same list. A mode
+is a preset of **rule switches** (for example "exploring finds things", "attacks on"), and whoever creates a game may
+change them within limits, like house rules. Every game stores the rules it runs under, and its page lists them so
+players know what they joined.
+
+Until both modes exist, everything below describes the Realm.
 
 ## Core loop
 

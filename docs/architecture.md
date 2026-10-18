@@ -55,6 +55,15 @@ extension points designed for a single game tend to come out wrong.
 - **When a second game comes:** move `Hosting/` and `Components/Account/` into a `GameHost` Razor class library,
   register its assembly with the router (`AdditionalAssemblies`), and split the tests. Roughly 2–3 days.
 
+### Many games at once (planned, M5)
+
+Realm and Skirmish are two modes of one game, not two games, so `Hosting/` stays one host. What changes is that a
+server runs **many games at once** instead of one round: a `games` table (mode, status open/running/ended, rules as
+jsonb, start and end) and a members table replace `current_round`. Each game stores its own rules, so `GameRules`
+from configuration becomes the default preset rather than the one set every action uses; the action log's rules hash
+already records which rules an action ran under. The Realm is one always-on game the server creates at start. Bans
+stay global (per account); the hall of fame becomes per game. `IRoundLifecycle.RoundLength` becomes per game.
+
 ## Request flow for a game action
 
 ```

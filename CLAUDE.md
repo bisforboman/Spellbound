@@ -6,6 +6,7 @@ cast spells, and (from milestone 2) attack each other.
 
 Read these before making changes:
 - `docs/game-design.md`: the rules and starting numbers (the source of truth for gameplay)
+- `docs/skirmish-design.md`: the draft rules for the Skirmish mode (not built yet)
 - `docs/architecture.md`: stack, project layout, request flow, hosting plan
 - `docs/roadmap.md`: milestones and the current checklist
 
