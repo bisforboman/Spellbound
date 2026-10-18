@@ -13,8 +13,10 @@ public sealed record GameRules
     public int HallOfFameSize { get; init; } = 10;
 
     // Turns
-    public TimeSpan TurnInterval { get; init; } = TimeSpan.FromMinutes(6);
-    public int MaxTurns { get; init; } = 240;
+    // The turn bank (docs/mageborn-design.md): 1 turn every 10 minutes, capped at 150, a little over a day, so one
+    // visit a day loses nothing.
+    public TimeSpan TurnInterval { get; init; } = TimeSpan.FromMinutes(10);
+    public int MaxTurns { get; init; } = 150;
     public int StartingTurns { get; init; } = 100;
     public int ProtectionTurns { get; init; } = 120;
 

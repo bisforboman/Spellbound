@@ -46,7 +46,7 @@ when the owner chose to rework the Realm as Mageborn; its design is in the git h
 
 | Resource | Source | Limit |
 |---|---|---|
-| **Turns** | 1 per 6 minutes (real time) | Max 240 on hand (one day's worth); time at the cap is lost |
+| **Turns** | 1 per 10 minutes (real time) | Max 150 on hand (25 hours' worth, so one visit a day loses nothing); time at the cap is lost |
 | **Land** (acres) | Exploring | None, but each explore turn yields less as land grows |
 | **Gold** | Every turn: 1 per acre + 10 per town | None |
 | **Mana** | Every turn: 10 per node; meditating adds 100 per turn | 5,000 + 1,000 per node |

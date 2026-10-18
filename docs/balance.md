@@ -125,6 +125,25 @@ With a three-day memory the attackers end level with the builders, and a builder
 (about 6,000 acres). Attacks continue all round, but each takes little. A steeper halving (×0.25 per loss, 24 hours, seed 7)
 helped less: builders 3,835–4,148, warmongers 7,025–8,652.
 
+## The turn bank (M7 S1, 18 Oct 2026)
+
+Mageborn's turn bank replaced 1 turn every 6 minutes up to 240 with 1 every 10 minutes up to 150 (still 100 to
+start): 144 turns a day instead of 240, so every economy grows about 40% more slowly in real time. From the opening
+study ([opening-baseline.md](opening-baseline.md), days 1–7, 200 runs), before → after:
+
+| | Before | After |
+|---|---:|---:|
+| A builder's land on day 7 | 2,015 | 1,564 |
+| A warmonger's land on day 7 | 3,404 | 2,551 |
+| A warmonger's attacks in days 1–7 | 26 | 34 |
+| Rank 1's net power against the median's | 3.84× | 3.28× |
+| Turns a once-a-day builder loses at the cap in days 1–7 | 60 | 70 |
+
+The leader's lead shrinks: the warmonger loses more than the builders. The once-a-day player's losses are all on day 1
+(100 to start, plus 20 hours of turns, is more than 150); after that one visit a day loses nothing. The warmonger
+attacks more often because each attack's 4 turns are a bigger share of a smaller day. The 28-day results
+([balance-results.md](balance-results.md)) shrink the same way.
+
 ## Proposals
 
 These change rules, so they need the owner's decision.
