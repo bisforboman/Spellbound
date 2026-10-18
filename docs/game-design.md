@@ -13,7 +13,7 @@ Design goals:
 - **Text-first.** It runs on any phone browser, needs no art budget, and battle reports are words.
 - **Fair to async players.** Turns are the universal currency, so checking in constantly gives no advantage beyond the turn cap.
 - **No pay-to-win.**
-- **A board-game feel.** Strategy and min-maxing matter, but luck is a real part of the game: even a great plan can be
+- **A board-game feel** (in Skirmish; the Realm stays classic, see Principles). Strategy and min-maxing matter, but luck is a real part of the game: even a great plan can be
   shafted, as in Catan or 7 Wonders. Prefer luck that comes *before* a decision (you see what you got and plan around
   it) over luck that decides *after* you've committed. Over a long game, luck should come as many small rolls that even
   out, or with ways to recover. Odds are shown before the player confirms, like costs.
@@ -33,6 +33,25 @@ Players **create and join games**, and many run at once; the Realm can be one al
 is a preset of **rule switches** (for example "exploring finds things", "attacks on"), and whoever creates a game may
 change them within limits, like house rules. Every game stores the rules it runs under, and its page lists them so
 players know what they joined.
+
+### Principles
+
+- **One shared core, separate land and clocks.** Both modes share accounts and bans, the win record, the schools with
+  their spells and hexes, the units and the battle formula, showing odds before you commit, and replayable randomness.
+  Each mode has its own clock (the Realm's regenerating turns, Skirmish's ready-up rounds), its own land (acres, or
+  regions on a board) and its own way of acting (instant actions, or orders that play out together). So Skirmish gets
+  its own kind of mage that reuses the spell and unit books, rather than the Realm's mage with optional parts.
+- **The Realm stays classic.** It keeps its small battle and hex luck and stays otherwise predictable, like Archmage.
+  The board-game luck (discoveries, drafts, events) is what makes Skirmish different.
+- **Small communities first.** A Skirmish must be fun for 2 or 3 friends and never wait for a crowd: 2 players is
+  enough to start one. The game must work on a server with ten accounts.
+- **Each Realm round is a game.** As now, a Realm round lasts 4 weeks and ends with a hall of fame, and the server
+  starts the next one. Each round is one entry in the list of games.
+- **The Games page comes first.** After signing in, players see their games (their Realm mage and their Skirmishes)
+  and the ones they can join; the Realm is one tap away.
+- **Open list plus invite codes.** A Skirmish's creator makes it public (listed for anyone) or private (joined with a
+  code or link). Anyone can create one, with a cap (for example one open game per player). In a game with few seats,
+  one person holding two of them is decisive, so the multi-account signals must also be shown per game.
 
 Until both modes exist, everything below describes the Realm.
 

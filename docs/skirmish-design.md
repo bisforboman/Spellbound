@@ -21,6 +21,7 @@ game ends and points are counted from several sources, so there's more than one 
 - **Dropouts:** a mage who misses rounds gets easier to take (see Dropouts).
 - **Several games at once:** one Realm mage plus a few Skirmish games (for example up to 3), each with its own mage.
 - **Results:** a simple win record per account (games played and won), shown on a leaderboard.
+- **Joining:** public games are listed for anyone; private ones are joined with a code or link. 2 players is enough.
 
 ## The board
 
@@ -42,7 +43,7 @@ game ends and points are counted from several sources, so there's more than one 
 
 ## A game
 
-- **Players:** 3 to 6, chosen by the creator (4 by default). The game starts when it's full, or at a set time with
+- **Players:** 2 to 6, chosen by the creator (4 by default). The game starts when it's full, or at a set time with
   whoever has joined.
 - **Start:** each mage gets one home region (the same terrain for everyone, spread out on the board) and a small amount
   of gold and mana.
@@ -121,7 +122,7 @@ again. After 4 rounds away, their regions turn neutral (free to claim) and they 
 
 ## Switches (set by the game's creator)
 
-Players (3–6), rounds (6–20), round time limit, actions per round, attacks on/off, hexes on/off, discovery deck on/off.
+Players (2–6), rounds (6–20), round time limit, actions per round, attacks on/off, hexes on/off, discovery deck on/off.
 
 ## What this needs from the rest of the app
 
