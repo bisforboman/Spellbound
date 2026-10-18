@@ -13,8 +13,10 @@ CREATE TABLE actions (
     draws jsonb NOT NULL,                 -- the random numbers the action used, in order
     result jsonb NOT NULL,                -- the report lines, and the target's for attacks and hexes
     state jsonb NOT NULL,                 -- the mage's main numbers afterwards, for balance queries
+    target_state jsonb,                   -- the target's, for attacks and hexes
     rules_hash text NOT NULL              -- which GameRules were in force (they can be tuned mid-round)
 );
-CREATE INDEX actions_owner ON actions (round, owner_id, at);
-CREATE INDEX actions_target ON actions (round, target_owner_id, at) WHERE target_owner_id IS NOT NULL;
+-- Owner first, so deleting an account (which spans rounds) uses them too.
+CREATE INDEX actions_owner ON actions (owner_id, round, at);
+CREATE INDEX actions_target ON actions (target_owner_id, round, at) WHERE target_owner_id IS NOT NULL;
 CREATE INDEX actions_round ON actions (round, at);

@@ -280,7 +280,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
             }
 
             await db.WriteAsync(
-                round.Number, mage, now, name, inputs, luck.Draws, result.Report, rules, rulesHash, target.OwnerId, result.TargetLines);
+                round.Number, mage, now, name, inputs, luck.Draws, result.Report, rules, rulesHash, target, result.TargetLines);
             await db.CommitAsync();
             return result.Report;
         });

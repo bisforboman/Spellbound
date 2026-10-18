@@ -93,6 +93,10 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
         await Game.RecruitAsync(Merlin, "knights", 400);
         await Game.AttackAsync(Merlin, (await Game.GetMageAsync(Morgana))!.Id);
 
+        Assert.Equal(
+            (await Game.GetMageAsync(Morgana))!.Land,
+            await WithDbAsync(db => db.ScalarAsync<int>("SELECT (target_state->>'land')::int FROM actions WHERE action = 'attack'")));
+
         await factory.Services.GetRequiredService<AccountService>().DeleteAsync(Morgana);
 
         Assert.Empty(await RowsAsync(Morgana));

@@ -140,6 +140,22 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal(["Merlin"], fame.ByLand.Select(e => e.Name)); // banned players are left out
     }
 
+    [Fact]
+    public async Task The_admin_page_shows_the_games_sections_to_an_admin_only()
+    {
+        using var admin = Client();
+        using var player = Client();
+        await SignInAsync(admin, AdminEmail);
+        await SignInAsync(player, "merlin@spellbound.test");
+
+        var page = await admin.GetStringAsync(new Uri("/admin", UriKind.Relative));
+        var refused = await player.GetAsync(new Uri("/admin", UriKind.Relative));
+
+        Assert.Contains("Action log", page, StringComparison.Ordinal);
+        Assert.Contains("Game rules", page, StringComparison.Ordinal);
+        Assert.Contains("Account/AccessDenied", refused.Headers.Location!.ToString(), StringComparison.Ordinal);
+    }
+
     public override void Dispose()
     {
         factory.Dispose();
@@ -148,6 +164,29 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
 
     private static ClaimsPrincipal User(string email) =>
         new(new ClaimsIdentity([new Claim(ClaimTypes.Name, email)], "Test"));
+
+    private HttpClient Client() => factory.CreateClient(new WebApplicationFactoryClientOptions
+    {
+        AllowAutoRedirect = false,
+        BaseAddress = new Uri("https://localhost"),
+    });
+
+    /// <summary>Signs in through the Development sign-in form, so the client carries the sign-in cookie.</summary>
+    private static async Task SignInAsync(HttpClient client, string email)
+    {
+        var login = await client.GetStringAsync(new Uri("/Account/Login", UriKind.Relative));
+        var token = System.Text.RegularExpressions.Regex.Match(
+            login, "name=\"__RequestVerificationToken\"[^>]*value=\"(?<v>[^\"]+)\"").Groups["v"].Value;
+        var response = await client.PostAsync(
+            new Uri("/Account/DevSignIn", UriKind.Relative),
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = System.Net.WebUtility.HtmlDecode(token),
+                ["email"] = email,
+                ["returnUrl"] = "/",
+            }));
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
+    }
 
     private async Task<string> CreateUserAsync(string email) =>
         (await Accounts.SignInAsync(AccountEndpoints.DevProvider, email, email)).Account!.Id;

@@ -56,22 +56,23 @@ public static class ActionLog
         ActionReport report,
         GameRules rules,
         string rulesHash,
-        string? targetOwnerId = null,
+        Mage? target = null,
         IReadOnlyList<string>? targetLines = null) =>
         db.ExecuteAsync(
             """
-            INSERT INTO actions (round, owner_id, at, action, target_owner_id, inputs, draws, result, state, rules_hash)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            INSERT INTO actions (round, owner_id, at, action, target_owner_id, inputs, draws, result, state, target_state, rules_hash)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             """,
             round,
             mage.OwnerId,
             at,
             action,
-            targetOwnerId,
+            target?.OwnerId,
             new Jsonb(DomainJson.Serialize(inputs)),
             new Jsonb(DomainJson.Serialize(draws)),
             new Jsonb(DomainJson.Serialize(new { lines = report.Lines, targetLines })),
             new Jsonb(DomainJson.Serialize(MageState.Of(mage, rules))),
+            target is null ? null : new Jsonb(DomainJson.Serialize(MageState.Of(target, rules))),
             rulesHash);
 
     /// <summary>A player's latest actions in a round, newest first, including attacks and hexes against them.</summary>
