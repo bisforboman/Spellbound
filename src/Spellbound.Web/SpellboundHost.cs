@@ -31,6 +31,31 @@ public sealed class SpellboundHost(GameRules rules) : IRoundLifecycle, IPlayerSu
         await db.ExecuteAsync("UPDATE actions SET target_owner_id = NULL WHERE target_owner_id = $1", ownerId); // others' stay
     }
 
+    /// <summary>The player's mages (as stored, every round), news and logged actions.</summary>
+    public async Task<object> ExportAsync(DbSession db, string ownerId) => new
+    {
+        mages = await db.QueryAsync(
+            "SELECT round, data::text FROM mages WHERE owner_id = $1 ORDER BY round",
+            r => new { round = r.GetInt32(0), mage = Json(r.GetString(1)) },
+            ownerId),
+        news = await db.QueryAsync(
+            "SELECT round, entries::text FROM news WHERE owner_id = $1 ORDER BY round",
+            r => new { round = r.GetInt32(0), entries = Json(r.GetString(1)) },
+            ownerId),
+        actions = await db.QueryAsync(
+            "SELECT round, at, action, inputs::text, result::text, state::text FROM actions WHERE owner_id = $1 ORDER BY id",
+            r => new
+            {
+                round = r.GetInt32(0),
+                at = r.GetFieldValue<DateTimeOffset>(1),
+                action = r.GetString(2),
+                inputs = Json(r.GetString(3)),
+                result = Json(r.GetString(4)),
+                state = Json(r.GetString(5)),
+            },
+            ownerId),
+    };
+
     public async Task<IReadOnlyDictionary<string, PlayerSummary>> GetAsync(DbSession db, Round round) =>
         (await db.LoadRoundMagesAsync(round.Number)).ToDictionary(
             m => m.OwnerId,
@@ -38,4 +63,6 @@ public sealed class SpellboundHost(GameRules rules) : IRoundLifecycle, IPlayerSu
                 m.Name,
                 $"{m.School} · {m.Land.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} acres",
                 m.Land));
+
+    private static System.Text.Json.JsonElement Json(string json) => System.Text.Json.JsonDocument.Parse(json).RootElement.Clone();
 }

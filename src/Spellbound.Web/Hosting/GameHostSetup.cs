@@ -20,6 +20,7 @@ public static class GameHostSetup
 
         // Accounts: sign-in with Google (no passwords stored); see AccountEndpoints.cs and Accounts.cs.
         builder.AddAccounts();
+        PrivacyOptions.Add(builder);
 
         // PostgreSQL through Npgsql's pooled data source. The connection string is read when first used, so tests can
         // set their own.

@@ -79,6 +79,31 @@ public sealed class AccountService(HostDatabase database, TimeProvider time, IAc
             "SELECT EXISTS (SELECT 1 FROM accounts WHERE id = $1) AND NOT EXISTS (SELECT 1 FROM bans WHERE owner_id = $1)", id);
     }
 
+    /// <summary>
+    /// Everything stored about an account, for the player's "download my data" file: the account row as stored
+    /// (including the provider's id for them), their recent networks (hashes, never addresses) and the game's data.
+    /// </summary>
+    public async Task<object> ExportAsync(string id)
+    {
+        await using var db = await database.BeginAsync();
+        var account = await db.SingleAsync(
+            "SELECT provider, subject, email, created_at, last_sign_in_at FROM accounts WHERE id = $1",
+            r => new
+            {
+                provider = r.GetString(0),
+                providerId = r.GetString(1),
+                email = r.GetString(2),
+                createdAt = r.GetFieldValue<DateTimeOffset>(3),
+                lastSignInAt = r.GetFieldValue<DateTimeOffset>(4),
+            },
+            id);
+        var networks = await db.QueryAsync(
+            "SELECT network, last_seen FROM account_networks WHERE owner_id = $1 ORDER BY last_seen DESC",
+            r => new { network = r.GetString(0), lastSeen = r.GetFieldValue<DateTimeOffset>(1) },
+            id);
+        return new { accountId = id, account, signInNetworks = networks, game = await game.ExportAsync(db, id) };
+    }
+
     public async Task<Account?> FindAsync(string id)
     {
         await using var db = await database.BeginAsync();

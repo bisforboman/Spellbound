@@ -28,7 +28,7 @@ One small Linux server runs three containers from `docker-compose.yml`:
    cd Spellbound
    cp .env.example .env
    nano .env   # DOMAIN, ADMIN_EMAIL, POSTGRES_PASSWORD (letters and digits: openssl rand -hex 24),
-               # GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+               # GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and the PRIVACY_* lines (see Privacy notice)
    ```
 
    `.env` holds the database password and the Google client secret. It is gitignored; never commit it. Set the password before the first start:
@@ -43,6 +43,22 @@ One small Linux server runs three containers from `docker-compose.yml`:
    The very first start creates the tables; the log lists each "Applied database script".
 6. **Open `https://your.domain`**, sign in with the Google account whose email is `ADMIN_EMAIL`, and check that the top
    bar shows **Admin**.
+
+## Privacy notice
+
+The game shows a privacy notice at `/privacy`, linked from the sign-in page and every page's footer. It describes what
+the app stores, written from the code. **Read it before launch**: you run the game, so you're responsible for its data
+(this is a description of the software, not legal advice). It fills in from `.env`:
+
+- `PRIVACY_OPERATOR`: who runs the game, e.g. your name.
+- `PRIVACY_CONTACT`: how players reach you about their data, e.g. an email address. It's shown publicly.
+- `PRIVACY_HOSTING`: where the server is, e.g. "a rented server in Germany (Hetzner)".
+- `PRIVACY_OFFSITE_BACKUPS` (optional): where you keep copies of the backups and for how long, e.g. "on a storage box
+  for 30 days". Leave it empty if you don't (but see Backups: you should).
+
+Without the first three the app won't start. If you change what the server does with data (for example put Cloudflare
+in front, which sees players' addresses, or keep off-site backups longer), update the notice to match: its text is in
+`src/Spellbound.Web/Components/Account/Pages/Privacy.razor`.
 
 ## Google sign-in
 
@@ -116,10 +132,13 @@ job on the host that sends the backups folder to a Hetzner Storage Box (or any S
 
 ```sh
 # crontab -e on the server; the volume's path is shown by: docker volume inspect spellbound_spellbound-data
-30 4 * * * rsync -a /var/lib/docker/volumes/spellbound_spellbound-data/_data/backups/ u12345@u12345.your-storagebox.de:spellbound/
+30 4 * * * rsync -a --delete /var/lib/docker/volumes/spellbound_spellbound-data/_data/backups/ u12345@u12345.your-storagebox.de:spellbound/
 ```
 
 The volume name starts with the folder name (`spellbound_` for a clone in `Spellbound/`); `docker volume ls` shows it.
+With `--delete` the copy mirrors the server, so it holds the same last 7 backups and deleted accounts leave it within
+a week. Without it, every backup is kept forever, and the privacy notice would have to say so: set
+`PRIVACY_OFFSITE_BACKUPS` to whatever you choose.
 
 ### Restoring
 

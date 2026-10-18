@@ -106,6 +106,13 @@ public static class AccountEndpoints
             return TypedResults.LocalRedirect("~/");
         });
 
+        account.MapGet("/Data", async (ClaimsPrincipal user, AccountService accounts) => TypedResults.File(
+            System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(
+                await accounts.ExportAsync(user.FindFirstValue(ClaimTypes.NameIdentifier)!),
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web) { WriteIndented = true }),
+            "application/json",
+            "spellbound-data.json")).RequireAuthorization();
+
         account.MapPost("/Delete", async (HttpContext context, ClaimsPrincipal user, [FromForm] string? confirm, AccountService accounts) =>
         {
             if (confirm != "delete")
