@@ -320,6 +320,18 @@ namespace Spellbound.Playtest
                     throw new PlaytestException($"Download my data answered {data.Status} without Merlin's mage.");
                 }
             });
+            await StepAsync(merlin, "notifications", async page =>
+            {
+                // The sandbox has no push service, so turning them on can only end in a clear message, never a hang.
+                await page.Context.GrantPermissionsAsync(["notifications"]);
+                await GoAsync(page, "/Account/Manage");
+                await page.ClickAsync("button[data-push='on']");
+                await page.WaitForFunctionAsync(
+                    "() => !/Checking/.test(document.querySelector('[data-push-status]').textContent)", null,
+                    new PageWaitForFunctionOptions { Timeout = 15_000 });
+                await page.ClickAsync("button:has-text('Send me a test notification')");
+                await Expect(page, "A test notification is on its way");
+            });
             await StepAsync(morgana, "privacy", page => GoAsync(page, "/privacy", interactive: false));
             await StepAsync(morgana, "not-an-admin", async page =>
             {
@@ -468,6 +480,13 @@ namespace Spellbound.Playtest
             var player = new Player(name, email, school, context, page);
             page.Console += (_, message) =>
             {
+                // Playwright's windows are private, where Chrome refuses push subscriptions and says so in the console.
+                // That's the browser's limit, not the game's: the notifications step checks the page handles it.
+                if (message.Text.Contains("does not support the Push API in incognito", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
                 if (message.Type is "error" or "warning")
                 {
                     player.Console.Add($"console {message.Type}: {message.Text}");

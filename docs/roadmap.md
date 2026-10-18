@@ -100,7 +100,8 @@ first, as the beta is with friends)
 - [x] Rounds with a ready-up and a time limit; the server plays a round when all are ready or time is up
 - [x] Storage and a service for Skirmish games (seats, saved orders, a record of every round); the admin starts games
   from players' emails until part 2's create and join
-- [ ] Reminders by web push (when everyone else is ready, and when time is running out)
+- [x] Web push notifications: turn them on per device on the Account page, with a test button
+- [ ] Skirmish reminders by web push (when everyone else is ready, when time is running out, when a round played)
 - [x] The board, orders and scoring pages, at 360 px, text-first (one game page, and Skirmishes on the Games page)
 - [x] Dropouts (away after 2 missed rounds, out after 6)
 - [ ] A win record per account

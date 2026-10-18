@@ -176,6 +176,13 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row, marks the game ended and
   starts the next in one transaction, under a transaction advisory lock per mode, so two hosts can't both reset.
   `SkirmishKeeper` checks every minute too, for Skirmish rounds whose time limit has passed.
+- **Notifications** (`Hosting/Push.cs`, `Hosting/WebPushCrypto.cs`): Web Push with .NET's own cryptography, no
+  package. Players turn them on per device on the Account page (`wwwroot/push.js` subscribes with the server's VAPID
+  key; `wwwroot/sw.js`, a service worker with no fetch handler, shows them). `push_subscriptions` holds each device's
+  push address and keys. The game hands a `PushMessage` to `PushSink` after its transaction commits; `PushSender`, in
+  the background, encrypts it for each of the player's devices (RFC 8291, tested against the RFC's own example) and
+  posts it with a VAPID token (RFC 8292), forgetting devices the push service no longer knows. The VAPID key is made
+  once and kept in `server_secrets`.
 - **Privacy** (`/privacy`, `Hosting/Privacy.cs`): a notice written from what the code stores, filled in from the
   `Privacy` config section (operator, contact, hosting; the app won't start outside Development without them). It
   promises things the code does, so keep them true together: network hashes are deleted after 30 days

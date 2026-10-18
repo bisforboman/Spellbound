@@ -113,6 +113,24 @@ public static class AccountEndpoints
             "application/json",
             "spellbound-data.json")).RequireAuthorization();
 
+        // Notifications: the browser subscribes with the server's key (push.js), and the player can send a test.
+        account.MapGet("/Push/Key", async (PushStore push) => TypedResults.Text(await push.PublicKeyAsync())).RequireAuthorization();
+        account.MapPost("/Push", async (ClaimsPrincipal user, [FromForm] string endpoint, [FromForm] string p256dh, [FromForm] string auth, PushStore push) =>
+            await push.SubscribeAsync(user.FindFirstValue(ClaimTypes.NameIdentifier)!, endpoint, p256dh, auth) is { } problem
+                ? Results.BadRequest(problem)
+                : Results.NoContent()).RequireAuthorization();
+        account.MapPost("/Push/Remove", async (ClaimsPrincipal user, [FromForm] string endpoint, PushStore push) =>
+        {
+            await push.UnsubscribeAsync(user.FindFirstValue(ClaimTypes.NameIdentifier)!, endpoint);
+            return Results.NoContent();
+        }).RequireAuthorization();
+        account.MapPost("/Push/Test", (ClaimsPrincipal user, PushSink push) =>
+        {
+            push.Send(new PushMessage(
+                user.FindFirstValue(ClaimTypes.NameIdentifier)!, "Spellbound", "Notifications work on this device.", "/Account/Manage"));
+            return Results.LocalRedirect("~/Account/Manage?push=sent");
+        }).RequireAuthorization();
+
         account.MapPost("/Delete", async (HttpContext context, ClaimsPrincipal user, [FromForm] string? confirm, AccountService accounts) =>
         {
             if (confirm != "delete")

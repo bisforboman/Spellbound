@@ -101,7 +101,11 @@ public sealed class AccountService(HostDatabase database, TimeProvider time, IAc
             "SELECT network, last_seen FROM account_networks WHERE owner_id = $1 ORDER BY last_seen DESC",
             r => new { network = r.GetString(0), lastSeen = r.GetFieldValue<DateTimeOffset>(1) },
             id);
-        return new { accountId = id, account, signInNetworks = networks, game = await game.ExportAsync(db, id) };
+        var push = await db.QueryAsync(
+            "SELECT endpoint, created_at FROM push_subscriptions WHERE owner_id = $1 ORDER BY created_at",
+            r => new { endpoint = r.GetString(0), createdAt = r.GetFieldValue<DateTimeOffset>(1) },
+            id);
+        return new { accountId = id, account, signInNetworks = networks, notifications = push, game = await game.ExportAsync(db, id) };
     }
 
     public async Task<Account?> FindAsync(string id)
@@ -131,6 +135,7 @@ public sealed class AccountService(HostDatabase database, TimeProvider time, IAc
     {
         await using var db = await database.BeginAsync();
         await db.ExecuteAsync("DELETE FROM account_networks WHERE owner_id = $1", id);
+        await db.ExecuteAsync("DELETE FROM push_subscriptions WHERE owner_id = $1", id);
         await game.OnAccountDeletedAsync(db, id);
         await db.ExecuteAsync("DELETE FROM accounts WHERE id = $1", id);
         await db.CommitAsync();
