@@ -35,8 +35,8 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
     public async Task InitializeAsync()
     {
         await factory.Services.GetRequiredService<RoundKeeper>().TickAsync();
-        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.Tidal);
-        await Game.CreateMageAsync(Morgana, "Morgana", MagicSchool.Radiant);
+        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.C);
+        await Game.CreateMageAsync(Morgana, "Morgana", MagicSchool.A);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -63,7 +63,7 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task A_logged_attack_replays_exactly_from_the_mages_before_it()
     {
-        await Game.RecruitAsync(Merlin, "knights", 400);
+        await Game.RecruitAsync(Merlin, "unit-3", 400);
         var morganaId = (await Game.GetMageAsync(Morgana))!.Id;
         var attackerBefore = (await WithDbAsync(db => db.LoadMageAsync(1, Merlin)))!; // as stored, not accrued
         var defenderBefore = (await WithDbAsync(db => db.LoadMageAsync(1, Morgana)))!;
@@ -90,7 +90,7 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task Deleting_an_account_deletes_its_actions_and_leaves_others_attacks_on_it_without_its_id()
     {
-        await Game.RecruitAsync(Merlin, "knights", 400);
+        await Game.RecruitAsync(Merlin, "unit-3", 400);
         await Game.AttackAsync(Merlin, (await Game.GetMageAsync(Morgana))!.Id);
 
         Assert.Equal(
@@ -108,7 +108,7 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task The_admin_lookup_shows_a_mages_actions_and_attacks_on_it_newest_first()
     {
-        await Game.RecruitAsync(Merlin, "knights", 400);
+        await Game.RecruitAsync(Merlin, "unit-3", 400);
         await Game.AttackAsync(Merlin, (await Game.GetMageAsync(Morgana))!.Id);
 
         var (mage, actions) = await Game.GetActionLogAsync(" morgana ");
@@ -117,7 +117,7 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
         Assert.Equal(["attack", "create"], actions.Select(a => a.Action));
         Assert.True(actions[0].Against);
         Assert.Equal(Merlin, actions[0].OtherOwnerId);
-        Assert.StartsWith("Merlin (Tidal) attacked you", actions[0].Lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("Merlin (School C) attacked you", actions[0].Lines[0], StringComparison.Ordinal);
         Assert.Null((await Game.GetActionLogAsync("Nobody")).Mage);
     }
 

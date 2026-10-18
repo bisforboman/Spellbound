@@ -1,6 +1,7 @@
 # Skirmish design (draft proposal)
 
-A first proposal to react to, not decided rules. Skirmish is the board-game mode of Spellbound (see
+A first proposal to react to, not decided rules. Names are placeholders (see
+[Names to decide](game-design.md#names-to-decide)). Skirmish is the board-game mode of Spellbound (see
 [game design](game-design.md#modes-decided-18-oct-2026-not-built-yet)): a few mages on one small, shared board, played in
 **rounds that everyone plays at the same time**, with a clear end and a score. It shares the core with the Realm (mages,
 schools, spells, armies) and changes the land and the clock. Version 1 is kept deliberately small; everything marked
@@ -33,10 +34,10 @@ game ends and points are counted from several sources, so there's more than one 
 
   | Terrain | Effect |
   |---|---|
-  | Plains | +1 building slot |
-  | Forest | Gold income ×1.2 from its buildings |
-  | Ley line | Mana income ×1.5 from its nodes |
-  | Mountain | Defence ×1.5 when attacked |
+  | Terrain 1 | +1 building slot |
+  | Terrain 2 | Gold income ×1.2 from its buildings |
+  | Terrain 3 | Mana income ×1.5 from its nodes |
+  | Terrain 4 | Defence ×1.5 when attacked |
 
 - **Building slots:** each region holds a fixed number of buildings (for example 4), so land is limited and every
   building choice counts. Nodes and towns work as in the Realm.
@@ -92,11 +93,11 @@ Claiming a region draws a card from a shared deck of about 30 cards, shuffled fr
 
 | Card | Count | Effect |
 |---|---|---|
-| Nothing | 12 | Just land |
-| Ruins | 6 | +1,500 gold |
-| Mana spring | 5 | +1,000 mana |
-| Old shrine | 3 | +3 points |
-| Lair | 4 | A monster: lose 10% of your army, or nothing if you have none |
+| Card 1 | 12 | Nothing: just land |
+| Card 2 | 6 | +1,500 gold |
+| Card 3 | 5 | +1,000 mana |
+| Card 4 | 3 | +3 points |
+| Card 5 | 4 | Lose 10% of your army, or nothing if you have none |
 
 Battle luck (×0.9–1.1, as in the Realm) stays, with the odds shown before you attack.
 
@@ -104,13 +105,13 @@ Battle luck (×0.9–1.1, as in the Realm) stays, with the odds shown before you
 
 Points from several sources, shown live on the game page:
 
-- 3 per region, +2 per Ley line or Mountain
+- 3 per region, +2 per Terrain 3 or Terrain 4
 - 1 per building
 - 2 per battle won
 - **Sets:** +5 for holding one of each terrain
 - **Objectives:** 3 public goals drawn per game (for example "first to 6 regions", "most nodes", "win 3 battles"),
   worth 5 points each to whoever gets there first
-- Shrine cards from the deck
+- Card 4s from the deck
 
 Ties go to the most gold and mana together. The winner's account gets a win on the Skirmish leaderboard; everyone who
 finished gets a game played.

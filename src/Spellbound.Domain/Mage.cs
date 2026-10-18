@@ -249,7 +249,7 @@ public sealed partial class Mage
 
         if (spell.School is { } school && school != School)
         {
-            return ActionReport.Fail($"{spell.Name} belongs to the {spell.School} school.");
+            return ActionReport.Fail($"{spell.Name} belongs to {spell.School.Value.DisplayName()}.");
         }
 
         if (Mana < spell.ManaCost)

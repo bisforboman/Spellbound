@@ -7,7 +7,7 @@ public class MageTests
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     private static readonly GameRules Rules = GameRules.Default;
 
-    private static Mage NewMage(MagicSchool school = MagicSchool.Radiant, GameRules? rules = null) =>
+    private static Mage NewMage(MagicSchool school = MagicSchool.A, GameRules? rules = null) =>
         Mage.Create("user-1", "Merlin", school, T0, rules ?? Rules);
 
     [Fact]
@@ -29,7 +29,7 @@ public class MageTests
     [InlineData("This name is far too long for a mage")]
     public void Create_rejects_bad_names(string name)
     {
-        Assert.Throws<ArgumentException>(() => Mage.Create("user-1", name, MagicSchool.Tidal, T0, Rules));
+        Assert.Throws<ArgumentException>(() => Mage.Create("user-1", name, MagicSchool.C, T0, Rules));
     }
 
     [Fact]
@@ -141,25 +141,25 @@ public class MageTests
     [Fact]
     public void Cast_spends_mana_and_turns_and_adds_the_effect()
     {
-        var mage = NewMage(MagicSchool.Radiant);
+        var mage = NewMage(MagicSchool.A);
 
-        var report = mage.Cast("blessed-harvest", T0, Rules);
+        var report = mage.Cast("self-a", T0, Rules);
 
         Assert.True(report.Succeeded);
         Assert.Equal(98, mage.Turns);
         // 2,000 − 1,500 + 2 turns × 200 node mana.
         Assert.Equal(900, mage.Mana);
         var effect = Assert.Single(mage.ActiveEffects);
-        Assert.Equal("blessed-harvest", effect.SpellId);
+        Assert.Equal("self-a", effect.SpellId);
         Assert.Equal(30, effect.RemainingTurns);
     }
 
     [Fact]
     public void Cast_is_limited_to_your_own_school()
     {
-        var mage = NewMage(MagicSchool.Radiant);
+        var mage = NewMage(MagicSchool.A);
 
-        var report = mage.Cast("overgrowth", T0, Rules);
+        var report = mage.Cast("self-b", T0, Rules);
 
         Assert.False(report.Succeeded);
         Assert.Empty(mage.ActiveEffects);
@@ -170,9 +170,9 @@ public class MageTests
     public void Cast_needs_enough_mana()
     {
         var rules = Rules with { StartingMana = 1_000 };
-        var mage = NewMage(MagicSchool.Radiant, rules);
+        var mage = NewMage(MagicSchool.A, rules);
 
-        var report = mage.Cast("blessed-harvest", T0, rules);
+        var report = mage.Cast("self-a", T0, rules);
 
         Assert.False(report.Succeeded);
         Assert.Equal(100, mage.Turns);
@@ -181,8 +181,8 @@ public class MageTests
     [Fact]
     public void Active_spell_boosts_income()
     {
-        var mage = NewMage(MagicSchool.Radiant);
-        mage.Cast("blessed-harvest", T0, Rules);
+        var mage = NewMage(MagicSchool.A);
+        mage.Cast("self-a", T0, Rules);
         var goldBefore = mage.Gold;
 
         mage.Explore(1, T0, Rules);
@@ -194,31 +194,31 @@ public class MageTests
     [Fact]
     public void Spell_fades_after_its_duration()
     {
-        var mage = NewMage(MagicSchool.Radiant);
-        mage.Cast("blessed-harvest", T0, Rules);
+        var mage = NewMage(MagicSchool.A);
+        mage.Cast("self-a", T0, Rules);
 
         var report = mage.Meditate(30, T0, Rules);
 
         Assert.Empty(mage.ActiveEffects);
-        Assert.Contains("Blessed Harvest has faded.", report.Lines);
+        Assert.Contains("Self-spell A has faded.", report.Lines);
     }
 
     [Fact]
     public void Recasting_refreshes_instead_of_stacking()
     {
-        var mage = NewMage(MagicSchool.Tidal);
-        mage.Cast("wellspring", T0, Rules);
+        var mage = NewMage(MagicSchool.C);
+        mage.Cast("self-c", T0, Rules);
         mage.Meditate(10, T0, Rules);
 
-        mage.Cast("wellspring", T0, Rules);
+        mage.Cast("self-c", T0, Rules);
 
         var effect = Assert.Single(mage.ActiveEffects);
         Assert.Equal(30, effect.RemainingTurns);
     }
 
     [Theory]
-    [InlineData(MagicSchool.Radiant, MagicSchool.Verdant, MagicSchool.Umbral)]
-    [InlineData(MagicSchool.Umbral, MagicSchool.Radiant, MagicSchool.Ember)]
+    [InlineData(MagicSchool.A, MagicSchool.B, MagicSchool.E)]
+    [InlineData(MagicSchool.E, MagicSchool.A, MagicSchool.D)]
     public void Schools_form_a_ring(MagicSchool school, MagicSchool strongAgainst, MagicSchool weakAgainst)
     {
         Assert.Equal(strongAgainst, school.StrongAgainst());

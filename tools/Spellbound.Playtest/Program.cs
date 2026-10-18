@@ -227,9 +227,9 @@ namespace Spellbound.Playtest
 
         public async Task PlayAsync()
         {
-            var ada = await PlayerAsync("Ada", AdminEmail, "Radiant");
-            var merlin = await PlayerAsync("Merlin", "merlin@playtest.local", "Verdant");
-            var morgana = await PlayerAsync("Morgana", "morgana@playtest.local", "Tidal");
+            var ada = await PlayerAsync("Ada", AdminEmail, "School A");
+            var merlin = await PlayerAsync("Merlin", "merlin@playtest.local", "School B");
+            var morgana = await PlayerAsync("Morgana", "morgana@playtest.local", "School C");
 
             foreach (var player in new[] { ada, merlin, morgana })
             {
@@ -261,7 +261,7 @@ namespace Spellbound.Playtest
             await StepAsync(ada, "games-with-mage", async page =>
             {
                 await GoAsync(page, "/");
-                await Expect(page, "Ada, Radiant mage");
+                await Expect(page, "Ada, School A mage");
             });
             await StepAsync(ada, "explore", page => ActAsync(page, "/explore", async () =>
             {
@@ -282,7 +282,7 @@ namespace Spellbound.Playtest
                 page.Locator("button.btn-primary:not([type=submit])").First.ClickAsync()));
             await StepAsync(ada, "recruit", page => ActAsync(page, "/army", async () =>
             {
-                await page.ClickAsync("label.choice:has(b:text-is('Knights'))");
+                await page.ClickAsync("label.choice:has(b:text-is('Unit 3'))");
                 await page.FillAsync("#count", "40");
                 await page.ClickAsync("button[type=submit]:has-text('Recruit')");
             }));

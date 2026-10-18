@@ -19,7 +19,7 @@ public sealed class DomainJsonTests
         var copy = DomainJson.Deserialize<Mage>(json);
 
         Assert.Equal(json, DomainJson.Serialize(copy));
-        Assert.Equal(mage.Army["knights"], copy.Army["KNIGHTS"]); // the case-insensitive comparer survived
+        Assert.Equal(mage.Army["unit-3"], copy.Army["UNIT-3"]); // the case-insensitive comparer survived
         Assert.Equal(mage.ActiveEffects.Single().RemainingTurns, copy.ActiveEffects.Single().RemainingTurns);
         Assert.Single(copy.RecentLosses);
         Assert.Equal(mage.CreatedAt, copy.CreatedAt);
@@ -49,8 +49,8 @@ public sealed class DomainJsonTests
 
         Assert.Empty(copy.RecentLosses);
         Assert.Empty(copy.Army);
-        copy.Recruit("Knights", 1, T0, Rules); // and the collections still work
-        Assert.Equal(1, copy.Army["knights"]);
+        copy.Recruit("UNIT-3", 1, T0, Rules); // and the collections still work
+        Assert.Equal(1, copy.Army["unit-3"]);
     }
 
     [Fact]
@@ -67,11 +67,11 @@ public sealed class DomainJsonTests
     /// <summary>A mage with something in every private collection: an army, a spell running, and a lost battle.</summary>
     private static Mage BusyMage()
     {
-        var mage = Mage.Create("owner-1", "Merlin", MagicSchool.Tidal, T0, Rules);
-        Assert.True(mage.Recruit("Knights", 50, T0, Rules).Succeeded);
-        Assert.True(mage.Cast("wellspring", T0, Rules).Succeeded);
-        var attacker = Mage.Create("owner-2", "Morgana", MagicSchool.Ember, T0, Rules);
-        attacker.Recruit("knights", 400, T0, Rules);
+        var mage = Mage.Create("owner-1", "Merlin", MagicSchool.C, T0, Rules);
+        Assert.True(mage.Recruit("UNIT-3", 50, T0, Rules).Succeeded);
+        Assert.True(mage.Cast("self-c", T0, Rules).Succeeded);
+        var attacker = Mage.Create("owner-2", "Morgana", MagicSchool.D, T0, Rules);
+        attacker.Recruit("unit-3", 400, T0, Rules);
         Assert.True(attacker.Attack(mage, T0, Rules, new FixedRandom(0.5)).Report.Succeeded);
         return mage;
     }

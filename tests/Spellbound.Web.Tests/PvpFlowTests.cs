@@ -36,8 +36,8 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
 
     private async Task<Guid> CreateBothAsync()
     {
-        await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.Tidal);
-        await Game.CreateMageAsync(Defender, "Morgana", MagicSchool.Radiant);
+        await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.C);
+        await Game.CreateMageAsync(Defender, "Morgana", MagicSchool.A);
         return (await Game.GetMageAsync(Defender))!.Id;
     }
 
@@ -46,8 +46,8 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
     {
         var defenderId = await CreateBothAsync();
         var attackerId = (await Game.GetMageAsync(Attacker))!.Id;
-        await Game.RecruitAsync(Attacker, "knights", 400);
-        await Game.RecruitAsync(Defender, "knights", 400);
+        await Game.RecruitAsync(Attacker, "unit-3", 400);
+        await Game.RecruitAsync(Defender, "unit-3", 400);
         var landBefore = (await Game.GetMageAsync(Attacker))!.Land + (await Game.GetMageAsync(Defender))!.Land;
 
         var reports = await Task.WhenAll(Enumerable.Range(0, 10).SelectMany(_ => new[]
@@ -65,12 +65,12 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task Recruited_army_is_saved()
     {
-        await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.Tidal);
+        await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.C);
 
-        Assert.True((await Game.RecruitAsync(Attacker, "knights", 60)).Succeeded);
+        Assert.True((await Game.RecruitAsync(Attacker, "unit-3", 60)).Succeeded);
 
         var mage = await Game.GetMageAsync(Attacker);
-        Assert.Equal(60, mage!.UnitCount("knights"));
+        Assert.Equal(60, mage!.UnitCount("unit-3"));
         Assert.Equal(98, mage.Turns);
     }
 
@@ -78,7 +78,7 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
     public async Task Attack_takes_land_and_alerts_the_defender()
     {
         var defenderId = await CreateBothAsync();
-        await Game.RecruitAsync(Attacker, "knights", 400);
+        await Game.RecruitAsync(Attacker, "unit-3", 400);
 
         var report = await Game.AttackAsync(Attacker, defenderId);
 
@@ -87,7 +87,7 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal(225, (await Game.GetMageAsync(Defender))!.Land);
         var news = (await Game.GetNewsAsync(Defender))[0];
         Assert.True(news.Hostile);
-        Assert.StartsWith("Merlin (Tidal) attacked you and broke through", news.Lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("Merlin (School C) attacked you and broke through", news.Lines[0], StringComparison.Ordinal);
         Assert.Equal(1, await Game.TakeUnseenAlertsAsync(Defender));
         Assert.Equal(0, await Game.TakeUnseenAlertsAsync(Defender));
     }
@@ -96,7 +96,7 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
     public async Task A_second_win_soon_after_takes_half_as_much_land_after_a_save()
     {
         var defenderId = await CreateBothAsync();
-        await Game.RecruitAsync(Attacker, "knights", 400);
+        await Game.RecruitAsync(Attacker, "unit-3", 400);
 
         Assert.True((await Game.AttackAsync(Attacker, defenderId)).Succeeded);
         var second = await Game.AttackAsync(Attacker, defenderId);
@@ -111,7 +111,7 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
     {
         var defenderId = await CreateBothAsync();
 
-        var report = await Game.HexAsync(Attacker, "mana-drain", defenderId);
+        var report = await Game.HexAsync(Attacker, "hex-c", defenderId);
 
         Assert.True(report.Succeeded, string.Join(" ", report.Lines));
         Assert.True((await Game.GetNewsAsync(Defender))[0].Hostile);

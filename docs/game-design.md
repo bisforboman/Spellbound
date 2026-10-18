@@ -2,6 +2,9 @@
 
 The numbers below are the defaults in `GameRules`. They are first guesses that need balancing through play.
 
+**Names are placeholders.** Schools, spells, hexes, units and Skirmish's terrains and cards have deliberately bad names
+("School A", "Hex C", "Unit 3") until we decide them together: see [Names to decide](#names-to-decide).
+
 ## The pitch
 
 You are a mage in a world of rival mages. A small pool of **turns** builds up while you're away. You spend them in
@@ -98,17 +101,17 @@ New buildings count towards income during the turns spent building them.
 You pick one of five schools when you create your mage. The schools form a ring: each one is strong against the
 next and weak against the previous one. The counter bonuses are used by offensive spells and combat from milestone 2.
 
-`Radiant → Verdant → Tidal → Ember → Umbral → Radiant`
+`School A → School B → School C → School D → School E → School A`
 
-### Self-spells (one per school, known from the start; see Hexes and barriers for Arcane Barrier)
+### Self-spells (one per school, known from the start; see Hexes and wards for the Ward spell)
 
 | School | Spell | Mana | Turns | Duration | Effect |
 |---|---|---|---|---|---|
-| Radiant | Blessed Harvest | 1,500 | 2 | 30 turns | Gold income ×1.25 |
-| Verdant | Overgrowth | 1,500 | 2 | 30 turns | Explore yield ×1.5 |
-| Tidal | Wellspring | 1,200 | 2 | 30 turns | Mana income ×1.3 |
-| Ember | Forge Fire | 1,500 | 2 | 30 turns | Building cost ×0.8 |
-| Umbral | Night Whispers | 1,200 | 2 | 30 turns | Meditation yield ×1.5 |
+| School A | Self-spell A | 1,500 | 2 | 30 turns | Gold income ×1.25 |
+| School B | Self-spell B | 1,500 | 2 | 30 turns | Explore yield ×1.5 |
+| School C | Self-spell C | 1,200 | 2 | 30 turns | Mana income ×1.3 |
+| School D | Self-spell D | 1,500 | 2 | 30 turns | Building cost ×0.8 |
+| School E | Self-spell E | 1,200 | 2 | 30 turns | Meditation yield ×1.5 |
 
 Recasting an active spell refreshes its duration; buffs don't stack.
 
@@ -118,9 +121,9 @@ Every mage can recruit the same three units. Recruiting takes `ceil(count / 50)`
 
 | Unit | Attack | Defense | Gold | Upkeep (gold per turn) |
 |---|---|---|---|---|
-| Militia | 1 | 3 | 60 | 1 |
-| Soldiers | 3 | 3 | 150 | 2 |
-| Knights | 6 | 2 | 250 | 3 |
+| Unit 1 | 1 | 3 | 60 | 1 |
+| Unit 2 | 3 | 3 | 150 | 2 |
+| Unit 3 | 6 | 2 | 250 | 3 |
 
 - **Upkeep** is paid every turn you spend, right after that turn's income. If you can't pay it all, your gold drops to 0
   and 10% of every unit type deserts (rounded up) that turn.
@@ -145,20 +148,20 @@ An attack costs **4 turns** and resolves in the first of them; the 4 turns then 
 
 Randomness comes from an injected, seedable source, so the same seed replays the same battle.
 
-## Hexes and barriers (milestone 2)
+## Hexes and wards (milestone 2)
 
 Each school knows one **hex**, an offensive spell cast at another mage (same targeting rules as attacks).
 
 | School | Hex | Mana | Turns | Effect on success |
 |---|---|---|---|---|
-| Radiant | Smite | 2,000 | 2 | Kills 5% of every unit type |
-| Verdant | Locust Swarm | 2,000 | 2 | Destroys 8% of their gold |
-| Tidal | Mana Drain | 2,000 | 2 | Takes 10% of their mana; you keep what fits in your storage |
-| Ember | Firestorm | 2,000 | 2 | Burns 3% of their buildings |
-| Umbral | Nightmare | 2,500 | 2 | They lose 3 turns on hand |
+| School A | Hex A | 2,000 | 2 | Kills 5% of every unit type |
+| School B | Hex B | 2,000 | 2 | Destroys 8% of their gold |
+| School C | Hex C | 2,000 | 2 | Takes 10% of their mana; you keep what fits in your storage |
+| School D | Hex D | 2,000 | 2 | Burns 3% of their buildings |
+| School E | Hex E | 2,500 | 2 | They lose 3 turns on hand |
 
 - **Chance to land:** 70%, +15 points if your school is strong against theirs, −15 if weak.
-- **Arcane Barrier** is a self-spell every school knows: 1,000 mana, 2 turns, lasts 30 of your turns, and halves the
+- The **Ward spell** is a self-spell every school knows: 1,000 mana, 2 turns, lasts 30 of your turns, and halves the
   chance of hexes cast at you. Like every buff, it only counts down as you spend turns.
 - A hex that is turned aside still costs its mana and turns. The target hears about it either way.
 
@@ -167,7 +170,7 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 - New mages are protected for **72 hours** and until they have spent **120 turns** (see Starting mage). Mages created
   before the time rule existed are protected by turns only.
 - Because everyone creates a mage when a round starts, every round opens with about **three days without attacks**.
-- **Networth** = 5 per acre + 10 per building + 1 per point of unit attack and defense (a knight adds 8).
+- **Networth** = 5 per acre + 10 per building + 1 per point of unit attack and defense (a Unit 3 adds 8).
 - The **Rivals** page ranks every mage by land or by networth, and is where you pick a target.
 - When you are attacked or hexed, the overview shows a banner with how many times since you last looked, and the
   entries are marked in the news log. Web push notifications are not built yet.
@@ -204,3 +207,22 @@ A simulation of a full round answers several of these with numbers, and proposes
 - Is upkeep too harsh, or too light? In the simulation attackers spend nearly all their income on it and still win,
   because stolen land pays for it. Revisit after the repeat-attack question.
 - Should there be a break between rounds, or an end-of-round event in the last days (for example, double land taken)?
+
+## Names to decide
+
+Everything players see with flavour has a placeholder name, so nothing is committed to by accident. The ids stored
+with a game (`MagicSchool.A`, `"hex-c"`, `"unit-3"`) stay neutral, so naming them later changes only the display text,
+never saved data. Where each name lives:
+
+| Placeholder | What it is | Where to rename it |
+|---|---|---|
+| School A–E | The five schools, a ring: each is strong against the next | `MagicSchoolExtensions.DisplayName` |
+| Self-spell A–E | Each school's own buff (gold, exploring, mana, building cost, meditation) | `SpellBook.All` (name and description) |
+| Ward spell | The buff every school knows: halves hexes against you | `SpellBook.All` |
+| Hex A–E | Each school's hex (kill units, destroy gold, take mana, destroy buildings, take turns) | `SpellBook.Hexes` |
+| Unit 1–3 | The three units: cheap defender, balanced, attacker | `UnitBook.All` |
+| Terrain 1–4, Card 1–5 | Skirmish's terrains and discovery cards (not built) | [skirmish-design.md](skirmish-design.md) |
+
+Not placeholders: the game's name (Spellbound) and the modes (Realm and Skirmish). Descriptions say what a thing does,
+plainly; flavour text can come with the names.
+

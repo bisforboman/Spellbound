@@ -9,7 +9,7 @@ else
         {
             <li class="rank-row">
                 <span class="rank">@entry.Rank</span>
-                <span class="who"><b>@entry.Name</b><small class="text-muted d-block">@entry.School</small></span>
+                <span class="who"><b>@entry.Name</b><small class="text-muted d-block">@entry.School.DisplayName()</small></span>
                 <span class="num">@N(ByNetworth ? entry.Networth : entry.Land)<small class="text-muted d-block">@(ByNetworth ? "networth" : "acres")</small></span>
             </li>
         }

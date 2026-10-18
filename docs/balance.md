@@ -12,8 +12,8 @@ The bots (`tools/Spellbound.Balance/Bots.cs`) act only through the game's own ac
 at each check-in, three times a day or once a day:
 
 - **Builder:** explores, and builds towns and nodes (1 in 4 a node), and keeps its school's buff up.
-- **Turtle:** the same, plus one militia per acre and an Arcane Barrier.
-- **Warmonger:** the same, plus half its spare gold into knights. It attacks a target it is certain to beat as long as
+- **Turtle:** the same, plus one Unit 1 per acre and a Ward spell.
+- **Warmonger:** the same, plus half its spare gold into Unit 3. It attacks a target it is certain to beat as long as
   the land a win would take is at least what exploring would give for the same 4 turns, starting with the target that
   gives the most land.
 - **Idle:** signs up and never plays.

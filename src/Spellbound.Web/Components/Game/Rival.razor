@@ -14,7 +14,7 @@ else if (Mage is not null && rival is not null)
     var counter = Mage.CounterSign(rival);
 
     <h1>@rival.Name</h1>
-    <p class="text-muted">@rival.School mage</p>
+    <p class="text-muted">@rival.School.DisplayName() mage</p>
 
     <TurnsBar Mage="Mage" Rules="Rules" />
 
@@ -29,7 +29,7 @@ else if (Mage is not null && rival is not null)
     @if (counter != 0)
     {
         <p>
-            @(counter > 0 ? $"Your {Mage.School} magic has the edge over their {rival.School} magic" : $"Their {rival.School} magic has the edge over your {Mage.School} magic"):
+            @(counter > 0 ? $"Your {Mage.School.DisplayName()} magic has the edge over their {rival.School.DisplayName()} magic" : $"Their {rival.School.DisplayName()} magic has the edge over your {Mage.School.DisplayName()} magic"):
             @(counter > 0 ? "+" : "−")@((int)(Rules.CounterBonus * 100))% attack power and @(counter > 0 ? "+" : "−")@((int)(Rules.HexCounterBonus * 100)) points of hex chance.
         </p>
     }
@@ -59,7 +59,7 @@ else if (Mage is not null && rival is not null)
     {
         <h2 class="h4 mt-4">Hex: @hex.Name</h2>
         <p>@hex.Description</p>
-        <p>Chance to land: <b>@((int)Math.Round(Mage.HexChance(rival, Rules) * 100))%</b>, less if they have a Barrier up.</p>
+        <p>Chance to land: <b>@((int)Math.Round(Mage.HexChance(rival, Rules) * 100))%</b>, less if they have a Ward spell up.</p>
         <p class="cost">Cost: <b>@N(hex.ManaCost) mana</b> and <b>@Turns(hex.TurnCost)</b>. You have @N(Mage.Mana) mana.</p>
         <button type="button" class="btn btn-danger btn-lg w-100" disabled="@(Busy || problem is not null)"
                 @onclick="() => RunAsync(() => Game.HexAsync(OwnerId, hex.Id, rival.Id))">

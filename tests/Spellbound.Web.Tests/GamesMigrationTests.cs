@@ -27,7 +27,7 @@ public sealed class GamesMigrationTests : TestDatabase
             {
                 await db.ExecuteAsync(
                     "INSERT INTO mages (round, owner_id, mage_id, data) VALUES ($1, 'account-1', $2, $3)",
-                    round, Guid.NewGuid(), new Jsonb(DomainJson.Serialize(Mage.Create("account-1", $"Merlin {round}", MagicSchool.Tidal, T0, GameRules.Default))));
+                    round, Guid.NewGuid(), new Jsonb(DomainJson.Serialize(Mage.Create("account-1", $"Merlin {round}", MagicSchool.C, T0, GameRules.Default))));
                 await db.ExecuteAsync(
                     "INSERT INTO news (round, owner_id, entries, unseen) VALUES ($1, 'account-1', $2, 0)",
                     round, new Jsonb(DomainJson.Serialize(new[] { new NewsEntry(T0, [$"News of round {round}"]) })));
