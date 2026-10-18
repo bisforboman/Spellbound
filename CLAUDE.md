@@ -37,8 +37,9 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 
 - **All game rules live in `Spellbound.Domain`.** It is pure C#. It has no database, ASP.NET or I/O references,
   and it never reads the clock. Callers pass `DateTimeOffset now` in.
-- **Balance numbers live only in `GameRules`.** Don't hardcode costs, rates or caps anywhere else. The web app binds
-  `GameRules` from configuration (section `"GameRules"`) so a server can be tuned without code changes.
+- **Balance numbers live only in `GameRules`.** Don't hardcode costs, rates or caps anywhere else. Each game stores the
+  rules it runs under; the web app binds `GameRules` from configuration (section `"GameRules"`) as the preset for new
+  games (the next Realm round), so a server can be tuned without code changes.
 - **Every domain action accrues turns first** (`Mage.AccrueTurns`) and returns an `ActionReport` of short,
   readable text lines. Actions either fully succeed or change nothing.
 - **Turns regenerate lazily.** The app stores `Turns` plus `TurnsAccruedAt` and computes the rest on read.

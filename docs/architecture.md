@@ -44,35 +44,41 @@ extension points designed for a single game tend to come out wrong.
   Spellbound), and nothing else from `Spellbound.Domain` or the game's web code. `HostingBoundaryTests` enforces this
   on both the compiled types and the source files.
 - **The game plugs in** through `Hosting/GameHooks.cs`: `IGameSchema` (the game's own SQL scripts, migrated after
-  the host's; hooks get the host's `DbSession`, so both save in one transaction), `IRoundLifecycle` (round length, and what happens when a round
-  ends, inside the reset's transaction; Spellbound records its hall of fame) and `IPlayerSummaries` (how a player shows
+  the host's; hooks get the host's `DbSession`, so both save in one transaction), `IRoundLifecycle` (the game the server always keeps running,
+  `AlwaysOnMode` and `NextAlwaysOn()`: its mode, length and rules; and `OnGameEndedAsync`, what happens when a game ends,
+  inside the reset's transaction; Spellbound records its hall of fame) and `IPlayerSummaries` (how a player shows
   on the admin page), and `IAccountLifecycle` (deleting an account deletes the player's game data in the same
   transaction; Spellbound removes their mages and news from every round). `AdminPageOptions.GameSections` adds game sections to the admin page (Spellbound's rules table).
   `SpellboundHost` implements the hooks.
 - `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
-- **Tables** are split the same way: `Hosting/Sql` creates `accounts`, `current_round`, `bans`, `account_networks` and
-  `server_secrets`; `Data/Sql` (through `SpellboundSchema`) creates `mages`, `news` and `hall_of_fame`.
+- **Tables** are split the same way: `Hosting/Sql` creates `accounts`, `games`, `bans`, `account_networks` and
+  `server_secrets`; `Data/Sql` (through `SpellboundSchema`) creates `mages`, `news`, `hall_of_fame` and `actions`,
+  keyed by game id.
 - **When a second game comes:** move `Hosting/` and `Components/Account/` into a `GameHost` Razor class library,
   register its assembly with the router (`AdditionalAssemblies`), and split the tests. Roughly 2–3 days.
 
-### Many games at once (planned, M5)
+### Many games at once (M5)
 
-Realm and Skirmish are two modes of one game, not two games, so `Hosting/` stays one host. What changes is that a
-server runs **many games at once** instead of one round: a `games` table (mode, status open/running/ended, rules as
-jsonb, start and end) and a members table replace `current_round`. Each game stores its own rules, so `GameRules`
-from configuration becomes the default preset rather than the one set every action uses; the action log's rules hash
-already records which rules an action ran under. The Realm is one always-on game the server creates at start. Bans
-stay global (per account); the hall of fame becomes per game. `IRoundLifecycle.RoundLength` becomes per game.
+Realm and Skirmish are two modes of one game, not two games, so `Hosting/` stays one host. A server runs **many
+games**: the host's `games` table (`HostedGame`: id, mode, round number, start, end, `ended_at` once wrapped up, and the
+rules as jsonb the host never reads) replaced the single `current_round` row. Each Realm round is one game: the
+server always keeps one running (`AlwaysOnMode`), numbered per mode. Every game stores its own rules
+(`GameData.RulesOf`), so `GameRules` from configuration is the preset for the next round, not the set every action
+uses; the action log's rules hash records which rules an action ran under. Rounds migrated from before games have no
+stored rules (`{}`) and use the configured ones, as they did. Bans stay global (per account); the hall of fame is per
+game. The Games page (`/`) lists the player's games; the Realm's pages (`/realm`, `/explore`, …) mean "the running
+Realm round". Not built yet (part 2, with Skirmish): members, creating and joining games, and page addresses that name
+a game.
 
 ## Request flow for a game action
 
 ```
 page form → GameService.ExploreAsync(userId, turns)
-  1. begin a transaction (one per action: a Blazor Server circuit outlives one action), load the current round
-     and refuse if it has ended, then load the mage's row by key (round, ownerId) FOR UPDATE: a second tap
-     waits here until the first commits, then sees the turns it left
-  2. report = mage.Explore(turns, timeProvider.GetUtcNow(), rules)
-  3. if report.Succeeded: write the mage back into its row, and add the report to the news row (round, ownerId),
+  1. begin a transaction (one per action: a Blazor Server circuit outlives one action), load the running Realm game
+     (its round and rules) and refuse if it has ended, then load the mage's row by key (game_id, ownerId) FOR UPDATE:
+     a second tap waits here until the first commits, then sees the turns it left
+  2. report = mage.Explore(turns, timeProvider.GetUtcNow(), the game's rules)
+  3. if report.Succeeded: write the mage back into its row, and add the report to the news row (game_id, ownerId),
      which is locked too
   4. commit both. A row locked for more than 5 s (lock_timeout) or a deadlock tells the player to try again
   5. render the report
@@ -85,7 +91,8 @@ for each other instead of deadlocking, and every acre taken arrives on the other
 `IRandomSource` (`SharedRandom` in the app, `SeededRandom` in tests).
 
 - `TimeProvider` is registered in DI (`TimeProvider.System`) so tests can fake time.
-- `GameRules` is bound from `appsettings.json` → `"GameRules"` and injected as a singleton.
+- `GameRules` is bound from `appsettings.json` → `"GameRules"` and injected as a singleton: the preset a new round
+  copies into its `games` row. Actions use the round's own copy.
 - The database is `ConnectionStrings:Spellbound`. At startup the app runs any new SQL scripts (`UseGameHostAsync`).
   In Development it connects to `localhost:5432` (start one with `docker compose -f docker-compose.dev.yml up -d`).
 
@@ -131,13 +138,13 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   and a hash of the `GameRules` in force. Failed actions change
   nothing and aren't logged; nor are alert resets, round resets or admin actions. With a mage as it was before an
   action, the same time, rules and draws reproduce the action exactly (`ActionLogTests` replays an attack and gets
-  the same saved mages); a replay tool isn't built. If rules were tuned mid-round, replaying across the change needs
-  the old rules, which the hash identifies. Deleting an account deletes its rows and clears it from others' attacks.
+  the same saved mages); a replay tool isn't built. A round's rules are stored with it (`games.rules`), and the hash
+  identifies them. Deleting an account deletes its rows and clears it from others' attacks.
   The admin page looks up a mage's latest actions by name. Volume: a few rows per player per check-in, under 1 KB
-  each; drop old rounds with `DELETE FROM actions WHERE round < N`, or partition by round if it ever matters.
-- **Rounds:** `current_round` holds the round being played, in one row. `RoundKeeper`, a hosted `BackgroundService`,
-  checks it every minute: it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row and
-  moves the round on in one transaction, with the round row locked, so two hosts can't both reset.
+  each; drop old rounds with `DELETE FROM actions WHERE game_id < N`, or partition by game if it ever matters.
+- **Rounds:** each Realm round is a row in `games`. `RoundKeeper`, a hosted `BackgroundService`, checks every minute:
+  it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row, marks the game ended and
+  starts the next in one transaction, under a transaction advisory lock per mode, so two hosts can't both reset.
 - **Privacy** (`/privacy`, `Hosting/Privacy.cs`): a notice written from what the code stores, filled in from the
   `Privacy` config section (operator, contact, hosting; the app won't start outside Development without them). It
   promises things the code does, so keep them true together: network hashes are deleted after 30 days
