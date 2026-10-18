@@ -39,7 +39,12 @@ public sealed class AccountService(IDbContextFactory<HostDb> dbs, TimeProvider t
     public const string Banned = "Your account is banned.";
 
     /// <summary>Finds the provider's account, or creates it on first sign-in. Refuses banned accounts.</summary>
-    public async Task<SignInResult> SignInAsync(string provider, string subject, string email)
+    public async Task<SignInResult> SignInAsync(string provider, string subject, string email) =>
+        await TrySignInAsync(provider, subject, email) ?? await TrySignInAsync(provider, subject, email)
+        ?? new(null, "The sign-in clashed with another one. Please try again.");
+
+    /// <summary>One attempt; null when another sign-in of the same person created the account at the same moment.</summary>
+    private async Task<SignInResult?> TrySignInAsync(string provider, string subject, string email)
     {
         if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(email))
         {
@@ -73,7 +78,7 @@ public sealed class AccountService(IDbContextFactory<HostDb> dbs, TimeProvider t
         }
         catch (DbUpdateException ex) when (HostStore.IsDuplicateKey(ex))
         {
-            return await SignInAsync(provider, subject, email); // the same person signed in twice at once
+            return null; // the same person signed in twice at once: the next attempt finds the account
         }
 
         return new(account, null);
@@ -102,7 +107,7 @@ public sealed class AccountService(IDbContextFactory<HostDb> dbs, TimeProvider t
         }
 
         await using var db = await dbs.CreateDbContextAsync();
-        return await db.Accounts.AnyAsync(a => a.Id == id) && !await db.Bans.AnyAsync(b => b.OwnerId == id);
+        return await db.Accounts.AnyAsync(a => a.Id == id && !db.Bans.Any(b => b.OwnerId == id));
     }
 
     public async Task<Account?> FindAsync(string id)

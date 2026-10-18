@@ -125,7 +125,9 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   Deleting an account (Account page) deletes its network hashes and, through `IAccountLifecycle`, its game data in
   one transaction with the account.
 - **Admin:** the `Admin` policy allows accounts whose email is in the `Admins` config list; `AdminHandler` reads the
-  list on every check. The `bans` table holds banned players. `GameService` checks it on every action and filters banned
+  list on every check. So admin access rests on the email Google reports for the account. Google verifies the
+  addresses of its own accounts; if that ever isn't enough (some Workspace setups), check the `email_verified` claim
+  in `/Account/SignedIn` and refuse unverified ones. The `bans` table holds banned players. `GameService` checks it on every action and filters banned
   mages out of rankings and targeting; `RoundKeeper` leaves them out of the hall of fame. A banned account can't sign
   in, and an open sign-in is checked against the database at most once a minute (open game connections every five
   minutes), so a ban or a deletion signs the player out.

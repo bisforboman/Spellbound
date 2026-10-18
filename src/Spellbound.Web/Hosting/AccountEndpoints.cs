@@ -130,10 +130,12 @@ public static class AccountEndpoints
         }
 
         await services.GetRequiredService<AccountSignals>().RecordAsync(account.Id, context.Connection.RemoteIpAddress);
+        var properties = new AuthenticationProperties { IsPersistent = true };
+        properties.Items[CheckedAt] = Stamp(services.GetRequiredService<TimeProvider>().GetUtcNow()); // just checked
         await context.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             AccountService.Principal(account, CookieAuthenticationDefaults.AuthenticationScheme),
-            new AuthenticationProperties { IsPersistent = true });
+            properties);
         return TypedResults.LocalRedirect(LocalUrl(returnUrl));
     }
 
@@ -160,14 +162,19 @@ public static class AccountEndpoints
 
         if (!await context.HttpContext.RequestServices.GetRequiredService<AccountService>().IsActiveAsync(context.Principal!))
         {
+            // Rejecting only ignores the cookie for this request; signing out also deletes it (Microsoft's pattern).
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return;
         }
 
-        context.Properties.Items[CheckedAt] = now.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+        // Rewrite the cookie with the new check time, so the next minute's requests skip the database.
+        context.Properties.Items[CheckedAt] = Stamp(now);
+        context.ReplacePrincipal(context.Principal!);
         context.ShouldRenew = true;
     }
+
+    private static string Stamp(DateTimeOffset at) => at.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
 }
 
 /// <summary>Signs an open game connection out within a few minutes of its account being deleted or banned.</summary>

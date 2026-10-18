@@ -80,7 +80,28 @@ public sealed partial class SecurityFlowTests : TestDatabase
 
         Assert.Equal(HttpStatusCode.Redirect, page.StatusCode);
         Assert.Contains("Account/Login", page.Headers.Location!.ToString(), StringComparison.Ordinal);
+        Assert.Single(page.Headers.GetValues("Set-Cookie"), c => c.StartsWith(".AspNetCore.Cookies=;", StringComparison.Ordinal));
         Assert.Contains("banned", Uri.UnescapeDataString(again.Headers.Location!.ToString()), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_sign_in_is_checked_against_the_database_at_most_once_a_minute()
+    {
+        var client = Client();
+        await SignInAsync(client, Merlin); // checked at sign-in
+        var manage = new Uri("/Account/Manage", UriKind.Relative);
+        time.Advance(TimeSpan.FromSeconds(61));
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(manage)).StatusCode); // checked again, cookie rewritten
+
+        var id = AccountService.IdFor(AccountEndpoints.DevProvider, Merlin);
+        await factory.Services.GetRequiredService<AdminService>().BanAsync("admin", "admin@spellbound.test", id, "Cheating");
+        time.Advance(TimeSpan.FromSeconds(30));
+        var withinTheMinute = await client.GetAsync(manage); // the rewritten cookie says it was checked 30 s ago
+        time.Advance(TimeSpan.FromSeconds(31));
+        var afterIt = await client.GetAsync(manage);
+
+        Assert.Equal(HttpStatusCode.OK, withinTheMinute.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, afterIt.StatusCode);
     }
 
     [Fact]
