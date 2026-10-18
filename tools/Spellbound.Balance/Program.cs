@@ -2,15 +2,26 @@
 // markdown report. Deterministic: the same seed gives the same report. See docs/balance.md.
 //
 //   dotnet run --project tools/Spellbound.Balance -- [--days 28] [--seed 7] [--out docs/balance-results.md]
+//   dotnet run --project tools/Spellbound.Balance -- --opening 200 [--days 7] [--seed 1] [--out docs/opening-baseline.md]
+//     the opening study: many seeded runs of days 1–7 on one mixed server, as a baseline each rules change is compared
+//     against
 using System.Globalization;
 using Spellbound.Balance;
 using Spellbound.Domain;
 
+var rules = GameRules.Default;
+var start = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+if (Arg("--opening", 0) is var runs and > 0)
+{
+    var openingOut = ArgText("--out", null) ?? "docs/opening-baseline.md";
+    File.WriteAllText(openingOut, new Opening(rules, start).Run(runs, Arg("--days", 7), Arg("--seed", 1)));
+    Console.WriteLine($"Wrote {openingOut}");
+    return;
+}
+
 var days = Arg("--days", 28);
 var seed = Arg("--seed", 7);
 var output = ArgText("--out", null) ?? "docs/balance-results.md";
-var rules = GameRules.Default;
-var start = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 int[] thriceDaily = [8, 13, 21];
 int[] daily = [20];
 int[] snapshots = [.. new[] { 1, 3, 7, 14, 21, 28 }.Where(d => d <= days)];

@@ -12,6 +12,9 @@ Each step of the rework adds a line here; the order is in [realm-rework.md](real
 - **The five schools** are named and in wheel order (Dawn, Grove, Ember, Umbra, Veil), with each school's neighbours
   and opposites as data (`MagicSchoolExtensions`). Their effects are still today's (a counter ring in battles and
   hexes, one self-spell each) until the wheel costs and battle steps.
+- **The opening study** (`tools/Spellbound.Balance -- --opening`) replays days 1–7 two hundred times with bot
+  strategies; [opening-baseline.md](opening-baseline.md) is today's baseline, and each step's diff of it shows what
+  that step changed.
 
 ## Summary
 

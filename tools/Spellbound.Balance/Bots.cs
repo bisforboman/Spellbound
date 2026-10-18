@@ -52,12 +52,32 @@ public abstract class Bot(string name, MagicSchool school)
     }
 }
 
-/// <summary>Grows land and buildings, never fights.</summary>
-public sealed class Builder(string name) : Bot(name, MagicSchool.Dawn)
+/// <summary>Grows land and buildings, never fights. <paramref name="nodeShare"/> of its buildings are nodes.</summary>
+public sealed class Builder(string name, double nodeShare = 0.25) : Bot(name, MagicSchool.Dawn)
 {
-    public override string Strategy => "economy only";
+    public override string Strategy => nodeShare == 0.25 ? "economy only" : $"economy only, {nodeShare:P0} nodes";
 
-    public override void Play(Mage me, IReadOnlyList<Mage> others, Sim sim) => Grow(me, sim);
+    public override void Play(Mage me, IReadOnlyList<Mage> others, Sim sim) => Grow(me, sim, nodeShare);
+}
+
+/// <summary>Only explores until <paramref name="untilDay"/>, then grows like a builder: land first, buildings later.</summary>
+public sealed class ExploreFirst(string name, int untilDay) : Bot(name, MagicSchool.Grove)
+{
+    public override string Strategy => $"explores only until day {untilDay}, then builds";
+
+    public override void Play(Mage me, IReadOnlyList<Mage> others, Sim sim)
+    {
+        if (sim.Day > untilDay)
+        {
+            Grow(me, sim);
+            return;
+        }
+
+        CastBuff(me, sim);
+        while (me.Turns > 0 && me.Explore(Math.Min(10, me.Turns), sim.Now, sim.Rules).Succeeded)
+        {
+        }
+    }
 }
 
 /// <summary>Grows, keeps unit 1 at one per acre and a ward up.</summary>

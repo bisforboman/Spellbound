@@ -105,7 +105,7 @@ it starts. "Needs" names the items that must come first.
 ### Foundations
 - [x] The design brought into the repo, decisions recorded, Skirmish removed
 - [x] The schools renamed Dawn, Grove, Ember, Umbra and Veil, with the wheel order as data
-- [ ] **F1. Simulation baseline** (M): `tools/Spellbound.Balance` replays days 1–7 many times with bot strategies,
+- [x] **F1. Simulation baseline** (M): `tools/Spellbound.Balance` replays days 1–7 many times with bot strategies,
   with a baseline on today's rules, so every later item is measured
 - [ ] **F2. Ledger preview** (M): every action form shows its projected result before you confirm (acres gained,
   income after upkeep, what would disband), by running the action on a copy; on today's verbs first
