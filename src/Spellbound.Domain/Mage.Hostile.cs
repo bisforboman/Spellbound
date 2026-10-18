@@ -9,6 +9,11 @@ namespace Spellbound.Domain;
 public sealed record HostileReport(ActionReport Report, IReadOnlyList<string> TargetLines)
 {
     public static HostileReport Fail(string reason) => new(ActionReport.Fail(reason), []);
+
+    /// <summary>The act as the whole server's Chronicle tells it: who, against whom, and how it went, in the third
+    /// person. It names no number that would give away hidden holdings (army, mana, gold); land is public, so acres
+    /// taken are told. Null when the action failed.</summary>
+    public string? Chronicle { get; init; }
 }
 
 /// <summary>Attacks and hexes against other mages.</summary>
@@ -76,6 +81,7 @@ public sealed partial class Mage
         var defense = target.DefensePower(rules) * Roll(random, rules);
         var won = attack > defense;
 
+        var acresTaken = 0;
         var ourLosses = LoseUnits(won ? rules.AttackerLossPercentOnWin : rules.AttackerLossPercentOnLoss, roundUp: false);
         var theirLosses = target.LoseUnits(
             won ? rules.DefenderLossPercentOnLoss : rules.DefenderLossPercentOnWin, roundUp: false);
@@ -87,11 +93,12 @@ public sealed partial class Mage
             var losses = target.LossesInWindow(now, rules);
             var percent = target.LandTakenPercent(now, rules);
             var acres = Math.Max(1, (int)(target.Land * percent / 100));
+            acresTaken = acres;
             var (nodes, towns) = target.LoseLand(acres, rules);
             target.RecordLoss(now, rules);
             Land += acres;
             ours.Add($"You attacked {target.Name} and broke through, taking {N(acres)} acres.");
-            theirs.Add($"{Name} ({School.DisplayName()}) attacked you and broke through. You lost {N(acres)} acres.");
+            theirs.Add($"{Who()} attacked you and broke through. You lost {N(acres)} acres.");
             if (losses > 0)
             {
                 var times = losses == 1 ? "once" : $"{N(losses)} times";
@@ -109,7 +116,7 @@ public sealed partial class Mage
         else
         {
             ours.Add($"You attacked {target.Name}, but their defenses held.");
-            theirs.Add($"{Name} ({School.DisplayName()}) attacked you, but your defenses held.");
+            theirs.Add($"{Who()} attacked you, but your defenses held.");
         }
 
         ours.Add($"Your attack power was {N((int)attack)} against their defense of {N((int)defense)}.");
@@ -120,8 +127,11 @@ public sealed partial class Mage
             ours.Add(counter);
         }
 
+        var chronicle = won
+            ? $"{Who()} broke through {target.Who()}'s defenses and took {N(acresTaken)} acres."
+            : $"{Who()} attacked {target.Who()}, but the defenses held.";
         var summary = SpendTurns(rules.AttackTurnCost, rules);
-        return new HostileReport(Report(rules.AttackTurnCost, summary, [.. ours]) with { Won = won }, theirs);
+        return new HostileReport(Report(rules.AttackTurnCost, summary, [.. ours]) with { Won = won }, theirs) { Chronicle = chronicle };
     }
 
     public HostileReport CastHex(string hexId, Mage target, DateTimeOffset now, GameRules rules, IRandomSource random)
@@ -158,18 +168,22 @@ public sealed partial class Mage
         Mana -= hex.ManaCost;
         var chance = HexChance(target, rules) * target.Multiplier(EffectKind.HexWard);
         string ours, theirs;
-        if (random.NextDouble() < chance)
+        var landed = random.NextDouble() < chance;
+        if (landed)
         {
             (ours, theirs) = ApplyHex(hex, target, rules);
         }
         else
         {
             ours = $"You cast {hex.Name} at {target.Name}, but it was turned aside.";
-            theirs = $"{Name} ({School.DisplayName()}) cast {hex.Name} at you, but it was turned aside.";
+            theirs = $"{Who()} cast {hex.Name} at you, but it was turned aside.";
         }
 
+        var chronicle = landed
+            ? $"{Who()} cast {hex.Name} at {target.Who()}."
+            : $"{Who()} cast {hex.Name} at {target.Who()}, but it was turned aside.";
         var summary = SpendTurns(hex.TurnCost, rules);
-        return new HostileReport(Report(hex.TurnCost, summary, ours), [theirs]);
+        return new HostileReport(Report(hex.TurnCost, summary, ours), [theirs]) { Chronicle = chronicle };
     }
 
     /// <summary>Why this mage can't attack or hex the target right now, or null if it can.</summary>
@@ -198,6 +212,9 @@ public sealed partial class Mage
 
     // ---- Internals ----
 
+    /// <summary>"Merlin (Grove)": how other mages' news and the Chronicle name this mage.</summary>
+    private string Who() => $"{Name} ({School.DisplayName()})";
+
     /// <summary>Remembers a lost battle, forgetting those outside the window so the list stays short.</summary>
     private void RecordLoss(DateTimeOffset now, GameRules rules)
     {
@@ -209,7 +226,7 @@ public sealed partial class Mage
 
     private (string Ours, string Theirs) ApplyHex(HexDefinition hex, Mage target, GameRules rules)
     {
-        var by = $"{Name} ({School.DisplayName()}) cast {hex.Name} at you";
+        var by = $"{Who()} cast {hex.Name} at you";
         switch (hex.Effect)
         {
             case HexEffect.KillUnits:

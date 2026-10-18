@@ -69,6 +69,16 @@ public abstract class GamePage : ComponentBase
         }
     }
 
+    /// <summary>How long ago something happened, in words: "just now", "5 min ago", "3 h ago", "2 d ago".</summary>
+    protected string Ago(DateTimeOffset at)
+    {
+        var age = Game.Now - at;
+        return age.TotalMinutes < 1 ? "just now"
+            : age.TotalHours < 1 ? $"{(int)age.TotalMinutes} min ago"
+            : age.TotalDays < 1 ? $"{(int)age.TotalHours} h ago"
+            : $"{(int)age.TotalDays} d ago";
+    }
+
     protected static string N(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
 
     protected static string Turns(int count) => count == 1 ? "1 turn" : $"{N(count)} turns";

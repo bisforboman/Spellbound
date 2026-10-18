@@ -18,6 +18,8 @@ Each step of the rework adds a line here; the order is in [realm-rework.md](real
 - **The ledger preview**: every peaceful action's form (Explore, Build, Meditate, Cast, Recruit) shows what it would
   leave you with, and what would desert or fade, by running it on a copy of the mage (`Mage.Preview`). Strikes get
   theirs from the War Table.
+- **The Chronicle**: every attack and hex is told to the whole server on the Chronicle page, in the third person with
+  no hidden numbers, from a public line the domain writes (`HostileReport.Chronicle`) and the action log stores.
 
 ## Summary
 

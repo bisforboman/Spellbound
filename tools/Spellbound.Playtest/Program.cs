@@ -321,6 +321,11 @@ namespace Spellbound.Playtest
                 await GoAsync(page, "/realm");
                 await Expect(page, "You were targeted");
             });
+            await StepAsync(merlin, "chronicle", async page =>
+            {
+                await GoAsync(page, "/chronicle");
+                await Expect(page, "Ada (Dawn) cast Dawn hex at Merlin (Grove)");
+            });
             await StepAsync(merlin, "hall-of-fame", page => GoAsync(page, "/halloffame"));
             await StepAsync(merlin, "account", async page =>
             {

@@ -18,6 +18,9 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
 {
     public const int NewsKept = 50;
 
+    /// <summary>How many of the latest hostile acts the Chronicle page shows.</summary>
+    public const int ChronicleShown = 50;
+
     private static readonly ActionReport Banned = ActionReport.Fail("Your account is banned.");
 
     private static readonly ActionReport Busy =
@@ -57,6 +60,13 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     {
         await using var db = await database.BeginAsync();
         return await LoadRealmAsync(db) is { } game ? (await db.LoadNewsAsync(game.Id, ownerId)).Entries : [];
+    }
+
+    /// <summary>The current round's Chronicle, newest first; empty before the first round.</summary>
+    public async Task<IReadOnlyList<ChronicleEntry>> GetChronicleAsync()
+    {
+        await using var db = await database.BeginAsync();
+        return await LoadRealmAsync(db) is { } game ? await db.LoadChronicleAsync(game.Id, ChronicleShown) : [];
     }
 
     /// <summary>How many hostile news entries arrived since the player last looked, and resets the count.</summary>
@@ -286,7 +296,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
             }
 
             await db.WriteAsync(
-                game.Id, mage, now, name, inputs, luck.Draws, result.Report, rules, target, result.TargetLines);
+                game.Id, mage, now, name, inputs, luck.Draws, result.Report, rules, target, result.TargetLines, result.Chronicle);
             await db.CommitAsync();
             return result.Report;
         });

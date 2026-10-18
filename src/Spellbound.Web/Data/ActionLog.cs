@@ -35,6 +35,9 @@ public sealed record MageState(
 public sealed record LoggedAction(
     DateTimeOffset At, string Action, bool Against, string? OtherOwnerId, string Inputs, IReadOnlyList<string> Lines);
 
+/// <summary>One line of the Chronicle: a hostile act as the whole server sees it.</summary>
+public sealed record ChronicleEntry(DateTimeOffset At, string Line);
+
 /// <summary>
 /// The action log (table <c>actions</c>): one row per successful player action, written in the action's own
 /// transaction, so it holds exactly what happened. See docs/architecture.md, "Persistence notes".
@@ -56,7 +59,8 @@ public static class ActionLog
         ActionReport report,
         GameRules rules,
         Mage? target = null,
-        IReadOnlyList<string>? targetLines = null) =>
+        IReadOnlyList<string>? targetLines = null,
+        string? chronicle = null) =>
         db.ExecuteAsync(
             """
             INSERT INTO actions (game_id, owner_id, at, action, target_owner_id, inputs, draws, result, state, target_state, rules_hash)
@@ -69,10 +73,24 @@ public static class ActionLog
             target?.OwnerId,
             new Jsonb(DomainJson.Serialize(inputs)),
             new Jsonb(DomainJson.Serialize(draws)),
-            new Jsonb(DomainJson.Serialize(new { lines = report.Lines, targetLines })),
+            new Jsonb(DomainJson.Serialize(new { lines = report.Lines, targetLines, chronicle })),
             new Jsonb(DomainJson.Serialize(MageState.Of(mage, rules))),
             target is null ? null : new Jsonb(DomainJson.Serialize(MageState.Of(target, rules))),
             RulesHash(rules));
+
+    /// <summary>The Chronicle: a game's latest hostile acts, newest first, each in its public line. Rows logged before
+    /// the Chronicle existed have none and are left out.</summary>
+    public static Task<List<ChronicleEntry>> LoadChronicleAsync(this DbSession db, long gameId, int limit) =>
+        db.QueryAsync(
+            """
+            SELECT at, result ->> 'chronicle'
+            FROM actions
+            WHERE game_id = $1 AND result ->> 'chronicle' IS NOT NULL
+            ORDER BY at DESC, id DESC
+            LIMIT $2
+            """,
+            r => new ChronicleEntry(r.GetFieldValue<DateTimeOffset>(0), r.GetString(1)),
+            gameId, limit);
 
     /// <summary>A player's latest actions in a game, newest first, including attacks and hexes against them.</summary>
     public static Task<List<LoggedAction>> LoadAsync(this DbSession db, long gameId, string ownerId, int limit) =>

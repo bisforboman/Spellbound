@@ -90,6 +90,9 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
         Assert.StartsWith("Merlin (Ember) attacked you and broke through", news.Lines[0], StringComparison.Ordinal);
         Assert.Equal(1, await Game.TakeUnseenAlertsAsync(Defender));
         Assert.Equal(0, await Game.TakeUnseenAlertsAsync(Defender));
+        // The whole realm hears of it, and only of hostile acts: the recruit isn't in the Chronicle.
+        var told = Assert.Single(await Game.GetChronicleAsync());
+        Assert.Equal("Merlin (Ember) broke through Morgana (Dawn)'s defenses and took 25 acres.", told.Line);
     }
 
     [Fact]
@@ -130,6 +133,7 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal(100, (await Game.GetMageAsync(Attacker))!.Turns);
         Assert.Empty(await Game.GetNewsAsync(Attacker));
         Assert.Empty(await Game.GetNewsAsync(Defender));
+        Assert.Empty(await Game.GetChronicleAsync());
     }
 
     public override void Dispose()
