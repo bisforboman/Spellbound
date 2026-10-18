@@ -87,26 +87,12 @@ So rebuilding units into per-school creatures, and spells into tiers, means eith
 - **What comes first.** The friends beta of Skirmish was next, then the Realm's launch. A Realm rework before any
   deploy delays real players.
 
-## A possible order
+## Order and backlog
 
-Following the research's own playtest plan (economy first, battles second, a closed alpha third). Each step is one
-PR with tests, a sim run where it applies, and a playtest step.
+The order of the steps, each sized and with what it depends on, lives in one place: [roadmap.md](roadmap.md), M7.
+Decided 18 Oct 2026 as well: the first playable milestone is an **alpha with friends after the core** (economy,
+schools and research, battles, strikes with their limits and Wards, the Fall, a forced Final War with titles), and
+**AI mages come right after battles**, so a small alpha has targets in range.
 
-1. This page and the decisions below.
-2. Turn bank numbers, season phases and published net power, with the Realm simulation (`tools/Spellbound.Balance`)
-   extended so every later step is checked by simulation.
-3. Buildings as shares, population, yield curves and the ledger preview.
-4. The school wheel, research and Spell Level.
-5. Creatures, stacked battles and the War Table.
-6. Strike kinds, range and hit limits, Shaken, the Chronicle, Wards.
-7. The Fall, Vigil and Sanctuary.
-8. The Conjunction: Armageddon, the Final War and the titles.
-9. Omens, guilds, the Tutor's Plan and the Apprentice season with AI mages.
-
-## Open questions for the owner
-
-1. Replace the Realm with Mageborn, or add it as a third mode?
-2. Does Skirmish follow the new schools, spells and units, or keep today's?
-3. Skirmish beta first, or the rework first?
-4. Are the research's names (Mageborn, Dawn/Grove/Ember/Umbra/Veil, the buildings) decided, or still placeholders?
-5. The research's own open questions: 5 stacks or 6–7; items, heroes and gods later; the setting.
+The questions this page first asked are answered under Decisions. The research's own open questions (stack count,
+items, heroes and gods, the setting, the product name) are parked in the roadmap at the step where each one bites.
