@@ -21,7 +21,9 @@ Design goals:
   it) over luck that decides *after* you've committed. Over a long game, luck should come as many small rolls that even
   out, or with ways to recover. Odds are shown before the player confirms, like costs.
 - **Art later.** Text-first until the core is fun; art can be reconsidered then. The look for now (18 Oct 2026): dark
-  and gritty, warm dark greys with a faint grain; in Skirmish each player has a colour of their own.
+  and gritty, warm dark greys with a faint grain, headings in IM Fell English SC, muted olive, rust and ochre for
+  actions, small geometric symbols for gold, mana, turns, land and army; in Skirmish each player has a colour of their
+  own.
 
 ## Modes (decided 18 Oct 2026; Skirmish is playable: players set up and join games)
 

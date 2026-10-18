@@ -405,3 +405,16 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row) {
 .text-danger {
     color: var(--bs-danger-text-emphasis) !important;
 }
+
+/* Symbols before labels (Glyph.razor): stone grey, with dull brass for gold and slate for mana, so the seat colours
+   stay the only bright ones */
+.glyph {
+    display: inline-block;
+    width: 1.2em;
+    color: var(--bs-secondary-color);
+    font-weight: 400;
+}
+
+.glyph-Gold { color: #b39a5e; }
+.glyph-Mana { color: #7f93a8; }
+.glyph-Turns { font-size: 1.35em; line-height: 1; vertical-align: -0.08em; }

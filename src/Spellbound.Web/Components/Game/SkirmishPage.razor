@@ -45,9 +45,9 @@ else
 <table class="table table-sm stats">
     <tbody>
         <tr><th>You</th><td>@me.Name, @me.School.DisplayName()@(me.Out ? " (out)" : "")</td></tr>
-        <tr><th>Gold</th><td>@N(me.Gold)</td></tr>
-        <tr><th>Mana</th><td>@N(me.Mana)</td></tr>
-        <tr><th>Army</th><td>@N(me.Units) units: attack @N(me.AttackPower), defense @N(me.DefensePower)</td></tr>
+        <tr><th><Glyph Kind="GlyphKind.Gold" />Gold</th><td>@N(me.Gold)</td></tr>
+        <tr><th><Glyph Kind="GlyphKind.Mana" />Mana</th><td>@N(me.Mana)</td></tr>
+        <tr><th><Glyph Kind="GlyphKind.Army" />Army</th><td>@N(me.Units) units: attack @N(me.AttackPower), defense @N(me.DefensePower)</td></tr>
         <tr><th>Points</th><td>@game.Score(view.Seat).Total</td></tr>
         @if (me.Effects.Count > 0)
         {
@@ -129,7 +129,7 @@ else
     {
         <li class="rank-row @(region.Owner is { } held ? $"seated seat-{held}" : null) @(region.Owner == view.Seat ? "you" : null)">
             <span class="who">
-                <b>@region.Name</b> · @region.Terrain.DisplayName()
+                <b>@region.Name</b> · <Glyph Kind="Glyph.For(region.Terrain)" />@region.Terrain.DisplayName()
                 <small class="text-muted d-block">
                     @if (region.Owner is { } owner)
                     {
