@@ -39,11 +39,12 @@ players know what they joined.
 
 ### Principles
 
-- **One shared core, separate land and clocks.** Both modes share accounts and bans, the win record, the schools with
+- **One shared core, separate land and clocks.** Both modes share accounts and bans, the schools with
   their spells and hexes, the units and the battle formula, showing odds before you commit, and replayable randomness.
   Each mode has its own clock (the Realm's regenerating turns, Skirmish's ready-up rounds), its own land (acres, or
   regions on a board) and its own way of acting (instant actions, or orders that play out together). So Skirmish gets
   its own kind of mage that reuses the spell and unit books, rather than the Realm's mage with optional parts.
+  Each keeps its own record too: the Realm's hall of fame of each round, Skirmish's win record and leaderboard.
 - **The Realm stays classic.** It keeps its small battle and hex luck and stays otherwise predictable, like Archmage.
   The board-game luck (discoveries, drafts, events) is what makes Skirmish different.
 - **Skirmish is the lab.** It's the explorative mode, and the first thing to beta-test with friends. Short games make
