@@ -33,6 +33,7 @@ public sealed class Sim
         Random = new SeededRandom(seed);
         Start = start;
         Now = start;
+        Round = Round.First(start, rules.RoundLength); // the whole round, even when only its first days are played
         foreach (var seat in seats)
         {
             players.Add((seat, Mage.Create($"bots/{seat.Bot.Name}", seat.Bot.Name, seat.Bot.School, start, rules)));
@@ -46,6 +47,11 @@ public sealed class Sim
     public SeededRandom Random { get; }
 
     public DateTimeOffset Start { get; }
+
+    public Round Round { get; }
+
+    /// <summary>What exploring depends on right now: the round's phase and the players' median land.</summary>
+    public ExploreConditions ExploreConditions => ExploreConditions.At(Round, Now, Rules, players.Select(p => p.Mage));
 
     public DateTimeOffset Now { get; private set; }
 

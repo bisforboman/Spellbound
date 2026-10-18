@@ -36,7 +36,7 @@ public abstract class Bot(string name, MagicSchool school)
                 }
             }
 
-            me.Explore(Math.Min(10, budget), sim.Now, rules);
+            me.Explore(Math.Min(10, budget), sim.Now, rules, sim.ExploreConditions);
         }
     }
 
@@ -74,7 +74,7 @@ public sealed class ExploreFirst(string name, int untilDay) : Bot(name, MagicSch
         }
 
         CastBuff(me, sim);
-        while (me.Turns > 0 && me.Explore(Math.Min(10, me.Turns), sim.Now, sim.Rules).Succeeded)
+        while (me.Turns > 0 && me.Explore(Math.Min(10, me.Turns), sim.Now, sim.Rules, sim.ExploreConditions).Succeeded)
         {
         }
     }
@@ -124,7 +124,7 @@ public sealed class Warmonger(string name) : Bot(name, MagicSchool.Umbra)
                 .Where(t => me.AttackPower * (1 + (me.CounterSign(t) * rules.CounterBonus)) * (1 - rules.CombatRollSpread)
                             > t.DefensePower(rules) * (1 + rules.CombatRollSpread))
                 .Select(t => (Target: t, Acres: (int)(t.Land * t.LandTakenPercent(sim.Now, rules) / 100)))
-                .Where(x => x.Acres >= rules.AttackTurnCost * me.ExploreAcresPerTurn(rules)) // else exploring pays more
+                .Where(x => x.Acres >= rules.AttackTurnCost * me.ExploreYield(rules, sim.ExploreConditions)) // else exploring pays more
                 .OrderByDescending(x => x.Acres)
                 .Select(x => x.Target)
                 .FirstOrDefault();

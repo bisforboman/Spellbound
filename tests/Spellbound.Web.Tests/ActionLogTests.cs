@@ -53,6 +53,9 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
         Assert.Equal(["create", "explore"], rows.Select(r => r.Action));
         var explore = rows[1];
         Assert.Equal(5, explore.Inputs.GetProperty("turns").GetInt32());
+        // What exploring depended on, which the mage's own state can't reproduce: the round's phase and the median land.
+        Assert.Equal("Sanctuary", explore.Inputs.GetProperty("phase").GetString());
+        Assert.Equal(250, explore.Inputs.GetProperty("medianLand").GetInt32());
         Assert.Equal(report.Lines, explore.Lines);
         Assert.Equal(0, explore.Draws.GetArrayLength()); // no luck involved
         Assert.Equal((await Game.GetMageAsync(Merlin))!.Land, explore.State.GetProperty("land").GetInt32());
