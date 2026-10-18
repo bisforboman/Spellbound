@@ -407,7 +407,7 @@ namespace Spellbound.Playtest
             await StepAsync(morgana, "skirmish-join-code", async page =>
             {
                 await GoAsync(page, "/");
-                await page.FillAsync("#join-code", code.ToLowerInvariant());
+                await page.FillAsync("#join-code", $"{options.Url}/skirmish/join/{code.ToLowerInvariant()}"); // a pasted link works too
                 await page.ClickAsync("button:has-text('Find')");
                 await page.WaitForURLAsync("**/skirmish/join/*");
                 await WaitForCircuitAsync(page);

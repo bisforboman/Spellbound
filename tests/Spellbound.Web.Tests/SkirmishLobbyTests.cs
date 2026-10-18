@@ -187,6 +187,38 @@ public sealed class SkirmishLobbyTests : TestDatabase, IAsyncLifetime
         Assert.Equal(0, await CountAsync("SELECT count(*) FROM skirmish_lobby_players WHERE owner_id = $1", merlin));
     }
 
+    [Fact]
+    public async Task An_invite_link_leads_a_friend_who_isnt_signed_in_through_sign_in_and_back_to_the_game()
+    {
+        var code = await CreateAsync(merlin, "Merlin", ThreePlayers);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            BaseAddress = new Uri("https://localhost"),
+        });
+
+        var invite = await client.GetAsync(new Uri($"/skirmish/join/{code}", UriKind.Relative));
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, invite.StatusCode);
+        var login = invite.Headers.Location!.ToString();
+        Assert.Contains("/Account/Login", login, StringComparison.Ordinal);
+
+        var page = await client.GetStringAsync(new Uri(login, UriKind.RelativeOrAbsolute));
+        var token = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Match(
+            page, "name=\"__RequestVerificationToken\"[^>]*value=\"(?<v>[^\"]+)\"").Groups["v"].Value);
+        var returnUrl = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Match(
+            page, "name=\"returnUrl\"[^>]*value=\"(?<v>[^\"]*)\"").Groups["v"].Value);
+        var signedIn = await client.PostAsync(
+            new Uri("/Account/DevSignIn", UriKind.Relative),
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token,
+                ["email"] = "friend@spellbound.test", // a first sign-in: a new account
+                ["returnUrl"] = returnUrl,
+            }));
+
+        Assert.Equal($"/skirmish/join/{code}", signedIn.Headers.Location!.ToString());
+    }
+
     public override void Dispose()
     {
         factory.Dispose();

@@ -88,7 +88,7 @@ else
 <form class="join-code mb-3" @onsubmit="JoinWithCode">
     <label class="form-label" for="join-code">Got an invite code?</label>
     <div class="d-flex gap-2">
-        <input id="join-code" class="form-control text-uppercase" maxlength="12" autocomplete="off" autocapitalize="characters"
+        <input id="join-code" class="form-control text-uppercase" maxlength="200" autocomplete="off" autocapitalize="characters"
                placeholder="ABC234" @bind="code" @bind:event="oninput" />
         <button type="submit" class="btn btn-outline-primary" disabled="@string.IsNullOrWhiteSpace(code)">Find</button>
     </div>
@@ -139,5 +139,7 @@ else
         loaded = true;
     }
 
-    private void JoinWithCode() => Navigation.NavigateTo($"skirmish/join/{Uri.EscapeDataString(code.Trim())}");
+    /// <summary>Opens the game for a typed code, or for a pasted invite link (its last part is the code).</summary>
+    private void JoinWithCode() =>
+        Navigation.NavigateTo($"skirmish/join/{Uri.EscapeDataString(code.Trim().TrimEnd('/').Split('/')[^1])}");
 }
