@@ -42,6 +42,9 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 ## M4: First live round
 Goal: real players finish a round, and we learn from it.
 
+**On hold since 18 Oct 2026:** the game gets two modes, Realm and Skirmish, and launches with both (see M5, M6 and
+[game design](game-design.md#modes-decided-18-oct-2026-not-built-yet)). The open items below wait until then.
+
 - [x] Sign in with Google instead of passwords (no password storage, resets or lockouts; a Development-only sign-in for
   local runs and tests). Needs the owner's Google OAuth client before deploy
 - [x] Persistence on plain Npgsql instead of EF Core: SQL migration files, row locks for concurrent actions
@@ -63,11 +66,27 @@ Goal: real players finish a round, and we learn from it.
 - [ ] Read the privacy notice (`/privacy`) and fill in its `PRIVACY_*` settings: operator, contact, hosting, off-site
   backups (see [deploy guide](deploy.md#privacy-notice))
 
+## M5: Games and lobbies
+Goal: players create and join games; each game has its own mode and rules. Built with the Realm only first, so every
+existing test still checks "one game in the list".
+
+- [ ] A `games` table (mode, status, rules, start and end) and members, replacing the single `current_round`
+- [ ] Each game stores its rules (`GameRules` plus switches); configuration becomes the default preset
+- [ ] Mages, news, actions and hall of fame keyed by game instead of round; the round keeper ends every game on time
+- [ ] Create a game (mode, players, switches within limits) and join one; the game page lists its rules
+- [ ] The Realm as one always-on game the server keeps running
+
+## M6: Skirmish
+- [ ] Rules draft ([skirmish design](skirmish-design.md)), agreed with the owner
+- [ ] Rules in the domain, with tests, and a simulation in `tools/` until it plays well
+- [ ] The board and scoring pages, at 360 px, text-first
+- [ ] One luck feature to start (for example "exploring finds things"), as a switch
+
 ## Engineering
 - Persistence: plain Npgsql with Google sign-in, decided 17 Oct 2026 after comparing alternatives and similar games
   ([research](research/persistence.md))
 - jsonb upcasters: game state is versioned JSON; add the first upcaster at the first rename or reshape
-- The `Hosting/` hooks are shaped for one game; a second game needs a proper abstraction there
+- The `Hosting/` hooks are shaped for one round at a time; M5 makes them per game (round length, round end)
 - Tests: most of their time is the app starting once per test; share one app per test class if speed matters
 
 ## Balance
@@ -79,5 +98,5 @@ See [balance.md](balance.md) and the open questions in [game design](game-design
 - Research, artifacts, guilds and chat, server variants, web push notifications
 - Real email (an SMTP service), if the game ever needs it
 - More sign-in options (Apple, passkeys), linked to the same account
-- Move `Hosting/` into its own reusable project when a second game is planned (see architecture, "The game host
-  boundary")
+- Move `Hosting/` into its own reusable project if a separate game is ever planned (see architecture, "The game host
+  boundary"); Realm and Skirmish are modes of one game, so they don't need it
