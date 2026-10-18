@@ -3,12 +3,12 @@
 
 @{
     var now = Game.Now;
-    var turns = TurnClock.Accrue(Mage.Turns, Mage.TurnsAccruedAt, now, Game.Rules).Turns;
-    var next = Mage.TimeUntilNextTurn(now, Game.Rules);
+    var turns = TurnClock.Accrue(Mage.Turns, Mage.TurnsAccruedAt, now, Rules).Turns;
+    var next = Mage.TimeUntilNextTurn(now, Rules);
 }
 <div class="turns">
     <div class="turns-line">
-        <span><b>@turns</b> / @Game.Rules.MaxTurns turns</span>
+        <span><b>@turns</b> / @Rules.MaxTurns turns</span>
         @if (next is { } wait)
         {
             <span>next in @((int)wait.TotalMinutes):@wait.Seconds.ToString("00")</span>
@@ -18,12 +18,15 @@
             <span class="text-danger">at the cap, new turns are lost</span>
         }
     </div>
-    <progress max="@Game.Rules.MaxTurns" value="@turns" aria-label="Turns on hand"></progress>
+    <progress max="@Rules.MaxTurns" value="@turns" aria-label="Turns on hand"></progress>
 </div>
 
 @code {
     [Parameter, EditorRequired]
     public Mage Mage { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public GameRules Rules { get; set; } = default!;
 
     private Timer? timer;
 

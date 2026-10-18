@@ -6,7 +6,7 @@
 
 @if (Mage is not null)
 {
-    <TurnsBar Mage="Mage" />
+    <TurnsBar Mage="Mage" Rules="Rules" />
     <p>You have @N(Mage.FreeLand) free acres and @N(Mage.Gold) gold.</p>
 
     <form @onsubmit="() => RunAsync(() => Game.BuildAsync(OwnerId, type, count))">

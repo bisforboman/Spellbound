@@ -11,18 +11,17 @@ namespace Spellbound.Web;
 /// no turn is spent twice. Mages and news are stored per game, and each Realm round is a game, so a new round starts everyone
 /// over.
 /// </summary>
-public sealed class GameService(HostDatabase database, TimeProvider time, GameRules rules, IRandomSource random)
+/// <summary>The Realm round being played, with the rules it runs under.</summary>
+public sealed record PlayedGame(long Id, Round Round, GameRules Rules);
+
+public sealed class GameService(HostDatabase database, TimeProvider time, GameRules defaults, IRandomSource random)
 {
     public const int NewsKept = 50;
 
     private static readonly ActionReport Banned = ActionReport.Fail("Your account is banned.");
 
-    private readonly string rulesHash = ActionLog.RulesHash(rules);
-
     private static readonly ActionReport Busy =
         ActionReport.Fail("Your mage was busy with another action. Nothing was spent, please try again.");
-
-    public GameRules Rules => rules;
 
     /// <summary>
     /// The time actions run at, to whole microseconds: PostgreSQL stores no finer, so the action log's time is exactly
@@ -31,10 +30,13 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     public DateTimeOffset Now => time.GetUtcNow() is var now ? now.AddTicks(-(now.Ticks % 10)) : default;
 
     /// <summary>The current round, or null before the first one has started.</summary>
-    public async Task<Round?> GetRoundAsync()
+    public async Task<Round?> GetRoundAsync() => (await GetRealmAsync())?.Round;
+
+    /// <summary>The current round with its rules, or null before the first one has started.</summary>
+    public async Task<PlayedGame?> GetRealmAsync()
     {
         await using var db = await database.BeginAsync();
-        return (await LoadRealmAsync(db))?.Round;
+        return await LoadRealmAsync(db) is { } game ? new PlayedGame(game.Id, game.Round, game.RulesOf(defaults)) : null;
     }
 
     /// <summary>Read-only copy of the player's mage in the current round, with turns accrued to now (not saved).</summary>
@@ -47,7 +49,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
         }
 
         var mage = await db.LoadMageAsync(game.Id, ownerId);
-        mage?.AccrueTurns(Now, rules);
+        mage?.AccrueTurns(Now, game.RulesOf(defaults));
         return mage;
     }
 
@@ -161,6 +163,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
             return Banned;
         }
 
+        var rules = game.RulesOf(defaults);
         var mage = Mage.Create(ownerId, trimmed, school, now, rules);
         if (!await db.InsertMageAsync(game.Id, mage)) // the key is (game, owner): one mage per round
         {
@@ -168,33 +171,33 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
         }
 
         var report = new ActionReport(true, 0, [$"{mage.Name} of the {mage.School} school awakens."]);
-        await db.WriteAsync(game.Id, mage, now, "create", new { name = trimmed, school }, [], report, rules, rulesHash);
+        await db.WriteAsync(game.Id, mage, now, "create", new { name = trimmed, school }, [], report, rules);
         await db.CommitAsync();
         return report;
     }
 
     public Task<ActionReport> ExploreAsync(string ownerId, int turns) =>
-        ActAsync(ownerId, "explore", new { turns }, (mage, now) => mage.Explore(turns, now, rules));
+        ActAsync(ownerId, "explore", new { turns }, (mage, now, rules) => mage.Explore(turns, now, rules));
 
     public Task<ActionReport> BuildAsync(string ownerId, BuildingType type, int count) =>
-        ActAsync(ownerId, "build", new { type, count }, (mage, now) => mage.Build(type, count, now, rules));
+        ActAsync(ownerId, "build", new { type, count }, (mage, now, rules) => mage.Build(type, count, now, rules));
 
     public Task<ActionReport> MeditateAsync(string ownerId, int turns) =>
-        ActAsync(ownerId, "meditate", new { turns }, (mage, now) => mage.Meditate(turns, now, rules));
+        ActAsync(ownerId, "meditate", new { turns }, (mage, now, rules) => mage.Meditate(turns, now, rules));
 
     public Task<ActionReport> CastAsync(string ownerId, string spellId) =>
-        ActAsync(ownerId, "cast", new { spellId }, (mage, now) => mage.Cast(spellId, now, rules));
+        ActAsync(ownerId, "cast", new { spellId }, (mage, now, rules) => mage.Cast(spellId, now, rules));
 
     public Task<ActionReport> RecruitAsync(string ownerId, string unitId, int count) =>
-        ActAsync(ownerId, "recruit", new { unitId, count }, (mage, now) => mage.Recruit(unitId, count, now, rules));
+        ActAsync(ownerId, "recruit", new { unitId, count }, (mage, now, rules) => mage.Recruit(unitId, count, now, rules));
 
     public Task<ActionReport> AttackAsync(string ownerId, Guid targetId) =>
-        HostileAsync(ownerId, targetId, "attack", new { targetMageId = targetId }, (mage, target, now, luck) => mage.Attack(target, now, rules, luck));
+        HostileAsync(ownerId, targetId, "attack", new { targetMageId = targetId }, (mage, target, now, rules, luck) => mage.Attack(target, now, rules, luck));
 
     public Task<ActionReport> HexAsync(string ownerId, string hexId, Guid targetId) =>
-        HostileAsync(ownerId, targetId, "hex", new { hexId, targetMageId = targetId }, (mage, target, now, luck) => mage.CastHex(hexId, target, now, rules, luck));
+        HostileAsync(ownerId, targetId, "hex", new { hexId, targetMageId = targetId }, (mage, target, now, rules, luck) => mage.CastHex(hexId, target, now, rules, luck));
 
-    private Task<ActionReport> ActAsync(string ownerId, string name, object inputs, Func<Mage, DateTimeOffset, ActionReport> action) =>
+    private Task<ActionReport> ActAsync(string ownerId, string name, object inputs, Func<Mage, DateTimeOffset, GameRules, ActionReport> action) =>
         LockedAsync(async db =>
         {
             var now = Now;
@@ -213,7 +216,8 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
                 return Banned;
             }
 
-            var report = action(mage, now);
+            var rules = game.RulesOf(defaults);
+            var report = action(mage, now, rules);
             if (!report.Succeeded)
             {
                 return report;
@@ -221,7 +225,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
 
             await db.SaveMageAsync(game.Id, mage);
             await db.AddNewsAsync(game.Id, ownerId, new NewsEntry(now, report.Lines), NewsKept);
-            await db.WriteAsync(game.Id, mage, now, name, inputs, [], report, rules, rulesHash);
+            await db.WriteAsync(game.Id, mage, now, name, inputs, [], report, rules);
             await db.CommitAsync(); // mage, news and the log row in one transaction
             return report;
         });
@@ -231,7 +235,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     /// and both news rows likewise, so attacks between the same mages wait for each other instead of deadlocking.
     /// </summary>
     private Task<ActionReport> HostileAsync(
-        string ownerId, Guid targetId, string name, object inputs, Func<Mage, Mage, DateTimeOffset, IRandomSource, HostileReport> action) =>
+        string ownerId, Guid targetId, string name, object inputs, Func<Mage, Mage, DateTimeOffset, GameRules, IRandomSource, HostileReport> action) =>
         LockedAsync(async db =>
         {
             var now = Now;
@@ -258,7 +262,8 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
             }
 
             var luck = new RecordingRandom(random); // the draws go in the log, so the fight can be replayed
-            var result = action(mage, target, now, luck);
+            var rules = game.RulesOf(defaults);
+            var result = action(mage, target, now, rules, luck);
             if (!result.Report.Succeeded)
             {
                 return result.Report;
@@ -281,7 +286,7 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
             }
 
             await db.WriteAsync(
-                game.Id, mage, now, name, inputs, luck.Draws, result.Report, rules, rulesHash, target, result.TargetLines);
+                game.Id, mage, now, name, inputs, luck.Draws, result.Report, rules, target, result.TargetLines);
             await db.CommitAsync();
             return result.Report;
         });

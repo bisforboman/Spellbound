@@ -41,7 +41,7 @@ public sealed record LoggedAction(
 /// </summary>
 public static class ActionLog
 {
-    /// <summary>A short fingerprint of the rules in force. They can be tuned mid-round; a replay must use the same ones.</summary>
+    /// <summary>A short fingerprint of the rules in force (each game's own); a replay must use the same ones.</summary>
     public static string RulesHash(GameRules rules) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(DomainJson.Serialize(rules))))[..16];
 
@@ -55,7 +55,6 @@ public static class ActionLog
         IReadOnlyList<double> draws,
         ActionReport report,
         GameRules rules,
-        string rulesHash,
         Mage? target = null,
         IReadOnlyList<string>? targetLines = null) =>
         db.ExecuteAsync(
@@ -73,7 +72,7 @@ public static class ActionLog
             new Jsonb(DomainJson.Serialize(new { lines = report.Lines, targetLines })),
             new Jsonb(DomainJson.Serialize(MageState.Of(mage, rules))),
             target is null ? null : new Jsonb(DomainJson.Serialize(MageState.Of(target, rules))),
-            rulesHash);
+            RulesHash(rules));
 
     /// <summary>A player's latest actions in a game, newest first, including attacks and hexes against them.</summary>
     public static Task<List<LoggedAction>> LoadAsync(this DbSession db, long gameId, string ownerId, int limit) =>

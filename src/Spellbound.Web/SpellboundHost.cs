@@ -5,21 +5,21 @@ using Spellbound.Web.Hosting;
 namespace Spellbound.Web;
 
 /// <summary>Spellbound's answers to the hosting code's questions (see Hosting/GameHooks.cs).</summary>
-public sealed class SpellboundHost(GameRules rules) : IRoundLifecycle, IPlayerSummaries, IAccountLifecycle
+public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPlayerSummaries, IAccountLifecycle
 {
     /// <summary>The Realm's mode name: each Realm round is a game of this mode, and the server always runs one.</summary>
     public const string RealmMode = "realm";
 
     public string AlwaysOnMode => RealmMode;
 
-    /// <summary>The next Realm round, under the rules configured now.</summary>
-    public NewGame NextAlwaysOn() => new(RealmMode, rules.RoundLength, DomainJson.Serialize(rules));
+    /// <summary>The next Realm round, under the rules configured now. A running round keeps the rules it started with.</summary>
+    public NewGame NextAlwaysOn() => new(RealmMode, configured.RoundLength, DomainJson.Serialize(configured));
 
     /// <summary>Records the round's hall of fame, leaving banned players out.</summary>
     public async Task OnGameEndedAsync(DbSession db, HostedGame ended, BanList bans, CancellationToken cancellationToken)
     {
         var mages = (await db.LoadGameMagesAsync(ended.Id)).Where(m => !bans.IsBanned(m.OwnerId)).ToList();
-        var fame = HallOfFame.Record(ended.Round, mages, rules);
+        var fame = HallOfFame.Record(ended.Round, mages, ended.RulesOf(configured));
         await db.ExecuteAsync(
             "INSERT INTO hall_of_fame (game_id, data) VALUES ($1, $2)", ended.Id, new Jsonb(DomainJson.Serialize(fame)));
     }

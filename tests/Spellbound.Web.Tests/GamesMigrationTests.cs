@@ -28,6 +28,15 @@ public sealed class GamesMigrationTests : TestDatabase
                 await db.ExecuteAsync(
                     "INSERT INTO mages (round, owner_id, mage_id, data) VALUES ($1, 'account-1', $2, $3)",
                     round, Guid.NewGuid(), new Jsonb(DomainJson.Serialize(Mage.Create("account-1", $"Merlin {round}", MagicSchool.Tidal, T0, GameRules.Default))));
+                await db.ExecuteAsync(
+                    "INSERT INTO news (round, owner_id, entries, unseen) VALUES ($1, 'account-1', $2, 0)",
+                    round, new Jsonb(DomainJson.Serialize(new[] { new NewsEntry(T0, [$"News of round {round}"]) })));
+                await db.ExecuteAsync(
+                    """
+                    INSERT INTO actions (round, owner_id, at, action, inputs, draws, result, state, rules_hash)
+                    VALUES ($1, 'account-1', $2, 'explore', '{}', '[]', '{}', '{}', $3)
+                    """,
+                    round, T0, $"hash-{round}");
             }
 
             return 0;
@@ -41,6 +50,10 @@ public sealed class GamesMigrationTests : TestDatabase
             Assert.Equal(2, running.Id);
             Assert.Equal(new Round(2, T0.AddDays(28), T0.AddDays(56)), running.Round);
             Assert.Equal("Merlin 2", (await db.LoadMageAsync(running.Id, "account-1"))!.Name);
+            Assert.Equal("News of round 2", (await db.LoadNewsAsync(running.Id, "account-1")).Entries.Single().Lines[0]);
+            Assert.Equal("hash-2", await db.ScalarAsync<string>("SELECT rules_hash FROM actions WHERE game_id = 2"));
+            var configured = GameRules.Default with { MaxTurns = 99 };
+            Assert.Same(configured, running.RulesOf(configured)); // it ran under the configured rules, so it keeps them
 
             var ended = (await db.LoadGameAsync(1))!;
             Assert.Equal(new Round(1, T0, T0.AddDays(28)), ended.Round); // times from its hall of fame

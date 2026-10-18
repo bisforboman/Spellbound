@@ -91,7 +91,8 @@ public sealed class RoundKeeper(HostDatabase database, TimeProvider time, IRound
     private static async Task<HostedGame> StartAsync(DbSession db, NewGame start, DateTimeOffset now)
     {
         var number = await db.ScalarAsync<int>("SELECT coalesce(max(number), 0) + 1 FROM games WHERE mode = $1", start.Mode);
-        var round = number == 1 ? Round.First(now, start.Length) : new Round(number - 1, now, now).Next(now, start.Length);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(start.Length, TimeSpan.Zero);
+        var round = new Round(number, now, now + start.Length);
         var id = await db.ScalarAsync<long>(
             """
             INSERT INTO games (mode, number, starts_at, ends_at, rules, created_at) VALUES ($1, $2, $3, $4, $5, $3)

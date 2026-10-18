@@ -17,6 +17,13 @@ public sealed class SpellboundSchema : IGameSchema
 /// </summary>
 public static class GameData
 {
+    /// <summary>
+    /// The rules a game runs under, as stored with it. Rounds from before games stored their rules have none ("{}"):
+    /// they ran under the configured rules, so they get <paramref name="configured"/>.
+    /// </summary>
+    public static GameRules RulesOf(this HostedGame game, GameRules configured) =>
+        game.RulesJson == "{}" ? configured : DomainJson.Deserialize<GameRules>(game.RulesJson);
+
     /// <summary>Every mage of a game, read-only.</summary>
     public static async Task<IReadOnlyList<Mage>> LoadGameMagesAsync(this DbSession db, long gameId) =>
         await db.QueryAsync("SELECT data FROM mages WHERE game_id = $1", r => DomainJson.Deserialize<Mage>(r.GetString(0)), gameId);
