@@ -1,9 +1,14 @@
 # Spellbound game design (draft)
 
+**The Realm is being reworked (decided 18 Oct 2026).** The owner's research, [mageborn-design.md](mageborn-design.md),
+is the design the Realm is moving to, step by step; [realm-rework.md](realm-rework.md) maps it onto what's built and
+records the decisions (Mageborn replaces the Realm, Skirmish is removed, the research's names are adopted). Until each
+step lands, this page describes the Realm **as it is built today**, and each step updates it.
+
 The numbers below are the defaults in `GameRules`. They are first guesses that need balancing through play.
 
-**Names are placeholders.** Schools, spells, hexes, units and Skirmish's terrains and cards have deliberately bad names
-("School A", "Hex C", "Unit 3") until we decide them together: see [Names to decide](#names-to-decide).
+**Names are placeholders** in today's build ("School A", "Hex C", "Unit 3"). Mageborn's names (the schools Dawn,
+Grove, Ember, Umbra and Veil, the buildings and the rest) replace them as the rework reaches each part.
 
 ## The pitch
 
@@ -16,54 +21,18 @@ Design goals:
 - **Text-first.** It runs on any phone browser, needs no art budget, and battle reports are words.
 - **Fair to async players.** Turns are the universal currency, so checking in constantly gives no advantage beyond the turn cap.
 - **No pay-to-win.**
-- **A board-game feel** (in Skirmish; the Realm stays classic, see Principles). Strategy and min-maxing matter, but luck is a real part of the game: even a great plan can be
-  shafted, as in Catan or 7 Wonders. Prefer luck that comes *before* a decision (you see what you got and plan around
-  it) over luck that decides *after* you've committed. Over a long game, luck should come as many small rolls that even
-  out, or with ways to recover. Odds are shown before the player confirms, like costs.
+- **Luck before decisions, not after.** Prefer randomness the player sees and plans around (Mageborn's Omens, hidden
+  information) over rolls that decide after they've committed; whatever the odds, show them before the player confirms,
+  like costs.
 - **Art later.** Text-first until the core is fun; art can be reconsidered then. The look for now (18 Oct 2026): dark
   and gritty, warm dark greys with a faint grain, headings in IM Fell English SC, muted olive, rust and ochre for
-  actions, small geometric symbols for gold, mana, turns, land and army; in Skirmish each player has a colour of their
-  own.
+  actions, small geometric symbols for gold, mana, turns, land and army.
 
-## Modes (decided 18 Oct 2026; Skirmish is playable: players set up and join games)
+## Games and rounds
 
-Spellbound has two modes that share one core (mages, schools, spells, turns, armies):
-
-- **Realm**: the game described below. An open world without a map, land grows without limit, long rounds;
-  closest to Archmage.
-- **Skirmish**: a short game on a limited, shared board for a fixed number of players, played in rounds that everyone
-  plans at the same time and readies up for (with a time limit and reminders), with a clear end and scoring from several
-  sources, like a board game. *Not designed yet*: see [skirmish-design.md](skirmish-design.md).
-
-Players **create and join games**, and many run at once; the Realm can be one always-on game in the same list. A mode
-is a preset of **rule switches** (for example "exploring finds things", "attacks on"), and whoever creates a game may
-change them within limits, like house rules. Every game stores the rules it runs under, and its page lists them so
-players know what they joined.
-
-### Principles
-
-- **One shared core, separate land and clocks.** Both modes share accounts and bans, the schools with
-  their spells and hexes, the units and the battle formula, showing odds before you commit, and replayable randomness.
-  Each mode has its own clock (the Realm's regenerating turns, Skirmish's ready-up rounds), its own land (acres, or
-  regions on a board) and its own way of acting (instant actions, or orders that play out together). So Skirmish gets
-  its own kind of mage that reuses the spell and unit books, rather than the Realm's mage with optional parts.
-  Each keeps its own record too: the Realm's hall of fame of each round, Skirmish's win record and leaderboard.
-- **The Realm stays classic.** It keeps its small battle and hex luck and stays otherwise predictable, like Archmage.
-  The board-game luck (discoveries, drafts, events) is what makes Skirmish different.
-- **Skirmish is the lab.** It's the explorative mode, and the first thing to beta-test with friends. Short games make
-  ideas cheap to try; what works there can move to the Realm as a switch. The two modes may grow into completely
-  separate games, so the shared core stays small and nothing in one mode should depend on the other.
-- **Small communities first.** A Skirmish must be fun for 2 or 3 friends and never wait for a crowd: 2 players is
-  enough to start one. The game must work on a server with ten accounts.
-- **Each Realm round is a game.** As now, a Realm round lasts 4 weeks and ends with a hall of fame, and the server
-  starts the next one. Each round is one entry in the list of games.
-- **The Games page comes first.** After signing in, players see their games (their Realm mage and their Skirmishes)
-  and the ones they can join; the Realm is one tap away.
-- **Open list plus invite codes.** A Skirmish's creator makes it public (listed for anyone) or private (joined with a
-  code or link). Anyone can create one, with a cap (for example one open game per player). In a game with few seats,
-  one person holding two of them is decisive, so the multi-account signals must also be shown per game.
-
-Until both modes exist, everything below describes the Realm.
+Each Realm round is one game, listed on the Games page that comes first after signing in; it lasts 4 weeks, ends with
+a hall of fame, and the server starts the next one. (A second mode, Skirmish, was built and then removed on 18 Oct 2026
+when the owner chose to rework the Realm as Mageborn; its design is in the git history.)
 
 ## Core loop
 
@@ -214,7 +183,8 @@ A simulation of a full round answers several of these with numbers, and proposes
 
 ## Names to decide
 
-Everything players see with flavour has a placeholder name, so nothing is committed to by accident. The ids stored
+Mageborn's names are adopted (18 Oct 2026) and replace these as the rework reaches each part; until then, today's
+build keeps its placeholders. The ids stored
 with a game (`MagicSchool.A`, `"hex-c"`, `"unit-3"`) stay neutral, so naming them later changes only the display text,
 never saved data. Where each name lives:
 
@@ -225,8 +195,7 @@ never saved data. Where each name lives:
 | Ward spell | The buff every school knows: halves hexes against you | `SpellBook.All` |
 | Hex A–E | Each school's hex (kill units, destroy gold, take mana, destroy buildings, take turns) | `SpellBook.Hexes` |
 | Unit 1–3 | The three units: cheap defender, balanced, attacker | `UnitBook.All` |
-| Terrain 1–4, Card 1–5 | Skirmish's terrains and discovery cards (not built) | [skirmish-design.md](skirmish-design.md) |
 
-Not placeholders: the game's name (Spellbound) and the modes (Realm and Skirmish). Descriptions say what a thing does,
+Not a placeholder: the game's name (Spellbound); "Mageborn" is the research's working title. Descriptions say what a thing does,
 plainly; flavour text can come with the names.
 
