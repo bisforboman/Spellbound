@@ -22,7 +22,7 @@ Design goals:
   out, or with ways to recover. Odds are shown before the player confirms, like costs.
 - **Art later.** Text-first until the core is fun; art can be reconsidered then.
 
-## Modes (decided 18 Oct 2026; Skirmish's rules and service are built, its pages are next)
+## Modes (decided 18 Oct 2026; Skirmish is playable, the admin starts games for now)
 
 Spellbound has two modes that share one core (mages, schools, spells, turns, armies):
 

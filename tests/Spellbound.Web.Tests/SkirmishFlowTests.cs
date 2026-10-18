@@ -230,9 +230,10 @@ public sealed class SkirmishFlowTests : TestDatabase, IAsyncLifetime
         await factory.Services.GetRequiredService<RoundKeeper>().TickAsync();
         await factory.Services.GetRequiredService<GameService>().CreateMageAsync(morgana, "Morgana the Grey", MagicSchool.D);
 
-        var (id, problem) = await Skirmishes.CreateForEmailsAsync(["merlin@spellbound.test", " MORGANA@spellbound.test ", ""], TimeSpan.FromMinutes(30), accounts);
+        var (id, number, problem) = await Skirmishes.CreateForEmailsAsync(["merlin@spellbound.test", " MORGANA@spellbound.test ", ""], TimeSpan.FromMinutes(30), accounts);
 
         Assert.Null(problem);
+        Assert.Equal(2, number); // the second Skirmish on this server
         var game = (await Skirmishes.GetAsync(id!.Value, morgana))!.Game;
         Assert.Equal(["merlin", "Morgana the Grey"], game.Seats.Select(s => s.Name));
         Assert.Equal(MagicSchool.D, game.Seats[1].School); // her Realm mage's school
@@ -240,6 +241,24 @@ public sealed class SkirmishFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal("A Skirmish needs 2–6 players: one email per line.", (await Skirmishes.CreateForEmailsAsync(["merlin@spellbound.test"], TimeSpan.FromMinutes(30), accounts)).Problem);
         Assert.Equal("Each player can only take one seat.", (await Skirmishes.CreateForEmailsAsync(["ada@spellbound.test", "Ada@spellbound.test"], TimeSpan.FromMinutes(30), accounts)).Problem);
         Assert.StartsWith("No account has the email nobody@", (await Skirmishes.CreateForEmailsAsync(["ada@spellbound.test", "nobody@spellbound.test"], TimeSpan.FromMinutes(30), accounts)).Problem, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_game_page_and_the_games_list_show_the_skirmish_to_its_players_only()
+    {
+        using var member = Client();
+        using var stranger = Client();
+        await SignInAsync(member, "merlin@spellbound.test");
+        await SignInAsync(stranger, "stranger@spellbound.test");
+
+        var page = await member.GetStringAsync(new Uri($"/skirmish/{gameId}", UriKind.Relative));
+        var games = await member.GetStringAsync(new Uri("/", UriKind.Relative));
+        var refused = await stranger.GetStringAsync(new Uri($"/skirmish/{gameId}", UriKind.Relative));
+
+        Assert.Contains("Your orders for round 1", page, StringComparison.Ordinal);
+        Assert.Contains("Merlin, School A", page, StringComparison.Ordinal);
+        Assert.Contains("Skirmish 1", games, StringComparison.Ordinal);
+        Assert.Contains("not in this game.", refused, StringComparison.Ordinal); // the apostrophe is HTML-encoded
     }
 
     public override void Dispose()
@@ -261,6 +280,29 @@ public sealed class SkirmishFlowTests : TestDatabase, IAsyncLifetime
     {
         var view = (await Skirmishes.GetAsync(gameId, ownerId))!;
         return view.Game.Claimable(view.Seat).First().Id;
+    }
+
+    private HttpClient Client() => factory.CreateClient(new WebApplicationFactoryClientOptions
+    {
+        AllowAutoRedirect = false,
+        BaseAddress = new Uri("https://localhost"),
+    });
+
+    /// <summary>Signs in through the Development sign-in form, so the client carries the sign-in cookie.</summary>
+    private static async Task SignInAsync(HttpClient client, string email)
+    {
+        var login = await client.GetStringAsync(new Uri("/Account/Login", UriKind.Relative));
+        var token = System.Text.RegularExpressions.Regex.Match(
+            login, "name=\"__RequestVerificationToken\"[^>]*value=\"(?<v>[^\"]+)\"").Groups["v"].Value;
+        var response = await client.PostAsync(
+            new Uri("/Account/DevSignIn", UriKind.Relative),
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = System.Net.WebUtility.HtmlDecode(token),
+                ["email"] = email,
+                ["returnUrl"] = "/",
+            }));
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
     }
 
     private async Task<string> CreateUserAsync(string email) =>

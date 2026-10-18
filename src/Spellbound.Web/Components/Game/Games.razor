@@ -2,9 +2,10 @@
 @using System.Globalization
 @using System.Security.Claims
 @inject GameService Game
+@inject SkirmishService Skirmishes
 
-@* The first page after signing in: the player's games. For now that's the current Realm round; Skirmishes join the list
-   later (roadmap M5, part 2). Not a GamePage: a player without a mage belongs here too. *@
+@* The first page after signing in: the player's games, the current Realm round and their Skirmishes. Not a GamePage:
+   a player without a mage belongs here too. *@
 
 <PageTitle>Your games · Spellbound</PageTitle>
 
@@ -39,6 +40,28 @@ else
     <RoundInfo Round="realm.Round" />
 }
 
+@if (skirmishes.Count > 0)
+{
+    <h2 class="h4 mt-4">Skirmishes</h2>
+    <ul class="rank-list">
+        @foreach (var game in skirmishes)
+        {
+            <li>
+                <a class="rank-row" href="skirmish/@game.GameId">
+                    <span class="who">
+                        <b>Skirmish @game.Number</b>
+                        <small class="text-muted d-block">
+                            @(game.Ended
+                                ? $"Over: {game.Leader} won"
+                                : $"{game.SeatName} · round {game.Planning} of {game.Rounds} · {(game.Ready ? "you're ready" : "your move")} · {game.ReadyCount} of {game.Players} ready")
+                        </small>
+                    </span>
+                </a>
+            </li>
+        }
+    </ul>
+}
+
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> AuthState { get; set; } = default!;
@@ -46,12 +69,14 @@ else
     private bool loaded;
     private PlayedGame? realm;
     private Mage? mage;
+    private IReadOnlyList<SkirmishSummary> skirmishes = [];
 
     protected override async Task OnInitializedAsync()
     {
         var ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
         realm = await Game.GetRealmAsync();
         mage = realm is null ? null : await Game.GetMageAsync(ownerId);
+        skirmishes = await Skirmishes.GetMineAsync(ownerId);
         loaded = true;
     }
 }

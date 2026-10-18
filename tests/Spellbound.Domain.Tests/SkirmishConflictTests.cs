@@ -113,6 +113,23 @@ public sealed class SkirmishConflictTests
     }
 
     [Fact]
+    public void The_chance_an_attack_wins_is_shown_before_attacking()
+    {
+        var game = NewGame();
+        game.PlayRound(Orders(0, new ClaimOrder(1), new RecruitOrder("unit-3", 3)), Even); // attack 18 × 1.15 against 20
+
+        var chance = game.AttackChance(0, 2);
+
+        // Close: 20.7 against 20, both ±10%. Check the sum against rolling it many times.
+        var dice = new Random(1);
+        var wins = Enumerable.Range(0, 200_000).Count(_ => 20.7 * (0.9 + (dice.NextDouble() * 0.2)) > 20 * (0.9 + (dice.NextDouble() * 0.2)));
+        Assert.Equal(wins / 200_000.0, chance, 2);
+        Assert.Equal(0, game.AttackChance(0, 1)); // our own region
+        game.PlayRound(Orders(0, new RecruitOrder("unit-3", 20)), Even);
+        Assert.Equal(1, game.AttackChance(0, 2), 3);
+    }
+
+    [Fact]
     public void A_mage_who_stops_readying_up_is_away_then_out()
     {
         var rules = Ring with { AwayAfterMissed = 2, OutAfterMissed = 4 };

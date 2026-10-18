@@ -101,7 +101,7 @@ first, as the beta is with friends)
 - [x] Storage and a service for Skirmish games (seats, saved orders, a record of every round); the admin starts games
   from players' emails until part 2's create and join
 - [ ] Reminders by web push (when everyone else is ready, and when time is running out)
-- [ ] The board, orders and scoring pages, at 360 px, text-first
+- [x] The board, orders and scoring pages, at 360 px, text-first (one game page, and Skirmishes on the Games page)
 - [x] Dropouts (away after 2 missed rounds, out after 6)
 - [ ] A win record per account
 - [ ] Friends-only beta on a real server: play Skirmishes, write down what to carry over to the Realm

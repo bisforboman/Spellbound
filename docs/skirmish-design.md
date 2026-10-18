@@ -203,7 +203,9 @@ rating.
 
 ## What's built
 
-The rules (in the domain), storage and a service that plays rounds when everyone is ready or the time limit passes.
+The rules (in the domain), storage, a service that plays rounds when everyone is ready or the time limit passes, and
+the game page (`/skirmish/{id}`): orders with their cost and odds, Ready, the last round's report, players and scores,
+the board as text, objectives and the deck. It refreshes itself every few seconds.
 For now **the admin starts games** from the players' emails on the admin page; players use their Realm mage's name
 and school when they have one. Players creating and joining their own games (with invite codes) comes next, after the
 game page. Saved orders can't change while the player is ready: they take back Ready first.

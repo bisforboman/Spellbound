@@ -32,6 +32,38 @@ public sealed partial class SkirmishGame
     public double AttackStrength(int attacker, int defender) =>
         Seats[attacker].AttackPower * (1 + (CounterSign(attacker, defender) * Rules.CounterBonus));
 
+    /// <summary>
+    /// The chance an attack on the region wins, before any other attacks this round: both sides' luck is spread evenly
+    /// over ±<see cref="SkirmishRules.CombatRollSpread"/>. Shown before the player commits.
+    /// </summary>
+    public double AttackChance(int attacker, int regionId)
+    {
+        if (Board[regionId].Owner is not { } defender)
+        {
+            return 0;
+        }
+
+        var attack = AttackStrength(attacker, defender);
+        var defense = RegionDefense(regionId);
+        if (attack <= 0)
+        {
+            return 0;
+        }
+
+        // P(attack × (1 + s·u) > defense × (1 + s·v)) for u, v even on [-1, 1]: integrate over v.
+        const int Steps = 400;
+        var spread = Rules.CombatRollSpread;
+        var wins = 0.0;
+        for (var i = 0; i < Steps; i++)
+        {
+            var v = -1 + ((i + 0.5) * 2 / Steps);
+            var needed = ((defense * (1 + (spread * v)) / attack) - 1) / spread; // the u above which the attack wins
+            wins += spread == 0 ? (attack > defense ? 1 : 0) : Math.Clamp((1 - needed) / 2, 0, 1);
+        }
+
+        return wins / Steps;
+    }
+
     /// <summary>+1 if the first seat's school is strong against the second's, -1 if weak, 0 otherwise.</summary>
     public int CounterSign(int seat, int other) =>
         Seats[seat].School.StrongAgainst() == Seats[other].School ? 1

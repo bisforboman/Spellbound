@@ -25,7 +25,8 @@ src/
                             admin page, bans, backups,
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
     Components/Account/     sign-in and account pages (part of the host, not yet moved into Hosting/)
-    Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL scripts)
+    Components/Game/, GameService, SkirmishService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL
+                            scripts); Skirmish's page is Components/Game/SkirmishPage.razor
 tools/
   Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
   Spellbound.SkirmishSim/   Skirmish simulation: bots play many seeded games (docs/skirmish-sim-results.md)
@@ -88,6 +89,12 @@ play        → SkirmishGame.PlayRound(saved orders, recorded luck, ready seats)
               ready flags clear, and the next deadline is set. SkirmishKeeper plays rounds whose deadline passed,
               once a minute, FOR UPDATE SKIP LOCKED so several hosts can run it
 ```
+
+**The game page** (`/skirmish/{id}`, `Components/Game/SkirmishPage.razor` with `SkirmishOrderForm.razor`) shows the
+round, the player's orders and Ready, the last round's report, players, the board as text, objectives and the deck. It
+reloads every 5 seconds while open, so other players' Ready taps and a played round show up by themselves. The Realm's
+tab bar is hidden on Skirmish pages; the Spellbound link leads back to the Games page, which lists the player's
+Skirmishes.
 
 For now the admin starts Skirmish games from a list of emails (the admin page's "Start a Skirmish"); players creating
 and joining their own replaces it in part 2. A deleted account's seat stays in its games without an owner or orders,

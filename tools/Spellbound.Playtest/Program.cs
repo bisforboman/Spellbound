@@ -335,8 +335,47 @@ namespace Spellbound.Playtest
                 await GoAsync(page, "/admin");
                 await Expect(page, "Problems");
             });
+            await StepAsync(ada, "start-skirmish", async page =>
+            {
+                await page.FillAsync("#skirmish-emails", string.Join('\n', new[] { ada, merlin, morgana }.Select(p => p.Email)));
+                await page.FillAsync("#skirmish-round", "60");
+                await page.ClickAsync("button:has-text('Start the game')");
+                await Expect(page, "Started Skirmish 1");
+            });
+            foreach (var player in new[] { ada, merlin, morgana })
+            {
+                await StepAsync(player, "skirmish-games", async page =>
+                {
+                    await GoAsync(page, "/");
+                    await Expect(page, "Skirmish 1");
+                    await page.ClickAsync("a.rank-row:has-text('Skirmish 1')");
+                    await page.WaitForURLAsync("**/skirmish/*");
+                    await WaitForCircuitAsync(page);
+                    await Expect(page, "Your orders for round 1");
+                });
+                await StepAsync(player, "skirmish-orders", async page =>
+                {
+                    await page.ClickAsync("button:has-text('Add claim')"); // the first free region next to theirs
+                    await page.Locator("ol.orders li").First.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+                    await page.ClickAsync("label.choice:has-text('Recruit')");
+                    await page.FillAsync("#order-count", "5");
+                    await page.ClickAsync("button:has-text('Add recruit')");
+                    await Expect(page, "Recruit 5 Unit 1");
+                    await page.ClickAsync("button:has-text(\"I'm ready\")");
+                    await Expect(page, player == morgana ? "Round 1" : "You're ready");
+                });
+            }
+
+            await StepAsync(ada, "skirmish-round-played", async page =>
+            {
+                await page.ReloadAsync();
+                await WaitForCircuitAsync(page);
+                await Expect(page, "Your orders for round 2");
+                await Expect(page, "claimed");
+            });
             await StepAsync(ada, "end-round", async page =>
             {
+                await GoAsync(page, "/admin");
                 await page.ClickAsync("button:has-text('now…')");
                 await page.ClickAsync("button:has-text('Yes, end round')");
                 await Expect(page, "round 2 has started");

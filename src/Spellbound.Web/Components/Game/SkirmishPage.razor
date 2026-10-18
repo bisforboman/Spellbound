@@ -1,0 +1,289 @@
+@page "/skirmish/{Id:long}"
+@using System.Globalization
+@using System.Security.Claims
+@using Spellbound.Domain.Skirmish
+@implements IDisposable
+@inject SkirmishService Skirmishes
+@inject NavigationManager Navigation
+
+@* A Skirmish game: the round's state, the player's orders and Ready, the board as text, the scores, and what the last
+   round did. It reloads every few seconds, so other players' Ready taps and a played round show up by themselves. *@
+
+<PageTitle>Skirmish · Spellbound</PageTitle>
+
+@if (view is null)
+{
+    <p class="text-muted">@(loaded ? "You're not in this game." : "Loading…")</p>
+    return;
+}
+
+@{
+    var game = view.Game;
+    var me = game.Seats[view.Seat];
+    var used = view.Orders.Sum(o => o.Cost(game.Rules));
+}
+
+<h1>Skirmish @view.Number</h1>
+@if (game.Ended)
+{
+    <p><b>The game is over: @game.Standings()[0].Name wins with @game.Score(game.Standings()[0].Index).Total points.</b></p>
+}
+else
+{
+    <p class="round-info">
+        <span>Round <b>@view.Planning</b> of @game.Rules.Rounds · @Left(view.RoundEndsAt - Skirmishes.Now) left</span>
+        <span><b>@view.ReadyCount</b> of @view.Players ready</span>
+    </p>
+}
+
+@if (problem is not null)
+{
+    <p class="alert alert-danger" role="alert">@problem</p>
+}
+
+<table class="table table-sm stats">
+    <tbody>
+        <tr><th>You</th><td>@me.Name, @me.School.DisplayName()@(me.Out ? " (out)" : "")</td></tr>
+        <tr><th>Gold</th><td>@N(me.Gold)</td></tr>
+        <tr><th>Mana</th><td>@N(me.Mana)</td></tr>
+        <tr><th>Army</th><td>@N(me.Units) units: attack @N(me.AttackPower), defense @N(me.DefensePower)</td></tr>
+        <tr><th>Points</th><td>@game.Score(view.Seat).Total</td></tr>
+        @if (me.Effects.Count > 0)
+        {
+            <tr><th>Spells</th><td>@string.Join(", ", me.Effects.Select(e => $"{SpellBook.Find(e.SpellId)?.Name} ({e.RoundsLeft} rounds)"))</td></tr>
+        }
+    </tbody>
+</table>
+
+@if (!game.Ended && !me.Out)
+{
+    <h2 class="h4">Your orders for round @view.Planning</h2>
+    <p class="text-muted">
+        @used of @game.ActionsFor(view.Seat) actions used. Everyone's orders play at the same time when all are ready, or
+        when time runs out (saved orders still play).
+    </p>
+    @if (view.Orders.Count == 0)
+    {
+        <p>No orders yet.</p>
+    }
+    <ol class="orders">
+        @for (var i = 0; i < view.Orders.Count; i++)
+        {
+            var index = i;
+            <li>
+                <span>@Describe(game, view.Orders[i])</span>
+                @if (!view.Ready)
+                {
+                    <button type="button" class="btn btn-outline-secondary" disabled="@busy" @onclick="() => RemoveAsync(index)">Remove</button>
+                }
+            </li>
+        }
+    </ol>
+
+    @if (view.Ready)
+    {
+        <p>You're ready. Take it back to change your orders.</p>
+        <button type="button" class="btn btn-outline-primary btn-lg w-100" disabled="@busy" @onclick="() => ReadyAsync(false)">Take back Ready</button>
+    }
+    else
+    {
+        @if (used < game.ActionsFor(view.Seat))
+        {
+            <SkirmishOrderForm Game="game" Seat="view.Seat" Draft="view.Orders" Busy="busy" OnAdd="AddAsync" />
+        }
+        <button type="button" class="btn btn-success btn-lg w-100 mt-3" disabled="@busy" @onclick="() => ReadyAsync(true)">I'm ready</button>
+    }
+}
+
+@if (view.LastReport is { } report)
+{
+    <h2 class="h4 mt-4">Round @report.Round</h2>
+    @foreach (var line in report.Public.Concat(report.BySeat[view.Seat]))
+    {
+        <p class="news-entry mb-0">@line</p>
+    }
+}
+
+<h2 class="h4 mt-4">Players</h2>
+<ul class="rank-list">
+    @foreach (var seat in game.Standings())
+    {
+        var regions = game.RegionsOf(seat.Index).ToList();
+        <li class="rank-row @(seat.Index == view.Seat ? "you" : null)">
+            <span class="who">
+                <b>@seat.Name</b>
+                <small class="text-muted d-block">
+                    @seat.School.DisplayName() · @Count(regions.Count, "region") · @Count(seat.Units, "unit")@(Status(seat))
+                </small>
+            </span>
+            <span class="num">@game.Score(seat.Index).Total<small class="text-muted d-block">points</small></span>
+        </li>
+    }
+</ul>
+
+<h2 class="h4 mt-4">Board</h2>
+<p class="text-muted">Your regions first, then the ones next to them, then the rest.</p>
+<ul class="rank-list">
+    @foreach (var region in BoardOrder(game, view.Seat))
+    {
+        <li class="rank-row @(region.Owner == view.Seat ? "you" : null)">
+            <span class="who">
+                <b>@region.Name</b> · @region.Terrain.DisplayName()
+                <small class="text-muted d-block">
+                    @(region.Owner is { } owner ? game.Seats[owner].Name : "Free") ·
+                    @Count(region.Nodes, "node"), @Count(region.Towns, "town") (room for @region.FreeSlots(game.Rules)) ·
+                    next to @string.Join(", ", region.Neighbours.Select(n => game.Board[n].Name.Replace("Region ", "", StringComparison.Ordinal)))
+                </small>
+            </span>
+            @if (region.Owner is not null)
+            {
+                <span class="num">@N((int)game.RegionDefense(region.Id))<small class="text-muted d-block">defense</small></span>
+            }
+        </li>
+    }
+</ul>
+
+<h2 class="h4 mt-4">Objectives</h2>
+<ul>
+    @foreach (var objective in game.Objectives)
+    {
+        <li>
+            @game.Describe(objective.Objective): @game.Rules.PointsPerObjective points
+            @(objective.ReachedBy.Count > 0 ? $"(reached by {string.Join(" and ", objective.ReachedBy.Select(s => game.Seats[s].Name))})" : "(open)")
+        </li>
+    }
+</ul>
+
+<h2 class="h4 mt-4">Discovery deck</h2>
+<p>
+    @string.Join(", ", game.DeckCounts.Select(c => $"{c.Key.DisplayName()}: {c.Value}")) left. Claiming a region draws
+    one: Card 1 nothing, Card 2 +@N(game.Rules.Card2Gold) gold, Card 3 +@N(game.Rules.Card3Mana) mana, Card 4
+    +@game.Rules.Card4Points points, Card 5 loses @game.Rules.Card5ArmyLossPercent% of your units.
+</p>
+
+@code {
+    private static readonly TimeSpan Refresh = TimeSpan.FromSeconds(5);
+
+    private SkirmishView? view;
+    private bool loaded;
+    private bool busy;
+    private string? problem;
+    private string ownerId = string.Empty;
+    private Timer? timer;
+
+    [Parameter]
+    public long Id { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        await LoadAsync();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            timer = new Timer(_ => InvokeAsync(ReloadQuietlyAsync), null, Refresh, Refresh);
+        }
+    }
+
+    public void Dispose() => timer?.Dispose();
+
+    private async Task LoadAsync()
+    {
+        view = await Skirmishes.GetAsync(Id, ownerId);
+        loaded = true;
+    }
+
+    /// <summary>The refresh: never lets an error end the page's connection, and stops once the game is over.</summary>
+    private async Task ReloadQuietlyAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        try
+        {
+            await LoadAsync();
+            if (view is null || view.Game.Ended)
+            {
+                timer?.Dispose();
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // A missed refresh is harmless: the next one, or the player's next tap, loads the game again.
+        }
+    }
+
+    private Task AddAsync(SkirmishOrder order) => SaveAsync([.. view!.Orders, order]);
+
+    private Task RemoveAsync(int index) => SaveAsync([.. view!.Orders.Where((_, i) => i != index)]);
+
+    private Task SaveAsync(List<SkirmishOrder> orders) => RunAsync(() => Skirmishes.SaveOrdersAsync(Id, ownerId, view!.Planning, orders));
+
+    private Task ReadyAsync(bool ready) => RunAsync(() => Skirmishes.SetReadyAsync(Id, ownerId, view!.Planning, ready));
+
+    /// <summary>Runs a change and reloads. If the round played meanwhile, the new round shows without an error.</summary>
+    private async Task RunAsync(Func<Task<string?>> change)
+    {
+        if (busy || view is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var planning = view.Planning;
+            problem = await change();
+            await LoadAsync();
+            if (problem is not null && view is not null && view.Planning != planning)
+            {
+                problem = null; // the round played (a double tap, or time ran out): show the new one
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private static IEnumerable<SkirmishRegion> BoardOrder(SkirmishGame game, int seat) =>
+        game.Board.Regions
+            .OrderBy(r => r.Owner == seat ? 0 : r.Neighbours.Any(n => game.Board[n].Owner == seat) ? 1 : 2)
+            .ThenBy(r => r.Id);
+
+    private string Status(SkirmishSeat seat) =>
+        seat.Out ? " · out"
+        : seat.IsAway(view!.Game.Rules) ? " · away"
+        : "";
+
+    private static string Describe(SkirmishGame game, SkirmishOrder order) => order switch
+    {
+        ClaimOrder c => $"Claim {game.Board[c.RegionId].Name}",
+        BuildOrder b => $"Build {b.Count} {(b.Type == BuildingType.Node ? "node" : "town")}{(b.Count == 1 ? "" : "s")} in {game.Board[b.RegionId].Name}",
+        RecruitOrder r => $"Recruit {r.Count} {UnitBook.Find(r.UnitId)?.Name}",
+        AttackOrder a => $"Attack {game.Board[a.RegionId].Name} ({(game.Board[a.RegionId].Owner is { } o ? game.Seats[o].Name : "free")})",
+        CastOrder c => $"Cast {SpellBook.Find(c.SpellId)?.Name}",
+        HexOrder h => $"Cast {SpellBook.FindHex(h.HexId)?.Name} at {game.Seats[h.TargetSeat].Name}",
+        _ => order.ToString(),
+    };
+
+    private static string N(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
+
+    private static string Count(int value, string noun) => $"{value} {noun}{(value == 1 ? "" : "s")}";
+
+    private static string Left(TimeSpan left) =>
+        left <= TimeSpan.Zero ? "no time"
+        : left.TotalDays >= 1 ? $"{(int)left.TotalDays} d {left.Hours} h"
+        : left.TotalHours >= 1 ? $"{(int)left.TotalHours} h {left.Minutes} min"
+        : $"{Math.Max(1, (int)Math.Ceiling(left.TotalMinutes))} min";
+}

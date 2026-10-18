@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject NavigationManager Navigation
 
 <header class="top-bar">
     <a class="brand" href="" title="Your games">Spellbound</a>
@@ -26,7 +27,10 @@
     </footer>
 </main>
 
+@* The Realm's tabs; a Skirmish page is one game of its own, so they'd only lead away from it. *@
 <AuthorizeView>
+    @if (!Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("skirmish/", StringComparison.Ordinal))
+    {
     <nav class="bottom-nav" aria-label="Realm">
         <NavLink href="realm">Realm</NavLink>
         <NavLink href="explore">Explore</NavLink>
@@ -35,6 +39,7 @@
         <NavLink href="army">Army</NavLink>
         <NavLink href="rivals">Rivals</NavLink>
     </nav>
+    }
 </AuthorizeView>
 
 <div id="blazor-error-ui" data-nosnippet>
