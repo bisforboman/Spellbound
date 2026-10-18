@@ -42,10 +42,11 @@
 }
 
 <ul class="rank-list">
-    @foreach (var player in lobby.Players)
+    @for (var i = 0; i < lobby.Players.Count; i++)
     {
-        <li class="rank-row @(player.OwnerId == ownerId ? "you" : "")">
-            <span class="who"><b>@player.Name</b><small class="text-muted d-block">@player.School.DisplayName()@(player.OwnerId == lobby.CreatorId ? " · set it up" : "")</small></span>
+        var player = lobby.Players[i];
+        <li class="rank-row seated seat-@i @(player.OwnerId == ownerId ? "you" : "")">
+            <span class="who"><b class="seat-name">@player.Name</b><small class="text-muted d-block">@player.School.DisplayName()@(player.OwnerId == lobby.CreatorId ? " · set it up" : "")</small></span>
         </li>
     }
 </ul>
