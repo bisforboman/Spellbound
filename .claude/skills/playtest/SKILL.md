@@ -13,7 +13,7 @@ description: Play Spellbound end to end in a real phone-sized browser and check 
 4. visits every page and takes every kind of action: create a mage, explore, build, meditate, cast, recruit, attack,
    hex, the news banner, the hall of fame, account and data download, privacy, the admin page, a Skirmish (the admin
    starts one for the three players, each adds orders and readies up, and the round plays), a Skirmish the players
-   set up themselves (one sets it up, one joins with its code, one from the open games, and it starts), and ending the
+   set up themselves (one sets it up, one joins with its code, one from the open games, and it starts; they ready up to its end, and the win record and leaderboard show it), and ending the
    Realm round;
 5. checks the admin page's **Problems** list at the end.
 

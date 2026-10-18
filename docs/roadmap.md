@@ -105,7 +105,7 @@ first, as the beta is with friends)
 - [x] Skirmish reminders by web push (when everyone else is ready, when time is running out, when a round played)
 - [x] The board, orders and scoring pages, at 360 px, text-first (one game page, and Skirmishes on the Games page)
 - [x] Dropouts (away after 2 missed rounds, out after 6)
-- [ ] A win record per account
+- [x] A win record per account, and a Skirmish leaderboard
 - [ ] Friends-only beta on a real server: play Skirmishes, write down what to carry over to the Realm
 - [ ] One luck feature to start (for example "exploring finds things"), as a switch
 

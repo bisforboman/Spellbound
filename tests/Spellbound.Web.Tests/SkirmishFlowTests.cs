@@ -39,6 +39,8 @@ public sealed class SkirmishFlowTests : TestDatabase, IAsyncLifetime
 
     private AccountService Accounts => factory.Services.GetRequiredService<AccountService>();
 
+    private SkirmishRecordService Records => factory.Services.GetRequiredService<SkirmishRecordService>();
+
     /// <summary>The notifications queued so far, taken from the queue.</summary>
     private List<PushMessage> Notifications()
     {
@@ -190,6 +192,68 @@ public sealed class SkirmishFlowTests : TestDatabase, IAsyncLifetime
         var summary = (await Skirmishes.GetMineAsync(merlin)).Single(s => s.GameId == shortGame);
         Assert.True(summary.Ended);
         Assert.Equal(0, await Skirmishes.PlayDueAsync());
+    }
+
+    [Fact]
+    public async Task A_finished_game_goes_on_everyones_record_with_one_winner()
+    {
+        var shortGame = await Skirmishes.CreateAsync(
+            [(merlin, "Merlin", MagicSchool.A), (morgana, "Morgana", MagicSchool.B), (ada, "Ada", MagicSchool.C)],
+            SkirmishRules.Default with { Rounds = 1 },
+            RoundLength);
+        await PlayRoundAsync(); // the other game's round: it isn't over, so it records nothing
+        Assert.Equal(0, await CountAsync("SELECT count(*) FROM skirmish_results"));
+
+        foreach (var player in new[] { merlin, morgana, ada })
+        {
+            await Skirmishes.SetReadyAsync(shortGame, player, 1, true);
+        }
+
+        var winner = (await Skirmishes.GetAsync(shortGame, merlin))!.Game.Standings()[0].Name;
+        Assert.Equal(1, await CountAsync("SELECT count(*) FROM skirmish_results WHERE won"));
+        Assert.Equal(3, await CountAsync("SELECT count(*) FROM skirmish_results WHERE game_id = $1", shortGame));
+        var leaders = await Records.GetLeadersAsync();
+        Assert.Equal(winner, leaders[0].Name);
+        Assert.Equal([1, 0, 0], leaders.Select(l => l.Won));
+        Assert.All(leaders, l => Assert.Equal(1, l.Played));
+        Assert.Equal(new SkirmishRecord(1, leaders.Single(l => l.OwnerId == morgana).Won), await Records.GetAsync(morgana));
+    }
+
+    [Fact]
+    public async Task A_player_who_dropped_out_still_gets_a_game_played()
+    {
+        var shortGame = await Skirmishes.CreateAsync(
+            [(merlin, "Merlin", MagicSchool.A), (morgana, "Morgana", MagicSchool.B)],
+            SkirmishRules.Default with { Rounds = 2, AwayAfterMissed = 1, OutAfterMissed = 1 },
+            RoundLength);
+        await Skirmishes.SetReadyAsync(shortGame, merlin, 1, true);
+        time.Advance(RoundLength); // Morgana never readies: the clock plays round 1, and she's out
+        await Skirmishes.PlayDueAsync();
+        await Skirmishes.SetReadyAsync(shortGame, merlin, 2, true); // the round waits only for players still in
+
+        Assert.True((await Skirmishes.GetAsync(shortGame, merlin))!.Game.Ended);
+        Assert.Equal(new SkirmishRecord(1, 0), await Records.GetAsync(morgana));
+        Assert.Equal(new SkirmishRecord(1, 1), await Records.GetAsync(merlin));
+    }
+
+    [Fact]
+    public async Task Banned_players_are_left_off_the_leaderboard_and_deleted_accounts_lose_their_record()
+    {
+        var shortGame = await Skirmishes.CreateAsync(
+            [(merlin, "Merlin", MagicSchool.A), (morgana, "Morgana", MagicSchool.B), (ada, "Ada", MagicSchool.C)],
+            SkirmishRules.Default with { Rounds = 1 },
+            RoundLength);
+        foreach (var player in new[] { merlin, morgana, ada })
+        {
+            await Skirmishes.SetReadyAsync(shortGame, player, 1, true);
+        }
+
+        await WithDbAsync(db => db.ExecuteAsync("INSERT INTO bans (owner_id, at, reason, banned_by) VALUES ($1, now(), 'test', 'admin')", ada));
+        await Accounts.DeleteAsync(morgana);
+
+        Assert.Equal([merlin], (await Records.GetLeadersAsync()).Select(l => l.OwnerId));
+        Assert.Equal(new SkirmishRecord(0, 0), await Records.GetAsync(morgana));
+        Assert.Equal(1, (await Records.GetAsync(ada)).Played); // kept, only hidden
     }
 
     [Fact]

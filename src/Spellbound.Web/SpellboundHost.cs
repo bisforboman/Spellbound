@@ -26,7 +26,7 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
 
     /// <summary>
     /// Deletes the player's mage, news and logged actions from every round, so a deleted account leaves no mage in
-    /// Rivals to farm, and leaves their Skirmish seats without an owner, and calls off the Skirmishes they set up that haven't started. Other players' logged attacks on them stay, without their account id. Halls of fame keep their
+    /// Rivals to farm, and leaves their Skirmish seats without an owner, calls off the Skirmishes they set up that haven't started, and deletes their win record. Other players' logged attacks on them stay, without their account id. Halls of fame keep their
     /// names: they're a record of finished rounds.
     /// </summary>
     public async Task OnAccountDeletedAsync(DbSession db, string ownerId)
@@ -41,9 +41,10 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
         await db.ExecuteAsync("DELETE FROM skirmish_lobbies WHERE creator_id = $1 AND game_id IS NULL", ownerId);
         await db.ExecuteAsync("UPDATE skirmish_lobbies SET creator_id = NULL WHERE creator_id = $1", ownerId);
         await db.ExecuteAsync("DELETE FROM skirmish_lobby_players WHERE owner_id = $1", ownerId);
+        await db.ExecuteAsync("DELETE FROM skirmish_results WHERE owner_id = $1", ownerId); // their win record goes
     }
 
-    /// <summary>The player's mages (as stored, every round), news and logged actions, by round number; their Skirmish seats and the rounds of those games; and the Skirmishes they set up or are waiting in.</summary>
+    /// <summary>The player's mages (as stored, every round), news and logged actions, by round number; their Skirmish seats and the rounds of those games; the Skirmishes they set up or are waiting in; and their Skirmish results.</summary>
     public async Task<object> ExportAsync(DbSession db, string ownerId) => new
     {
         mages = await db.QueryAsync(
@@ -79,6 +80,18 @@ public sealed class SpellboundHost(GameRules configured) : IRoundLifecycle, IPla
                 gameId = r.IsDBNull(3) ? (long?)null : r.GetInt64(3),
                 name = r.IsDBNull(4) ? null : r.GetString(4),
                 school = r.IsDBNull(5) ? null : r.GetString(5),
+            },
+            ownerId),
+        skirmishResults = await db.QueryAsync(
+            "SELECT game_id, name, place, points, won, ended_at FROM skirmish_results WHERE owner_id = $1 ORDER BY ended_at",
+            r => new
+            {
+                gameId = r.GetInt64(0),
+                name = r.GetString(1),
+                place = r.GetInt32(2),
+                points = r.GetInt32(3),
+                won = r.GetBoolean(4),
+                endedAt = r.GetFieldValue<DateTimeOffset>(5),
             },
             ownerId),
         actions = await db.QueryAsync(

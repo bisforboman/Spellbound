@@ -107,7 +107,11 @@ length, public or private) and gets an invite code; it's shared as `/skirmish/jo
 if public. The join that fills the last seat starts the game in the same transaction (`SkirmishService.StartAsync`),
 holding the lobby's row so two players can't both take it; the creator can also start early with at least 2. A
 per-player advisory lock keeps the cap on games at once (`Skirmish:MaxGamesPerPlayer`, 3) from being raced. The admin
-page's "Start a Skirmish" from a list of emails stays as a shortcut. A deleted account's seat stays in its games without an owner or orders,
+page's "Start a Skirmish" from a list of emails stays as a shortcut.
+
+**The win record** (`skirmish_results`): when a round ends a game, `PlayAsync` writes a row per seat with an account
+(place, points, won) in the same transaction. `SkirmishRecordService` reads a player's record and the leaderboard,
+leaving banned players out as it reads. A deleted account's seat stays in its games without an owner or orders,
 and goes away, then out, through the rule for players who stop readying up.
 
 ## Request flow for a game action
