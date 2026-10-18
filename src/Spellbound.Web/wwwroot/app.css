@@ -2,6 +2,21 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* Headings: IM Fell English SC, self-hosted (wwwroot/fonts, SIL Open Font License: fonts/OFL.txt). Only the regular
+   weight exists, so headings are set to 400 rather than letting the browser fake a bold. */
+@font-face {
+    font-family: 'IM Fell English SC';
+    src: url("fonts/im-fell-english-sc-latin.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: 'IM Fell English SC', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+}
+
 /* The dark theme: Bootstrap's dark mode (data-bs-theme="dark" on <html>) in gritty warm greys, with a faint grain */
 [data-bs-theme=dark] {
     --bs-body-bg: #141312;
@@ -161,7 +176,7 @@ html, body {
 }
 
 .news-entry.hostile {
-    border-left: 4px solid #b02a37;
+    border-left: 4px solid var(--bs-danger);
     padding-left: 0.5rem;
 }
 
@@ -298,3 +313,108 @@ html, body {
     margin: -1.1rem -1rem 1rem;
     background: var(--seat);
 }
+
+/* Muted action colours, to sit in the greys: olive for good news and Ready, rust for danger, ochre for warnings */
+[data-bs-theme=dark] {
+    --bs-success: #6f8a4e;
+    --bs-success-rgb: 111, 138, 78;
+    --bs-success-text-emphasis: #b8cc9a;
+    --bs-success-bg-subtle: #1e2416;
+    --bs-success-border-subtle: #3d4a2b;
+    --bs-danger: #a8453a;
+    --bs-danger-rgb: 168, 69, 58;
+    --bs-danger-text-emphasis: #e3a79e;
+    --bs-danger-bg-subtle: #2a1614;
+    --bs-danger-border-subtle: #5a2a24;
+    --bs-warning: #b08a3e;
+    --bs-warning-rgb: 176, 138, 62;
+    --bs-warning-text-emphasis: #dfc58d;
+    --bs-warning-bg-subtle: #2a2214;
+    --bs-warning-border-subtle: #574524;
+    --bs-form-valid-color: #b8cc9a;
+    --bs-form-valid-border-color: #6f8a4e;
+    --bs-form-invalid-color: #e3a79e;
+    --bs-form-invalid-border-color: #a8453a;
+}
+
+.btn-success {
+    --bs-btn-color: #f2eee7;
+    --bs-btn-bg: #56693c;
+    --bs-btn-border-color: #6f8a4e;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #627843;
+    --bs-btn-hover-border-color: #809c5c;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #4a5a33;
+    --bs-btn-active-border-color: #809c5c;
+    --bs-btn-disabled-color: #f2eee7;
+    --bs-btn-disabled-bg: #56693c;
+    --bs-btn-disabled-border-color: #6f8a4e;
+}
+
+.btn-outline-danger {
+    --bs-btn-color: #e3a79e;
+    --bs-btn-border-color: #a8453a;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #a8453a;
+    --bs-btn-hover-border-color: #a8453a;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #8c3930;
+    --bs-btn-active-border-color: #8c3930;
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--bs-body-color);
+    --bs-btn-border-color: #57524a;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #3d3a35;
+    --bs-btn-hover-border-color: #6a645a;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #2f2c28;
+    --bs-btn-active-border-color: #6a645a;
+}
+
+/* Tables let the grain show through instead of sitting on a black slab */
+.table {
+    --bs-table-bg: transparent;
+}
+
+/* A link inside a sentence gets a taller tap area (44 px) without moving the text around it */
+p a:not(.btn), li > a:not(.btn):not(.rank-row) {
+    display: inline-block;
+    padding-block: 12px;
+    margin-block: -12px;
+}
+
+.btn-danger {
+    --bs-btn-color: #f7ece9;
+    --bs-btn-bg: #8c3930;
+    --bs-btn-border-color: #a8453a;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #9c4035;
+    --bs-btn-hover-border-color: #bd5649;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #77302a;
+    --bs-btn-active-border-color: #bd5649;
+    --bs-btn-disabled-color: #f7ece9;
+    --bs-btn-disabled-bg: #8c3930;
+    --bs-btn-disabled-border-color: #a8453a;
+}
+
+/* Red text on the dark grey: the lighter shade, so small text stays readable */
+.text-danger {
+    color: var(--bs-danger-text-emphasis) !important;
+}
+
+/* Symbols before labels (Glyph.razor): stone grey, with dull brass for gold and slate for mana, so the seat colours
+   stay the only bright ones */
+.glyph {
+    display: inline-block;
+    width: 1.2em;
+    color: var(--bs-secondary-color);
+    font-weight: 400;
+}
+
+.glyph-Gold { color: #b39a5e; }
+.glyph-Mana { color: #7f93a8; }
+.glyph-Turns { font-size: 1.35em; line-height: 1; vertical-align: -0.08em; }

@@ -8,7 +8,7 @@
 }
 <div class="turns">
     <div class="turns-line">
-        <span><b>@turns</b> / @Rules.MaxTurns turns</span>
+        <span><Glyph Kind="GlyphKind.Turns" /><b>@turns</b> / @Rules.MaxTurns turns</span>
         @if (next is { } wait)
         {
             <span>next in @((int)wait.TotalMinutes):@wait.Seconds.ToString("00")</span>

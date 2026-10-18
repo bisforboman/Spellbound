@@ -23,15 +23,21 @@
 
     .top-bar .brand {
         margin-right: auto;
-        font-weight: 700;
+        font-family: 'IM Fell English SC', Georgia, serif;
+        font-size: 1.3rem;
+        font-weight: 400;
         color: #fff;
     }
 
 .content {
     max-width: 40rem;
     margin: 0 auto;
-    padding: 1rem 1rem 5rem; /* room for the bottom nav */
+    padding: 1rem 1rem 1rem;
 }
+
+    .content.with-tabs {
+        padding-bottom: 5rem; /* room for the bottom nav */
+    }
 
 .site-footer {
     margin-top: 2rem;

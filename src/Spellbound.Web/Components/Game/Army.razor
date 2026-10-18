@@ -14,9 +14,9 @@
             {
                 <tr><th>@unit.Name</th><td>@N(Mage.UnitCount(unit.Id))</td></tr>
             }
-            <tr><th>Attack power</th><td>@N(Mage.AttackPower)</td></tr>
-            <tr><th>Defense</th><td>@N(Mage.DefensePower(Rules)) (@N(Mage.Land * Rules.BaseDefensePerAcre) from your land's guards)</td></tr>
-            <tr><th>Upkeep</th><td>@N(Mage.UpkeepPerTurn) gold per turn</td></tr>
+            <tr><th><Glyph Kind="GlyphKind.Army" />Attack power</th><td>@N(Mage.AttackPower)</td></tr>
+            <tr><th><Glyph Kind="GlyphKind.Defense" />Defense</th><td>@N(Mage.DefensePower(Rules)) (@N(Mage.Land * Rules.BaseDefensePerAcre) from your land's guards)</td></tr>
+            <tr><th><Glyph Kind="GlyphKind.Gold" />Upkeep</th><td>@N(Mage.UpkeepPerTurn) gold per turn</td></tr>
         </tbody>
     </table>
     <p class="text-muted">Upkeep is paid each turn you spend. If you run out of gold, @Rules.DesertionPercent% of every unit deserts that turn.</p>
