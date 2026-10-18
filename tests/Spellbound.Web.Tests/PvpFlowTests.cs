@@ -36,8 +36,8 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
 
     private async Task<Guid> CreateBothAsync()
     {
-        await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.C);
-        await Game.CreateMageAsync(Defender, "Morgana", MagicSchool.A);
+        await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.Ember);
+        await Game.CreateMageAsync(Defender, "Morgana", MagicSchool.Dawn);
         return (await Game.GetMageAsync(Defender))!.Id;
     }
 
@@ -65,7 +65,7 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task Recruited_army_is_saved()
     {
-        await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.C);
+        await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.Ember);
 
         Assert.True((await Game.RecruitAsync(Attacker, "unit-3", 60)).Succeeded);
 
@@ -87,7 +87,7 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal(225, (await Game.GetMageAsync(Defender))!.Land);
         var news = (await Game.GetNewsAsync(Defender))[0];
         Assert.True(news.Hostile);
-        Assert.StartsWith("Merlin (School C) attacked you and broke through", news.Lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("Merlin (Ember) attacked you and broke through", news.Lines[0], StringComparison.Ordinal);
         Assert.Equal(1, await Game.TakeUnseenAlertsAsync(Defender));
         Assert.Equal(0, await Game.TakeUnseenAlertsAsync(Defender));
     }

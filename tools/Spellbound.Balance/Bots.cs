@@ -53,7 +53,7 @@ public abstract class Bot(string name, MagicSchool school)
 }
 
 /// <summary>Grows land and buildings, never fights.</summary>
-public sealed class Builder(string name) : Bot(name, MagicSchool.A)
+public sealed class Builder(string name) : Bot(name, MagicSchool.Dawn)
 {
     public override string Strategy => "economy only";
 
@@ -61,7 +61,7 @@ public sealed class Builder(string name) : Bot(name, MagicSchool.A)
 }
 
 /// <summary>Grows, keeps unit 1 at one per acre and a ward up.</summary>
-public sealed class Turtle(string name) : Bot(name, MagicSchool.C)
+public sealed class Turtle(string name) : Bot(name, MagicSchool.Ember)
 {
     public override string Strategy => "economy + unit 1 (1/acre) + ward";
 
@@ -90,7 +90,7 @@ public sealed class Turtle(string name) : Bot(name, MagicSchool.C)
 /// Grows, puts half its spare gold into unit 3, and attacks the biggest target it can surely beat, again and again
 /// while it has turns. Sees targets' true defense (players can't; this is the worst case for defenders).
 /// </summary>
-public sealed class Warmonger(string name) : Bot(name, MagicSchool.D)
+public sealed class Warmonger(string name) : Bot(name, MagicSchool.Umbra)
 {
     public override string Strategy => "economy + unit 3 + attacks when it beats exploring";
 
@@ -135,7 +135,7 @@ public sealed class Warmonger(string name) : Bot(name, MagicSchool.D)
 }
 
 /// <summary>Signs up and never plays again.</summary>
-public sealed class Idle(string name) : Bot(name, MagicSchool.B)
+public sealed class Idle(string name) : Bot(name, MagicSchool.Grove)
 {
     public override string Strategy => "signs up, never plays";
 

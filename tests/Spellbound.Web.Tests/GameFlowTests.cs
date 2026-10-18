@@ -31,7 +31,7 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task Action_spends_turns_saves_the_mage_and_writes_news()
     {
-        Assert.True((await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.B)).Succeeded);
+        Assert.True((await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Grove)).Succeeded);
 
         var report = await Game.ExploreAsync(Owner, 5);
 
@@ -47,7 +47,7 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task Failed_action_changes_nothing()
     {
-        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.B);
+        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Grove);
 
         var report = await Game.ExploreAsync(Owner, 1_000);
 
@@ -62,7 +62,7 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task Cast_persists_the_active_effect()
     {
-        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.B);
+        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Grove);
 
         Assert.True((await Game.CastAsync(Owner, "self-b")).Succeeded);
 
@@ -74,16 +74,16 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task Second_mage_for_the_same_player_is_refused()
     {
-        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.B);
+        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Grove);
 
-        Assert.False((await Game.CreateMageAsync(Owner, "Morgana", MagicSchool.E)).Succeeded);
+        Assert.False((await Game.CreateMageAsync(Owner, "Morgana", MagicSchool.Veil)).Succeeded);
         Assert.Equal("Merlin", (await Game.GetMageAsync(Owner))!.Name);
     }
 
     [Fact]
     public async Task News_log_keeps_the_last_50_reports()
     {
-        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.B);
+        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Grove);
 
         for (var i = 0; i < GameService.NewsKept + 3; i++)
         {
@@ -96,7 +96,7 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task Taps_at_the_same_moment_wait_for_each_other_and_never_spend_a_turn_twice()
     {
-        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.B); // 100 turns
+        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Grove); // 100 turns
 
         var reports = await Task.WhenAll(Enumerable.Range(0, 25).Select(_ => Task.Run(() => Game.ExploreAsync(Owner, 5))));
 
@@ -109,7 +109,7 @@ public sealed class GameFlowTests : TestDatabase, IAsyncLifetime
     [Fact]
     public async Task An_action_waiting_too_long_for_a_locked_mage_is_busy_and_changes_nothing()
     {
-        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.B);
+        await Game.CreateMageAsync(Owner, "Merlin", MagicSchool.Grove);
         await using var source = Npgsql.NpgsqlDataSource.Create(ConnectionString);
         await using (var other = await new HostDatabase(source).BeginAsync())
         {

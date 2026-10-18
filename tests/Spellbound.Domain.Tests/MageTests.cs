@@ -7,7 +7,7 @@ public class MageTests
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     private static readonly GameRules Rules = GameRules.Default;
 
-    private static Mage NewMage(MagicSchool school = MagicSchool.A, GameRules? rules = null) =>
+    private static Mage NewMage(MagicSchool school = MagicSchool.Dawn, GameRules? rules = null) =>
         Mage.Create("user-1", "Merlin", school, T0, rules ?? Rules);
 
     [Fact]
@@ -29,7 +29,7 @@ public class MageTests
     [InlineData("This name is far too long for a mage")]
     public void Create_rejects_bad_names(string name)
     {
-        Assert.Throws<ArgumentException>(() => Mage.Create("user-1", name, MagicSchool.C, T0, Rules));
+        Assert.Throws<ArgumentException>(() => Mage.Create("user-1", name, MagicSchool.Ember, T0, Rules));
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class MageTests
     [Fact]
     public void Cast_spends_mana_and_turns_and_adds_the_effect()
     {
-        var mage = NewMage(MagicSchool.A);
+        var mage = NewMage(MagicSchool.Dawn);
 
         var report = mage.Cast("self-a", T0, Rules);
 
@@ -157,7 +157,7 @@ public class MageTests
     [Fact]
     public void Cast_is_limited_to_your_own_school()
     {
-        var mage = NewMage(MagicSchool.A);
+        var mage = NewMage(MagicSchool.Dawn);
 
         var report = mage.Cast("self-b", T0, Rules);
 
@@ -170,7 +170,7 @@ public class MageTests
     public void Cast_needs_enough_mana()
     {
         var rules = Rules with { StartingMana = 1_000 };
-        var mage = NewMage(MagicSchool.A, rules);
+        var mage = NewMage(MagicSchool.Dawn, rules);
 
         var report = mage.Cast("self-a", T0, rules);
 
@@ -181,7 +181,7 @@ public class MageTests
     [Fact]
     public void Active_spell_boosts_income()
     {
-        var mage = NewMage(MagicSchool.A);
+        var mage = NewMage(MagicSchool.Dawn);
         mage.Cast("self-a", T0, Rules);
         var goldBefore = mage.Gold;
 
@@ -194,19 +194,19 @@ public class MageTests
     [Fact]
     public void Spell_fades_after_its_duration()
     {
-        var mage = NewMage(MagicSchool.A);
+        var mage = NewMage(MagicSchool.Dawn);
         mage.Cast("self-a", T0, Rules);
 
         var report = mage.Meditate(30, T0, Rules);
 
         Assert.Empty(mage.ActiveEffects);
-        Assert.Contains("Self-spell A has faded.", report.Lines);
+        Assert.Contains("Dawn self-spell has faded.", report.Lines);
     }
 
     [Fact]
     public void Recasting_refreshes_instead_of_stacking()
     {
-        var mage = NewMage(MagicSchool.C);
+        var mage = NewMage(MagicSchool.Ember);
         mage.Cast("self-c", T0, Rules);
         mage.Meditate(10, T0, Rules);
 
@@ -217,12 +217,24 @@ public class MageTests
     }
 
     [Theory]
-    [InlineData(MagicSchool.A, MagicSchool.B, MagicSchool.E)]
-    [InlineData(MagicSchool.E, MagicSchool.A, MagicSchool.D)]
+    [InlineData(MagicSchool.Dawn, MagicSchool.Grove, MagicSchool.Veil)]
+    [InlineData(MagicSchool.Veil, MagicSchool.Dawn, MagicSchool.Umbra)]
     public void Schools_form_a_ring(MagicSchool school, MagicSchool strongAgainst, MagicSchool weakAgainst)
     {
         Assert.Equal(strongAgainst, school.StrongAgainst());
         Assert.Equal(weakAgainst, school.WeakAgainst());
+    }
+
+    [Theory]
+    [InlineData(MagicSchool.Dawn, MagicSchool.Veil, MagicSchool.Grove, MagicSchool.Ember, MagicSchool.Umbra)]
+    [InlineData(MagicSchool.Ember, MagicSchool.Grove, MagicSchool.Umbra, MagicSchool.Dawn, MagicSchool.Veil)]
+    [InlineData(MagicSchool.Veil, MagicSchool.Umbra, MagicSchool.Dawn, MagicSchool.Grove, MagicSchool.Ember)]
+    public void Each_school_has_two_neighbours_and_two_opposites_on_the_wheel(
+        MagicSchool school, MagicSchool left, MagicSchool right, MagicSchool oppositeA, MagicSchool oppositeB)
+    {
+        Assert.Equal([left, right], school.Neighbours());
+        Assert.Equal([oppositeA, oppositeB], school.Opposites().Order());
+        Assert.Equal(MagicSchoolExtensions.Wheel, school.Neighbours().Concat(school.Opposites()).Append(school).Order());
     }
 
     [Theory]

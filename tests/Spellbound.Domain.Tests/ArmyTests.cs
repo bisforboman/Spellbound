@@ -6,7 +6,7 @@ public class ArmyTests
     private static readonly GameRules Rules = GameRules.Default;
 
     private static Mage NewMage(GameRules? rules = null) =>
-        Mage.Create("user-1", "Merlin", MagicSchool.A, T0, rules ?? Rules);
+        Mage.Create("user-1", "Merlin", MagicSchool.Dawn, T0, rules ?? Rules);
 
     [Fact]
     public void Recruit_costs_gold_and_turns_and_adds_units()

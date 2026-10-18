@@ -42,8 +42,8 @@ Goal: you can sign up on a phone, create a mage and play the economy loop.
 ## M4: First live round
 Goal: real players finish a round, and we learn from it.
 
-**On hold since 18 Oct 2026:** the game gets two modes, Realm and Skirmish, and launches with both (see M5, M6 and
-[game design](game-design.md#modes-decided-18-oct-2026-not-built-yet)). The open items below wait until then.
+**On hold since 18 Oct 2026:** the Realm is being reworked as Mageborn first (see M7). The open items below wait
+until then.
 
 - [x] Sign in with Google instead of passwords (no password storage, resets or lockouts; a Development-only sign-in for
   local runs and tests). Needs the owner's Google OAuth client before deploy
@@ -67,8 +67,8 @@ Goal: real players finish a round, and we learn from it.
   backups (see [deploy guide](deploy.md#privacy-notice))
 
 ## Order from here
-Skirmish comes first: a friends-only beta of Skirmish games, whose lessons also shape the Realm. So M5 (both parts) and
-M6 lead to that beta; the Realm's public launch (M4) follows.
+Decided 18 Oct 2026: the Realm is reworked as Mageborn ([design](mageborn-design.md), [rework plan](realm-rework.md))
+before anything is deployed; Skirmish was removed. So M7 comes next, then the first live round (M4).
 
 ## M5: Games and lobbies
 Goal: a server runs many games, each with its own mode and rules. In two parts, so the risky data change ships alone.
@@ -76,38 +76,37 @@ Goal: a server runs many games, each with its own mode and rules. In two parts, 
 **Part 1: the data model, with the Realm only** (every existing test still passes, as "one game in the list")
 - [x] A `games` table (mode, round number, start, end, rules) replacing the single `current_round`; each Realm round is
   one game, and the server starts the next one when a round ends
-- [x] Each game stores its rules (`GameRules`; switches come with Skirmish); configuration is the preset for the next
+- [x] Each game stores its rules (`GameRules`); configuration is the preset for the next
   round
 - [x] Mages, news, actions and hall of fame keyed by game instead of round
 - [x] A Games page after sign-in (`/`), listing the player's games (for now, the current Realm round); the Realm's
   overview moved to `/realm`
 
-**Part 2: creating and joining** (built with Skirmish, since until then there is nothing new to create; invite codes
-first, as the beta is with friends)
-- [x] Create a game (mode, players, switches within limits, public or private) with a cap per player (Skirmish; the
-  Realm is one game the server runs)
-- [x] Join from the public list, or with a code or link; the game page lists its rules
-- [ ] Multi-account signals per game on the admin page
-- [ ] Page addresses that name a game (`/games/{id}/…` or similar), once Skirmish pages exist beside the Realm's
+**Part 2: creating and joining** was built for Skirmish (lobbies, invite codes, a public list) and removed with it on
+18 Oct 2026; it's in the git history if a second mode comes back.
+- [ ] Page addresses that name a game (`/games/{id}/…` or similar), if a second mode comes back
 
-## M6: Skirmish
-- [ ] Rules draft ([skirmish design](skirmish-design.md)), agreed with the owner
-- [x] Rules in the domain, part A, with tests: the board, seats, claim, build and recruit orders, contested claims, the
-  discovery deck, income and upkeep, scoring, the end; playing a round from every player's orders and a seeded random
-  source
-- [x] Rules in the domain, part B: casts, hexes, attacks, dropouts, public objectives, the range rule
-- [x] A simulation in `tools/` ([results](skirmish-sim-results.md)), and a first tuning from it
-- [ ] Tune the numbers until it plays well: in the friends beta (bots can't tell whether people find it open)
-- [x] Rounds with a ready-up and a time limit; the server plays a round when all are ready or time is up
-- [x] Storage and a service for Skirmish games (seats, saved orders, a record of every round); players set up and join
-  games with invite codes (the admin can still start one from players' emails)
-- [x] Web push notifications: turn them on per device on the Account page, with a test button
-- [x] Skirmish reminders by web push (when everyone else is ready, when time is running out, when a round played)
-- [x] The board, orders and scoring pages, at 360 px, text-first (one game page, and Skirmishes on the Games page)
-- [x] Dropouts (away after 2 missed rounds, out after 6)
-- [x] A win record per account, and a Skirmish leaderboard
-- [ ] Friends-only beta on a real server: play Skirmishes, write down what to carry over to the Realm
-- [ ] One luck feature to start (for example "exploring finds things"), as a switch
+## M6: Skirmish (removed 18 Oct 2026)
+A short board-game mode with simultaneous rounds, built to a playable state (rules, simulator, lobbies with invite
+codes, web push reminders, a win record) and then removed when the owner chose to rework the Realm instead. Web push
+notifications stay; the rest is in the git history.
+
+## M7: Mageborn
+The Realm reworked to the owner's research ([design](mageborn-design.md)); the steps and what each touches are in
+[realm-rework.md](realm-rework.md). Each step is one PR, with tests, a simulation run where it applies, and a playtest
+step.
+- [x] The design brought into the repo, decisions recorded, Skirmish removed
+- [x] The schools renamed Dawn, Grove, Ember, Umbra and Veil, with the wheel order as data
+- [ ] The Realm simulation (`tools/Spellbound.Balance`) extended to replay days 1–7 with bot strategies, and a
+  baseline on today's rules, so every later step is measured
+- [ ] Turn bank numbers, season phases and published net power
+- [ ] Buildings as shares, population, yield curves and the ledger preview
+- [ ] The school wheel's costs, research and Spell Level
+- [ ] Creatures, stacked battles and the War Table
+- [ ] Strike kinds, range and hit limits, Shaken, the Chronicle, Wards
+- [ ] The Fall, Vigil and Sanctuary
+- [ ] The Conjunction: Armageddon, the Final War and the titles
+- [ ] Omens, guilds, the Tutor's Plan and the Apprentice season with AI mages
 
 ## Engineering
 - Persistence: plain Npgsql with Google sign-in, decided 17 Oct 2026 after comparing alternatives and similar games
@@ -124,8 +123,8 @@ See [balance.md](balance.md) and the open questions in [game design](game-design
 - Population or peasants, and an end-of-round event: design questions, not numbers
 
 ## Later
-- Research, artifacts, guilds and chat, server variants, web push for Realm attacks (Skirmish reminders bring it in M6)
+- Artifacts, chat, server variants (Mageborn's Blitz and Long servers)
 - Real email (an SMTP service), if the game ever needs it
 - More sign-in options (Apple, passkeys), linked to the same account
 - Move `Hosting/` into its own reusable project if a separate game is ever planned (see architecture, "The game host
-  boundary"); Realm and Skirmish are modes of one game, so they don't need it
+  boundary")

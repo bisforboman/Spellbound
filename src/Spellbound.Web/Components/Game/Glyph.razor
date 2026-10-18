@@ -1,5 +1,3 @@
-@using Spellbound.Domain.Skirmish
-
 @* A small text symbol before a label, so numbers scan faster: geometric shapes only, which every phone draws as text
    (never as emoji). Hidden from screen readers, since the label says it. A stand-in for art, easy to swap later. *@
 <span class="glyph glyph-@Kind" aria-hidden="true">@Symbol</span>
@@ -16,16 +14,6 @@
         GlyphKind.Land => "■",
         GlyphKind.Army => "▲",
         GlyphKind.Defense => "▣",
-        GlyphKind.Slot => "□",
         _ => "",
-    };
-
-    /// <summary>The symbol for what a Skirmish terrain is good for: a slot, gold, mana or defense.</summary>
-    public static GlyphKind For(SkirmishTerrain terrain) => terrain switch
-    {
-        SkirmishTerrain.T1 => GlyphKind.Slot,
-        SkirmishTerrain.T2 => GlyphKind.Gold,
-        SkirmishTerrain.T3 => GlyphKind.Mana,
-        _ => GlyphKind.Defense,
     };
 }

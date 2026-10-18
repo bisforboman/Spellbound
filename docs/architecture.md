@@ -18,18 +18,16 @@ domain code doesn't change.
 ```
 Spellbound.slnx
 src/
-  Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook, UnitBook (no dependencies);
-    Skirmish/               Skirmish's rules: SkirmishRules, SkirmishBoard, SkirmishGame (seats, orders, PlayRound)
+  Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook, UnitBook (no dependencies)
   Spellbound.Web/           Blazor app
     Hosting/                the reusable game host: accounts, the database (HostDatabase, SQL scripts in Sql/), rounds,
                             admin page, bans, backups,
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
     Components/Account/     sign-in and account pages (part of the host, not yet moved into Hosting/)
-    Components/Game/, GameService, SkirmishService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL
-                            scripts); Skirmish's page is Components/Game/SkirmishPage.razor
+    Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL scripts)
+    wwwroot/fonts/          the headings font, self-hosted, with its licence (OFL.txt)
 tools/
   Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
-  Spellbound.SkirmishSim/   Skirmish simulation: bots play many seeded games (docs/skirmish-sim-results.md)
   Spellbound.Playtest/      plays every page in a phone-sized browser (Playwright) against a fresh app and database,
                             with screenshots and a report (.claude/skills/playtest)
 tests/
@@ -58,61 +56,22 @@ extension points designed for a single game tend to come out wrong.
 - `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
 - **Tables** are split the same way: `Hosting/Sql` creates `accounts`, `games`, `bans`, `account_networks` and
   `server_secrets`; `Data/Sql` (through `SpellboundSchema`) creates `mages`, `news`, `hall_of_fame` and `actions`,
-  keyed by game id, and Skirmish's `skirmish_games`, `skirmish_seats` and `skirmish_rounds`.
+  keyed by game id. (Skirmish's tables were dropped by `Data/Sql/008` when it was removed.)
 - **When a second game comes:** move `Hosting/` and `Components/Account/` into a `GameHost` Razor class library,
   register its assembly with the router (`AdditionalAssemblies`), and split the tests. Roughly 2–3 days.
 
 ### Many games at once (M5)
 
-Realm and Skirmish are two modes of one game, not two games, so `Hosting/` stays one host. A server runs **many
-games**: the host's `games` table (`HostedGame`: id, mode, round number, start, end, `ended_at` once wrapped up, and the
+A server runs **many games**: the host's `games` table (`HostedGame`: id, mode, round number, start, end, `ended_at` once wrapped up, and the
 rules as jsonb the host never reads) replaced the single `current_round` row. Each Realm round is one game: the
 server always keeps one running (`AlwaysOnMode`), numbered per mode. Every game stores its own rules
 (`GameData.RulesOf`), so `GameRules` from configuration is the preset for the next round, not the set every action
 uses; the action log's rules hash records which rules an action ran under. Rounds migrated from before games have no
 stored rules (`{}`) and use the configured ones, as they did. Bans stay global (per account); the hall of fame is per
 game. The Games page (`/`) lists the player's games; the Realm's pages (`/realm`, `/explore`, …) mean "the running
-Realm round". Not built yet: page addresses that name a game (Skirmish's already do: `/skirmish/{id}`).
-
-**Skirmish games** are `games` rows with mode `skirmish` and `SkirmishRules` as their rules, plus game-side tables:
-`skirmish_games` (the seed, the `SkirmishGame` as jsonb, the round's time limit and deadline), `skirmish_seats` (which
-account sits where, its saved orders and whether it's ready: the minimal "members") and `skirmish_rounds` (every round
-played: orders, who was ready, the random draws, the report and the state after, so a round can be shown and replayed).
-`SkirmishService` does everything in one transaction holding the game's row:
-
-```
-save orders → refused if the round already played (the page sends the round it planned) or the player is ready;
-              checked with SkirmishGame.CheckOrders; stored on the seat
-ready       → stored; if every seat still playing (with an owner, not banned, not out) is ready, the round plays
-              in the same transaction, so two last taps at once play it once
-play        → SkirmishGame.PlayRound(saved orders, recorded luck, ready seats); the round is recorded, orders and
-              ready flags clear, and the next deadline is set. SkirmishKeeper plays rounds whose deadline passed,
-              once a minute, FOR UPDATE SKIP LOCKED so several hosts can run it
-```
-
-**The game page** (`/skirmish/{id}`, `Components/Game/SkirmishPage.razor` with `SkirmishOrderForm.razor`) shows the
-round, the player's orders and Ready, the last round's report, players, the board as text, objectives and the deck. It
-reloads every 5 seconds while open, so other players' Ready taps and a played round show up by themselves. The Realm's
-tab bar shows only on the Realm's own pages (not on Skirmish, the Games page or the account pages); the Spellbound link leads back to the Games page, which lists the player's
-Skirmishes.
-
-**Reminders** go through the notifications below: the last player not ready is nudged once a round (a `nudged` flag
-on the seat), `SkirmishKeeper` reminds players who aren't ready once when time runs short (`reminded_round` on the
-game), and a played round tells everyone but the player whose Ready played it. They're queued only after the
-transaction commits, so a refused or failed change sends nothing.
-
-**Setting up and joining** (`SkirmishLobbyService`, game-side tables `skirmish_lobbies` and
-`skirmish_lobby_players`): a player sets up a game (the switches within `SkirmishRules`' creator limits, a round
-length, public or private) and gets an invite code; it's shared as `/skirmish/join/{code}`, or listed on the Games page
-if public. The join that fills the last seat starts the game in the same transaction (`SkirmishService.StartAsync`),
-holding the lobby's row so two players can't both take it; the creator can also start early with at least 2. A
-per-player advisory lock keeps the cap on games at once (`Skirmish:MaxGamesPerPlayer`, 3) from being raced. The admin
-page's "Start a Skirmish" from a list of emails stays as a shortcut.
-
-**The win record** (`skirmish_results`): when a round ends a game, `PlayAsync` writes a row per seat with an account
-(place, points, won) in the same transaction. `SkirmishRecordService` reads a player's record and the leaderboard,
-leaving banned players out as it reads. A deleted account's seat stays in its games without an owner or orders,
-and goes away, then out, through the rule for players who stop readying up.
+Realm round". The Realm's tab bar shows only on the Realm's own pages (not on the Games page or the account pages);
+the Spellbound link leads back to the Games page. (Skirmish, a second mode with simultaneous rounds, lobbies and
+reminders, was removed on 18 Oct 2026; see [realm-rework.md](realm-rework.md) and the git history.)
 
 ## Request flow for a game action
 
@@ -189,14 +148,14 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - **Rounds:** each Realm round is a row in `games`. `RoundKeeper`, a hosted `BackgroundService`, checks every minute:
   it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row, marks the game ended and
   starts the next in one transaction, under a transaction advisory lock per mode, so two hosts can't both reset.
-  `SkirmishKeeper` checks every minute too, for Skirmish rounds whose time limit has passed.
 - **Notifications** (`Hosting/Push.cs`, `Hosting/WebPushCrypto.cs`): Web Push with .NET's own cryptography, no
   package. Players turn them on per device on the Account page (`wwwroot/push.js` subscribes with the server's VAPID
   key; `wwwroot/sw.js`, a service worker with no fetch handler, shows them). `push_subscriptions` holds each device's
   push address and keys. The game hands a `PushMessage` to `PushSink` after its transaction commits; `PushSender`, in
   the background, encrypts it for each of the player's devices (RFC 8291, tested against the RFC's own example) and
   posts it with a VAPID token (RFC 8292), forgetting devices the push service no longer knows. The VAPID key is made
-  once and kept in `server_secrets`.
+  once and kept in `server_secrets`. For now only the Account page's test sends one; Mageborn's attacks and Wards will
+  use it.
 - **Privacy** (`/privacy`, `Hosting/Privacy.cs`): a notice written from what the code stores, filled in from the
   `Privacy` config section (operator, contact, hosting; the app won't start outside Development without them). It
   promises things the code does, so keep them true together: network hashes are deleted after 30 days

@@ -64,7 +64,7 @@ public sealed partial class Mage
 
     public int FreeLand => Land - BuiltLand;
 
-    /// <summary>Why a mage can't have this name, or null. Skirmish mages follow the same rule.</summary>
+    /// <summary>Why a mage can't have this name, or null.</summary>
     public static string? NameProblem(string name) =>
         name.Trim().Length is < MinNameLength or > MaxNameLength ? $"Name must be {MinNameLength}–{MaxNameLength} characters." : null;
 

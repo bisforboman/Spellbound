@@ -67,15 +67,15 @@ public static class SpellBook
 {
     public static IReadOnlyList<SpellDefinition> All { get; } =
     [
-        new("self-a", "Self-spell A", MagicSchool.A, 1_500, 2, 30, EffectKind.GoldIncome, 1.25,
+        new("self-a", "Dawn self-spell", MagicSchool.Dawn, 1_500, 2, 30, EffectKind.GoldIncome, 1.25,
             "Gold income +25%."),
-        new("self-b", "Self-spell B", MagicSchool.B, 1_500, 2, 30, EffectKind.ExploreYield, 1.5,
+        new("self-b", "Grove self-spell", MagicSchool.Grove, 1_500, 2, 30, EffectKind.ExploreYield, 1.5,
             "Exploring yields +50% land."),
-        new("self-c", "Self-spell C", MagicSchool.C, 1_200, 2, 30, EffectKind.ManaIncome, 1.3,
+        new("self-c", "Ember self-spell", MagicSchool.Ember, 1_200, 2, 30, EffectKind.ManaIncome, 1.3,
             "Node mana income +30%."),
-        new("self-d", "Self-spell D", MagicSchool.D, 1_500, 2, 30, EffectKind.BuildCost, 0.8,
+        new("self-d", "Umbra self-spell", MagicSchool.Umbra, 1_500, 2, 30, EffectKind.BuildCost, 0.8,
             "Buildings cost 20% less gold."),
-        new("self-e", "Self-spell E", MagicSchool.E, 1_200, 2, 30, EffectKind.MeditateYield, 1.5,
+        new("self-e", "Veil self-spell", MagicSchool.Veil, 1_200, 2, 30, EffectKind.MeditateYield, 1.5,
             "Meditation gives +50% mana."),
         new("ward", "Ward spell", null, 1_000, 2, 30, EffectKind.HexWard, 0.5,
             "Hexes cast at you succeed half as often."),
@@ -83,15 +83,15 @@ public static class SpellBook
 
     public static IReadOnlyList<HexDefinition> Hexes { get; } =
     [
-        new("hex-a", "Hex A", MagicSchool.A, 2_000, 2, HexEffect.KillUnits, 0.05,
+        new("hex-a", "Dawn hex", MagicSchool.Dawn, 2_000, 2, HexEffect.KillUnits, 0.05,
             "5% of their units die."),
-        new("hex-b", "Hex B", MagicSchool.B, 2_000, 2, HexEffect.DestroyGold, 0.08,
+        new("hex-b", "Grove hex", MagicSchool.Grove, 2_000, 2, HexEffect.DestroyGold, 0.08,
             "8% of their gold is destroyed."),
-        new("hex-c", "Hex C", MagicSchool.C, 2_000, 2, HexEffect.StealMana, 0.10,
+        new("hex-c", "Ember hex", MagicSchool.Ember, 2_000, 2, HexEffect.StealMana, 0.10,
             "Take 10% of their mana."),
-        new("hex-d", "Hex D", MagicSchool.D, 2_000, 2, HexEffect.BurnBuildings, 0.03,
+        new("hex-d", "Umbra hex", MagicSchool.Umbra, 2_000, 2, HexEffect.BurnBuildings, 0.03,
             "3% of their buildings are destroyed."),
-        new("hex-e", "Hex E", MagicSchool.E, 2_500, 2, HexEffect.DrainTurns, 3,
+        new("hex-e", "Veil hex", MagicSchool.Veil, 2_500, 2, HexEffect.DrainTurns, 3,
             "They lose 3 turns."),
     ];
 
