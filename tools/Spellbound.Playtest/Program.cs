@@ -227,9 +227,9 @@ namespace Spellbound.Playtest
 
         public async Task PlayAsync()
         {
-            var ada = await PlayerAsync("Ada", AdminEmail, "School A");
-            var merlin = await PlayerAsync("Merlin", "merlin@playtest.local", "School B");
-            var morgana = await PlayerAsync("Morgana", "morgana@playtest.local", "School C");
+            var ada = await PlayerAsync("Ada", AdminEmail, "Dawn");
+            var merlin = await PlayerAsync("Merlin", "merlin@playtest.local", "Grove");
+            var morgana = await PlayerAsync("Morgana", "morgana@playtest.local", "Ember");
 
             foreach (var player in new[] { ada, merlin, morgana })
             {
@@ -261,7 +261,7 @@ namespace Spellbound.Playtest
             await StepAsync(ada, "games-with-mage", async page =>
             {
                 await GoAsync(page, "/");
-                await Expect(page, "Ada, School A mage");
+                await Expect(page, "Ada, Dawn mage");
             });
             await StepAsync(ada, "explore", page => ActAsync(page, "/explore", async () =>
             {

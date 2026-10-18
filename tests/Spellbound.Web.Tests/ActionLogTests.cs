@@ -35,8 +35,8 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
     public async Task InitializeAsync()
     {
         await factory.Services.GetRequiredService<RoundKeeper>().TickAsync();
-        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.C);
-        await Game.CreateMageAsync(Morgana, "Morgana", MagicSchool.A);
+        await Game.CreateMageAsync(Merlin, "Merlin", MagicSchool.Ember);
+        await Game.CreateMageAsync(Morgana, "Morgana", MagicSchool.Dawn);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -117,7 +117,7 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
         Assert.Equal(["attack", "create"], actions.Select(a => a.Action));
         Assert.True(actions[0].Against);
         Assert.Equal(Merlin, actions[0].OtherOwnerId);
-        Assert.StartsWith("Merlin (School C) attacked you", actions[0].Lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("Merlin (Ember) attacked you", actions[0].Lines[0], StringComparison.Ordinal);
         Assert.Null((await Game.GetActionLogAsync("Nobody")).Mage);
     }
 

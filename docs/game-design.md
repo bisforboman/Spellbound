@@ -7,7 +7,7 @@ step lands, this page describes the Realm **as it is built today**, and each ste
 
 The numbers below are the defaults in `GameRules`. They are first guesses that need balancing through play.
 
-**Names are placeholders** in today's build ("School A", "Hex C", "Unit 3"). Mageborn's names (the schools Dawn,
+**Some names are still placeholders** in today's build ("Dawn hex", "Unit 3"). Mageborn's names (the schools Dawn,
 Grove, Ember, Umbra and Veil, the buildings and the rest) replace them as the rework reaches each part.
 
 ## The pitch
@@ -74,17 +74,18 @@ New buildings count towards income during the turns spent building them.
 You pick one of five schools when you create your mage. The schools form a ring: each one is strong against the
 next and weak against the previous one. The counter bonuses are used by offensive spells and combat from milestone 2.
 
-`School A → School B → School C → School D → School E → School A`
+`Dawn → Grove → Ember → Umbra → Veil → Dawn` (the Mageborn wheel's order; today each school is strong against the
+next one, until the battle rework brings in neighbours and opposites)
 
 ### Self-spells (one per school, known from the start; see Hexes and wards for the Ward spell)
 
 | School | Spell | Mana | Turns | Duration | Effect |
 |---|---|---|---|---|---|
-| School A | Self-spell A | 1,500 | 2 | 30 turns | Gold income ×1.25 |
-| School B | Self-spell B | 1,500 | 2 | 30 turns | Explore yield ×1.5 |
-| School C | Self-spell C | 1,200 | 2 | 30 turns | Mana income ×1.3 |
-| School D | Self-spell D | 1,500 | 2 | 30 turns | Building cost ×0.8 |
-| School E | Self-spell E | 1,200 | 2 | 30 turns | Meditation yield ×1.5 |
+| Dawn | Dawn self-spell | 1,500 | 2 | 30 turns | Gold income ×1.25 |
+| Grove | Grove self-spell | 1,500 | 2 | 30 turns | Explore yield ×1.5 |
+| Ember | Ember self-spell | 1,200 | 2 | 30 turns | Mana income ×1.3 |
+| Umbra | Umbra self-spell | 1,500 | 2 | 30 turns | Building cost ×0.8 |
+| Veil | Veil self-spell | 1,200 | 2 | 30 turns | Meditation yield ×1.5 |
 
 Recasting an active spell refreshes its duration; buffs don't stack.
 
@@ -127,11 +128,11 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 
 | School | Hex | Mana | Turns | Effect on success |
 |---|---|---|---|---|
-| School A | Hex A | 2,000 | 2 | Kills 5% of every unit type |
-| School B | Hex B | 2,000 | 2 | Destroys 8% of their gold |
-| School C | Hex C | 2,000 | 2 | Takes 10% of their mana; you keep what fits in your storage |
-| School D | Hex D | 2,000 | 2 | Burns 3% of their buildings |
-| School E | Hex E | 2,500 | 2 | They lose 3 turns on hand |
+| Dawn | Dawn hex | 2,000 | 2 | Kills 5% of every unit type |
+| Grove | Grove hex | 2,000 | 2 | Destroys 8% of their gold |
+| Ember | Ember hex | 2,000 | 2 | Takes 10% of their mana; you keep what fits in your storage |
+| Umbra | Umbra hex | 2,000 | 2 | Burns 3% of their buildings |
+| Veil | Veil hex | 2,500 | 2 | They lose 3 turns on hand |
 
 - **Chance to land:** 70%, +15 points if your school is strong against theirs, −15 if weak.
 - The **Ward spell** is a self-spell every school knows: 1,000 mana, 2 turns, lasts 30 of your turns, and halves the
@@ -184,16 +185,15 @@ A simulation of a full round answers several of these with numbers, and proposes
 ## Names to decide
 
 Mageborn's names are adopted (18 Oct 2026) and replace these as the rework reaches each part; until then, today's
-build keeps its placeholders. The ids stored
-with a game (`MagicSchool.A`, `"hex-c"`, `"unit-3"`) stay neutral, so naming them later changes only the display text,
-never saved data. Where each name lives:
+build keeps its placeholders. The schools are named (Dawn, Grove, Ember, Umbra, Veil; the enum members are stored, so
+renaming a school changes saved data). The spell and unit ids stored with a game (`"hex-c"`, `"unit-3"`) stay neutral,
+so naming those later changes only the display text, never saved data. What's still a placeholder:
 
 | Placeholder | What it is | Where to rename it |
 |---|---|---|
-| School A–E | The five schools, a ring: each is strong against the next | `MagicSchoolExtensions.DisplayName` |
-| Self-spell A–E | Each school's own buff (gold, exploring, mana, building cost, meditation) | `SpellBook.All` (name and description) |
+| Dawn self-spell … Veil self-spell | Each school's own buff (gold, exploring, mana, building cost, meditation) | `SpellBook.All` (name and description) |
 | Ward spell | The buff every school knows: halves hexes against you | `SpellBook.All` |
-| Hex A–E | Each school's hex (kill units, destroy gold, take mana, destroy buildings, take turns) | `SpellBook.Hexes` |
+| Dawn hex … Veil hex | Each school's hex (kill units, destroy gold, take mana, destroy buildings, take turns) | `SpellBook.Hexes` |
 | Unit 1–3 | The three units: cheap defender, balanced, attacker | `UnitBook.All` |
 
 Not a placeholder: the game's name (Spellbound); "Mageborn" is the research's working title. Descriptions say what a thing does,

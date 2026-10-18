@@ -7,8 +7,11 @@ Realm; Skirmish is removed; these names are adopted).
 
 ## What's built
 
-Nothing of Mageborn yet. Each step of the rework adds a line here, the way the rules are built: see the order in
-[realm-rework.md](realm-rework.md).
+Each step of the rework adds a line here; the order is in [realm-rework.md](realm-rework.md).
+
+- **The five schools** are named and in wheel order (Dawn, Grove, Ember, Umbra, Veil), with each school's neighbours
+  and opposites as data (`MagicSchoolExtensions`). Their effects are still today's (a counter ring in battles and
+  hexes, one self-spell each) until the wheel costs and battle steps.
 
 ## Summary
 

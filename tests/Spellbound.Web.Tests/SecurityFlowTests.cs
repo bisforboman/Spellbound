@@ -173,7 +173,7 @@ public sealed partial class SecurityFlowTests : TestDatabase
         var id = AccountService.IdFor(AccountEndpoints.DevProvider, Merlin);
         var game = factory.Services.GetRequiredService<GameService>();
         await factory.Services.GetRequiredService<RoundKeeper>().TickAsync();
-        await game.CreateMageAsync(id, "Merlin", Spellbound.Domain.MagicSchool.C);
+        await game.CreateMageAsync(id, "Merlin", Spellbound.Domain.MagicSchool.Ember);
         await game.ExploreAsync(id, 3);
 
         var download = await client.GetAsync(new Uri("/Account/Data", UriKind.Relative));

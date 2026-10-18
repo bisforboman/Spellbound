@@ -17,7 +17,7 @@ public class HostileTests
     private static Mage NewMage(string name, MagicSchool school, GameRules? rules = null) =>
         Mage.Create($"user-{name}", name, school, T0, rules ?? Rules);
 
-    private static Mage Attacker(MagicSchool school = MagicSchool.A, int knights = 400)
+    private static Mage Attacker(MagicSchool school = MagicSchool.Dawn, int knights = 400)
     {
         var mage = NewMage("Merlin", school);
         mage.Recruit("unit-3", knights, T0, Rules);
@@ -27,8 +27,8 @@ public class HostileTests
     [Fact]
     public void Winning_attack_takes_land_and_destroys_buildings_on_it()
     {
-        var attacker = Attacker(MagicSchool.A);
-        var defender = NewMage("Morgana", MagicSchool.C);
+        var attacker = Attacker(MagicSchool.Dawn);
+        var defender = NewMage("Morgana", MagicSchool.Ember);
         defender.Build(BuildingType.Town, 190, T0, Rules); // fully built, so lost acres take buildings with them
         var turns = attacker.Turns;
 
@@ -42,7 +42,7 @@ public class HostileTests
         Assert.Equal(225, defender.BuiltLand);
         Assert.Equal(400 - 32, attacker.UnitCount("unit-3")); // 8% lost on a win
         Assert.Equal("You attacked Morgana and broke through, taking 25 acres.", result.Report.Lines[0]);
-        Assert.Equal("Merlin (School A) attacked you and broke through. You lost 25 acres.", result.TargetLines[0]);
+        Assert.Equal("Merlin (Dawn) attacked you and broke through. You lost 25 acres.", result.TargetLines[0]);
         Assert.Contains("Of your buildings, 2 nodes and 23 towns were destroyed in the fighting.", result.TargetLines);
     }
 
@@ -50,7 +50,7 @@ public class HostileTests
     public void Losing_attack_costs_units_and_turns_but_no_land()
     {
         var attacker = Attacker(knights: 50); // attack 300 against 500 from the defender's land
-        var defender = NewMage("Morgana", MagicSchool.C);
+        var defender = NewMage("Morgana", MagicSchool.Ember);
         defender.Recruit("unit-1", 100, T0, Rules);
 
         var result = attacker.Attack(defender, T0, Rules, Even);
@@ -60,19 +60,19 @@ public class HostileTests
         Assert.Equal(250, defender.Land);
         Assert.Equal(50 - 6, attacker.UnitCount("unit-3")); // 12% lost on a loss
         Assert.Equal(100 - 5, defender.UnitCount("unit-1")); // 5% lost when holding
-        Assert.Equal("Merlin (School A) attacked you, but your defenses held.", result.TargetLines[0]);
+        Assert.Equal("Merlin (Dawn) attacked you, but your defenses held.", result.TargetLines[0]);
     }
 
     [Fact]
     public void Counter_school_strengthens_the_attack()
     {
-        var attacker = Attacker(MagicSchool.A);
-        var defender = NewMage("Morgana", MagicSchool.B); // School A is strong against School B
+        var attacker = Attacker(MagicSchool.Dawn);
+        var defender = NewMage("Morgana", MagicSchool.Grove); // Dawn is strong against Grove
 
         var result = attacker.Attack(defender, T0, Rules, Even);
 
         Assert.Contains("Your attack power was 2,760 against their defense of 500.", result.Report.Lines); // 2,400 × 1.15
-        Assert.Contains("Your School A magic had the edge over their School B magic.", result.Report.Lines);
+        Assert.Contains("Your Dawn magic had the edge over their Grove magic.", result.Report.Lines);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class HostileTests
         static IReadOnlyList<string> Fight(int seed)
         {
             var attacker = Attacker(knights: 90); // 540 attack against 500 defense: the rolls decide it
-            var defender = NewMage("Morgana", MagicSchool.C);
+            var defender = NewMage("Morgana", MagicSchool.Ember);
             return attacker.Attack(defender, T0, Rules, new SeededRandom(seed)).Report.Lines;
         }
 
@@ -92,10 +92,10 @@ public class HostileTests
     public void Protected_target_cannot_be_attacked_and_nothing_changes()
     {
         var rules = Rules with { ProtectionTurns = 120 };
-        var attacker = NewMage("Merlin", MagicSchool.A, rules);
+        var attacker = NewMage("Merlin", MagicSchool.Dawn, rules);
         attacker.Recruit("unit-3", 50, T0, rules);
         attacker.Meditate(119, T0.AddHours(12), rules); // past protection
-        var defender = NewMage("Morgana", MagicSchool.C, rules);
+        var defender = NewMage("Morgana", MagicSchool.Ember, rules);
         var turns = attacker.Turns;
 
         var result = attacker.Attack(defender, T0.AddHours(12), rules, Even);
@@ -112,10 +112,10 @@ public class HostileTests
     public void Protected_attacker_cannot_attack()
     {
         var rules = Rules with { ProtectionTurns = 120 };
-        var attacker = NewMage("Merlin", MagicSchool.A, rules);
+        var attacker = NewMage("Merlin", MagicSchool.Dawn, rules);
         attacker.Recruit("unit-3", 50, T0, rules);
 
-        var result = attacker.Attack(NewMage("Morgana", MagicSchool.C), T0, rules, Even);
+        var result = attacker.Attack(NewMage("Morgana", MagicSchool.Ember), T0, rules, Even);
 
         Assert.False(result.Report.Succeeded);
         Assert.Equal(
@@ -129,7 +129,7 @@ public class HostileTests
         var rules = Rules with { ProtectionDuration = TimeSpan.FromHours(72) }; // and no protection turns
         var attacker = Attacker(); // created at T0, so its own protection ends at T0 + 72 h
         var born = T0.AddHours(72);
-        var defender = Mage.Create("owner-Morgana", "Morgana", MagicSchool.C, born, rules);
+        var defender = Mage.Create("owner-Morgana", "Morgana", MagicSchool.Ember, born, rules);
 
         var early = attacker.Attack(defender, born.AddHours(71), rules, Even);
         var late = attacker.Attack(defender, born.AddHours(73), rules, Even);
@@ -144,7 +144,7 @@ public class HostileTests
     public void Protection_message_names_what_is_left_and_never_a_negative_count()
     {
         var rules = Rules with { ProtectionTurns = 120, ProtectionDuration = TimeSpan.FromHours(72) };
-        var mage = NewMage("Merlin", MagicSchool.A, rules);
+        var mage = NewMage("Merlin", MagicSchool.Dawn, rules);
 
         Assert.Equal("for another 3 days 0 hours and until you've spent 120 more turns", mage.DescribeProtection(T0, rules));
         mage.Meditate(100, T0, rules);
@@ -158,7 +158,7 @@ public class HostileTests
     public void Each_battle_lost_in_the_window_halves_the_land_the_next_win_takes()
     {
         var attacker = Attacker();
-        var defender = NewMage("Morgana", MagicSchool.C);
+        var defender = NewMage("Morgana", MagicSchool.Ember);
 
         var first = attacker.Attack(defender, T0, Rules, Even);
         var second = attacker.Attack(defender, T0, Rules, Even);
@@ -178,7 +178,7 @@ public class HostileTests
     public void A_loss_older_than_the_window_is_forgotten()
     {
         var attacker = Attacker();
-        var defender = NewMage("Morgana", MagicSchool.C);
+        var defender = NewMage("Morgana", MagicSchool.Ember);
 
         attacker.Attack(defender, T0, Rules, Even);
         var later = attacker.Attack(defender, T0.AddHours(73), Rules, Even); // the window is 72 hours
@@ -198,7 +198,7 @@ public class HostileTests
     public void A_battle_the_defender_held_does_not_count()
     {
         var weak = Attacker(knights: 50); // 300 attack against 500 + 300 defense
-        var defender = NewMage("Morgana", MagicSchool.C);
+        var defender = NewMage("Morgana", MagicSchool.Ember);
         defender.Recruit("unit-1", 100, T0, Rules);
 
         Assert.Equal("You attacked Morgana, but their defenses held.", weak.Attack(defender, T0, Rules, Even).Report.Lines[0]);
@@ -212,7 +212,7 @@ public class HostileTests
     {
         var attacker = Attacker();
         attacker.Explore(40, T0, Rules); // well past 417 acres, so 250 is below 60%
-        var defender = NewMage("Morgana", MagicSchool.C);
+        var defender = NewMage("Morgana", MagicSchool.Ember);
 
         var result = attacker.Attack(defender, T0, Rules, Even);
 
@@ -224,8 +224,8 @@ public class HostileTests
     [Fact]
     public void Attack_needs_an_army_and_a_different_target()
     {
-        var mage = NewMage("Merlin", MagicSchool.A);
-        Assert.False(mage.Attack(NewMage("Morgana", MagicSchool.C), T0, Rules, Even).Report.Succeeded);
+        var mage = NewMage("Merlin", MagicSchool.Dawn);
+        Assert.False(mage.Attack(NewMage("Morgana", MagicSchool.Ember), T0, Rules, Even).Report.Succeeded);
 
         mage.Recruit("unit-3", 10, T0, Rules);
         Assert.Equal("You can't target yourself.", mage.Attack(mage, T0, Rules, Even).Report.Lines[0]);
@@ -234,8 +234,8 @@ public class HostileTests
     [Fact]
     public void Mana_drain_takes_mana_from_the_target()
     {
-        var caster = NewMage("Merlin", MagicSchool.C);
-        var target = NewMage("Morgana", MagicSchool.A);
+        var caster = NewMage("Merlin", MagicSchool.Ember);
+        var target = NewMage("Morgana", MagicSchool.Dawn);
 
         var result = caster.CastHex("hex-c", target, T0, Rules, new FixedRandom(0));
 
@@ -243,14 +243,14 @@ public class HostileTests
         Assert.Equal(1_800, target.Mana);
         // 2,000 - 2,000 for the spell + 200 drained + 2 turns × 200 node income.
         Assert.Equal(600, caster.Mana);
-        Assert.Equal("Merlin (School C) cast Hex C at you: 200 of your mana was drained.", result.TargetLines[0]);
+        Assert.Equal("Merlin (Ember) cast Ember hex at you: 200 of your mana was drained.", result.TargetLines[0]);
     }
 
     [Fact]
     public void Barrier_halves_the_chance_a_hex_lands()
     {
-        var caster = NewMage("Merlin", MagicSchool.C);
-        var target = NewMage("Morgana", MagicSchool.A);
+        var caster = NewMage("Merlin", MagicSchool.Ember);
+        var target = NewMage("Morgana", MagicSchool.Dawn);
         Assert.Equal(0.7, caster.HexChance(target, Rules), 3);
 
         Assert.True(caster.CastHex("hex-c", target, T0, Rules, Even).Report.Succeeded);
@@ -263,25 +263,25 @@ public class HostileTests
 
         Assert.True(result.Report.Succeeded);
         Assert.Equal(mana, target.Mana);
-        Assert.Equal("Merlin (School C) cast Hex C at you, but it was turned aside.", result.TargetLines[0]);
+        Assert.Equal("Merlin (Ember) cast Ember hex at you, but it was turned aside.", result.TargetLines[0]);
     }
 
     [Fact]
     public void Counter_school_makes_hexes_likelier()
     {
-        var caster = NewMage("Merlin", MagicSchool.C);
+        var caster = NewMage("Merlin", MagicSchool.Ember);
 
-        Assert.Equal(0.85, caster.HexChance(NewMage("Morgana", MagicSchool.D), Rules), 3);
-        Assert.Equal(0.55, caster.HexChance(NewMage("Morgana", MagicSchool.B), Rules), 3);
+        Assert.Equal(0.85, caster.HexChance(NewMage("Morgana", MagicSchool.Umbra), Rules), 3);
+        Assert.Equal(0.55, caster.HexChance(NewMage("Morgana", MagicSchool.Grove), Rules), 3);
     }
 
     [Fact]
     public void Hex_D_burns_buildings_and_hex_E_takes_turns()
     {
-        var target = NewMage("Morgana", MagicSchool.A);
+        var target = NewMage("Morgana", MagicSchool.Dawn);
 
-        NewMage("Merlin", MagicSchool.D).CastHex("hex-d", target, T0, Rules, new FixedRandom(0));
-        NewMage("Mordred", MagicSchool.E, Rules with { StartingMana = 5_000 }).CastHex("hex-e", target, T0, Rules, new FixedRandom(0));
+        NewMage("Merlin", MagicSchool.Umbra).CastHex("hex-d", target, T0, Rules, new FixedRandom(0));
+        NewMage("Mordred", MagicSchool.Veil, Rules with { StartingMana = 5_000 }).CastHex("hex-e", target, T0, Rules, new FixedRandom(0));
 
         Assert.Equal(60 - 1, target.BuiltLand); // 3% of 60
         Assert.Equal(100 - 3, target.Turns);
@@ -290,8 +290,8 @@ public class HostileTests
     [Fact]
     public void Hex_without_enough_mana_or_from_another_school_changes_nothing()
     {
-        var caster = NewMage("Merlin", MagicSchool.E); // Hex E costs 2,500, the mage has 2,000
-        var target = NewMage("Morgana", MagicSchool.A);
+        var caster = NewMage("Merlin", MagicSchool.Veil); // Veil hex costs 2,500, the mage has 2,000
+        var target = NewMage("Morgana", MagicSchool.Dawn);
 
         Assert.False(caster.CastHex("hex-e", target, T0, Rules, Even).Report.Succeeded);
         Assert.False(caster.CastHex("hex-a", target, T0, Rules, Even).Report.Succeeded);

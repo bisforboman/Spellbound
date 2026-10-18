@@ -108,7 +108,7 @@ public sealed class BackupTests : TestDatabase
         await db.ExecuteAsync(
             "INSERT INTO games (id, mode, number, starts_at, ends_at, rules, created_at) VALUES (1, $1, $2, $3, $4, '{}', $3)",
             SpellboundHost.RealmMode, round.Number, round.StartsAt, round.EndsAt);
-        return await db.InsertMageAsync(1, Mage.Create("account-1", "Merlin", MagicSchool.C, T0, GameRules.Default));
+        return await db.InsertMageAsync(1, Mage.Create("account-1", "Merlin", MagicSchool.Ember, T0, GameRules.Default));
     });
 
     private sealed class ManualTime(DateTimeOffset start) : TimeProvider

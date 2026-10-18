@@ -96,7 +96,7 @@ The Realm reworked to the owner's research ([design](mageborn-design.md)); the s
 [realm-rework.md](realm-rework.md). Each step is one PR, with tests, a simulation run where it applies, and a playtest
 step.
 - [x] The design brought into the repo, decisions recorded, Skirmish removed
-- [ ] The schools renamed Dawn, Grove, Ember, Umbra and Veil, with the wheel order as data
+- [x] The schools renamed Dawn, Grove, Ember, Umbra and Veil, with the wheel order as data
 - [ ] The Realm simulation (`tools/Spellbound.Balance`) extended to replay days 1–7 with bot strategies, and a
   baseline on today's rules, so every later step is measured
 - [ ] Turn bank numbers, season phases and published net power

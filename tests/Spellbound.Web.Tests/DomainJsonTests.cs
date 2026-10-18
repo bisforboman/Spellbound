@@ -67,10 +67,10 @@ public sealed class DomainJsonTests
     /// <summary>A mage with something in every private collection: an army, a spell running, and a lost battle.</summary>
     private static Mage BusyMage()
     {
-        var mage = Mage.Create("owner-1", "Merlin", MagicSchool.C, T0, Rules);
+        var mage = Mage.Create("owner-1", "Merlin", MagicSchool.Ember, T0, Rules);
         Assert.True(mage.Recruit("UNIT-3", 50, T0, Rules).Succeeded);
         Assert.True(mage.Cast("self-c", T0, Rules).Succeeded);
-        var attacker = Mage.Create("owner-2", "Morgana", MagicSchool.D, T0, Rules);
+        var attacker = Mage.Create("owner-2", "Morgana", MagicSchool.Umbra, T0, Rules);
         attacker.Recruit("unit-3", 400, T0, Rules);
         Assert.True(attacker.Attack(mage, T0, Rules, new FixedRandom(0.5)).Report.Succeeded);
         return mage;

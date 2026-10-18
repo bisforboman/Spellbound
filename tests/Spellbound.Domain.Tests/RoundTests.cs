@@ -46,10 +46,10 @@ public class RoundTests
     public void Hall_of_fame_keeps_the_top_mages_by_land_and_networth()
     {
         var rules = Rules with { HallOfFameSize = 2, StartingGold = 200_000 };
-        var small = Mage.Create("u1", "Ash", MagicSchool.A, T0, rules);
-        var big = Mage.Create("u2", "Birch", MagicSchool.B, T0, rules);
+        var small = Mage.Create("u1", "Ash", MagicSchool.Dawn, T0, rules);
+        var big = Mage.Create("u2", "Birch", MagicSchool.Grove, T0, rules);
         big.Explore(10, T0, rules);
-        var armed = Mage.Create("u3", "Cedar", MagicSchool.C, T0, rules);
+        var armed = Mage.Create("u3", "Cedar", MagicSchool.Ember, T0, rules);
         armed.Recruit("unit-3", 400, T0, rules); // more networth than Birch's extra land
         var round = Round.First(T0, rules.RoundLength);
 
