@@ -19,13 +19,16 @@ public sealed class SpellboundHost(GameRules rules) : IRoundLifecycle, IPlayerSu
     }
 
     /// <summary>
-    /// Deletes the player's mage and news from every round, so a deleted account leaves no mage in Rivals to farm.
-    /// Halls of fame keep their names: they're a record of finished rounds.
+    /// Deletes the player's mage, news and logged actions from every round, so a deleted account leaves no mage in
+    /// Rivals to farm. Other players' logged attacks on them stay, without their account id. Halls of fame keep their
+    /// names: they're a record of finished rounds.
     /// </summary>
     public async Task OnAccountDeletedAsync(DbSession db, string ownerId)
     {
         await db.ExecuteAsync("DELETE FROM mages WHERE owner_id = $1", ownerId);
         await db.ExecuteAsync("DELETE FROM news WHERE owner_id = $1", ownerId);
+        await db.ExecuteAsync("DELETE FROM actions WHERE owner_id = $1", ownerId); // their own actions go
+        await db.ExecuteAsync("UPDATE actions SET target_owner_id = NULL WHERE target_owner_id = $1", ownerId); // others' stay
     }
 
     public async Task<IReadOnlyDictionary<string, PlayerSummary>> GetAsync(DbSession db, Round round) =>

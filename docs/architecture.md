@@ -112,6 +112,20 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
 - **One mage per player per round** comes from the key (round, owner id): a second insert does nothing. Old
   rounds' mages and news stay in the database; nothing reads them after the reset.
 - **Times** are stored as UTC (`timestamptz`); `DbSession` converts any `DateTimeOffset` with another offset.
+  `GameService.Now` is rounded to whole microseconds, PostgreSQL's precision, so a logged time is exactly the time the
+  domain saw.
+- **Action log** (`actions`, `Data/ActionLog.cs`): every successful player action (create, explore, build, meditate,
+  cast, recruit, attack, hex) writes one row in its own transaction, so the log holds exactly what happened. A row has
+  the round, the player and the target's owner, the time, the action's name and inputs, the random numbers it used
+  (`RecordingRandom` wraps the luck, so the domain doesn't change), the report lines (and the target's), the mage's
+  main numbers afterwards (`state`, and `target_state` for the other mage in an attack or hex, for balance queries)
+  and a hash of the `GameRules` in force. Failed actions change
+  nothing and aren't logged; nor are alert resets, round resets or admin actions. With a mage as it was before an
+  action, the same time, rules and draws reproduce the action exactly (`ActionLogTests` replays an attack and gets
+  the same saved mages); a replay tool isn't built. If rules were tuned mid-round, replaying across the change needs
+  the old rules, which the hash identifies. Deleting an account deletes its rows and clears it from others' attacks.
+  The admin page looks up a mage's latest actions by name. Volume: a few rows per player per check-in, under 1 KB
+  each; drop old rounds with `DELETE FROM actions WHERE round < N`, or partition by round if it ever matters.
 - **Rounds:** `current_round` holds the round being played, in one row. `RoundKeeper`, a hosted `BackgroundService`,
   checks it every minute: it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row and
   moves the round on in one transaction, with the round row locked, so two hosts can't both reset.
