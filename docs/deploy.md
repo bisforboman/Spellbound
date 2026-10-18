@@ -76,6 +76,17 @@ updates them when it starts. Players see a short reconnect while the app restart
 
 - **Logs**: `docker compose logs -f app` (or `db`, `caddy`).
 - **Look at the data**: `docker compose exec db psql -U spellbound` (for example `select * from current_round;`).
+- **What did a player do?** The admin page's **Action log** shows a mage's latest actions. For more, query the
+  `actions` table, for example everything one mage did today, or attacks per target this round:
+
+  ```sql
+  select at, action, inputs, result->'lines'->>0 from actions
+    where round = (select number from current_round) and owner_id = (select owner_id from mages
+      where round = (select number from current_round) and data->>'name' = 'Merlin')
+      and at > now() - interval '1 day' order by at;
+  select target_owner_id, count(*) from actions where round = (select number from current_round) and action = 'attack'
+    group by 1 order by 2 desc;
+  ```
 - **Health**: `https://your.domain/healthz` answers `Healthy` while the app is up.
 - **Change a setting** (`GameRules__...`, admins): add it to the `environment` list of `app` in
   `docker-compose.yml` or to `.env`, then `docker compose up -d`.

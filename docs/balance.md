@@ -108,6 +108,7 @@ These change rules, so they need the owner's decision.
    warmonger hit the other 55 times for 2,631 acres), and every hit still costs the defender 10% of its units and sends
    an alert. For example, a defender loses no units when the take is below 1% of its land, or a mage can be attacked
    at most N times a day. Best decided with real players' data: real players may not bother with 40-acre attacks.
+   Every attack is now in the `actions` table, so after a live round the per-target counts can be read straight off it.
 2. **Keep upkeep as it is.** With a 72-hour memory the warmongers no longer run away with the round, and their upkeep peaks
    above their income.
 

@@ -22,7 +22,11 @@ builder.Services.AddSingleton<SpellboundHost>();
 builder.Services.AddSingleton<IRoundLifecycle>(sp => sp.GetRequiredService<SpellboundHost>());
 builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<SpellboundHost>());
 builder.Services.AddSingleton<IAccountLifecycle>(sp => sp.GetRequiredService<SpellboundHost>());
-builder.Services.Configure<AdminPageOptions>(options => options.GameSections.Add(typeof(GameRulesAdmin)));
+builder.Services.Configure<AdminPageOptions>(options =>
+{
+    options.GameSections.Add(typeof(ActionLogAdmin));
+    options.GameSections.Add(typeof(GameRulesAdmin));
+});
 
 var app = builder.Build();
 

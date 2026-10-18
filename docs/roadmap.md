@@ -45,11 +45,11 @@ Goal: real players finish a round, and we learn from it.
 - [x] Sign in with Google instead of passwords (no password storage, resets or lockouts; a Development-only sign-in for
   local runs and tests). Needs the owner's Google OAuth client before deploy
 - [x] Persistence on plain Npgsql instead of EF Core: SQL migration files, row locks for concurrent actions
-- [ ] Privacy notice before sign-up: what's stored (email, hashed network, game data), why, how long, and how to delete
-  your account
+- [ ] Privacy notice before sign-up: what's stored (email, hashed network, game data and the action log), why, how
+  long, and how to delete your account
 - [ ] Terms and rules page, and an "ask an admin" contact path (the server sends no email)
 - [ ] Alerts on unhandled errors and failed nightly backups
-- [ ] Action log: an append-only `actions` table written with each save (round, player, time, a named action, its
+- [x] Action log: an append-only `actions` table written with each save (round, player, time, a named action, its
   inputs, random draws, result and a hash of the rules), like OpenDominion's history. For disputes, audits and real
   balance data
 - [ ] First-round checklist: what to watch (attacks per target, whether once-a-day players stay, the hall of fame), so
