@@ -17,6 +17,7 @@ services:
       Privacy__Contact: ${PRIVACY_CONTACT:?Set PRIVACY_CONTACT in .env}
       Privacy__Hosting: ${PRIVACY_HOSTING:?Set PRIVACY_HOSTING in .env}
       Privacy__OffsiteBackups: ${PRIVACY_OFFSITE_BACKUPS:-}
+      Alerts__WebhookUrl: ${ALERT_WEBHOOK_URL:-}
     volumes:
       - spellbound-data:/data
     # No ports: only Caddy can reach the app, which is what makes trusting its forwarded headers safe.

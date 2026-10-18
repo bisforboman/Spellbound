@@ -27,6 +27,12 @@ public static class GameHostSetup
         services.AddSingleton(sp => NpgsqlDataSource.Create(HostStore.ConnectionString(sp.GetRequiredService<IConfiguration>())));
         services.AddSingleton<HostDatabase>();
 
+        // Alerts: every error-level log entry is listed on the admin page and, with Alerts:WebhookUrl, pushed to the owner.
+        services.AddSingleton<AlertSink>();
+        services.AddSingleton<ILoggerProvider>(sp => new AlertLoggerProvider(sp.GetRequiredService<AlertSink>(), sp.GetRequiredService<TimeProvider>()));
+        services.AddHttpClient(AlertSender.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(10));
+        services.AddHostedService<AlertSender>();
+
         // Rounds, admin, backups, multi-account signals.
         services.AddSingleton<RoundKeeper>();
         services.AddHostedService(sp => sp.GetRequiredService<RoundKeeper>());

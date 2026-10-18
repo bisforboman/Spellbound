@@ -48,7 +48,7 @@ Goal: real players finish a round, and we learn from it.
 - [x] Privacy notice before sign-up: what's stored (email, hashed network, game data and the action log), why, how
   long, and how to delete your account
 - [ ] Terms and rules page, and an "ask an admin" contact path (the server sends no email)
-- [ ] Alerts on unhandled errors and failed nightly backups
+- [x] Alerts on unhandled errors and failed nightly backups
 - [x] Action log: an append-only `actions` table written with each save (round, player, time, a named action, its
   inputs, random draws, result and a hash of the rules), like OpenDominion's history. For disputes, audits and real
   balance data

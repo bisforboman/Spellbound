@@ -1,0 +1,116 @@
+using System.Collections.Concurrent;
+using System.Net.Http.Json;
+using System.Threading.Channels;
+
+namespace Spellbound.Web.Hosting;
+
+/// <summary>Something that went wrong: an error-level log entry, such as an unhandled exception or a failed backup.</summary>
+/// <param name="Source">Where it was logged (the logger's category).</param>
+/// <param name="Exception">The exception's type, if there was one.</param>
+public sealed record Problem(DateTimeOffset At, string Source, string Message, string? Exception);
+
+/// <summary>
+/// Collects problems (every error-level log entry) for the admin page, and hands them to <see cref="AlertSender"/>.
+/// It has no dependencies, so the logging system can hold it without a loop.
+/// </summary>
+public sealed class AlertSink
+{
+    public const int Kept = 50;
+
+    private readonly ConcurrentQueue<Problem> recent = new();
+    private readonly Channel<Problem> outbox = Channel.CreateBounded<Problem>(
+        new BoundedChannelOptions(500) { FullMode = BoundedChannelFullMode.DropOldest });
+
+    /// <summary>The latest problems since the app started, newest first.</summary>
+    public IReadOnlyList<Problem> Recent => [.. recent.Reverse()];
+
+    public ChannelReader<Problem> Outbox => outbox.Reader;
+
+    public void Report(Problem problem)
+    {
+        recent.Enqueue(problem);
+        while (recent.Count > Kept && recent.TryDequeue(out _))
+        {
+        }
+
+        outbox.Writer.TryWrite(problem);
+    }
+}
+
+/// <summary>Sends every error-level log entry, from any part of the app, to the <see cref="AlertSink"/>.</summary>
+public sealed class AlertLoggerProvider(AlertSink sink, TimeProvider time) : ILoggerProvider
+{
+    public ILogger CreateLogger(string categoryName) => new AlertLogger(sink, time, categoryName);
+
+    public void Dispose()
+    {
+    }
+
+    private sealed class AlertLogger(AlertSink sink, TimeProvider time, string category) : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        // The sender's own failures are warnings, so an unreachable webhook can't alert about itself in a loop.
+        public bool IsEnabled(LogLevel logLevel) => logLevel > LogLevel.Warning && category != typeof(AlertSender).FullName;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (IsEnabled(logLevel))
+            {
+                sink.Report(new Problem(time.GetUtcNow(), category, formatter(state, exception), exception?.GetType().FullName));
+            }
+        }
+    }
+}
+
+/// <summary>
+/// Pushes problems to the owner when Alerts:WebhookUrl is set: an ntfy topic URL (a phone notification) or a Discord
+/// webhook URL (detected by its host). A push says only where it happened and the exception's type, never the message,
+/// which can hold player data; the details are on the admin page. Each kind of problem is pushed at most once an hour.
+/// </summary>
+public sealed class AlertSender(AlertSink sink, IHttpClientFactory http, IConfiguration configuration, ILogger<AlertSender> logger)
+    : BackgroundService
+{
+    public const string HttpClientName = "alerts";
+
+    public static readonly TimeSpan Quiet = TimeSpan.FromHours(1);
+
+    private readonly Dictionary<string, (DateTimeOffset SentAt, int Since)> sent = [];
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await foreach (var problem in sink.Outbox.ReadAllAsync(stoppingToken))
+        {
+            if (configuration["Alerts:WebhookUrl"] is not { Length: > 0 } url || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                continue;
+            }
+
+            var kind = $"{problem.Source}|{problem.Exception}";
+            var now = problem.At; // when it happened, not when the queue got to it
+            if (sent.TryGetValue(kind, out var last) && now - last.SentAt < Quiet)
+            {
+                sent[kind] = (last.SentAt, last.Since + 1); // counted, and mentioned in the next push of this kind
+                continue;
+            }
+
+            var more = last.Since > 0 ? $" ({last.Since} more like it since the last alert)" : "";
+            var text = $"Spellbound: an error in {problem.Source}{(problem.Exception is { } type ? $" ({type})" : "")}{more}. "
+                       + "Details on the admin page.";
+            try
+            {
+                using var client = http.CreateClient(HttpClientName);
+                using var response = uri.Host is "discord.com" or "discordapp.com"
+                    ? await client.PostAsJsonAsync(uri, new { content = text }, stoppingToken)
+                    : await client.PostAsync(uri, new StringContent(text), stoppingToken); // ntfy: the body is the message
+                response.EnsureSuccessStatusCode();
+                sent[kind] = (now, 0);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Couldn't send an alert to the webhook.");
+            }
+        }
+    }
+}
