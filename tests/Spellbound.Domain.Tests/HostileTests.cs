@@ -35,6 +35,7 @@ public class HostileTests
         var result = attacker.Attack(defender, T0, Rules, Even);
 
         Assert.True(result.Report.Succeeded);
+        Assert.True(result.Report.Won);
         Assert.Equal(4, result.Report.TurnsSpent);
         Assert.Equal(turns - 4, attacker.Turns);
         Assert.Equal(275, attacker.Land);
@@ -56,6 +57,7 @@ public class HostileTests
         var result = attacker.Attack(defender, T0, Rules, Even);
 
         Assert.True(result.Report.Succeeded);
+        Assert.False(result.Report.Won);
         Assert.Equal(250, attacker.Land);
         Assert.Equal(250, defender.Land);
         Assert.Equal(50 - 6, attacker.UnitCount("unit-3")); // 12% lost on a loss
@@ -240,6 +242,7 @@ public class HostileTests
         var result = caster.CastHex("hex-c", target, T0, Rules, new FixedRandom(0));
 
         Assert.True(result.Report.Succeeded);
+        Assert.Null(result.Report.Won); // a hex isn't a battle
         Assert.Equal(1_800, target.Mana);
         // 2,000 - 2,000 for the spell + 200 drained + 2 turns × 200 node income.
         Assert.Equal(600, caster.Mana);

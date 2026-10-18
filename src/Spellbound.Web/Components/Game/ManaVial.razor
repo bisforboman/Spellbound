@@ -1,0 +1,19 @@
+@using System.Globalization
+@* Mana as a flask of the school's ink, filled to the share of storage in use; it glows when full. *@
+<div class="vial @(Mana >= Capacity ? "vial--full" : null)" role="meter" aria-label="Mana"
+     aria-valuemin="0" aria-valuemax="@Capacity" aria-valuenow="@Mana">
+    <div class="vial-glass"><div class="vial-liquid" style="--fill:@Fill"></div></div>
+    <div><b>@N(Mana)</b> / @N(Capacity) mana</div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public int Mana { get; set; }
+
+    [Parameter, EditorRequired]
+    public int Capacity { get; set; }
+
+    private string Fill => (Capacity <= 0 ? 0 : Math.Clamp((double)Mana / Capacity, 0, 1)).ToString("0.###", CultureInfo.InvariantCulture);
+
+    private static string N(int value) => value.ToString("N0", CultureInfo.InvariantCulture);
+}

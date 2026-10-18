@@ -1,3 +1,4 @@
+@using System.Globalization
 @implements IDisposable
 @inject GameService Game
 
@@ -6,9 +7,14 @@
     var turns = TurnClock.Accrue(Mage.Turns, Mage.TurnsAccruedAt, now, Rules).Turns;
     var next = Mage.TimeUntilNextTurn(now, Rules);
 }
-<div class="turns">
+@* The turn moon waxes as the next turn comes; at the cap it is a full blood moon, since new turns are being lost. *@
+<div class="turns @(next is null ? "turns-capped" : null)">
+    <svg class="moon" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="3" opacity="0.5" />
+        <path d="@MoonPath(next)" fill="currentColor" fill-opacity="0.8" />
+    </svg>
     <div class="turns-line">
-        <span><Glyph Kind="GlyphKind.Turns" /><b>@turns</b> / @Rules.MaxTurns turns</span>
+        <span><b>@turns</b> / @Rules.MaxTurns turns</span>
         @if (next is { } wait)
         {
             <span>next in @((int)wait.TotalMinutes):@wait.Seconds.ToString("00")</span>
@@ -18,7 +24,6 @@
             <span class="text-danger">at the cap, new turns are lost</span>
         }
     </div>
-    <progress max="@Rules.MaxTurns" value="@turns" aria-label="Turns on hand"></progress>
 </div>
 
 @code {
@@ -29,6 +34,19 @@
     public GameRules Rules { get; set; } = default!;
 
     private Timer? timer;
+
+    /// <summary>The lit part of the moon: a crescent that grows to a full disc as the wait for the next turn runs out.</summary>
+    private string MoonPath(TimeSpan? wait)
+    {
+        var lit = wait is { } w ? Math.Clamp(1 - (w / Rules.TurnInterval), 0, 1) : 1;
+        if (lit <= 0.001)
+        {
+            return "";
+        }
+
+        var rx = Math.Round(40 * Math.Abs(1 - (2 * lit)), 2).ToString(CultureInfo.InvariantCulture);
+        return $"M50 10A40 40 0 0 1 50 90A{rx} 40 0 0 {(lit < 0.5 ? 0 : 1)} 50 10Z";
+    }
 
     protected override void OnAfterRender(bool firstRender)
     {

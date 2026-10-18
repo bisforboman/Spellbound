@@ -4,8 +4,6 @@ namespace Spellbound.Web.Components.Game;
 public enum GlyphKind
 {
     Gold,
-    Mana,
-    Turns,
     Land,
     Army,
     Defense,

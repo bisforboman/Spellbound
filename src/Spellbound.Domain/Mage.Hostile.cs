@@ -121,7 +121,7 @@ public sealed partial class Mage
         }
 
         var summary = SpendTurns(rules.AttackTurnCost, rules);
-        return new HostileReport(Report(rules.AttackTurnCost, summary, [.. ours]), theirs);
+        return new HostileReport(Report(rules.AttackTurnCost, summary, [.. ours]) with { Won = won }, theirs);
     }
 
     public HostileReport CastHex(string hexId, Mage target, DateTimeOffset now, GameRules rules, IRandomSource random)

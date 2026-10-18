@@ -180,9 +180,10 @@ it starts. "Needs" names the items that must come first.
 ### Look and feel
 The owner's art theme "The Burned Grimoire" ([theme.md](theme.md)), adopted 18 Oct 2026 and built before F2.
 - [x] **T1. Theme, phase 1** (S): fonts, palette, cards, buttons, school inks
-- [ ] **T2. Theme, phase 2** (M): each mage's sigil (generated from their name), the turn moon, the mana vial, battle
+- [x] **T2. Theme, phase 2** (M): each mage's sigil (generated from their name), the turn moon, the mana vial, battle
   stamps, SVG filters
-- [ ] **T3. Theme, later** (S): motion, a light variant
+- [ ] **T3. Theme, later** (S): the rest of the motion, a light variant, and the rough card edges and worn titles if
+  T4 finds the filters fast enough
 - [ ] **T4. Checked on a real phone** (owner): blackletter readable at 360 px, SVG filters fast enough, glyphs render
 
 ## Engineering

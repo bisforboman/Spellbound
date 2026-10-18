@@ -1,0 +1,13 @@
+@* A mage's sigil (SigilGenerator), inked in their school's colour. Decoration: the name is always written beside it. *@
+<span class="sigil" data-school="@School.ToString().ToLowerInvariant()" style="width:@(Size)px;height:@(Size)px" aria-hidden="true">@((MarkupString)SigilGenerator.Svg(Name, School))</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Name { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public MagicSchool School { get; set; }
+
+    [Parameter]
+    public int Size { get; set; } = 56;
+}
