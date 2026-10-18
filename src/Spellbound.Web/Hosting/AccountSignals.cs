@@ -1,7 +1,6 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
 
 namespace Spellbound.Web.Hosting;
 
@@ -13,7 +12,7 @@ public sealed record SharedNetwork(string Network, IReadOnlyList<string> OwnerId
 /// itself) with the time. The admin page lists networks that several accounts used recently. Households and mobile
 /// carriers share addresses, so the admin judges; nothing is banned automatically.
 /// </summary>
-public sealed class AccountSignals(IDbContextFactory<HostDb> dbs, TimeProvider time)
+public sealed class AccountSignals(HostDatabase database, TimeProvider time)
 {
     public const int NetworksKept = 20;
 
@@ -31,38 +30,35 @@ public sealed class AccountSignals(IDbContextFactory<HostDb> dbs, TimeProvider t
         }
 
         var network = await HashAsync(address);
-        await using var db = await dbs.CreateDbContextAsync();
-        var networks = await db.AccountNetworks.Where(n => n.OwnerId == ownerId).ToListAsync();
-        if (networks.Find(n => n.Network == network) is { } seen)
-        {
-            seen.LastSeen = time.GetUtcNow();
-        }
-        else
-        {
-            networks.Add(db.AccountNetworks.Add(new AccountNetwork { OwnerId = ownerId, Network = network, LastSeen = time.GetUtcNow() }).Entity);
-        }
-
-        db.AccountNetworks.RemoveRange(networks.OrderByDescending(n => n.LastSeen).Skip(NetworksKept));
-        try
-        {
-            await db.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex) when (ex is DbUpdateConcurrencyException || HostStore.IsDuplicateKey(ex))
-        {
-            // The same account signed in twice at once; one record of it is enough.
-        }
+        await using var db = await database.BeginAsync();
+        await db.ExecuteAsync(
+            """
+            INSERT INTO account_networks (owner_id, network, last_seen) VALUES ($1, $2, $3)
+            ON CONFLICT (owner_id, network) DO UPDATE SET last_seen = excluded.last_seen
+            """,
+            ownerId, network, time.GetUtcNow());
+        await db.ExecuteAsync(
+            """
+            DELETE FROM account_networks WHERE owner_id = $1 AND network NOT IN
+                (SELECT network FROM account_networks WHERE owner_id = $1 ORDER BY last_seen DESC LIMIT $2)
+            """,
+            ownerId, NetworksKept);
+        await db.CommitAsync();
     }
 
     /// <summary>Networks two or more accounts used within the window, most recent first.</summary>
     public async Task<IReadOnlyList<SharedNetwork>> GetSharedNetworksAsync()
     {
         var since = time.GetUtcNow() - Window;
-        await using var db = await dbs.CreateDbContextAsync();
-        var shared = db.AccountNetworks.Where(n => n.LastSeen >= since)
-            .GroupBy(n => n.Network)
-            .Where(g => g.Count() > 1) // the key is (owner, network), so each row is a different account
-            .Select(g => g.Key);
-        var uses = await db.AccountNetworks.Where(n => n.LastSeen >= since && shared.Contains(n.Network)).ToListAsync();
+        await using var db = await database.BeginAsync();
+        var uses = await db.QueryAsync(
+            """
+            SELECT network, owner_id, last_seen FROM account_networks
+            WHERE last_seen >= $1 AND network IN
+                (SELECT network FROM account_networks WHERE last_seen >= $1 GROUP BY network HAVING count(*) > 1)
+            """,
+            r => (Network: r.GetString(0), OwnerId: r.GetString(1), LastSeen: r.GetFieldValue<DateTimeOffset>(2)),
+            since);
 
         return
         [
@@ -82,25 +78,12 @@ public sealed class AccountSignals(IDbContextFactory<HostDb> dbs, TimeProvider t
 
     private async Task<byte[]> LoadOrCreateKeyAsync()
     {
-        await using (var db = await dbs.CreateDbContextAsync())
-        {
-            if (await db.ServerSecrets.FindAsync(KeyName) is { } existing)
-            {
-                return existing.Value;
-            }
-
-            db.ServerSecrets.Add(new ServerSecret { Name = KeyName, Value = RandomNumberGenerator.GetBytes(32) });
-            try
-            {
-                await db.SaveChangesAsync();
-            }
-            catch (DbUpdateException ex) when (HostStore.IsDuplicateKey(ex))
-            {
-                // Another request created it first; use theirs.
-            }
-        }
-
-        await using var fresh = await dbs.CreateDbContextAsync();
-        return (await fresh.ServerSecrets.FindAsync(KeyName))!.Value;
+        await using var db = await database.BeginAsync();
+        await db.ExecuteAsync(
+            "INSERT INTO server_secrets (name, value) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING",
+            KeyName, RandomNumberGenerator.GetBytes(32)); // the first request creates it; later ones keep it
+        var key = (await db.ScalarAsync<byte[]>("SELECT value FROM server_secrets WHERE name = $1", KeyName))!;
+        await db.CommitAsync();
+        return key;
     }
 }

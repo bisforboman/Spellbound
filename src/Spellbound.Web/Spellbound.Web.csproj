@@ -9,17 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Hosting/Sql/*.sql" />
+    <EmbeddedResource Include="Data/Sql/*.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Spellbound.Domain\Spellbound.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.13" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
   </ItemGroup>
 
 </Project>

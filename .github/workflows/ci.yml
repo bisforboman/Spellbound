@@ -25,10 +25,7 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore Spellbound.slnx
-      - run: dotnet tool restore
       - run: dotnet build Spellbound.slnx --no-restore -c Release
-      - name: Every model change has a migration
-        run: dotnet ef migrations has-pending-model-changes --project src/Spellbound.Web --no-build --configuration Release
       - run: dotnet test Spellbound.slnx --no-build -c Release
       - name: Balance simulation still runs
         run: dotnet run --project tools/Spellbound.Balance --no-build -c Release -- --days 3 --out "$RUNNER_TEMP/balance.md"

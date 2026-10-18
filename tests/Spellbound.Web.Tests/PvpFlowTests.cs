@@ -42,6 +42,27 @@ public sealed class PvpFlowTests : TestDatabase, IAsyncLifetime
     }
 
     [Fact]
+    public async Task Attacks_both_ways_at_once_neither_deadlock_nor_lose_land()
+    {
+        var defenderId = await CreateBothAsync();
+        var attackerId = (await Game.GetMageAsync(Attacker))!.Id;
+        await Game.RecruitAsync(Attacker, "knights", 400);
+        await Game.RecruitAsync(Defender, "knights", 400);
+        var landBefore = (await Game.GetMageAsync(Attacker))!.Land + (await Game.GetMageAsync(Defender))!.Land;
+
+        var reports = await Task.WhenAll(Enumerable.Range(0, 10).SelectMany(_ => new[]
+        {
+            Task.Run(() => Game.AttackAsync(Attacker, defenderId)),
+            Task.Run(() => Game.AttackAsync(Defender, attackerId)),
+        }));
+
+        Assert.DoesNotContain(reports, r => r.Lines[0].StartsWith("Your mage was busy", StringComparison.Ordinal));
+        Assert.Contains(reports, r => r.Succeeded);
+        var landAfter = (await Game.GetMageAsync(Attacker))!.Land + (await Game.GetMageAsync(Defender))!.Land;
+        Assert.Equal(landBefore, landAfter); // every acre taken arrived on the other side
+    }
+
+    [Fact]
     public async Task Recruited_army_is_saved()
     {
         await Game.CreateMageAsync(Attacker, "Merlin", MagicSchool.Tidal);

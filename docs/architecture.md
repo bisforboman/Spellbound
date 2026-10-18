@@ -4,7 +4,7 @@
 
 - **.NET 10**, with **Blazor Server** (interactive server rendering) for the UI, all in C#
 - **Sign-in with Google** (`Microsoft.AspNetCore.Authentication.Google`) and a cookie; no passwords are stored
-- **PostgreSQL 16** through **EF Core** (`Npgsql.EntityFrameworkCore.PostgreSQL`) for game data and accounts. It runs
+- **PostgreSQL 16** through plain **Npgsql** (SQL, no ORM) for game data and accounts. It runs
   in its own container next to the app
 - **xUnit** for domain tests, plus `WebApplicationFactory` integration tests for the web app
 
@@ -20,10 +20,11 @@ Spellbound.slnx
 src/
   Spellbound.Domain/        pure game rules: Mage, TurnClock, GameRules, SpellBook, UnitBook (no dependencies)
   Spellbound.Web/           Blazor app
-    Hosting/                the reusable game host: accounts, the database (HostDb), rounds, admin page, bans, backups,
+    Hosting/                the reusable game host: accounts, the database (HostDatabase, SQL scripts in Sql/), rounds,
+                            admin page, bans, backups,
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
     Components/Account/     sign-in and account pages (part of the host, not yet moved into Hosting/)
-    Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Migrations: the EF Core migrations)
+    Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL scripts)
 tools/
   Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
 tests/
@@ -42,16 +43,15 @@ extension points designed for a single game tend to come out wrong.
 - **Hosting never depends on the game.** It may use `Round` from the domain (the round itself knows nothing about
   Spellbound), and nothing else from `Spellbound.Domain` or the game's web code. `HostingBoundaryTests` enforces this
   on both the compiled types and the source files.
-- **The game plugs in** through `Hosting/GameHooks.cs`: `IGameModel` (the game's own tables, added to the host's
-  `HostDb`, so both can save in one transaction), `IRoundLifecycle` (round length, and what happens when a round
+- **The game plugs in** through `Hosting/GameHooks.cs`: `IGameSchema` (the game's own SQL scripts, migrated after
+  the host's; hooks get the host's `DbSession`, so both save in one transaction), `IRoundLifecycle` (round length, and what happens when a round
   ends, inside the reset's transaction; Spellbound records its hall of fame) and `IPlayerSummaries` (how a player shows
   on the admin page), and `IAccountLifecycle` (deleting an account deletes the player's game data in the same
   transaction; Spellbound removes their mages and news from every round). `AdminPageOptions.GameSections` adds game sections to the admin page (Spellbound's rules table).
   `SpellboundHost` implements the hooks.
 - `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
-- **Tables** are split the same way: `HostDb` owns `accounts`, `current_round`, `bans`, `account_networks` and
-  `server_secrets`; `SpellboundModel` (Data/GameData.cs) adds `mages`, `news` and `hall_of_fame`. The migrations live
-  in `Data/Migrations`, because they name the game's types.
+- **Tables** are split the same way: `Hosting/Sql` creates `accounts`, `current_round`, `bans`, `account_networks` and
+  `server_secrets`; `Data/Sql` (through `SpellboundSchema`) creates `mages`, `news` and `hall_of_fame`.
 - **When a second game comes:** move `Hosting/` and `Components/Account/` into a `GameHost` Razor class library,
   register its assembly with the router (`AdditionalAssemblies`), and split the tests. Roughly 2–3 days.
 
@@ -59,24 +59,25 @@ extension points designed for a single game tend to come out wrong.
 
 ```
 page form → GameService.ExploreAsync(userId, turns)
-  1. create a HostDb (one per action: a Blazor Server circuit outlives one action), load the current round
-     and refuse if it has ended, then load the mage's row by key (round, ownerId) and deserialize the mage
+  1. begin a transaction (one per action: a Blazor Server circuit outlives one action), load the current round
+     and refuse if it has ended, then load the mage's row by key (round, ownerId) FOR UPDATE: a second tap
+     waits here until the first commits, then sees the turns it left
   2. report = mage.Explore(turns, timeProvider.GetUtcNow(), rules)
-  3. if report.Succeeded: serialize the mage back into its row, and add the report to the news row (round, ownerId)
-  4. SaveChangesAsync() saves both in one transaction, each checked against its row version (xmin).
-     On DbUpdateConcurrencyException, tell the player to try again
+  3. if report.Succeeded: write the mage back into its row, and add the report to the news row (round, ownerId),
+     which is locked too
+  4. commit both. A row locked for more than 5 s (lock_timeout) or a deadlock tells the player to try again
   5. render the report
 ```
 
-**Attacks and hexes** change two mages. `GameService.HostileAsync` loads the attacker by key and the target by its
-public `Id` (a Guid in the indexed `MageId` column; owner ids are account keys and never go in URLs) within the
-current round. Both mages and both news logs are saved in one transaction with optimistic concurrency, so if either
-player acts at the same moment, nothing happens and the attacker is asked to retry. The domain gets an
+**Attacks and hexes** change two mages. `GameService.HostileAsync` locks the attacker (by key) and the target (by its
+public `Id`, a Guid in the indexed `mage_id` column; owner ids are account keys and never go in URLs) in one
+statement, ordered by owner id, then both news rows in the same order. So two mages attacking each other at once wait
+for each other instead of deadlocking, and every acre taken arrives on the other side (`PvpFlowTests` checks both). The domain gets an
 `IRandomSource` (`SharedRandom` in the app, `SeededRandom` in tests).
 
 - `TimeProvider` is registered in DI (`TimeProvider.System`) so tests can fake time.
 - `GameRules` is bound from `appsettings.json` → `"GameRules"` and injected as a singleton.
-- The database is `ConnectionStrings:Spellbound`. At startup the app runs any pending migrations (`UseGameHostAsync`).
+- The database is `ConnectionStrings:Spellbound`. At startup the app runs any new SQL scripts (`UseGameHostAsync`).
   In Development it connects to `localhost:5432` (start one with `docker compose -f docker-compose.dev.yml up -d`).
 
 ## Turns: lazy regeneration
@@ -92,23 +93,28 @@ No scheduler is needed. The overview page computes "next turn in mm:ss" the same
   (private setters and the `_army`, `_activeEffects` and `_recentLosses` fields) without serialization attributes in
   the domain, and creates objects with their private constructor. So **adding a property or field to `Mage` needs no
   migration**: old rows read it as its initializer's value (mages saved before `CreatedAt` existed read the minimum
-  date, so they are protected by spent turns only). Renaming one needs a jsonb `UPDATE` in a migration.
+  date, so they are protected by spent turns only). Renaming or reshaping one needs an upcaster (see the roadmap);
   `DomainJsonTests` checks that nothing is lost.
-- **Changing a table** (the host's, or a column of the game's) needs a migration:
-  `dotnet ef migrations add <Name> --project src/Spellbound.Web --output-dir Data/Migrations` (the tool is in
-  `dotnet-tools.json`; `dotnet tool restore` installs it). CI fails if the model has changes without a migration.
-- **Row versions:** `mages`, `news` and `current_round` use PostgreSQL's `xmin` as a concurrency token, so two saves of
-  the same row can't both win.
+- **Changing a table** needs a new SQL script: `Hosting/Sql/NNN_name.sql` for the host's tables, `Data/Sql/NNN_name.sql`
+  for the game's, numbered one higher than the last (they're embedded in the app). `SchemaMigrator` runs the new ones
+  at startup, each in a transaction, records them in `schema_versions`, and holds an advisory lock so two instances
+  can't both run them. Never edit a released script. The tests run every script on a fresh database, so a broken one
+  fails CI.
+- **Data access** is SQL through `HostDatabase` and `DbSession` (`Hosting/Database.cs`): one transaction per call,
+  positional parameters (`$1`, `$2`), a `Jsonb` wrapper for jsonb values. The game's queries are in `Data/GameData.cs`.
+- **Concurrency is row locks** (`SELECT … FOR UPDATE`) inside each action's transaction, with a 5-second
+  `lock_timeout`. Locks are always taken mages first, then news, each in owner order, so they can't deadlock.
+  `GameFlowTests` fires 25 taps at once at a mage with turns for 20 and checks exactly 20 succeed.
 - **Rankings** read the round's mages and sort in memory. That's fine for one server's players; add a networth column
   if it grows past a few thousand.
-- **Alerts:** `news.Unseen` counts hostile entries. The overview reads it and subtracts what it read in one `UPDATE`,
-  so an attack landing at the same moment still counts next time.
-- **One mage per player per round** comes from the key (round, owner id): a second insert fails as a duplicate. Old
+- **Alerts:** `news.unseen` counts hostile entries. The overview reads it with the row locked and resets it, so an
+  attack landing at the same moment waits and counts next time.
+- **One mage per player per round** comes from the key (round, owner id): a second insert does nothing. Old
   rounds' mages and news stay in the database; nothing reads them after the reset.
-- **Times** are stored as UTC (`timestamptz`); `HostDb` converts any `DateTimeOffset` with another offset.
+- **Times** are stored as UTC (`timestamptz`); `DbSession` converts any `DateTimeOffset` with another offset.
 - **Rounds:** `current_round` holds the round being played, in one row. `RoundKeeper`, a hosted `BackgroundService`,
   checks it every minute: it creates round 1 on first start, and after a round ends it adds the `hall_of_fame` row and
-  moves the round on in one transaction. The row version means two hosts can't both reset.
+  moves the round on in one transaction, with the round row locked, so two hosts can't both reset.
 - **Abuse protection:** `RateLimits` (config section `RateLimits`) limits requests per IP: account form posts
   (10 per 5 minutes), opening the live game connection, and other non-static requests; static files are unlimited.
   `AccountSignals` stores, per account, keyed hashes of the networks it signed in from (never the IP itself; the key

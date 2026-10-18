@@ -3,7 +3,7 @@
 A turn-based, text-first multiplayer strategy game for phones, inspired by Archmage. It is a hobby project.
 
 - **Gameplay:** spend regenerating turns to explore, build, meditate and cast spells. PvP comes in milestone 2.
-- **Stack:** .NET 10, Blazor Server (interactive server rendering), PostgreSQL with EF Core, sign-in with Google.
+- **Stack:** .NET 10, Blazor Server (interactive server rendering), PostgreSQL (plain Npgsql), sign-in with Google.
 - **Hosting plan:** one small VPS running Docker Compose with Caddy, installable on phones as a PWA.
 
 ## Getting started

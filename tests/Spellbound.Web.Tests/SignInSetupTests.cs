@@ -47,8 +47,7 @@ public sealed class SignInSetupTests : TestDatabase
         Assert.NotEmpty(token);
         Assert.NotEqual(HttpStatusCode.Redirect, dev.StatusCode); // a sign-in would redirect
         Assert.False(dev.Headers.Contains("Set-Cookie") && dev.Headers.GetValues("Set-Cookie").Any(c => c.StartsWith(".AspNetCore.Cookies", StringComparison.Ordinal)));
-        using var db = OpenDb();
-        Assert.Empty(db.Accounts);
+        Assert.Equal(0, await CountAsync("SELECT count(*) FROM accounts"));
 
         var google = await client.PostAsync(
             new Uri("/Account/ExternalLogin", UriKind.Relative),
