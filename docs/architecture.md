@@ -93,7 +93,7 @@ play        → SkirmishGame.PlayRound(saved orders, recorded luck, ready seats)
 **The game page** (`/skirmish/{id}`, `Components/Game/SkirmishPage.razor` with `SkirmishOrderForm.razor`) shows the
 round, the player's orders and Ready, the last round's report, players, the board as text, objectives and the deck. It
 reloads every 5 seconds while open, so other players' Ready taps and a played round show up by themselves. The Realm's
-tab bar is hidden on Skirmish pages; the Spellbound link leads back to the Games page, which lists the player's
+tab bar shows only on the Realm's own pages (not on Skirmish, the Games page or the account pages); the Spellbound link leads back to the Games page, which lists the player's
 Skirmishes.
 
 **Reminders** go through the notifications below: the last player not ready is nudged once a round (a `nudged` flag

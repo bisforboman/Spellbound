@@ -20,16 +20,17 @@
     </AuthorizeView>
 </header>
 
-<main class="content">
+<main class="content @(OnRealmPage ? "with-tabs" : null)">
     @Body
     <footer class="site-footer">
         <a href="privacy">Privacy</a>
     </footer>
 </main>
 
-@* The Realm's tabs; a Skirmish page is one game of its own, so they'd only lead away from it. *@
+@* The Realm's tabs, only on the Realm's own pages: the top bar is the site's (your games, account), the bottom bar is
+   the sections of the game you're in, in thumb reach. Skirmish, the Games page and the account pages have none. *@
 <AuthorizeView>
-    @if (!Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("skirmish/", StringComparison.Ordinal))
+    @if (OnRealmPage)
     {
     <nav class="bottom-nav" aria-label="Realm">
         <NavLink href="realm">Realm</NavLink>
@@ -47,3 +48,12 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private static readonly HashSet<string> RealmPages =
+        ["realm", "explore", "build", "magic", "cast", "meditate", "army", "rivals", "halloffame"];
+
+    /// <summary>Whether this is one of the Realm's pages, which get the Realm's tabs.</summary>
+    private bool OnRealmPage =>
+        RealmPages.Contains(Navigation.ToBaseRelativePath(Navigation.Uri).Split('/', '?', '#')[0].ToLowerInvariant());
+}
