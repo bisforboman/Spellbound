@@ -55,6 +55,9 @@ public sealed partial class Mage
 
     public int TurnsSpent { get; private set; }
 
+    /// <summary>The part of an acre exploring has found but not yet made whole; the next turn of exploring adds to it.</summary>
+    public double ExploreCarry { get; private set; }
+
     /// <summary>When the mage was created. Mages saved before this existed read as the minimum value, so they're
     /// protected by spent turns only.</summary>
     public DateTimeOffset CreatedAt { get; private set; }
@@ -131,10 +134,16 @@ public sealed partial class Mage
 
     public int ManaCapacity(GameRules rules) => rules.BaseManaStorage + (Nodes * rules.ManaStoragePerNode);
 
-    public int ExploreAcresPerTurn(GameRules rules)
+    /// <summary>Acres one turn of exploring finds now, with fractions: fewer as land grows, then the round's phase,
+    /// being below the median, and spells. The fractions add up over turns (<see cref="ExploreCarry"/>), so a big
+    /// realm still gains land slowly and every multiplier counts, however small the yield.</summary>
+    public double ExploreYield(GameRules rules, ExploreConditions conditions)
     {
-        var baseAcres = (int)((long)rules.ExploreBaseAcresPerTurn * rules.StartingLand / Math.Max(1, Land));
-        return Math.Max(1, (int)(baseAcres * Multiplier(EffectKind.ExploreYield)));
+        ArgumentNullException.ThrowIfNull(conditions);
+        var baseAcres = (double)rules.ExploreBaseAcresPerTurn * rules.StartingLand / Math.Max(1, Land);
+        var phase = conditions.Phase >= SeasonPhase.Contest ? rules.ExploreLateMultiplier : 1;
+        var catchUp = Land < conditions.MedianLand ? rules.ExploreBelowMedianMultiplier : 1;
+        return baseAcres * phase * catchUp * Multiplier(EffectKind.ExploreYield);
     }
 
     public int MeditateManaPerTurn(GameRules rules) =>
@@ -188,7 +197,7 @@ public sealed partial class Mage
 
     // ---- Actions ----
 
-    public ActionReport Explore(int turns, DateTimeOffset now, GameRules rules)
+    public ActionReport Explore(int turns, DateTimeOffset now, GameRules rules, ExploreConditions conditions)
     {
         AccrueTurns(now, rules);
         if (CheckTurns(turns) is { } failure)
@@ -199,7 +208,9 @@ public sealed partial class Mage
         var acresGained = 0;
         var summary = SpendTurns(turns, rules, () =>
         {
-            var acres = ExploreAcresPerTurn(rules);
+            var found = ExploreYield(rules, conditions) + ExploreCarry;
+            var acres = (int)found;
+            ExploreCarry = found - acres;
             Land += acres;
             acresGained += acres;
         });

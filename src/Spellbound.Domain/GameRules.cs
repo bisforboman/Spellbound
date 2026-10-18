@@ -47,6 +47,12 @@ public sealed record GameRules
 
     // Actions
     public int ExploreBaseAcresPerTurn { get; init; } = 10;
+
+    /// <summary>Exploring's yield from the Contest phase on: land now comes mainly from war.</summary>
+    public double ExploreLateMultiplier { get; init; } = 0.5;
+
+    /// <summary>Exploring's yield while your land is below the round's median, so small mages catch up.</summary>
+    public double ExploreBelowMedianMultiplier { get; init; } = 1.25;
     public int BuildingsPerTurn { get; init; } = 10;
     public int BuildingGoldCost { get; init; } = 500;
     public int MeditateManaPerTurn { get; init; } = 100;

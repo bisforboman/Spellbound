@@ -187,7 +187,30 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     }
 
     public Task<ActionReport> ExploreAsync(string ownerId, int turns) =>
-        ActAsync(ownerId, "explore", new { turns }, (mage, now, rules) => mage.Explore(turns, now, rules));
+        ActAsync(ownerId, "explore", async (db, game, now, rules) =>
+        {
+            // The phase and the median are inputs the mage's own state can't reproduce, so they go in the log.
+            var conditions = await ExploreConditionsAsync(db, game, now, rules);
+            return (new { turns, phase = conditions.Phase, medianLand = conditions.MedianLand },
+                mage => mage.Explore(turns, now, rules, conditions));
+        });
+
+    /// <summary>What exploring depends on right now (the round's phase and the median land), for the Explore page's
+    /// numbers and ledger; null before the first round.</summary>
+    public async Task<ExploreConditions?> GetExploreConditionsAsync()
+    {
+        await using var db = await database.BeginAsync();
+        return await LoadRealmAsync(db) is { } game ? await ExploreConditionsAsync(db, game, Now, game.RulesOf(defaults)) : null;
+    }
+
+    /// <summary>Exploring's conditions in a game: its phase now, and the median of its mages' land, banned ones left out
+    /// as on Rivals.</summary>
+    private static async Task<ExploreConditions> ExploreConditionsAsync(DbSession db, HostedGame game, DateTimeOffset now, GameRules rules)
+    {
+        var bans = await db.LoadBansAsync();
+        var mages = (await db.LoadGameMagesAsync(game.Id)).Where(m => !bans.IsBanned(m.OwnerId));
+        return ExploreConditions.At(game.Round, now, rules, mages);
+    }
 
     public Task<ActionReport> BuildAsync(string ownerId, BuildingType type, int count) =>
         ActAsync(ownerId, "build", new { type, count }, (mage, now, rules) => mage.Build(type, count, now, rules));
@@ -208,6 +231,15 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
         HostileAsync(ownerId, targetId, "hex", new { hexId, targetMageId = targetId }, (mage, target, now, rules, luck) => mage.CastHex(hexId, target, now, rules, luck));
 
     private Task<ActionReport> ActAsync(string ownerId, string name, object inputs, Func<Mage, DateTimeOffset, GameRules, ActionReport> action) =>
+        ActAsync(ownerId, name, (_, _, now, rules) =>
+            Task.FromResult<(object, Func<Mage, ActionReport>)>((inputs, mage => action(mage, now, rules))));
+
+    /// <summary>
+    /// Runs one action on the player's locked mage and saves it with its news and log row. <paramref name="prepare"/>
+    /// reads whatever else the action needs in the same transaction and returns the inputs to log and the action.
+    /// </summary>
+    private Task<ActionReport> ActAsync(
+        string ownerId, string name, Func<DbSession, HostedGame, DateTimeOffset, GameRules, Task<(object Inputs, Func<Mage, ActionReport> Act)>> prepare) =>
         LockedAsync(async db =>
         {
             var now = Now;
@@ -227,7 +259,8 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
             }
 
             var rules = game.RulesOf(defaults);
-            var report = action(mage, now, rules);
+            var (inputs, act) = await prepare(db, game, now, rules);
+            var report = act(mage);
             if (!report.Succeeded)
             {
                 return report;

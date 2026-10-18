@@ -2,6 +2,9 @@ namespace Spellbound.Domain.Tests;
 
 public class RoundTests
 {
+    // Exploring in the Growth phase with no median to be below: yields as before the round had phases.
+    private static readonly ExploreConditions Calm = new(SeasonPhase.Growth, 0);
+
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     private static readonly GameRules Rules = GameRules.Default;
 
@@ -48,7 +51,7 @@ public class RoundTests
         var rules = Rules with { HallOfFameSize = 2, StartingGold = 200_000 };
         var small = Mage.Create("u1", "Ash", MagicSchool.Dawn, T0, rules);
         var big = Mage.Create("u2", "Birch", MagicSchool.Grove, T0, rules);
-        big.Explore(10, T0, rules);
+        big.Explore(10, T0, rules, Calm);
         var armed = Mage.Create("u3", "Cedar", MagicSchool.Ember, T0, rules);
         armed.Recruit("unit-3", 400, T0, rules); // more networth than Birch's extra land
         var round = Round.First(T0, rules.RoundLength);

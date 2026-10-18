@@ -8,6 +8,16 @@ public static class Rankings
 
     public static IEnumerable<Mage> ByNetworth(IEnumerable<Mage> mages, GameRules rules) =>
         mages.OrderByDescending(m => m.Networth(rules)).ThenBy(m => m.Name, StringComparer.Ordinal);
+
+    /// <summary>The median mage's land: the middle one, or the two middle ones' average (rounded down) for an even
+    /// count; 0 with no mages. A lone mage is at the median, so it is never below it.</summary>
+    public static int MedianLand(IEnumerable<Mage> mages)
+    {
+        var lands = mages.Select(m => m.Land).Order().ToList();
+        return lands.Count == 0 ? 0
+            : lands.Count % 2 == 1 ? lands[lands.Count / 2]
+            : (lands[(lands.Count / 2) - 1] + lands[lands.Count / 2]) / 2;
+    }
 }
 
 public sealed record HallOfFameEntry(int Rank, string Name, MagicSchool School, int Land, int Networth);

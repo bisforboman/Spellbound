@@ -62,7 +62,7 @@ whichever comes later. This matters from milestone 2.
 
 | Action | Turn cost | Effect |
 |---|---|---|
-| **Explore** | Chosen by the player | Each turn gives `max(1, 10 × 250 / currentLand)` acres, so 10 at the start, 5 at 500 acres and 1 at 2,500 or more |
+| **Explore** | Chosen by the player | Each turn finds `10 × 250 / currentLand` acres (10 at the start, 5 at 500, 1 at 2,500), ×0.5 from the Contest phase on, ×1.25 while you hold less than the median mage. Fractions add up over turns, so a big realm still grows slowly |
 | **Build** | `ceil(count / 10)` | Turns free acres into nodes or towns. Costs 500 gold per building |
 | **Meditate** | Chosen by the player | +100 mana per turn on top of normal income, capped by storage |
 | **Cast (self) spell** | Per spell | Costs mana and gives a timed buff, measured in your own spent turns |
@@ -175,14 +175,14 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 - An admin can move the current round's end, or end it now (which runs the reset at once).
 - **Season phases.** A round runs through five phases, set as shares of its length (so a 7-day round has the same
   shape as a 28-day one) and moving with its end if an admin moves it. The overview, Rivals, the Chronicle and the Games
-  page show the phase and the time to the next. For now they only describe the round; the steps named below make rules
-  read them.
+  page show the phase and the time to the next. Exploring reads them (below); the steps named for the others make more
+  rules read them.
 
   | Phase | Share of the round | On a 28-day round | What it will change |
   |---|---|---|---|
   | Sanctuary | 0 – 3/28 | days 1–3 | Nobody is struck unless they strike first (W-items) |
-  | Growth | to 10/28 | days 4–10 | Exploring is cheap (S3) |
-  | Contest | to 17/28 | days 11–17 | Exploring slows sharply (S3) |
+  | Growth | to 10/28 | days 4–10 | Exploring at its full yield |
+  | Contest | to 17/28 | days 11–17 | Exploring finds half as much, from here to the end |
   | Conjunction | to 27/28 | days 18–27 | Armageddon can be cast, then the Final War (D-items) |
   | Reckoning | the rest | day 28 | Titles and the Hall of fame (D-items) |
 

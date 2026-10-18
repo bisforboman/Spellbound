@@ -3,6 +3,9 @@ namespace Spellbound.Domain.Tests;
 // Most tests switch protection off and start rich, so mages can field an army at once.
 public class HostileTests
 {
+    // Exploring in the Growth phase with no median to be below: yields as before the round had phases.
+    private static readonly ExploreConditions Calm = new(SeasonPhase.Growth, 0);
+
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
@@ -216,7 +219,7 @@ public class HostileTests
     public void Much_smaller_mages_are_out_of_range()
     {
         var attacker = Attacker();
-        attacker.Explore(40, T0, Rules); // well past 417 acres, so 250 is below 60%
+        attacker.Explore(40, T0, Rules, Calm); // well past 417 acres, so 250 is below 60%
         var defender = NewMage("Morgana", MagicSchool.Ember);
 
         var result = attacker.Attack(defender, T0, Rules, Even);

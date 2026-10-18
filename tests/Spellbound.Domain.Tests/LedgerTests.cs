@@ -3,6 +3,9 @@ namespace Spellbound.Domain.Tests;
 // A preview runs the action on a copy: it shows what would happen and never changes the mage.
 public class LedgerTests
 {
+    // Exploring in the Growth phase with no median to be below: yields as before the round had phases.
+    private static readonly ExploreConditions Calm = new(SeasonPhase.Growth, 0);
+
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     private static readonly GameRules Rules = GameRules.Default;
 
@@ -14,13 +17,13 @@ public class LedgerTests
     {
         var mage = NewMage();
 
-        var ledger = mage.Preview(T0, Rules, m => m.Explore(5, T0, Rules));
+        var ledger = mage.Preview(T0, Rules, m => m.Explore(5, T0, Rules, Calm));
 
         // The same numbers as MageTests.Explore_gains_land_with_diminishing_returns_and_runs_the_economy.
         Assert.True(ledger.Report.Succeeded);
         Assert.Equal(250, ledger.Before.Land);
-        Assert.Equal(294, ledger.After.Land);
-        Assert.Equal(10_000 + 3_387, ledger.After.Gold);
+        Assert.Equal(296, ledger.After.Land);
+        Assert.Equal(10_000 + 3_390, ledger.After.Gold);
         Assert.Equal(3_000, ledger.After.Mana);
         Assert.Equal(95, ledger.After.Turns);
         Assert.Equal(250, mage.Land);
@@ -62,7 +65,7 @@ public class LedgerTests
         var mage = NewMage();
         var later = T0 + (Rules.TurnInterval * 3);
 
-        var ledger = mage.Preview(later, Rules, m => m.Explore(1, later, Rules));
+        var ledger = mage.Preview(later, Rules, m => m.Explore(1, later, Rules, Calm));
 
         Assert.Equal(103, ledger.Before.Turns);
         Assert.Equal(102, ledger.After.Turns);
@@ -85,6 +88,6 @@ public class LedgerTests
     [Fact]
     public void A_report_without_trouble_has_no_warnings()
     {
-        Assert.Empty(NewMage().Explore(5, T0, Rules).Warnings);
+        Assert.Empty(NewMage().Explore(5, T0, Rules, Calm).Warnings);
     }
 }

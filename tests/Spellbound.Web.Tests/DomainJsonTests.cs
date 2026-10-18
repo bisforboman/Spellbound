@@ -7,6 +7,9 @@ namespace Spellbound.Web.Tests;
 /// <summary>Mages are stored as jsonb snapshots of their private state; nothing may be lost on the way.</summary>
 public sealed class DomainJsonTests
 {
+    // Exploring in the Growth phase with no median to be below: yields as before the round had phases.
+    private static readonly ExploreConditions Calm = new(SeasonPhase.Growth, 0);
+
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
 
@@ -34,7 +37,7 @@ public sealed class DomainJsonTests
         var json = DomainJson.Serialize(mage);
         var later = T0.AddDays(1);
 
-        mage.Preview(later, Rules, m => m.Explore(10, later, Rules));
+        mage.Preview(later, Rules, m => m.Explore(10, later, Rules, Calm));
         mage.Preview(later, Rules, m => m.Recruit("unit-3", 10, later, Rules));
         mage.Preview(later, Rules, m => m.Meditate(40, later, Rules)); // long enough for the spell to fade
 

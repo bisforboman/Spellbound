@@ -144,6 +144,40 @@ The leader's lead shrinks: the warmonger loses more than the builders. The once-
 attacks more often because each attack's 4 turns are a bigger share of a smaller day. The 28-day results
 ([balance-results.md](balance-results.md)) shrink the same way.
 
+## Explore decay (M7 S3, 18 Oct 2026)
+
+The research wants exploring to slow sharply from the Contest (day 11) and to pay more below the server's median.
+Built as two multipliers in `GameRules`: ×0.5 from the Contest on, ×1.25 below the median.
+
+**First try, and why it did nothing.** Exploring yielded `max(1, 10 × 250 / land)` whole acres a turn. By day 5–7
+every bot holds over 1,250 acres, so the yield is already 1, and 1 × 0.5 rounds down to 0 and back up to 1: neither
+multiplier could bite. The rerun moved nothing beyond noise.
+
+**The fix: fractions carry over.** The yield is now worked out with fractions (1,564 acres: 1.6 a turn, 0.8 in the
+Contest), and what's left of an acre carries to the next turn of exploring. A big realm still grows, slowly, and the
+multipliers count at any size. Two effects, measured separately on a 14-day opening study (200 runs, days 1–14,
+scratch runs not committed):
+
+| Day 14, median land | Before | Carry only | Carry + multipliers |
+|---|---:|---:|---:|
+| Builder | 2,341 | 2,649 | 2,528 |
+| Builder, once a day | 2,293 | 2,590 | 2,538 |
+| Explore first | 2,211 | 2,644 | 2,517 |
+| Turtle | 2,053 | 2,426 | 2,479 |
+| Warmonger | 3,714 | 3,636 | 3,616 |
+| Rank 1's net power against the median's | 3.44× | 2.53× | 2.53× |
+
+- **Carry** keeps exploring worth a turn all round, so the peaceful mages keep growing and the warmonger's lead
+  shrinks.
+- **The Contest halving** takes about 120 acres off a builder in days 11–14 alone. Over 28 days the builders end
+  lower than before (3,058 and 3,029 acres on the mixed server, against 3,845 and 2,895), and land comes more from war,
+  as the research wants.
+- **The median bonus** lifts whoever is behind: the turtle and the once-a-day builder catch up with the others.
+
+The committed 7-day baseline ([opening-baseline.md](opening-baseline.md)) moves because of the carry alone (days 1–7
+are Sanctuary and Growth): builders 1,564 → 1,871 acres, the warmonger 2,551 → 2,881, the leader's lead 3.28× →
+2.94×.
+
 ## Proposals
 
 These change rules, so they need the owner's decision.

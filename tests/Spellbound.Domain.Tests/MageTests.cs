@@ -4,6 +4,9 @@ namespace Spellbound.Domain.Tests;
 // 250 land, 20 nodes, 40 towns, 10,000 gold, 2,000 mana, 100 turns.
 public class MageTests
 {
+    // Exploring in the Growth phase with no median to be below: yields as before the round had phases.
+    private static readonly ExploreConditions Calm = new(SeasonPhase.Growth, 0);
+
     private static readonly DateTimeOffset T0 = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     private static readonly GameRules Rules = GameRules.Default;
 
@@ -37,14 +40,14 @@ public class MageTests
     {
         var mage = NewMage();
 
-        var report = mage.Explore(5, T0, Rules);
+        var report = mage.Explore(5, T0, Rules, Calm);
 
         Assert.True(report.Succeeded);
         Assert.Equal(5, report.TurnsSpent);
-        // Acres per turn: 10, 9, 9, 8, 8 (shrinks as land grows).
-        Assert.Equal(294, mage.Land);
-        // Gold per turn = land + 10 × towns, after that turn's exploring: 660 + 669 + 678 + 686 + 694.
-        Assert.Equal(10_000 + 3_387, mage.Gold);
+        // Acres per turn: 10, 9.6, 9.3, 9.0, 8.7 (shrinks as land grows); the fractions carry over, so 10, 9, 9, 9, 9.
+        Assert.Equal(296, mage.Land);
+        // Gold per turn = land + 10 × towns, after that turn's exploring: 660 + 669 + 678 + 687 + 696.
+        Assert.Equal(10_000 + 3_390, mage.Gold);
         // Mana: 20 nodes × 10 per turn.
         Assert.Equal(3_000, mage.Mana);
         Assert.Equal(95, mage.Turns);
@@ -56,7 +59,7 @@ public class MageTests
     {
         var mage = NewMage();
 
-        var report = mage.Explore(101, T0, Rules);
+        var report = mage.Explore(101, T0, Rules, Calm);
 
         Assert.False(report.Succeeded);
         Assert.Equal(250, mage.Land);
@@ -69,7 +72,7 @@ public class MageTests
     {
         var mage = NewMage();
 
-        var report = mage.Explore(101, T0 + Rules.TurnInterval, Rules);
+        var report = mage.Explore(101, T0 + Rules.TurnInterval, Rules, Calm);
 
         Assert.True(report.Succeeded);
         Assert.Equal(0, mage.Turns);
@@ -185,7 +188,7 @@ public class MageTests
         mage.Cast("self-a", T0, Rules);
         var goldBefore = mage.Gold;
 
-        mage.Explore(1, T0, Rules);
+        mage.Explore(1, T0, Rules, Calm);
 
         // (260 land + 400 from towns) × 1.25
         Assert.Equal(825, mage.Gold - goldBefore);
