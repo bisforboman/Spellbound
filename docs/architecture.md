@@ -27,6 +27,8 @@ src/
     Components/Game/, GameService, SpellboundHost, Data/   the game itself (Data/Sql: its SQL scripts)
 tools/
   Spellbound.Balance/       balance simulation: bots play the domain rules for a round (docs/balance.md)
+  Spellbound.Playtest/      plays every page in a phone-sized browser (Playwright) against a fresh app and database,
+                            with screenshots and a report (.claude/skills/playtest)
 tests/
   Spellbound.Domain.Tests/  xUnit tests for the rules
   Spellbound.Web.Tests/     integration tests: real app on a real PostgreSQL, a fresh database per test

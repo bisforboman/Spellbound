@@ -28,6 +28,7 @@ docker compose -f docker-compose.dev.yml up -d   # a local PostgreSQL, needed by
 dotnet build
 dotnet test
 dotnet run --project src/Spellbound.Web
+dotnet run --project tools/Spellbound.Playtest     # plays every page in a phone-sized browser; see .claude/skills/playtest
 ```
 
 To change a table (not the jsonb game state), add a numbered SQL script: `src/Spellbound.Web/Hosting/Sql/` for the
@@ -60,6 +61,8 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 - Pages are text-first: numbers, short reports and simple forms. No canvas or game engine, and no JS framework.
 - Every action form shows its cost (turns, gold, mana) before the player confirms.
 - Show the time until the next turn and how close the player is to the turn cap.
+- A change to pages gets a playtest run (`tools/Spellbound.Playtest`): it must pass, and look at the screenshots of the
+  pages you changed. New pages and actions get a step in it.
 
 ## Working conventions
 

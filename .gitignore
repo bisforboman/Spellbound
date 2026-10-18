@@ -24,3 +24,6 @@ appsettings.Development.local.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Playtest output (screenshots, report, app log)
+tools/Spellbound.Playtest/out/
