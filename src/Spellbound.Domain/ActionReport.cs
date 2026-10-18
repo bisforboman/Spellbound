@@ -10,5 +10,9 @@ public sealed record ActionReport(bool Succeeded, int TurnsSpent, IReadOnlyList<
     /// that isn't a battle.</summary>
     public bool? Won { get; init; }
 
+    /// <summary>The lines a player should not miss before confirming, such as units deserting or a spell fading; they
+    /// are in <see cref="Lines"/> too.</summary>
+    public IReadOnlyList<string> Warnings { get; init; } = [];
+
     public static ActionReport Fail(string reason) => new(false, 0, [reason]);
 }

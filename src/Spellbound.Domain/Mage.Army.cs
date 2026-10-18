@@ -3,7 +3,7 @@ namespace Spellbound.Domain;
 /// <summary>Units: recruiting, upkeep, power and networth.</summary>
 public sealed partial class Mage
 {
-    private readonly Dictionary<string, int> _army = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, int> _army = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Unit counts by unit id. Unit types the mage has never had are missing.</summary>
     public IReadOnlyDictionary<string, int> Army => _army;

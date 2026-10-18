@@ -26,6 +26,21 @@ public sealed class DomainJsonTests
         Assert.Equal(mage.Networth(Rules), copy.Networth(Rules));
     }
 
+    /// <summary>A ledger preview works on a copy; whatever it does, the stored mage stays byte for byte the same.</summary>
+    [Fact]
+    public void A_preview_leaves_the_stored_mage_unchanged()
+    {
+        var mage = BusyMage();
+        var json = DomainJson.Serialize(mage);
+        var later = T0.AddDays(1);
+
+        mage.Preview(later, Rules, m => m.Explore(10, later, Rules));
+        mage.Preview(later, Rules, m => m.Recruit("unit-3", 10, later, Rules));
+        mage.Preview(later, Rules, m => m.Meditate(40, later, Rules)); // long enough for the spell to fade
+
+        Assert.Equal(json, DomainJson.Serialize(mage));
+    }
+
     [Fact]
     public void Rules_round_trip_through_a_game_row_with_the_same_hash()
     {

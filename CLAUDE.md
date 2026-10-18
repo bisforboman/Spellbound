@@ -61,7 +61,8 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 
 - Mobile-first. The UI must work at 360 px wide, with tap targets at least 44 px, and work one-handed.
 - Pages are text-first: numbers, short reports and simple forms. No canvas or game engine, and no JS framework.
-- Every action form shows its cost (turns, gold, mana) before the player confirms.
+- Every action form shows its cost (turns, gold, mana) and its ledger (`Mage.Preview`, the projected result) before
+  the player confirms.
 - Show the time until the next turn and how close the player is to the turn cap.
 - A change to pages gets a playtest run (`tools/Spellbound.Playtest`): it must pass, and look at the screenshots of the
   pages you changed. New pages and actions get a step in it.
