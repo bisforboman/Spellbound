@@ -23,7 +23,9 @@
 
     .top-bar .brand {
         margin-right: auto;
-        font-weight: 700;
+        font-family: 'IM Fell English SC', Georgia, serif;
+        font-size: 1.3rem;
+        font-weight: 400;
         color: #fff;
     }
 

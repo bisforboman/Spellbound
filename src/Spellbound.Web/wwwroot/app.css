@@ -2,6 +2,21 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* Headings: IM Fell English SC, self-hosted (wwwroot/fonts, SIL Open Font License: fonts/OFL.txt). Only the regular
+   weight exists, so headings are set to 400 rather than letting the browser fake a bold. */
+@font-face {
+    font-family: 'IM Fell English SC';
+    src: url("fonts/im-fell-english-sc-latin.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: 'IM Fell English SC', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+}
+
 /* The dark theme: Bootstrap's dark mode (data-bs-theme="dark" on <html>) in gritty warm greys, with a faint grain */
 [data-bs-theme=dark] {
     --bs-body-bg: #141312;
