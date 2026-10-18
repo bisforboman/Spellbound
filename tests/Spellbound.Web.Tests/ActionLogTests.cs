@@ -42,6 +42,23 @@ public sealed class ActionLogTests : TestDatabase, IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
+    public async Task A_vigil_stops_actions_until_the_mage_wakes_and_both_are_logged()
+    {
+        Assert.True((await Game.StartVigilAsync(Merlin, 24)).Succeeded);
+        var frozen = await Game.ExploreAsync(Merlin, 5);
+        Assert.True((await Game.EndVigilAsync(Merlin)).Succeeded);
+        var awake = await Game.ExploreAsync(Merlin, 5);
+
+        Assert.False(frozen.Succeeded);
+        Assert.StartsWith("You are keeping a Vigil until", frozen.Lines[0], StringComparison.Ordinal);
+        Assert.True(awake.Succeeded);
+        var rows = await RowsAsync(Merlin);
+        Assert.Equal(["create", "vigil", "wake", "explore"], rows.Select(r => r.Action));
+        Assert.Equal(24, rows[1].Inputs.GetProperty("hours").GetInt32());
+        Assert.Equal(1, (await Game.GetMageAsync(Merlin))!.VigilsKept);
+    }
+
+    [Fact]
     public async Task Each_successful_action_is_logged_with_its_inputs_result_and_state_and_a_failure_is_not()
     {
         var report = await Game.ExploreAsync(Merlin, 5);

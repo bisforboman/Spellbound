@@ -8,14 +8,18 @@
     var next = Mage.TimeUntilNextTurn(now, Rules);
 }
 @* The turn moon waxes as the next turn comes; at the cap it is a full blood moon, since new turns are being lost. *@
-<div class="turns @(next is null ? "turns-capped" : null)">
+<div class="turns @(Mage.IsInVigil(now) ? "turns-frozen" : next is null ? "turns-capped" : null)">
     <svg class="moon" viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="3" opacity="0.5" />
         <path d="@MoonPath(next)" fill="currentColor" fill-opacity="0.8" />
     </svg>
     <div class="turns-line">
         <span><b>@turns</b> / @Rules.MaxTurns turns</span>
-        @if (next is { } wait)
+        @if (Mage.IsInVigil(now))
+        {
+            <span>frozen by your Vigil</span>
+        }
+        else if (next is { } wait)
         {
             <span>next in @((int)wait.TotalMinutes):@wait.Seconds.ToString("00")</span>
         }

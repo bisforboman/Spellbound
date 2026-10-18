@@ -39,6 +39,10 @@ public sealed partial class Mage
     public ActionReport Recruit(string unitId, int count, DateTimeOffset now, GameRules rules)
     {
         AccrueTurns(now, rules);
+        if (VigilProblem(now) is { } vigil)
+        {
+            return ActionReport.Fail(vigil);
+        }
         var unit = UnitBook.Find(unitId);
         if (unit is null)
         {

@@ -224,6 +224,12 @@ public sealed class GameService(HostDatabase database, TimeProvider time, GameRu
     public Task<ActionReport> RecruitAsync(string ownerId, string unitId, int count) =>
         ActAsync(ownerId, "recruit", new { unitId, count }, (mage, now, rules) => mage.Recruit(unitId, count, now, rules));
 
+    public Task<ActionReport> StartVigilAsync(string ownerId, int hours) =>
+        ActAsync(ownerId, "vigil", new { hours }, (mage, now, rules) => mage.StartVigil(TimeSpan.FromHours(hours), now, rules));
+
+    public Task<ActionReport> EndVigilAsync(string ownerId) =>
+        ActAsync(ownerId, "wake", new { }, (mage, now, rules) => mage.EndVigil(now, rules));
+
     public Task<ActionReport> AttackAsync(string ownerId, Guid targetId) =>
         HostileAsync(ownerId, targetId, "attack", new { targetMageId = targetId }, (mage, target, now, rules, luck) => mage.Attack(target, now, rules, luck));
 

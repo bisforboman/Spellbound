@@ -24,7 +24,7 @@
                     <span class="who">
                         <b>@rival.Name</b>
                         <small class="text-muted d-block">
-                            @rival.School.DisplayName()@(you ? " · you" : null)@(rival.IsProtected(Game.Now, Rules) ? " · protected" : null)@(!you && !Mage.InRange(rival, Rules) ? " · out of range" : null)
+                            @rival.School.DisplayName()@(you ? " · you" : null)@(rival.IsInVigil(Game.Now) ? " · keeping a Vigil" : rival.IsProtected(Game.Now, Rules) ? " · protected" : null)@(!you && !Mage.InRange(rival, Rules) ? " · out of range" : null)
                         </small>
                     </span>
                     <span class="num">@N(byNetworth ? rival.Networth(Rules) : rival.Land)<small class="text-muted d-block">@(byNetworth ? "net power" : "acres")</small></span>

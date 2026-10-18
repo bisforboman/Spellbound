@@ -30,6 +30,8 @@ Each step of the rework adds a line here; the order is in [realm-rework.md](real
 - **Explore decay**: exploring finds half as much from the Contest on and 25% more below the server's median land,
   with fractions of an acre carried over between turns (`ExploreConditions`, `Mage.ExploreYield`). See
   [balance.md](balance.md), "Explore decay".
+- **The Vigil**: once a round a mage can freeze its realm for up to 72 hours (no turns, no acting, can't be struck),
+  and wake early (`Mage.StartVigil`, `EndVigil`).
 
 ## Summary
 

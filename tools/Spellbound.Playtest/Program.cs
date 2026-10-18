@@ -360,6 +360,30 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("A player who isn't an admin saw the admin page.");
                 }
             });
+            await StepAsync(morgana, "vigil", async page =>
+            {
+                await GoAsync(page, "/realm");
+                await page.FillAsync("#vigil-hours", "1");
+                await ExpectElement(page, ".ledger .ledger-line");
+                await ClickAndReportAsync(page, () => page.ClickAsync("button[type=submit]:has-text('Keep a Vigil')"));
+                await Expect(page, "You are keeping a Vigil");
+                await Expect(page, "frozen by your Vigil");
+            });
+            await StepAsync(ada, "rival-in-vigil", async page =>
+            {
+                await GoAsync(page, "/rivals");
+                await Expect(page, "keeping a Vigil");
+                await page.ClickAsync("a.rank-row:has-text('Morgana')");
+                await page.WaitForURLAsync("**/rivals/*");
+                await WaitForCircuitAsync(page);
+                await Expect(page, "Morgana is keeping a Vigil and can't be struck");
+            });
+            await StepAsync(morgana, "end-vigil", async page =>
+            {
+                await GoAsync(page, "/realm");
+                await ClickAndReportAsync(page, () => page.ClickAsync("button:has-text('End the Vigil now')"));
+                await Expect(page, "You end your Vigil");
+            });
             await StepAsync(ada, "admin", async page =>
             {
                 await GoAsync(page, "/admin");

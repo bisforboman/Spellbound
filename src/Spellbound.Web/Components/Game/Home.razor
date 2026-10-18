@@ -22,6 +22,14 @@
         </p>
     }
 
+    @if (Mage.IsInVigil(Game.Now))
+    {
+        <div class="alert alert-secondary vigil-banner" role="status">
+            <p class="mb-2"><b>You are keeping a Vigil</b> until @Mage.VigilEndsAt!.Value.ToString("d MMM HH:mm", System.Globalization.CultureInfo.InvariantCulture) UTC. Your realm is frozen: no turns come in, and you can neither act nor be struck.</p>
+            <button type="button" class="btn btn-outline-secondary w-100" disabled="@Busy" @onclick="() => RunAsync(() => Game.EndVigilAsync(OwnerId))">End the Vigil now</button>
+        </div>
+    }
+
     <TurnsBar Mage="Mage" Rules="Rules" />
     <ManaVial Mana="Mage.Mana" Capacity="Mage.ManaCapacity(Rules)" />
 
@@ -56,6 +64,28 @@
         </ul>
     }
 
+    <h2>Vigil</h2>
+    @if (Mage.IsInVigil(Game.Now))
+    {
+        <p class="text-muted">Your Vigil is under way; you can end it above.</p>
+    }
+    else if (Mage.VigilsKept >= Rules.VigilsPerRound)
+    {
+        <p class="text-muted">You have kept your Vigil this round.</p>
+    }
+    else
+    {
+        <p>Going away? Once a round you can freeze your realm for up to @((int)Rules.VigilMaxDuration.TotalHours) hours: no turns come in (so none are lost at the cap), and you can neither act nor be struck. You can end it early, but it still counts.</p>
+        <form @onsubmit="() => RunAsync(() => Game.StartVigilAsync(OwnerId, vigilHours))">
+            <label class="form-label" for="vigil-hours">Hours</label>
+            <input id="vigil-hours" type="number" inputmode="numeric" class="form-control form-control-lg" min="1" max="@((int)Rules.VigilMaxDuration.TotalHours)" @bind="vigilHours" @bind:event="oninput" />
+            <p class="cost">Cost: <b>no turns</b>, but it is your one Vigil this round.</p>
+            <LedgerView Of="Mage.Preview(Game.Now, Rules, m => m.StartVigil(TimeSpan.FromHours(vigilHours), Game.Now, Rules))" />
+            <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@Busy">Keep a Vigil</button>
+        </form>
+    }
+    <ReportView Report="Report" />
+
     <h2>News</h2>
     @if (news.Count == 0)
     {
@@ -75,6 +105,7 @@
 
 @code {
     private IReadOnlyList<NewsEntry> news = [];
+    private int vigilHours = 72;
     private int alerts;
     private bool alertsTaken;
 

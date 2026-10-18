@@ -119,7 +119,7 @@ it starts. "Needs" names the items that must come first.
   days, so a 7-day Blitz alpha and a 28-day season both work; the Realm page shows the phase
 - [x] **S3. Explore decay** (S): yield falls with realm size and sharply from the Contest phase, and is better below
   the median. Needs S2
-- [ ] **S4. Vigil** (S): freeze your realm once a season for up to 72 hours
+- [x] **S4. Vigil** (S): freeze your realm once a season for up to 72 hours
 
 ### Economy
 - [ ] **E1. Population and homesteads** (M): population as a resource; homesteads replace towns. Needs F2

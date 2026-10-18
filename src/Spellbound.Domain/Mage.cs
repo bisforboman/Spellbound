@@ -55,6 +55,11 @@ public sealed partial class Mage
 
     public int TurnsSpent { get; private set; }
 
+    /// <summary>When the mage's Vigil ends (or ended); null if it never kept one this round.</summary>
+    public DateTimeOffset? VigilEndsAt { get; private set; }
+
+    public int VigilsKept { get; private set; }
+
     /// <summary>The part of an acre exploring has found but not yet made whole; the next turn of exploring adds to it.</summary>
     public double ExploreCarry { get; private set; }
 
@@ -200,6 +205,10 @@ public sealed partial class Mage
     public ActionReport Explore(int turns, DateTimeOffset now, GameRules rules, ExploreConditions conditions)
     {
         AccrueTurns(now, rules);
+        if (VigilProblem(now) is { } vigil)
+        {
+            return ActionReport.Fail(vigil);
+        }
         if (CheckTurns(turns) is { } failure)
         {
             return failure;
@@ -221,6 +230,10 @@ public sealed partial class Mage
     public ActionReport Build(BuildingType type, int count, DateTimeOffset now, GameRules rules)
     {
         AccrueTurns(now, rules);
+        if (VigilProblem(now) is { } vigil)
+        {
+            return ActionReport.Fail(vigil);
+        }
         if (count <= 0)
         {
             return ActionReport.Fail("Choose at least one building.");
@@ -264,6 +277,10 @@ public sealed partial class Mage
     public ActionReport Meditate(int turns, DateTimeOffset now, GameRules rules)
     {
         AccrueTurns(now, rules);
+        if (VigilProblem(now) is { } vigil)
+        {
+            return ActionReport.Fail(vigil);
+        }
         if (CheckTurns(turns) is { } failure)
         {
             return failure;
@@ -284,6 +301,10 @@ public sealed partial class Mage
     public ActionReport Cast(string spellId, DateTimeOffset now, GameRules rules)
     {
         AccrueTurns(now, rules);
+        if (VigilProblem(now) is { } vigil)
+        {
+            return ActionReport.Fail(vigil);
+        }
         var spell = SpellBook.Find(spellId);
         if (spell is null)
         {
