@@ -31,6 +31,11 @@ public sealed record GameRules
     /// <summary>New mages are also protected for this long after creation, however many turns they spend.</summary>
     public TimeSpan ProtectionDuration { get; init; } = TimeSpan.FromHours(72);
 
+    /// <summary>The Vigil (docs/mageborn-design.md): a mage may freeze its realm this many times a round, each for up to
+    /// <see cref="VigilMaxDuration"/>.</summary>
+    public int VigilsPerRound { get; init; } = 1;
+    public TimeSpan VigilMaxDuration { get; init; } = TimeSpan.FromHours(72);
+
     // Starting mage
     public int StartingLand { get; init; } = 250;
     public int StartingNodes { get; init; } = 20;

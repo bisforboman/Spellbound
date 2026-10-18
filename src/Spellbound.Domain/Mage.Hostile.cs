@@ -62,6 +62,10 @@ public sealed partial class Mage
         ArgumentNullException.ThrowIfNull(target);
         AccrueTurns(now, rules);
         target.AccrueTurns(now, rules);
+        if (VigilProblem(now) is { } vigil)
+        {
+            return HostileReport.Fail(vigil);
+        }
         if (TargetProblem(target, now, rules) is { } invalid)
         {
             return HostileReport.Fail(invalid);
@@ -139,6 +143,10 @@ public sealed partial class Mage
         ArgumentNullException.ThrowIfNull(target);
         AccrueTurns(now, rules);
         target.AccrueTurns(now, rules);
+        if (VigilProblem(now) is { } vigil)
+        {
+            return HostileReport.Fail(vigil);
+        }
         var hex = SpellBook.FindHex(hexId);
         if (hex is null)
         {
@@ -203,6 +211,11 @@ public sealed partial class Mage
         if (target.IsProtected(now, rules))
         {
             return $"{target.Name} is still under protection.";
+        }
+
+        if (target.IsInVigil(now))
+        {
+            return $"{target.Name} is keeping a Vigil and can't be struck until it ends.";
         }
 
         return InRange(target, rules)

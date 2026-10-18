@@ -155,6 +155,10 @@ Each school knows one **hex**, an offensive spell cast at another mage (same tar
 - New mages are protected for **72 hours** and until they have spent **120 turns** (see Starting mage). Mages created
   before the time rule existed are protected by turns only.
 - Because everyone creates a mage when a round starts, every round opens with about **three days without attacks**.
+- **The Vigil:** once a round (`VigilsPerRound`) a mage can freeze its realm for up to **72 hours** (`VigilMaxDuration`),
+  from the Realm page. While it lasts no turns come in (so none are lost at the cap and nothing is earned), and the
+  mage can neither act nor be struck. Waking early is allowed and still uses the Vigil; turns resume where they left
+  off, part of the way to the next one included. Only the turns stop: protection and the round's clock run on.
 - **Net power** = 5 per acre + 10 per building + 1 per point of unit attack and defense (a Unit 3 adds 8). It is
   published: the Rivals page prints the formula with the game's own weights, so anyone can check a ranking by hand.
   A rival's buildings and army stay hidden; that their total bounds their army's size is accepted, by design.

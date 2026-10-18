@@ -97,6 +97,7 @@ html, body {
     }
 
     .turns-capped .moon { color: var(--bs-danger); } /* a blood moon at the cap */
+    .turns-frozen .moon { color: var(--ink-faint); } /* a pale moon while a Vigil freezes the turns */
 
 .stats th {
     width: 40%;
