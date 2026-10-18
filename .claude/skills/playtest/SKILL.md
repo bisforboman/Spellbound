@@ -11,7 +11,8 @@ description: Play Spellbound end to end in a real phone-sized browser and check 
 2. starts the app with fast rules (a turn a second, no protection, plenty of gold and mana);
 3. signs in three players at 360×740 (one of them an admin);
 4. visits every page and takes every kind of action: create a mage, explore, build, meditate, cast, recruit, attack,
-   hex, the news banner, the hall of fame, account and data download, privacy, the admin page, and ending the round;
+   hex, the news banner, the hall of fame, account and data download, privacy, the admin page, a Skirmish (the admin
+   starts one for the three players, each adds orders and readies up, and the round plays), and ending the Realm round;
 5. checks the admin page's **Problems** list at the end.
 
 Every step is screenshotted and checked. A step fails on any of these: sideways scrolling at 360 px, Blazor's error

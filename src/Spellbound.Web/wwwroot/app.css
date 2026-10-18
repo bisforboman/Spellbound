@@ -190,3 +190,28 @@ html, body {
     .admin-player .btn {
         margin-top: 0.5rem;
     }
+
+/* Skirmish: the order list and the order kinds */
+.orders {
+    padding-left: 1.25rem;
+}
+
+    .orders li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        min-height: 44px;
+        border-bottom: 1px solid #eee;
+    }
+
+.kinds {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0 0.5rem;
+}
+
+    .kinds .choice {
+        padding: 0.5rem;
+    }
+

@@ -75,26 +75,26 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
     /// <summary>
     /// Starts a game for the accounts with these emails, in this order (the admin page's form). Each player plays under
     /// their Realm mage's name and school this round, or else the start of their email and a school in turn. Returns the
-    /// game's id, or why it can't start.
+    /// game's id and number (what players see: "Skirmish 3"), or why it can't start.
     /// </summary>
-    public async Task<(long? GameId, string? Problem)> CreateForEmailsAsync(
+    public async Task<(long? GameId, int Number, string? Problem)> CreateForEmailsAsync(
         IReadOnlyList<string> emails, TimeSpan roundLength, AccountService accounts, SkirmishRules? rules = null)
     {
         rules ??= SkirmishRules.Default;
         var cleaned = emails.Select(e => e.Trim()).Where(e => e.Length > 0).ToList();
         if (cleaned.Count < 2 || cleaned.Count > 6)
         {
-            return (null, "A Skirmish needs 2–6 players: one email per line.");
+            return (null, 0, "A Skirmish needs 2–6 players: one email per line.");
         }
 
         if (cleaned.Distinct(StringComparer.OrdinalIgnoreCase).Count() != cleaned.Count)
         {
-            return (null, "Each player can only take one seat.");
+            return (null, 0, "Each player can only take one seat.");
         }
 
         if (roundLength <= TimeSpan.Zero)
         {
-            return (null, "Give each round some time.");
+            return (null, 0, "Give each round some time.");
         }
 
         var players = new List<(string OwnerId, string Name, MagicSchool School)>();
@@ -105,12 +105,12 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
             {
                 if (await accounts.FindByEmailAsync(email) is not { } account)
                 {
-                    return (null, $"No account has the email {email}: they need to sign in once first.");
+                    return (null, 0, $"No account has the email {email}: they need to sign in once first.");
                 }
 
                 if (await db.IsBannedAsync(account.Id))
                 {
-                    return (null, $"{email} is banned.");
+                    return (null, 0, $"{email} is banned.");
                 }
 
                 var mage = realm is null ? null : await db.LoadMageAsync(realm.Id, account.Id);
@@ -118,7 +118,9 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
             }
         }
 
-        return (await CreateAsync(players, rules with { Players = players.Count }, roundLength), null);
+        var id = await CreateAsync(players, rules with { Players = players.Count }, roundLength);
+        await using var read = await database.BeginAsync();
+        return (id, (await read.LoadGameAsync(id))!.Round.Number, null);
     }
 
     /// <summary>The player's Skirmish games, running first, then ended ones, newest first.</summary>

@@ -30,8 +30,8 @@
     private async Task StartAsync()
     {
         busy = true;
-        var (gameId, problem) = await Skirmishes.CreateForEmailsAsync(emails.Split('\n'), TimeSpan.FromMinutes(minutes), Accounts);
-        result = problem ?? $"Started Skirmish game {gameId}. The players see it on their Games page.";
+        var (_, number, problem) = await Skirmishes.CreateForEmailsAsync(emails.Split('\n'), TimeSpan.FromMinutes(minutes), Accounts);
+        result = problem ?? $"Started Skirmish {number}. The players see it on their Games page.";
         if (problem is null)
         {
             emails = string.Empty;
