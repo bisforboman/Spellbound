@@ -56,8 +56,9 @@ game ends and points are counted from several sources, so there's more than one 
 
 1. **Plan.** Each player has **3 actions** per round (a switch) and chooses them in private. Orders can be changed
    until the player taps Ready, and Ready can be taken back until the round plays.
-2. **Reminders.** When everyone else is ready, the last players get a nudge. Everyone who isn't ready gets one when an
-   hour (or a tenth of a short limit) is left.
+2. **Reminders** (built, by web push, for players who turned notifications on): when everyone else is ready, the last
+   player gets a nudge (once a round). Everyone who isn't ready gets one when an hour (or a tenth of a short limit) is
+   left. When a round plays, everyone hears, except the player whose Ready played it.
 3. **Play out.** When all are ready or time runs out, the server plays the round (a background job per game, the kind
    of global event the architecture allows). Players who didn't finish keep the orders they had saved.
 4. **Report.** Everyone reads a short report of what happened, in order, then plans the next round.

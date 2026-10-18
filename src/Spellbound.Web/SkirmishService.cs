@@ -32,7 +32,8 @@ public sealed record SkirmishSummary(
 /// round itself happen one at a time: two last Ready taps at once play the round once. A round plays when every player
 /// still in the game is ready, or when its time runs out (<see cref="SkirmishKeeper"/>).
 /// </summary>
-public sealed class SkirmishService(HostDatabase database, TimeProvider time, IRandomSource random, ILogger<SkirmishService> logger)
+public sealed class SkirmishService(
+    HostDatabase database, TimeProvider time, IRandomSource random, PushSink push, ILogger<SkirmishService> logger)
 {
     public const string Mode = "skirmish";
 
@@ -170,7 +171,7 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
     /// why they can't be saved, or null. Orders are checked as the round would play them if nobody got in the way.
     /// </summary>
     public Task<string?> SaveOrdersAsync(long gameId, string ownerId, int round, IReadOnlyList<SkirmishOrder> orders) =>
-        ActAsync(gameId, ownerId, round, async (db, row, seat) =>
+        ActAsync(gameId, ownerId, round, async (db, row, seat, _) =>
         {
             if (seat.Ready)
             {
@@ -193,13 +194,20 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
     /// once, in this same transaction.
     /// </summary>
     public Task<string?> SetReadyAsync(long gameId, string ownerId, int round, bool ready) =>
-        ActAsync(gameId, ownerId, round, async (db, row, seat) =>
+        ActAsync(gameId, ownerId, round, async (db, row, seat, notifications) =>
         {
             await db.ExecuteAsync("UPDATE skirmish_seats SET ready = $3 WHERE game_id = $1 AND seat = $2", gameId, seat.Seat, ready);
             var playing = Playing(row, await db.LoadBansAsync());
-            if (ready && playing.All(s => s.Seat == seat.Seat || s.Ready))
+            var waiting = playing.Where(s => s.Seat != seat.Seat && !s.Ready).ToList();
+            if (ready && waiting.Count == 0)
             {
-                await PlayAsync(db, row with { Seats = [.. row.Seats.Select(s => s.Seat == seat.Seat ? s with { Ready = true } : s)] });
+                await PlayAsync(db, row with { Seats = [.. row.Seats.Select(s => s.Seat == seat.Seat ? s with { Ready = true } : s)] }, notifications, seat.Seat);
+            }
+            else if (ready && waiting is [{ Nudged: false } last])
+            {
+                // Everyone else is ready: tell the last one, once a round.
+                await db.ExecuteAsync("UPDATE skirmish_seats SET nudged = true WHERE game_id = $1 AND seat = $2", gameId, last.Seat);
+                notifications.Add(Message(row, last.OwnerId!, $"Everyone else is ready in Skirmish {row.Number}", $"Round {row.Game.Round + 1} plays when you are."));
             }
 
             return null;
@@ -220,16 +228,59 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
                 return played;
             }
 
-            await PlayAsync(db, row);
+            var notifications = new List<PushMessage>();
+            await PlayAsync(db, row, notifications, playedBy: null);
             await db.CommitAsync();
+            Notify(notifications);
             played++;
         }
 
         return played;
     }
 
-    /// <summary>Plays the round: the saved orders, who was ready, the luck recorded; then the next round starts.</summary>
-    private async Task PlayAsync(DbSession db, GameRow row)
+    /// <summary>
+    /// Reminds players who aren't ready that a round's time is running out: once a round, when what's left is under an
+    /// hour or a tenth of the round, whichever is shorter. Returns how many games were reminded.
+    /// </summary>
+    public async Task<int> RemindDueAsync(CancellationToken cancellationToken = default)
+    {
+        var reminded = 0;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await using var db = await database.BeginAsync(cancellationToken);
+            var due = await db.ScalarAsync<long?>(
+                """
+                SELECT g.game_id FROM skirmish_games g
+                WHERE NOT g.ended AND g.round_ends_at > $1
+                  AND g.round_ends_at - least(interval '1 hour', g.round_length / 10) <= $1
+                  AND g.reminded_round <= (g.state ->> 'round')::int
+                ORDER BY g.round_ends_at LIMIT 1 FOR UPDATE SKIP LOCKED
+                """,
+                Now);
+            if (due is not { } gameId || await LoadAsync(db, gameId, forUpdate: true) is not { } row)
+            {
+                return reminded;
+            }
+
+            var planning = row.Game.Round + 1;
+            await db.ExecuteAsync("UPDATE skirmish_games SET reminded_round = $2 WHERE game_id = $1", gameId, planning);
+            var notifications = Playing(row, await db.LoadBansAsync())
+                .Where(s => !s.Ready)
+                .Select(s => Message(row, s.OwnerId!, $"Time is running out in Skirmish {row.Number}", $"Round {planning} plays soon, ready or not."))
+                .ToList();
+            await db.CommitAsync();
+            Notify(notifications);
+            reminded++;
+        }
+
+        return reminded;
+    }
+
+    /// <summary>
+    /// Plays the round: the saved orders, who was ready, the luck recorded; then the next round starts. Everyone still
+    /// playing hears about it, except the player whose tap played it (<paramref name="playedBy"/>), who is looking at it.
+    /// </summary>
+    private async Task PlayAsync(DbSession db, GameRow row, List<PushMessage> notifications, int? playedBy)
     {
         var now = Now;
         var orders = row.Seats.Where(s => s.Orders.Count > 0).ToDictionary(s => s.Seat, s => s.Orders);
@@ -248,11 +299,30 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
         await db.ExecuteAsync(
             "UPDATE skirmish_games SET state = $2, round_ends_at = $3, ended = $4 WHERE game_id = $1",
             row.GameId, new Jsonb(DomainJson.Serialize(row.Game)), now + row.RoundLength, row.Game.Ended);
-        await db.ExecuteAsync("UPDATE skirmish_seats SET orders = '[]', ready = false WHERE game_id = $1", row.GameId);
+        await db.ExecuteAsync("UPDATE skirmish_seats SET orders = '[]', ready = false, nudged = false WHERE game_id = $1", row.GameId);
         if (row.Game.Ended)
         {
             await db.EndGameAsync(row.GameId, now);
             logger.LogInformation("Skirmish {Number} ended after round {Round}.", row.Number, report.Round);
+        }
+
+        var winner = row.Game.Standings()[0];
+        foreach (var seat in Playing(row, await db.LoadBansAsync()).Where(s => s.Seat != playedBy))
+        {
+            notifications.Add(row.Game.Ended
+                ? Message(row, seat.OwnerId!, $"Skirmish {row.Number} is over", $"{winner.Name} wins with {row.Game.Score(winner.Index).Total} points.")
+                : Message(row, seat.OwnerId!, $"Round {report.Round} played in Skirmish {row.Number}", $"Plan round {report.Round + 1}."));
+        }
+    }
+
+    private static PushMessage Message(GameRow row, string ownerId, string title, string body) =>
+        new(ownerId, title, body, $"/skirmish/{row.GameId}");
+
+    private void Notify(IEnumerable<PushMessage> notifications)
+    {
+        foreach (var notification in notifications)
+        {
+            push.Send(notification);
         }
     }
 
@@ -264,8 +334,10 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
         [.. row.Seats.Where(s => s.OwnerId is { } owner && !bans.IsBanned(owner) && !row.Game.Seats[s.Seat].Out)];
 
     /// <summary>Runs a change for a player in their game, in its own transaction, if they may act and the round still stands.</summary>
-    private async Task<string?> ActAsync(long gameId, string ownerId, int round, Func<DbSession, GameRow, SeatRow, Task<string?>> action)
+    private async Task<string?> ActAsync(
+        long gameId, string ownerId, int round, Func<DbSession, GameRow, SeatRow, List<PushMessage>, Task<string?>> action)
     {
+        var notifications = new List<PushMessage>();
         try
         {
             await using var db = await database.BeginAsync();
@@ -294,12 +366,13 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
                 return Moved;
             }
 
-            if (await action(db, row, seat) is { } problem)
+            if (await action(db, row, seat, notifications) is { } problem)
             {
                 return problem;
             }
 
             await db.CommitAsync();
+            Notify(notifications); // only once the change is saved
             return null;
         }
         catch (Exception ex) when (HostStore.IsBusy(ex))
@@ -321,13 +394,13 @@ public sealed class SkirmishService(HostDatabase database, TimeProvider time, IR
         }
 
         var seats = await db.QueryAsync(
-            "SELECT seat, owner_id, orders::text, ready FROM skirmish_seats WHERE game_id = $1 ORDER BY seat",
-            r => new SeatRow(r.GetInt32(0), r.IsDBNull(1) ? null : r.GetString(1), DomainJson.Deserialize<List<SkirmishOrder>>(r.GetString(2)), r.GetBoolean(3)),
+            "SELECT seat, owner_id, orders::text, ready, nudged FROM skirmish_seats WHERE game_id = $1 ORDER BY seat",
+            r => new SeatRow(r.GetInt32(0), r.IsDBNull(1) ? null : r.GetString(1), DomainJson.Deserialize<List<SkirmishOrder>>(r.GetString(2)), r.GetBoolean(3), r.GetBoolean(4)),
             gameId);
         return new GameRow(gameId, game.Number, DomainJson.Deserialize<SkirmishGame>(game.State), game.Length, game.EndsAt, seats);
     }
 
-    private sealed record SeatRow(int Seat, string? OwnerId, IReadOnlyList<SkirmishOrder> Orders, bool Ready);
+    private sealed record SeatRow(int Seat, string? OwnerId, IReadOnlyList<SkirmishOrder> Orders, bool Ready, bool Nudged);
 
     private sealed record GameRow(long GameId, int Number, SkirmishGame Game, TimeSpan RoundLength, DateTimeOffset RoundEndsAt, IReadOnlyList<SeatRow> Seats)
     {
