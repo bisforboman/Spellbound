@@ -250,68 +250,9 @@ html, body {
         margin-top: 0.5rem;
     }
 
-/* Skirmish: the order list and the order kinds */
-.orders {
-    padding-left: 1.25rem;
-}
-
-    .orders li {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.5rem;
-        min-height: 44px;
-        border-bottom: 1px solid var(--bs-border-color);
-    }
-
-.kinds {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0 0.5rem;
-}
-
-    .kinds .choice {
-        padding: 0.5rem;
-    }
-
-
-.invite-code {
-    font-family: monospace;
-    font-size: 1.25rem;
-    letter-spacing: 0.1em;
-}
-
 /* Native controls (radios, checkboxes, the turns bar) in the theme's stone grey */
 :root {
     accent-color: #a39d92;
-}
-
-/* Skirmish seat colours: each seat has its own (seats join in order, up to 6), shown by its name, on the regions it
-   holds, and as the player's own stripe at the top of their game page. Readable on the dark background. */
-.seat-0 { --seat: #ff6b6b; }
-.seat-1 { --seat: #5aa9ff; }
-.seat-2 { --seat: #5fd38d; }
-.seat-3 { --seat: #ffd166; }
-.seat-4 { --seat: #ff9f43; }
-.seat-5 { --seat: #f78fe0; }
-
-.seat-name {
-    color: var(--seat);
-}
-
-.rank-row.seated {
-    border-left: 4px solid var(--seat);
-    padding-left: 0.5rem;
-}
-
-    .rank-row.seated.you {
-        background: color-mix(in srgb, var(--seat) 16%, transparent);
-    }
-
-.seat-stripe {
-    height: 4px;
-    margin: -1.1rem -1rem 1rem;
-    background: var(--seat);
 }
 
 /* Muted action colours, to sit in the greys: olive for good news and Ready, rust for danger, ochre for warnings */
@@ -406,8 +347,7 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row) {
     color: var(--bs-danger-text-emphasis) !important;
 }
 
-/* Symbols before labels (Glyph.razor): stone grey, with dull brass for gold and slate for mana, so the seat colours
-   stay the only bright ones */
+/* Symbols before labels (Glyph.razor): stone grey, with dull brass for gold and slate for mana */
 .glyph {
     display: inline-block;
     width: 1.2em;

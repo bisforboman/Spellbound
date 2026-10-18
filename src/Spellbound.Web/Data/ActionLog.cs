@@ -41,7 +41,7 @@ public sealed record LoggedAction(
 /// </summary>
 public static class ActionLog
 {
-    /// <summary>A short fingerprint of the rules in force (each game's own, Realm or Skirmish); a replay must use the same ones.</summary>
+    /// <summary>A short fingerprint of the rules in force (each game's own); a replay must use the same ones.</summary>
     public static string RulesHash<TRules>(TRules rules) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(DomainJson.Serialize(rules))))[..16];
 

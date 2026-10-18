@@ -9,5 +9,4 @@ public enum GlyphKind
     Land,
     Army,
     Defense,
-    Slot,
 }
