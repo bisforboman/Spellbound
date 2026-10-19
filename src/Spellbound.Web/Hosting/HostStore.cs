@@ -38,9 +38,20 @@ public static class HostStore
             ReadGame,
             mode);
 
-    /// <summary>A game by id, running or ended.</summary>
-    public static Task<HostedGame?> LoadGameAsync(this DbSession db, long id) =>
-        db.SingleAsync("SELECT id, mode, number, starts_at, ends_at, rules::text FROM games WHERE id = $1", ReadGame, id);
+    /// <summary>A game by id, running or ended. With <paramref name="forUpdate"/>, locks its row.</summary>
+    public static Task<HostedGame?> LoadGameAsync(this DbSession db, long id, bool forUpdate = false) =>
+        db.SingleAsync(
+            "SELECT id, mode, number, starts_at, ends_at, rules::text FROM games WHERE id = $1" + (forUpdate ? " FOR UPDATE" : ""),
+            ReadGame,
+            id);
+
+    /// <summary>The state a game keeps in its row (as it wrote it), or null if it has none.</summary>
+    public static Task<string?> LoadGameStateAsync(this DbSession db, long id) =>
+        db.ScalarAsync<string>("SELECT state::text FROM games WHERE id = $1", id);
+
+    /// <summary>Replaces the state a game keeps in its row.</summary>
+    public static Task SaveGameStateAsync(this DbSession db, long id, string json) =>
+        db.ExecuteAsync("UPDATE games SET state = $2 WHERE id = $1", id, new Jsonb(json));
 
     /// <summary>
     /// Starts a game of the given mode, numbered after the mode's last one, and returns it as stored. Call it holding

@@ -13,8 +13,9 @@ tests run on a real PostgreSQL (not in-memory SQLite). `PlaceholderGame` holds t
   not the shape.
 - **A match is a host game:** each match is a row in the host's `games` table (mode, seats, state); the always-on
   round goes away. This changes `Hosting/` (`RoundKeeper`, the admin page's round controls) when persistence is built.
-- **A match is stored as one jsonb snapshot** (bringing back `DomainJson` from `b171e46`): it is small and changes
-  once per round. Tables only if game history or ladders need queries later.
+- **A match is stored as one jsonb snapshot**: it is small and changes once per round. Tables only if game history or
+  ladders need queries later. *(Built with an explicit `MatchState` record instead of `DomainJson`'s private-field
+  reflection, so the stored format is deliberate; see architecture.md, "Matches".)*
 - M1 is synchronous: bots commit at once, so commit-and-wait, timeouts and timers wait for M2.
 
 ## M0: Bootstrap and paper test
@@ -42,9 +43,11 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Bots: a simple bid rule and a simple stance rule, and a bot-vs-bot simulator that plays many seeded games and
   reports on the paper prototype's "watch for" list (`Bot`, `Simulation`, `tools/Spellbound.Simulator`)
 - [ ] Bind `GameRules` from configuration (`TimeProvider.System` is already registered)
-- [ ] Persistence: a match as one jsonb snapshot in the host's `games` row, through the host's `DbSession` (see
-  Decisions) *(was "EF Core mapping for games, seats, tiles, units and submissions")*; the game replaces
-  `PlaceholderGame` behind the host's hooks, which change from one always-on round to matches started on demand
+- [x] Persistence: a match as one jsonb snapshot in the host's `games` row, through the host's `DbSession` (see
+  Decisions) *(was "EF Core mapping for games, seats, tiles, units and submissions")* (`MatchState`, `MatchStore`)
+- [ ] The host runs matches started on demand instead of one always-on round (`RoundKeeper`, `IRoundLifecycle`, the
+  home page), and the game replaces `PlaceholderGame` behind the host's hooks. The admin page lists running matches
+  (round, players) with an "end now" per match (owner's choice, 19 Oct 2026)
 - [ ] Pages: new game (pick a trait), the opening auction, the map with tap-to-select tiles, the stance buttons, the
   round report, the end screen. Each action shows its cost and result first: Attune's price, what a Summon's mana
   buys, both sides' power before an attack
@@ -85,8 +88,8 @@ Most of this was built for the old game and stays:
 - The game host (`Hosting/`): games and rounds kept running by `RoundKeeper`, the admin page, bans, multi-account
   signals, rate limits, alerts, nightly backups with a tested restore, web push notifications
 - The privacy notice, the art theme "The Burned Grimoire" ([theme](theme.md)), and the playtest tool
-- Pieces of the old game that may come back, from `b171e46`: `DomainJson` (jsonb snapshots of domain objects), the
-  action log, the balance simulation, the sigil generator, the ledger preview
+- Pieces of the old game that may come back, from `b171e46`: the action log, the sigil generator, the ledger preview
+  (`DomainJson` and the balance simulation are replaced by `MatchState` and `Simulation`)
 
 ## Later
 - Traits (full list), spells, more stances, more unit kinds and tile types, defender bonuses, teams, a ranked ladder

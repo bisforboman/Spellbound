@@ -30,9 +30,18 @@ public sealed class PlaceholderGame(HostDatabase database)
     public Task OnGameEndedAsync(DbSession db, HostedGame ended, BanList bans, CancellationToken cancellationToken) =>
         Task.CompletedTask;
 
+    /// <summary>Nothing to do: the player's seats in matches (match_players) go with the account row, and those seats
+    /// play on as bots.</summary>
     public Task OnAccountDeletedAsync(DbSession db, string ownerId) => Task.CompletedTask;
 
-    public Task<object> ExportAsync(DbSession db, string ownerId) => Task.FromResult<object>(new { });
+    /// <summary>The matches the player sits in, and their seat in each.</summary>
+    public async Task<object> ExportAsync(DbSession db, string ownerId) => new
+    {
+        matches = await db.QueryAsync(
+            "SELECT game_id, seat FROM match_players WHERE owner_id = $1 ORDER BY game_id",
+            r => new { match = r.GetInt64(0), seat = r.GetInt32(1) + 1 },
+            ownerId),
+    };
 
     public Task<IReadOnlyDictionary<string, PlayerSummary>> GetAsync(DbSession db, HostedGame game) =>
         Task.FromResult<IReadOnlyDictionary<string, PlayerSummary>>(new Dictionary<string, PlayerSummary>());

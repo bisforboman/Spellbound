@@ -26,6 +26,9 @@ public sealed class GameMap
         return new GameMap(hexes.Select((hex, i) => new Tile(hex, types[i])).ToDictionary(t => t.Hex));
     }
 
+    /// <summary>A map as it was saved, tile by tile.</summary>
+    internal static GameMap FromTiles(IEnumerable<Tile> tiles) => new(tiles.ToDictionary(t => t.Hex));
+
     /// <summary>The types for a board of <paramref name="count"/> tiles: equal thirds, any remainder going to Steady,
     /// then Shifting (19 tiles: 7 Steady, 6 Shifting, 6 Wild).</summary>
     public static List<TileType> TypeMix(int count)

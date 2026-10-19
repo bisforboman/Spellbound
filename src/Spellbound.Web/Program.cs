@@ -17,6 +17,9 @@ builder.Services.AddSingleton<IRoundLifecycle>(sp => sp.GetRequiredService<Place
 builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<PlaceholderGame>());
 builder.Services.AddSingleton<IAccountLifecycle>(sp => sp.GetRequiredService<PlaceholderGame>());
 
+// Matches, stored in the host's games table (docs/architecture.md).
+builder.Services.AddSingleton<Spellbound.Web.Data.MatchStore>();
+
 var app = builder.Build();
 
 await app.UseGameHostAsync();

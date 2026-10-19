@@ -82,6 +82,19 @@ numbered per mode; `PlaceholderGame` runs mode `placeholder` with no rules (`{}`
 - **Data access** is SQL through `HostDatabase` and `DbSession` (`Hosting/Database.cs`): one transaction per call,
   positional parameters (`$1`, `$2`), a `Jsonb` wrapper for jsonb values. Row locks (`SELECT … FOR UPDATE`) with a
   5-second `lock_timeout` are how the old game made a double tap wait for the first one.
+- **Matches** (`Data/MatchStore.cs`): a match is a row in the host's `games` table (mode `match`). The row's `rules`
+  holds its `GameRules` and its `state` (added by `Hosting/Sql/004`, opaque to the host like `rules`) holds a
+  `StoredMatch`: the match's seed and its `MatchState`, the domain's explicit snapshot (`Match.Save`/`Match.Load`).
+  `match_players` (`Data/Sql/010`) says which account sits in which seat; a seat with no row is a bot, and a deleted
+  account's seats go with it (the seat plays on as a bot). JSON is `Data/MatchJson.cs`: camelCase, enums by name, a hex
+  as `[q, r]`. The state's shape is versioned (`MatchState.Version`); SQL scripts never edit it, so a change to it bumps
+  the version and `Match.Load` learns to read the old one.
+  - **Every change** goes through `MatchStore.ApplyAsync`: load with the row locked (`FOR UPDATE`), one domain call,
+    save only if it succeeded, one transaction. Two actions on one match take turns.
+  - **Randomness** is never stored: each step gets `SeededRandom(seed + step)`, where the step is the opening auction
+    (1–3) or 100 + the round, so a step's dice don't depend on how often the match was saved. The seed is picked by the
+    web layer (`Random.Shared`) when the match starts. The saved state is the truth; replaying from the seed is only for
+    tests, so a change to `System.Random` can't break a saved match. Never `HashCode` (it differs per process).
 - **Times** are stored as UTC (`timestamptz`); `DbSession` converts any `DateTimeOffset` with another offset.
   PostgreSQL keeps whole microseconds, so a time that must compare exactly after a round trip should be rounded to them.
 - **Rounds:** each round is a row in `games`. `RoundKeeper`, a hosted `BackgroundService`, checks every minute: it
