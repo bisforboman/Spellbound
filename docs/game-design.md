@@ -1,231 +1,193 @@
-# Spellbound game design (draft)
+# Spellbound — game design
 
-**The Realm is being reworked (decided 18 Oct 2026).** The owner's research, [mageborn-design.md](mageborn-design.md),
-is the design the Realm is moving to, step by step; [realm-rework.md](realm-rework.md) maps it onto what's built and
-records the decisions (Mageborn replaces the Realm, Skirmish is removed, the research's names are adopted). Until each
-step lands, this page describes the Realm **as it is built today**, and each step updates it.
+The rules of the game, built step by step from a clean slate. Why they look this way is in `design-principles.md`. Anything not written here is still open; earlier versions of the rules are not assumed. All numbers are first guesses until tested.
 
-The numbers below are the defaults in `GameRules`. They are first guesses that need balancing through play.
+Decided discussions (background and the angles that were considered):
+- `discussions/player-elimination.md`: a player's last tile can't fall.
+- `discussions/scoring-and-end.md`: 8 rounds, points banked as you go.
 
-**Some names are still placeholders** in today's build ("Dawn hex", "Unit 3"). Mageborn's names (the schools Dawn,
-Grove, Ember, Umbra and Veil, the buildings and the rest) replace them as the rework reaches each part.
+## How a game plays out
 
-## The pitch
+A walkthrough of one game from start to finish, kept up to date as rules are settled.
 
-You are a mage in a world of rival mages. A small pool of **turns** builds up while you're away. You spend them in
-short sessions on your phone: explore new land, build nodes and towns, meditate for mana, and cast spells. Later
-you attack rivals. A round lasts a few weeks and then the world resets.
+1. **Setup.** The map lies dark. Each player starts with **9 mana** and nothing else. Everyone is offered the **same 3 traits** and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening auctions put them.
+2. **The opening Unveils.** Traits are still hidden, so nobody knows for sure why a rival bids hard on a tile. Before the first round, three Unveils reveal **3 tiles per player plus 3 extra**, one tile at a time. In each one, as many tiles as there are players go up for a secret mana auction: winners take the tile they bid on, and everyone else gets a random tile nobody wanted. The rest of the revealed tiles stay unowned, for later. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
+3. **The rounds.** The game lasts **8 rounds**. When round 1 starts, all traits are revealed. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. Nobody starts with units, so the first rounds are about summoning and attuning.
+4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
+5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no auction). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
+6. **The second half.** Rounds 5–8: with the map fully revealed and free land running out, growth turns into competition. Attuning gets more expensive as realms grow, so attacking rivals becomes the cheaper way to gain land. A player's last tile can never be taken.
+7. **The end.** After round 8, the player with the most points wins. Points are banked every round, so what you earned early can't be taken away. Trait-goal points are hidden until the end.
 
-Design goals:
-- **Five minutes a few times a day** is a complete play session.
-- **Text-first.** It runs on any phone browser, needs no art budget, and battle reports are words.
-- **Fair to async players.** Turns are the universal currency, so checking in constantly gives no advantage beyond the turn cap.
-- **No pay-to-win.**
-- **Luck before decisions, not after.** Prefer randomness the player sees and plans around (Mageborn's Omens, hidden
-  information) over rolls that decide after they've committed; whatever the odds, show them before the player confirms,
-  like costs.
-- **Art later.** Text-first until the core is fun; art can be reconsidered then. The look (18 Oct 2026): "The Burned Grimoire",
-  a dark, gritty spellbook: soot paper with grain, blackletter page titles, iron-plate buttons, and each mage's pages
-  inked in their school's colour, with a sigil drawn from their name. Turns are a waxing moon, mana a flask, and a
-  battle's report is stamped with its verdict; small geometric symbols mark gold, land and army. See [theme.md](theme.md).
+## Traits
 
-## Games and rounds
+- At setup, **every player is offered the same 3 traits** and drafts **1**. Two players can end up with the same trait.
+- A trait is something to **build around**: it should pull a player towards a strategy (certain tiles, a way of expanding, a style of play), not just add a small bonus.
+- Traits are **hidden during the opening Unveils** and **revealed when the regular rounds start**. During the opening auctions, players can only guess at each other's traits from how they bid.
+- Traits can give **trait goals**: their own way to score (see *Scoring and winning*). Idea: a trait that scores for land of one type.
+- *Open:* the traits themselves.
 
-Each Realm round is one game, listed on the Games page that comes first after signing in; it lasts 4 weeks, ends with
-a hall of fame, and the server starts the next one. (A second mode, Skirmish, was built and then removed on 18 Oct 2026
-when the owner chose to rework the Realm as Mageborn; its design is in the git history.)
+## Map
 
-## Core loop
+- An **open hex board**: a round board of hexes, the same shape for any number of players.
+- **Size by player count:** **19 hexes** for 2–3 players, **37 hexes** for 4–5.
+- The map starts **dark**. Tiles are fixed places on it; both a tile's **type** and its **position** matter.
+- A player's tiles can be **scattered**, as in Catan. The tiles you own form one or more **connected groups**.
+- Units can only move **within a connected group**. Joining two groups (by attuning or taking the tiles between them) merges them, so units can then move across.
 
-1. Turns regenerate over time, up to a cap.
-2. Every action costs turns. Time only moves for your mage when you spend turns. Each spent turn runs one
-   economy tick: gold income, mana income, and spell durations count down.
-3. You grow land, then buildings, then income, which lets you cast stronger spells and (from milestone 2) field armies and attack.
+## Tiles
+
+- Tiles **mainly produce** mana; holding land also scores points (see *Scoring and winning*).
+- Start with **3 tile types**; more can be added later. All three produce **mana**; they differ in how much it varies:
+
+| Type | Mana | Average |
+|---|---|---|
+| Steady | 2 | 2 |
+| Shifting | 1–3 | 2 |
+| Wild | 0–4 | 2 |
+
+- A tile's yield is decided **once, when it is unveiled**: it gets a fixed value within its type's range and keeps it for the whole game. The value is visible from then on, so players know exactly what they are bidding on.
+- **Mix:** roughly **equal thirds** of each type (19 hexes: 7 Steady, 6 Shifting, 6 Wild).
+
+## Unveil
+
+- An **Unveil** turns over a batch of tiles on the dark map, one at a time.
+- **The opening:** before round 1, three Unveils reveal **3 tiles per player + 3 free tiles** in total (one free tile in each Unveil). Each has an auction (below), so every player ends with 3 tiles and 3 free tiles are left to attune.
+
+| Players | Map | Opening reveals | Auctioned | Left free | Still dark |
+|---|---|---|---|---|---|
+| 2 | 19 | 9 | 6 | 3 | 10 |
+| 3 | 19 | 12 | 9 | 3 | 7 |
+| 4 | 37 | 15 | 12 | 3 | 22 |
+| 5 | 37 | 18 | 15 | 3 | 19 |
+- **The later Unveils:** in **rounds 2 and 4**. The tiles still dark after the opening are **split evenly** between them (an odd one goes to round 2). They have **no auction**: the tiles stay unowned until someone takes them. After round 4 the whole map is revealed.
+- About **1 in 3** tiles revealed in a later Unveil is **guarded by monsters** (decided at random). The opening Unveils never reveal guarded tiles.
+
+### The Unveil auction (opening only)
+
+- In each opening Unveil, **as many tiles as there are players** are auctioned; the other unveiled tiles are only revealed.
+- Each player secretly bids **mana** on one of the auctioned tiles, or passes.
+- The highest bid on a tile wins it and pays. **Losing bidders don't pay.**
+- Players who lost or passed each get **one of the tiles nobody bid on, at random, for free**. So everyone ends each Unveil with exactly one new tile.
+- **Ties:** if the top bids on a tile are tied, nobody gets it and nobody pays; the tile becomes one of the random leftovers.
+- Won or leftover tiles don't need to connect to your other tiles (scattered holdings are allowed).
+
+## Rounds and stances
+
+- Each round, every player secretly picks **one stance**. Then all stances resolve together.
+- A stance should be **one button** on a phone: the round's main decision is a single tap.
+- **Three stances** to start with:
+  - **Attack:** attack a rival's or a monster-guarded tile with units (see *Battles*).
+  - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
+  - **Summon:** spend mana to summon units (see *Units*).
+- Alongside the stance, players can **move units** freely (see *Units*).
+- More stances (for example a defensive Hold, or Scry to peek at hidden things) can be added after the first playtest.
+
+### Round order
+
+In rounds 2 and 4, the round starts with a **later Unveil**. Then:
+
+1. **Income:** every player collects the mana yield of each tile they hold.
+2. **Upkeep:** pay 1 mana per Golem; a Golem that can't be paid for dissolves.
+3. **Commit:** every player secretly commits one stance plus any moves. When all have committed, everything is revealed.
+4. **Moves** resolve. Defenders can reinforce a threatened tile in the same round; attackers can't be sure what they'll meet.
+5. **Attune and Summon** resolve. New tiles exist and new units can defend before attacks.
+6. **Attacks** resolve.
+   - Units sent to attack **have left** their tile: they don't defend it if it's attacked in the same round.
+   - If **several players attack the same tile**, all of them fight the defender together in **one battle**; if the attackers win, the surviving attackers then fight each other for the tile.
+7. **Scoring:** points are banked (see *Scoring and winning*).
+
+## Units
+
+- All units are **summoned** with the **Summon** stance, and summoning costs **mana**.
+- Units can be summoned on **any tile you own**. The player **taps the tile** where the units appear, then **confirms**.
+- A tile can hold **any number of units** (no cap).
+- One summon calls **one kind of unit**. The player chooses how much mana to spend, and that decides how many arrive.
+- Two kinds of unit to start with:
+
+| Unit | Battle power | Summon cost | Upkeep |
+|---|---|---|---|
+| Imp (basic) | 1 | 1 mana | none |
+| Golem (strong) | 3 | 2 mana | 1 mana per round |
+
+- Because weak units die first in battle and shield strong ones, strong units must cost more per point of power over time; the upkeep is what does that.
+- Upkeep is paid **after** the round's mana income. If a player still **can't pay upkeep** for a Golem, that Golem **dissolves**.
+- **Moving units is possible every round**, regardless of stance, with **no limit** on the number of moves (to be tuned if visits get long).
+- Units can only move **between your own tiles**, one step to an **adjacent** tile. Reaching beyond your borders takes the **Attack** stance.
+- Imps can pile up without limit. This is accepted for now; if playtests show a cheap horde is too strong, add a limit then (per-tile cap, Imps fading after a few rounds, or weaker Imps).
+
+## Taking unowned tiles
+
+A revealed, unowned tile is taken in one of two ways, depending on whether it is guarded:
+
+- **Unguarded tiles, by attuning:** the **Attune** stance spends mana to tune a free, unguarded tile to your mana, making it yours. The tile must be **adjacent to any tile you own**.
+  - Attuning extends where your units can go: it is how you grow your presence and join scattered groups together.
+  - One Attune takes **one tile**.
+  - **Price: 1 mana + 1 mana for every tile you already control.** With 3 tiles, an Attune costs 4. The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 13).
+  - **Clash:** if two players attune the same tile in the same round, nobody gets it and nobody pays.
+- **Guarded tiles:** some unowned tiles are **guarded by monsters**. They can't be attuned; you need units to defeat the guards first.
+  - Guard strength is **visible**.
+  - Guarded tiles are cleared with the **Attack** stance, the same way as a rival's tile.
+  - Clearing gives **just the tile**; monsters are an obstacle, not a prize.
+  - Every monster guard has **battle power 3** (fixed, for now). One Golem ties it, which still wins the tile (see *Battles*); four Imps clear it outright.
+
+## Taking a rival's tiles
+
+- A rival's tile can **only be taken by attacking** it with units (the Attack stance). It can never be bought with mana.
+- The strength of a rival's units is **visible**, so an attack can be judged before it is committed.
+- A player's **last tile can't be taken** (see *Player elimination*).
+- Battles follow the rules in *Battles*.
+
+## Battles
+
+Kept simple for now, to be extended later.
+
+- Every unit has a **battle power** (see *Units*). Each side adds up the battle power of its units in the fight.
+- **The higher total wins.** No dice: anyone can work out the result from the numbers.
+- **Losses:** both sides lose battle power equal to the **smaller total**. So the loser is wiped out, and the winner keeps the difference.
+  - Example: 8 attacks 5. The defender loses all 5; the attacker loses 5 power and keeps 3.
+- **Which units die:** the **weakest units first**, automatically.
+- **Rounding down:** the winner removes units weakest-first until removing the next one would exceed the power lost. Because the winner's total is higher, **a winner always keeps at least one unit**. Strong units are shielded by weak ones (a Golem beating two Imps loses nothing).
+- **Ties go to the defender:** both armies are wiped out, and the tile stays with the defender (now empty).
+- **Exception for monsters:** in a tie against monster guards, both sides are wiped out, but the **attacker takes the tile**. To be checked in playtests.
+- **A won attack:** the attacker's surviving units **move into** the captured tile.
+- Battles against monsters use the same rules, with the guards as the defender.
+- **No defender bonus** for now: ties already go to the defender, so an attacker needs strictly more power. A bonus (from a stance, terrain or units that stay put) can be added later.
+- **A rival's last tile:** if an attack on it wins, the defending units die, but the tile **stays with the defender** (empty). The attacker's units stay where they were, and **no conquest point** is scored.
 
 ## Resources
 
-| Resource | Source | Limit |
-|---|---|---|
-| **Turns** | 1 per 10 minutes (real time) | Max 150 on hand (25 hours' worth, so one visit a day loses nothing); time at the cap is lost |
-| **Land** (acres) | Exploring | None, but each explore turn yields less as land grows |
-| **Gold** | Every turn: 1 per acre + 10 per town | None |
-| **Mana** | Every turn: 10 per node; meditating adds 100 per turn | 5,000 + 1,000 per node |
+- **Mana:** produced by tiles (see *Tiles*); pays for opening bids, attuning and summoning.
+- **Starting mana: 9.** Players start with nothing else: no tiles until the opening, and no units.
+- **Unspent mana carries over** to the next round, including whatever is left after the opening auctions.
+- **Spells** are planned as a later use for mana.
 
-## Starting mage
+## Scoring and winning
 
-250 acres, 20 nodes, 40 towns (so 190 acres are free), 10,000 gold, 2,000 mana, 100 turns.
+- The game lasts **8 rounds**. After round 8, the player with the **most points wins**.
+- Points are **banked as you go**: earned during the game and never taken away, even if land is lost later.
+- **What scores:**
+  - **Land held:** points for the tiles you hold.
+  - **Mana produced:** points for the mana your land produces.
+  - **Conquest:** points for rival tiles taken and monster tiles cleared.
+  - **Trait goals:** each trait can add its own way to score.
+- **Visibility:** the main score is **visible** to everyone during the game; **trait-goal points are hidden** until the end.
+- **Point values**, banked at the end of every round:
 
-New mages are **protected** from attacks for their first **72 hours** and until they have spent **120 turns**,
-whichever comes later. This matters from milestone 2.
+| Source | Points |
+|---|---|
+| Land held | 1 per tile you hold |
+| Mana produced | 1 per 4 mana your land produced (remainders carry over to the next round) |
+| Conquest | 1 per rival tile taken or monster tile cleared (kept even if the tile is lost again) |
+| Trait goals | set by each trait |
 
-## Actions (milestone 1)
+- **Tie-break:** most tiles held at the end; if still tied, most mana in hand.
 
-| Action | Turn cost | Effect |
-|---|---|---|
-| **Explore** | Chosen by the player | Each turn finds `10 × 250 / currentLand` acres (10 at the start, 5 at 500, 1 at 2,500), ×0.5 from the Contest phase on, ×1.25 while you hold less than the median mage. Fractions add up over turns, so a big realm still grows slowly |
-| **Build** | `ceil(count / 10)` | Turns free acres into nodes or towns. Costs 500 gold per building |
-| **Meditate** | Chosen by the player | +100 mana per turn on top of normal income, capped by storage |
-| **Cast (self) spell** | Per spell | Costs mana and gives a timed buff, measured in your own spent turns |
+## Player elimination
 
-Within one spent turn, the action happens first, then the economy tick (income, then army upkeep), then effect durations count down.
-New buildings count towards income during the turns spent building them.
+- A player's **last tile can't be taken**: a winning attack on it kills the defenders but leaves the tile with its owner (see *Battles*). Every player always keeps a foothold to rebuild from.
+- Together with banked points, this keeps everyone in the game to the end (principle 12).
 
-**The ledger.** Before you confirm Explore, Build, Meditate, a cast or a recruit, its form shows what it would leave
-you with ("After: 332 acres (+38), 56,974 gold (+3,587)…"), plus anything you shouldn't miss: units that would
-desert, spells that would fade. If the action can't be done, the ledger says why. It is the action itself, run on a
-copy of your mage, so it is exact. Attacks and hexes have no ledger: their outcome depends on luck and on what you
-can't see, and the War Table (M7, W5) is their preview.
+## Next to shape
 
-## Magic schools
-
-You pick one of five schools when you create your mage. The schools form a ring: each one is strong against the
-next and weak against the previous one. The counter bonuses are used by offensive spells and combat from milestone 2.
-
-`Dawn → Grove → Ember → Umbra → Veil → Dawn` (the Mageborn wheel's order; today each school is strong against the
-next one, until the battle rework brings in neighbours and opposites)
-
-### Self-spells (one per school, known from the start; see Hexes and wards for the Ward spell)
-
-| School | Spell | Mana | Turns | Duration | Effect |
-|---|---|---|---|---|---|
-| Dawn | Dawn self-spell | 1,500 | 2 | 30 turns | Gold income ×1.25 |
-| Grove | Grove self-spell | 1,500 | 2 | 30 turns | Explore yield ×1.5 |
-| Ember | Ember self-spell | 1,200 | 2 | 30 turns | Mana income ×1.3 |
-| Umbra | Umbra self-spell | 1,500 | 2 | 30 turns | Building cost ×0.8 |
-| Veil | Veil self-spell | 1,200 | 2 | 30 turns | Meditation yield ×1.5 |
-
-Recasting an active spell refreshes its duration; buffs don't stack.
-
-## Army (milestone 2)
-
-Every mage can recruit the same three units. Recruiting takes `ceil(count / 50)` turns.
-
-| Unit | Attack | Defense | Gold | Upkeep (gold per turn) |
-|---|---|---|---|---|
-| Unit 1 | 1 | 3 | 60 | 1 |
-| Unit 2 | 3 | 3 | 150 | 2 |
-| Unit 3 | 6 | 2 | 250 | 3 |
-
-- **Upkeep** is paid every turn you spend, right after that turn's income. If you can't pay it all, your gold drops to 0
-  and 10% of every unit type deserts (rounded up) that turn.
-- **Defense** is your units' defense plus **2 per acre** (the land's own guards), so a mage with no army isn't free land.
-
-## Attacks (milestone 2)
-
-An attack costs **4 turns** and resolves in the first of them; the 4 turns then run their economy ticks as usual.
-
-- **Who you can target:** not yourself, and not a protected mage. While *you* are protected you can't attack or hex
-  anyone either. The target must hold at least **60%** of your land, so big mages can't farm small ones.
-- **Power:** attack = your units' attack × school counter (×1.15 if your school is strong against theirs, ×0.85 if
-  weak) × luck. Defense = their defense × luck. Luck is a roll between ×0.9 and ×1.1 for each side.
-- **Win** (attack > defense): you take **10%** of their land (at least 1 acre), halved for every battle they have lost
-  in the last **72 hours**, to anyone: 10%, then 5%, then 2.5%. Each loss is forgotten three days after it happened. Battles
-  they held don't count. The target's page shows the share a win would take now. Taken land comes from their free acres
-  first; if that's not enough, buildings on it are destroyed, split between nodes and towns by how many they have.
-  The land arrives as free acres for you.
-- **Losses:** the attacker loses 8% of every unit on a win and 12% on a loss. The defender loses 10% when broken and
-  5% when holding.
-- **The Chronicle** (Rivals, then "the Chronicle") tells the whole realm of every attack and hex this round, newest
-  first: who struck whom (with both schools), and whether it broke through (and how many acres it took), held, landed
-  or was turned aside. It gives no number that would reveal hidden holdings: no attack or defense power, no units
-  killed, no gold or mana lost. Land is public anyway.
-- Both sides get a battle report. The defender's lands in their news log as a hostile entry.
-
-Randomness comes from an injected, seedable source, so the same seed replays the same battle.
-
-## Hexes and wards (milestone 2)
-
-Each school knows one **hex**, an offensive spell cast at another mage (same targeting rules as attacks).
-
-| School | Hex | Mana | Turns | Effect on success |
-|---|---|---|---|---|
-| Dawn | Dawn hex | 2,000 | 2 | Kills 5% of every unit type |
-| Grove | Grove hex | 2,000 | 2 | Destroys 8% of their gold |
-| Ember | Ember hex | 2,000 | 2 | Takes 10% of their mana; you keep what fits in your storage |
-| Umbra | Umbra hex | 2,000 | 2 | Burns 3% of their buildings |
-| Veil | Veil hex | 2,500 | 2 | They lose 3 turns on hand |
-
-- **Chance to land:** 70%, +15 points if your school is strong against theirs, −15 if weak.
-- The **Ward spell** is a self-spell every school knows: 1,000 mana, 2 turns, lasts 30 of your turns, and halves the
-  chance of hexes cast at you. Like every buff, it only counts down as you spend turns.
-- A hex that is turned aside still costs its mana and turns. The target hears about it either way.
-
-## Protection, rankings and net power (milestone 2)
-
-- New mages are protected for **72 hours** and until they have spent **120 turns** (see Starting mage). Mages created
-  before the time rule existed are protected by turns only.
-- Because everyone creates a mage when a round starts, every round opens with about **three days without attacks**.
-- **The Vigil:** once a round (`VigilsPerRound`) a mage can freeze its realm for up to **72 hours** (`VigilMaxDuration`),
-  from the Realm page. While it lasts no turns come in (so none are lost at the cap and nothing is earned), and the
-  mage can neither act nor be struck. Waking early is allowed and still uses the Vigil; turns resume where they left
-  off, part of the way to the next one included. Only the turns stop: protection and the round's clock run on.
-- **Net power** = 5 per acre + 10 per building + 1 per point of unit attack and defense (a Unit 3 adds 8). It is
-  published: the Rivals page prints the formula with the game's own weights, so anyone can check a ranking by hand.
-  A rival's buildings and army stay hidden; that their total bounds their army's size is accepted, by design.
-  (The code and stored data still call it networth.)
-- The **Rivals** page ranks every mage by land or by net power, and is where you pick a target.
-- When you are attacked or hexed, the overview shows a banner with how many times since you last looked, and the
-  entries are marked in the news log. Web push notifications are not built yet.
-
-## Rounds (milestone 3)
-
-- A round lasts **4 weeks** (`RoundLength`). The first one starts when the server first starts. Each round is a game
-  in the Games list, and keeps the rules it started with; changed settings apply from the next round.
-- When it ends, actions stop. Within a minute the server records the **hall of fame**: the top 10 mages by land and
-  by net power, with their school. Then the next round starts right away.
-- **Everything resets:** every player creates a new mage with the starting values, and news starts empty.
-  Accounts carry over; mages, armies and spells don't.
-- The overview shows the round number and the time left. Past rounds are on the Hall of fame page.
-- An admin can move the current round's end, or end it now (which runs the reset at once).
-- **Season phases.** A round runs through five phases, set as shares of its length (so a 7-day round has the same
-  shape as a 28-day one) and moving with its end if an admin moves it. The overview, Rivals, the Chronicle and the Games
-  page show the phase and the time to the next. Exploring reads them (below); the steps named for the others make more
-  rules read them.
-
-  | Phase | Share of the round | On a 28-day round | What it will change |
-  |---|---|---|---|
-  | Sanctuary | 0 – 3/28 | days 1–3 | Nobody is struck unless they strike first (W-items) |
-  | Growth | to 10/28 | days 4–10 | Exploring at its full yield |
-  | Contest | to 17/28 | days 11–17 | Exploring finds half as much, from here to the end |
-  | Conjunction | to 27/28 | days 18–27 | Armageddon can be cast, then the Final War (D-items) |
-  | Reckoning | the rest | day 28 | Titles and the Hall of fame (D-items) |
-
-## Bans (milestone 3)
-
-An admin can ban a player with a reason. A banned player can't sign in or act, their mage disappears from Rivals and
-can't be targeted, and they're left out of the hall of fame. Unbanning restores all of it; the mage is untouched.
-
-## Later (not designed yet)
-
-- research (new spells, artifacts), guilds, server variants (fast and slow turns, solo or team),
-  web push notifications for attacks.
-
-## Open questions
-
-A simulation of a full round answers several of these with numbers, and proposes changes: see
-[balance.md](balance.md).
-
-- Should we add population or peasants, or keep the economy as just land and buildings?
-- Should there be a limit on how often one mage can be attacked, since tiny attacks still cost the defender units?
-  See [balance.md](balance.md).
-- Is upkeep too harsh, or too light? In the simulation attackers spend nearly all their income on it and still win,
-  because stolen land pays for it. Revisit after the repeat-attack question.
-- Should there be a break between rounds, or an end-of-round event in the last days (for example, double land taken)?
-
-## Names to decide
-
-Mageborn's names are adopted (18 Oct 2026) and replace these as the rework reaches each part; until then, today's
-build keeps its placeholders. The schools are named (Dawn, Grove, Ember, Umbra, Veil; the enum members are stored, so
-renaming a school changes saved data). The spell and unit ids stored with a game (`"hex-c"`, `"unit-3"`) stay neutral,
-so naming those later changes only the display text, never saved data. What's still a placeholder:
-
-| Placeholder | What it is | Where to rename it |
-|---|---|---|
-| Dawn self-spell … Veil self-spell | Each school's own buff (gold, exploring, mana, building cost, meditation) | `SpellBook.All` (name and description) |
-| Ward spell | The buff every school knows: halves hexes against you | `SpellBook.All` |
-| Dawn hex … Veil hex | Each school's hex (kill units, destroy gold, take mana, destroy buildings, take turns) | `SpellBook.Hexes` |
-| Unit 1–3 | The three units: cheap defender, balanced, attacker | `UnitBook.All` |
-
-Not a placeholder: the game's name (Spellbound); "Mageborn" is the research's working title. Descriptions say what a thing does,
-plainly; flavour text can come with the names.
-
+1. The traits themselves.
+2. A first paper playtest (`skirmish-paper-prototype.md`); then revisit stances and the numbers.

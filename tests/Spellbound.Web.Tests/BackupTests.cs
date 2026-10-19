@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Spellbound.Domain;
-using Spellbound.Web.Data;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
@@ -48,9 +47,8 @@ public sealed class BackupTests : TestDatabase
 
         var fresh = CreateDatabase(); // empty: no migration has run
         Assert.True(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
-        Assert.Equal("Merlin", (await WithDbAsync(db => db.LoadMageAsync(1, "account-1"), fresh))!.Name);
-        Assert.NotNull(await WithDbAsync(db => db.LoadRunningGameAsync(SpellboundHost.RealmMode), fresh));
-        Assert.Empty(await SchemaMigrator.MigrateAsync(fresh, [HostStore.Schema, new SpellboundSchema().Schema])); // up to date
+        Assert.Equal(1, (await WithDbAsync(db => db.LoadRunningGameAsync(PlaceholderGame.Mode), fresh))!.Round.Number);
+        Assert.Empty(await SchemaMigrator.MigrateAsync(fresh, [HostStore.Schema, PlaceholderGame.GameSchema])); // up to date
 
         // Once there's data, a restore is refused, so a leftover setting can't overwrite a live game.
         Assert.False(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
@@ -102,13 +100,12 @@ public sealed class BackupTests : TestDatabase
             ["Backup:TimeOfDayUtc"] = "03:00:00",
         }).Build(), NullLogger<BackupKeeper>.Instance);
 
-    private Task SeedAsync() => WithDbAsync(async db =>
+    private Task SeedAsync() => WithDbAsync(db =>
     {
-        var round = Round.First(T0, GameRules.Default.RoundLength);
-        await db.ExecuteAsync(
+        var round = Round.First(T0, PlaceholderGame.RoundLength);
+        return db.ExecuteAsync(
             "INSERT INTO games (id, mode, number, starts_at, ends_at, rules, created_at) VALUES (1, $1, $2, $3, $4, '{}', $3)",
-            SpellboundHost.RealmMode, round.Number, round.StartsAt, round.EndsAt);
-        return await db.InsertMageAsync(1, Mage.Create("account-1", "Merlin", MagicSchool.Ember, T0, GameRules.Default));
+            PlaceholderGame.Mode, round.Number, round.StartsAt, round.EndsAt);
     });
 
     private sealed class ManualTime(DateTimeOffset start) : TimeProvider

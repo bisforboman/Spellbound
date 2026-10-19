@@ -44,7 +44,7 @@ else
     else
     {
         <div class="alert alert-warning mt-3">
-            <p>This records the hall of fame and starts round @(round.Number + 1). Every player starts over. It can't be undone.</p>
+            <p>This lets the game wrap up round @round.Number and starts round @(round.Number + 1). It can't be undone.</p>
             <button type="button" class="btn btn-danger btn-lg w-100" disabled="@busy" @onclick="EndNowAsync">Yes, end round @round.Number now</button>
             <button type="button" class="btn btn-link w-100" @onclick="() => confirmEnd = false">Cancel</button>
         </div>
@@ -65,7 +65,7 @@ else
 <h2 class="h4 mt-4">Players</h2>
 @if (players.Count == 0)
 {
-    <p class="text-muted">Nobody has a mage this round.</p>
+    <p class="text-muted">Nobody is playing this round.</p>
 }
 @foreach (var player in players)
 {

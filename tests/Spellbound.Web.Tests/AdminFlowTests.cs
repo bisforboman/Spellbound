@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Spellbound.Domain;
 using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
@@ -14,8 +12,6 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
 {
     private const string AdminEmail = "admin@spellbound.test";
 
-    private static readonly GameRules Rules = GameRules.Default with { ProtectionTurns = 0, ProtectionDuration = TimeSpan.Zero, StartingGold = 200_000 };
-
     private readonly WebApplicationFactory<Program> factory;
     private string adminId = string.Empty;
     private string merlinId = string.Empty;
@@ -23,16 +19,10 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
 
     public AdminFlowTests()
     {
-        factory = CreateApp(b => b
-            .UseSetting("Admins:0", AdminEmail)
-            .ConfigureTestServices(services =>
-            {
-                services.RemoveAll<GameRules>();
-                services.AddSingleton(Rules);
-            }));
+        factory = CreateApp(b => b.UseSetting("Admins:0", AdminEmail));
     }
 
-    private GameService Game => factory.Services.GetRequiredService<GameService>();
+    private PlaceholderGame Game => factory.Services.GetRequiredService<PlaceholderGame>();
 
     private AdminService Admin => factory.Services.GetRequiredService<AdminService>();
 
@@ -44,8 +34,6 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         adminId = await CreateUserAsync(AdminEmail);
         merlinId = await CreateUserAsync("merlin@spellbound.test");
         morganaId = await CreateUserAsync("morgana@spellbound.test");
-        await Game.CreateMageAsync(merlinId, "Merlin", MagicSchool.Ember);
-        await Game.CreateMageAsync(morganaId, "Morgana", MagicSchool.Umbra);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -62,27 +50,18 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
     }
 
     [Fact]
-    public async Task Banned_player_is_locked_out_and_removed_from_play_until_unbanned()
+    public async Task Banned_player_is_locked_out_until_unbanned()
     {
-        var morgana = (await Game.GetMageAsync(morganaId))!.Id;
-
         Assert.Equal("Banned morgana@spellbound.test.", await Admin.BanAsync(adminId, AdminEmail, morganaId, "Multi-accounting"));
 
         Assert.True(await IsShutOutAsync(morganaId));
         Assert.Equal(AccountService.Banned, (await Accounts.SignInAsync(AccountEndpoints.DevProvider, "morgana@spellbound.test", "morgana@spellbound.test")).Refused);
-        Assert.Equal("Your account is banned.", (await Game.ExploreAsync(morganaId, 1)).Lines[0]);
-        Assert.DoesNotContain(await Game.GetAllMagesAsync(), m => m.OwnerId == morganaId);
-        Assert.Null(await Game.GetRivalAsync(morgana));
-        await Game.RecruitAsync(merlinId, "unit-3", 100);
-        Assert.False((await Game.AttackAsync(merlinId, morgana)).Succeeded);
         var player = Assert.Single(await Admin.GetPlayersAsync(), p => p.OwnerId == morganaId);
         Assert.Equal("Multi-accounting", player.Ban!.Reason);
 
         Assert.Equal("Unbanned morgana@spellbound.test.", await Admin.UnbanAsync(morganaId));
 
         Assert.False(await IsShutOutAsync(morganaId));
-        Assert.True((await Game.ExploreAsync(morganaId, 1)).Succeeded);
-        Assert.True((await Game.AttackAsync(merlinId, morgana)).Succeeded);
     }
 
     [Fact]
@@ -92,21 +71,6 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         Assert.StartsWith("Give a reason", await Admin.BanAsync(adminId, AdminEmail, merlinId, "  "), StringComparison.Ordinal);
         Assert.All(await Admin.GetPlayersAsync(), p => Assert.Null(p.Ban));
         Assert.False(await IsShutOutAsync(merlinId));
-    }
-
-    [Fact]
-    public async Task Deleting_an_account_removes_the_players_mage_and_news()
-    {
-        await Game.ExploreAsync(merlinId, 1); // some news too
-        var merlin = (await Game.GetMageAsync(merlinId))!.Id;
-
-        await Accounts.DeleteAsync(merlinId);
-
-        Assert.Null(await Game.GetMageAsync(merlinId));
-        Assert.Empty(await Game.GetNewsAsync(merlinId));
-        Assert.Null(await Game.GetRivalAsync(merlin));
-        Assert.Equal(["Morgana"], (await Game.GetAllMagesAsync()).Select(m => m.Name)); // nobody else's data
-        Assert.Null(await Accounts.FindAsync(merlinId));
     }
 
     [Fact]
@@ -132,16 +96,14 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         Assert.StartsWith("Round 1 started", await Admin.ChangeRoundEndAsync(round.StartsAt), StringComparison.Ordinal);
         Assert.Equal(1, (await Game.GetRoundAsync())!.Number);
 
-        await Admin.BanAsync(adminId, AdminEmail, morganaId, "Cheating");
-        Assert.Equal("Round 1 has ended and round 2 has started.", await Admin.ChangeRoundEndAsync(Game.Now));
+        var now = factory.Services.GetRequiredService<TimeProvider>().GetUtcNow();
+        Assert.Equal("Round 1 has ended and round 2 has started.", await Admin.ChangeRoundEndAsync(now));
 
         Assert.Equal(2, (await Game.GetRoundAsync())!.Number);
-        var fame = Assert.Single(await Game.GetHallOfFameAsync());
-        Assert.Equal(["Merlin"], fame.ByLand.Select(e => e.Name)); // banned players are left out
     }
 
     [Fact]
-    public async Task The_admin_page_shows_the_games_sections_to_an_admin_only()
+    public async Task The_admin_page_is_for_admins_only()
     {
         using var admin = Client();
         using var player = Client();
@@ -151,35 +113,20 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         var page = await admin.GetStringAsync(new Uri("/admin", UriKind.Relative));
         var refused = await player.GetAsync(new Uri("/admin", UriKind.Relative));
 
-        Assert.Contains("Action log", page, StringComparison.Ordinal);
-        Assert.Contains("Game rules", page, StringComparison.Ordinal);
         Assert.Contains("Problems", page, StringComparison.Ordinal);
         Assert.Contains("Account/AccessDenied", refused.Headers.Location!.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task The_games_page_comes_first_and_leads_to_the_Realm()
+    public async Task The_home_page_shows_the_round_to_a_signed_in_player()
     {
         using var merlin = Client();
-        using var newcomer = Client();
         await SignInAsync(merlin, "merlin@spellbound.test");
-        await SignInAsync(newcomer, "newcomer@spellbound.test");
 
-        var withMage = await merlin.GetStringAsync(new Uri("/", UriKind.Relative));
-        var withoutMage = await newcomer.GetStringAsync(new Uri("/", UriKind.Relative));
-        var overview = await merlin.GetStringAsync(new Uri("/realm", UriKind.Relative));
+        var home = await merlin.GetStringAsync(new Uri("/", UriKind.Relative));
 
-        Assert.Contains("Your games", withMage, StringComparison.Ordinal);
-        Assert.Contains("Merlin, Ember mage", withMage, StringComparison.Ordinal);
-        Assert.Contains("href=\"realm\"", withMage, StringComparison.Ordinal);
-        Assert.Contains("Round 1", withMage, StringComparison.Ordinal);
-        Assert.Contains("href=\"create\"", withoutMage, StringComparison.Ordinal);
-        Assert.Contains("<h1 class=\"mage-name\">Merlin</h1>", overview, StringComparison.Ordinal);
-        Assert.Contains("<b>Sanctuary</b>", overview, StringComparison.Ordinal); // a new round opens in its first phase
-
-        // Net power is published: the formula, with this game's weights, is on Rivals.
-        var rivals = await merlin.GetStringAsync(new Uri("/rivals", UriKind.Relative));
-        Assert.Contains(Mage.NetPowerFormula(Rules), rivals, StringComparison.Ordinal);
+        Assert.Contains("The game is being designed again", home, StringComparison.Ordinal);
+        Assert.Contains("Round 1 runs until", home, StringComparison.Ordinal);
     }
 
     public override void Dispose()

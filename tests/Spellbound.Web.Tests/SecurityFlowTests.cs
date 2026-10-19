@@ -170,11 +170,7 @@ public sealed partial class SecurityFlowTests : TestDatabase
     {
         var client = Client();
         await SignInAsync(client, Merlin);
-        var id = AccountService.IdFor(AccountEndpoints.DevProvider, Merlin);
-        var game = factory.Services.GetRequiredService<GameService>();
         await factory.Services.GetRequiredService<RoundKeeper>().TickAsync();
-        await game.CreateMageAsync(id, "Merlin", Spellbound.Domain.MagicSchool.Ember);
-        await game.ExploreAsync(id, 3);
 
         var download = await client.GetAsync(new Uri("/Account/Data", UriKind.Relative));
         var anonymous = await Client().GetAsync(new Uri("/Account/Data", UriKind.Relative));
@@ -185,9 +181,7 @@ public sealed partial class SecurityFlowTests : TestDatabase
         var root = json.RootElement;
         Assert.Equal(Merlin, root.GetProperty("account").GetProperty("email").GetString());
         Assert.Equal(1, root.GetProperty("signInNetworks").GetArrayLength());
-        var gameData = root.GetProperty("game");
-        Assert.Equal("Merlin", gameData.GetProperty("mages")[0].GetProperty("mage").GetProperty("name").GetString());
-        Assert.Equal(["create", "explore"], gameData.GetProperty("actions").EnumerateArray().Select(a => a.GetProperty("action").GetString()));
+        Assert.Empty(root.GetProperty("game").EnumerateObject()); // the placeholder game stores nothing about players
         Assert.Equal(HttpStatusCode.Redirect, anonymous.StatusCode); // to sign in
     }
 

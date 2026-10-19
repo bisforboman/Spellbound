@@ -1,15 +1,16 @@
 # Spellbound
 
-A turn-based, text-first multiplayer strategy game for phones, inspired by the old browser game Archmage.
-Players run a mage, spend a slowly regenerating pool of **turns** to explore land, build, gather mana and
-cast spells, and (from milestone 2) attack each other.
+A text-first multiplayer strategy game for phones: a dark hex map, an opening mana auction, one stance per round,
+Imps and Golems, 8 rounds, points banked as you go. It is a clean-slate design (19 Oct 2026); the old game (the Realm,
+an Archmage-style strategy game, and its Mageborn rework) was removed and is in the git history at `b171e46`. The
+platform it ran on stays, with `PlaceholderGame` in the game's place until M1 builds the new one.
 
 Read these before making changes:
-- `docs/game-design.md`: the rules and starting numbers (the source of truth for gameplay)
-- `docs/mageborn-design.md` and `docs/realm-rework.md`: the design the Realm is being reworked to, and the plan and
-  decisions for getting there (Skirmish was removed on 18 Oct 2026)
-- `docs/architecture.md`: stack, project layout, request flow, hosting plan
+- `docs/game-design.md`: the rules and first-guess numbers (the source of truth for gameplay)
+- `docs/skirmish-paper-prototype.md`: the one-page version for a paper playtest
 - `docs/roadmap.md`: milestones and the current checklist
+- `docs/architecture.md`: stack, project layout, the game host boundary, hosting plan
+- `docs/theme.md`: the art theme
 
 ## First run
 
@@ -37,21 +38,22 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 
 ## Architecture rules
 
+The first group held for the old game and still fits the new design (simultaneous, secret rounds resolved from a
+seed); revisit it as M1 is built, and don't assume the old game's turns or mages exist.
+
 - **All game rules live in `Spellbound.Domain`.** It is pure C#. It has no database, ASP.NET or I/O references,
   and it never reads the clock. Callers pass `DateTimeOffset now` in.
-- **Balance numbers live only in `GameRules`.** Don't hardcode costs, rates
-  or caps anywhere else. Each game stores the rules it runs under; the web app binds `GameRules` from configuration (section `"GameRules"`) as the preset for new
-  games (the next Realm round), so a server can be tuned without code changes.
-- **Every domain action accrues turns first** (`Mage.AccrueTurns`) and returns an `ActionReport` of short,
-  readable text lines. Actions either fully succeed or change nothing.
-- **Turns regenerate lazily.** The app stores `Turns` plus `TurnsAccruedAt` and computes the rest on read.
-  There are no per-player timers or background loops. Background jobs are only for global events, such as Realm round
-  resets (`RoundKeeper`): one job for every game.
-- **The web layer is thin:** load the mage, call one domain method with `TimeProvider.GetUtcNow()`, then save, in one
-  transaction. The mage's row is locked while it acts (`SELECT … FOR UPDATE`), so a double-tap waits for the first tap
-  and then sees the turns it left: the same turns can't be spent twice.
-- **Make the domain deterministic.** Any randomness (from milestone 2 combat) comes through an injected, seedable source so
-  battles can be replayed in tests.
+- **Balance numbers live in one rules type**, stored with each game, never hardcoded elsewhere (the old game's was
+  `GameRules`, bound from configuration as the preset for the next round).
+- **Actions either fully succeed or change nothing**, and say what happened in short, readable lines.
+- **No per-player timers or background loops.** Background jobs are only for global events such as round resets
+  (`RoundKeeper`): one job for every game.
+- **The web layer is thin:** load, call one domain method with `TimeProvider.GetUtcNow()`, then save, in one
+  transaction, with the player's row locked (`SELECT … FOR UPDATE`) so a double tap waits for the first.
+- **Make the domain deterministic.** Any randomness comes through an injected, seedable source, so it can be replayed
+  in tests.
+
+These hold for the platform, whatever the game:
 
 - **`Hosting/` is the reusable game host and never depends on the game.** It may use `Round`, nothing else from
   `Spellbound.Domain` or the game's web code; the game plugs in through `Hosting/GameHooks.cs`. `HostingBoundaryTests`
@@ -61,9 +63,7 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 
 - Mobile-first. The UI must work at 360 px wide, with tap targets at least 44 px, and work one-handed.
 - Pages are text-first: numbers, short reports and simple forms. No canvas or game engine, and no JS framework.
-- Every action form shows its cost (turns, gold, mana) and its ledger (`Mage.Preview`, the projected result) before
-  the player confirms.
-- Show the time until the next turn and how close the player is to the turn cap.
+- Every action form shows its cost and its projected result before the player confirms (the old game's "ledger").
 - A change to pages gets a playtest run (`tools/Spellbound.Playtest`): it must pass, and look at the screenshots of the
   pages you changed. New pages and actions get a step in it.
 
@@ -71,7 +71,7 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 
 - C# latest, nullable enabled, file-scoped namespaces. Use records for value types and keep classes small.
 - Each new rule gets a unit test in `tests/Spellbound.Domain.Tests` that covers the happy path and the "changes nothing on failure" case.
-- When a rule or number changes, update `docs/game-design.md` in the same change.
+- When a rule or number changes, update the design document in the same change.
 - Tick off items in `docs/roadmap.md` as they are completed.
 - Keep dependencies minimal. Ask before adding a NuGet package that isn't Microsoft-provided.
 - **Advisor**: when an advisor tool is available, call it before design decisions or recommendations, before splitting

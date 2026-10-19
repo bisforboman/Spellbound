@@ -5,14 +5,14 @@ description: Play Spellbound end to end in a real phone-sized browser and check 
 
 # Playtest
 
-`tools/Spellbound.Playtest` plays the game the way players would. It:
+`tools/Spellbound.Playtest` uses the site the way players would. While the game is being designed again it covers the
+platform's pages; each page and action the new game adds gets a step. It:
 
 1. creates a fresh `spellbound_playtest` database;
-2. starts the app with fast rules (a turn a second, no protection, plenty of gold and mana);
-3. signs in three players at 360×740 (one of them an admin);
-4. visits every page and takes every kind of action: create a mage, explore, build, meditate, cast, recruit, attack,
-   hex, the news banner, the hall of fame, account, notifications and data download, privacy, the admin page, and
-   ending the Realm round;
+2. starts the app;
+3. signs in three players at 360×740 (one of them an admin) and checks the home page;
+4. visits the account page (data download), notifications, privacy, the admin page (and that a player who isn't an
+   admin is refused), and ends the round from the admin page;
 5. checks the admin page's **Problems** list at the end.
 
 Every step is screenshotted and checked. A step fails on any of these: sideways scrolling at 360 px, Blazor's error

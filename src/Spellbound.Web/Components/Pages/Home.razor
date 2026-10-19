@@ -1,0 +1,20 @@
+@page "/"
+@attribute [Authorize]
+@inject PlaceholderGame Game
+
+<PageTitle>Spellbound</PageTitle>
+<h1>Spellbound</h1>
+
+<p>The game is being designed again from the bottom. The platform it will run on is here: your account, sign-in,
+    notifications and the admin tools.</p>
+@if (round is not null)
+{
+    <p class="text-muted">Round @round.Number runs until @round.EndsAt.ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture).</p>
+}
+<p><a href="Account/Manage">Your account</a></p>
+
+@code {
+    private Round? round;
+
+    protected override async Task OnInitializedAsync() => round = await Game.GetRoundAsync();
+}

@@ -1,14 +1,12 @@
 @inherits LayoutComponentBase
-@using System.Security.Claims
-@inject NavigationManager Navigation
-@inject GameService Game
 
-@* The player's school tints the accents (docs/theme.md): data-school on a wrapper that takes no space. *@
-<div class="school-ink" data-school="@school">
+@* The page is inked in the theme's soft ink; a game can set data-school on this wrapper to tint the accents
+   (docs/theme.md). It takes no space. *@
+<div class="school-ink">
 <GrimFilters />
 
 <header class="top-bar">
-    <a class="brand" href="" title="Your games">Spellbound</a>
+    <a class="brand" href="" title="Home">Spellbound</a>
     <AuthorizeView>
         <Authorized>
             <AuthorizeView Policy="@AdminPolicy.Name" Context="admin">
@@ -26,28 +24,12 @@
     </AuthorizeView>
 </header>
 
-<main class="content @(OnRealmPage ? "with-tabs" : null)">
+<main class="content">
     @Body
     <footer class="site-footer">
         <a href="privacy">Privacy</a>
     </footer>
 </main>
-
-@* The Realm's tabs, only on the Realm's own pages: the top bar is the site's (your games, account), the bottom bar is
-   the sections of the game you're in, in thumb reach. The Games page and the account pages have none. *@
-<AuthorizeView>
-    @if (OnRealmPage)
-    {
-    <nav class="bottom-nav" aria-label="Realm">
-        <NavLink href="realm">Realm</NavLink>
-        <NavLink href="explore">Explore</NavLink>
-        <NavLink href="build">Build</NavLink>
-        <NavLink href="magic">Magic</NavLink>
-        <NavLink href="army">Army</NavLink>
-        <NavLink href="rivals">Rivals</NavLink>
-    </nav>
-    }
-</AuthorizeView>
 
 </div>
 
@@ -56,28 +38,3 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
-
-@code {
-    [CascadingParameter]
-    private Task<AuthenticationState>? AuthState { get; set; }
-
-    private string? school;
-
-    /// <summary>The signed-in player's school this round, lowercased for data-school; none without a mage. Looked up on
-    /// every page, so a mage made after a round reset is inked in their new school.</summary>
-    protected override async Task OnParametersSetAsync()
-    {
-        school = AuthState is not null
-            && (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) is { } ownerId
-            && await Game.GetMageAsync(ownerId) is { } mage
-                ? mage.School.ToString().ToLowerInvariant()
-                : null;
-    }
-
-    private static readonly HashSet<string> RealmPages =
-        ["realm", "explore", "build", "magic", "cast", "meditate", "army", "rivals", "chronicle", "halloffame"];
-
-    /// <summary>Whether this is one of the Realm's pages, which get the Realm's tabs.</summary>
-    private bool OnRealmPage =>
-        RealmPages.Contains(Navigation.ToBaseRelativePath(Navigation.Uri).Split('/', '?', '#')[0].ToLowerInvariant());
-}

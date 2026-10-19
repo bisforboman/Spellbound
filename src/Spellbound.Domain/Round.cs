@@ -2,7 +2,7 @@ namespace Spellbound.Domain;
 
 /// <summary>
 /// One round: a number and a start and end. When it ends, everyone starts over in the next round. It knows nothing about
-/// Spellbound's rules (the game passes the length, GameRules.RoundLength), so the reusable hosting code can run rounds.
+/// Spellbound's rules (the game passes the length), so the reusable hosting code can run rounds.
 /// </summary>
 public sealed record Round(int Number, DateTimeOffset StartsAt, DateTimeOffset EndsAt)
 {

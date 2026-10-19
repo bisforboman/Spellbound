@@ -58,7 +58,7 @@ public sealed class SignInSetupTests : TestDatabase
         {
             "Test Operator", "privacy@spellbound.test", "a test server", "on a test box for 30 days", "the last 5",
             "Your account", "Your sign-in networks", "30 days", "Your game", "Bans", "Cookies", "Google",
-            "other players' records of battles with you",
+            "Notifications",
             "Download my data", "Delete my account", "data protection authority",
         })
         {
