@@ -82,6 +82,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
 - Alongside the stance, players can **move units** freely (see *Units*).
+- A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon): only the moves happen. A player is never forced to spend.
 - More stances (for example a defensive Hold, or Scry to peek at hidden things) can be added after the first playtest.
 
 ### Round order
@@ -103,7 +104,7 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 - All units are **summoned** with the **Summon** stance, and summoning costs **mana**.
 - Units can be summoned on **any tile you own**. The player **taps the tile** where the units appear, then **confirms**.
 - A tile can hold **any number of units** (no cap).
-- One summon calls **one kind of unit**. The player chooses how much mana to spend, and that decides how many arrive.
+- One summon calls **one kind of unit**. The player chooses how much mana to spend, and that decides how many arrive (the rules take the number of units; the page shows what the mana buys).
 - Two kinds of unit to start with:
 
 | Unit | Battle power | Summon cost | Upkeep |
@@ -112,9 +113,10 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 | Golem (strong) | 3 | 2 mana | 1 mana per round |
 
 - Because weak units die first in battle and shield strong ones, strong units must cost more per point of power over time; the upkeep is what does that.
-- Upkeep is paid **after** the round's mana income. If a player still **can't pay upkeep** for a Golem, that Golem **dissolves**.
+- Upkeep is paid **after** the round's mana income. If a player still **can't pay upkeep** for a Golem, that Golem **dissolves**. When only some can be paid for, the unpaid ones dissolve from the player's tiles in board order (a fixed order, so the result is always the same).
 - **Moving units is possible every round**, regardless of stance, with **no limit** on the number of moves (to be tuned if visits get long).
 - Units can only move **between your own tiles**, one step to an **adjacent** tile. Reaching beyond your borders takes the **Attack** stance.
+- **One step per round:** a unit that moved this round can't move again until the next, so units cross a group one tile per round.
 - Imps can pile up without limit. This is accepted for now; if playtests show a cheap horde is too strong, add a limit then (per-tile cap, Imps fading after a few rounds, or weaker Imps).
 
 ## Taking unowned tiles

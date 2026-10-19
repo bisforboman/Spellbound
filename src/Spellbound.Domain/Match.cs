@@ -13,7 +13,7 @@ public enum MatchPhase
 /// injected source, so the same seed and the same moves always play out the same. Actions either fully succeed or
 /// change nothing.
 /// </summary>
-public sealed class Match
+public sealed partial class Match
 {
     private readonly List<Seat> seats;
     private readonly List<Hex> onAuction = [];
@@ -111,6 +111,7 @@ public sealed class Match
             OpeningUnveil = 0;
             Phase = MatchPhase.Rounds;
             lines.Add("The opening is over. The rounds begin.");
+            lines.AddRange(StartRound());
         }
 
         return new Report(true, lines);

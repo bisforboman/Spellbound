@@ -1,0 +1,270 @@
+namespace Spellbound.Domain;
+
+/// <summary>The rounds after the opening (docs/game-design.md, Rounds and stances): income and upkeep, then every
+/// seat's secret orders resolve together, then points are banked.</summary>
+public sealed partial class Match
+{
+    private readonly Dictionary<Hex, Army> units = [];
+
+    /// <summary>The round being played (1 to <see cref="GameRules.Rounds"/>), or 0 before the rounds begin.</summary>
+    public int CurrentRound { get; private set; }
+
+    /// <summary>The units on a tile. They belong to the tile's owner.</summary>
+    public Army UnitsOn(Hex hex) => units.GetValueOrDefault(hex);
+
+    /// <summary>The seats from first place to last: most points, then most tiles, then most mana in hand.</summary>
+    public IReadOnlyList<Seat> Standings =>
+        [.. seats.OrderByDescending(s => s.Score).ThenByDescending(s => s.Tiles.Count).ThenByDescending(s => s.Mana)];
+
+    /// <summary>The winners once the match is over: usually one, more if they tie on every tie-break.</summary>
+    public IReadOnlyList<Seat> Winners => Phase != MatchPhase.Ended ? [] :
+        [.. Standings.TakeWhile(s => (s.Score, s.Tiles.Count, s.Mana) == (Standings[0].Score, Standings[0].Tiles.Count, Standings[0].Mana))];
+
+    /// <summary>What one seat's orders would cost and do, or why they can't be given. Changes nothing.</summary>
+    public Report Check(Orders orders)
+    {
+        ArgumentNullException.ThrowIfNull(orders);
+        if (Phase != MatchPhase.Rounds)
+        {
+            return Report.Fail("Orders are only given during the rounds.");
+        }
+
+        if (orders.Seat < 0 || orders.Seat >= seats.Count)
+        {
+            return Report.Fail($"There is no seat {orders.Seat + 1}.");
+        }
+
+        var lines = new List<string>();
+        return (MovesProblem(orders, lines) ?? StanceProblem(orders, lines)) is { } problem
+            ? Report.Fail(problem)
+            : new Report(true, lines);
+    }
+
+    /// <summary>
+    /// Resolves the round with every seat's orders: moves, then Attunes and Summons, then points are banked
+    /// (docs/game-design.md, Round order). Then the next round starts with income and upkeep, or after the last round
+    /// the match ends. Fails, changing nothing, unless every seat has exactly one set of orders and all of them check.
+    /// </summary>
+    public Report Resolve(IReadOnlyCollection<Orders> orders)
+    {
+        ArgumentNullException.ThrowIfNull(orders);
+        if (Phase != MatchPhase.Rounds)
+        {
+            return Report.Fail("Orders are only given during the rounds.");
+        }
+
+        if (orders.Count != seats.Count || orders.Select(o => o.Seat).Distinct().Count() != seats.Count)
+        {
+            return Report.Fail("Every seat needs exactly one set of orders.");
+        }
+
+        foreach (var order in orders.OrderBy(o => o.Seat))
+        {
+            if (Check(order) is { Succeeded: false } failed)
+            {
+                return failed;
+            }
+        }
+
+        var lines = new List<string> { $"Round {CurrentRound}." };
+        var byseat = orders.OrderBy(o => o.Seat).ToList();
+        foreach (var move in byseat.SelectMany(o => o.Moves))
+        {
+            units[move.From] = UnitsOn(move.From) - move.Units;
+            units[move.To] = UnitsOn(move.To) + move.Units;
+        }
+
+        foreach (var order in byseat.Where(o => o.Moves.Count > 0))
+        {
+            lines.Add($"Seat {order.Seat + 1} moves {Plural(order.Moves.Count, "group")} of units.");
+        }
+
+        ResolveAttunes(byseat.Where(o => o.Stance == Stance.Attune && o.Target is not null).ToList(), lines);
+        foreach (var order in byseat.Where(o => o.Stance == Stance.Summon && o.Target is not null && o.Count > 0))
+        {
+            var hex = order.Target!.Value;
+            var army = Army.Of(order.Kind, order.Count);
+            seats[order.Seat].Mana -= Rules.CostOf(order.Kind) * order.Count;
+            units[hex] = UnitsOn(hex) + army;
+            lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.");
+        }
+
+        BankPoints(lines);
+        if (CurrentRound < Rules.Rounds)
+        {
+            lines.AddRange(StartRound());
+        }
+        else
+        {
+            Phase = MatchPhase.Ended;
+            lines.Add($"The match is over. {string.Join(" and ", Winners.Select(s => $"Seat {s.Index + 1}"))} "
+                      + (Winners.Count == 1 ? "wins." : "share the win."));
+        }
+
+        return new Report(true, lines);
+    }
+
+    /// <summary>Starts the next round: every seat collects its land's mana, then pays its Golems' upkeep. A Golem
+    /// that can't be paid for dissolves, on the seat's tiles in board order.</summary>
+    private List<string> StartRound()
+    {
+        CurrentRound++;
+        var lines = new List<string> { $"Round {CurrentRound} of {Rules.Rounds} begins." };
+        foreach (var seat in seats)
+        {
+            var income = seat.Tiles.Sum(h => Map[h].Yield ?? 0);
+            seat.Mana += income;
+            seat.ProducedThisRound = income;
+            lines.Add($"Seat {seat.Index + 1} collects {income} mana.");
+
+            var golems = seat.Tiles.Sum(h => UnitsOn(h).Golems);
+            var unpaid = golems - (Rules.GolemUpkeep == 0 ? golems : Math.Min(golems, seat.Mana / Rules.GolemUpkeep));
+            seat.Mana -= (golems - unpaid) * Rules.GolemUpkeep;
+            if (golems - unpaid > 0)
+            {
+                lines.Add($"Seat {seat.Index + 1} pays {(golems - unpaid) * Rules.GolemUpkeep} mana upkeep.");
+            }
+
+            if (unpaid > 0)
+            {
+                lines.Add($"Seat {seat.Index + 1} can't pay for {Plural(unpaid, "Golem")}: they dissolve.");
+            }
+
+            foreach (var hex in seat.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).Where(h => UnitsOn(h).Golems > 0))
+            {
+                var lost = Math.Min(unpaid, UnitsOn(hex).Golems);
+                units[hex] = UnitsOn(hex) - new Army(0, lost);
+                unpaid -= lost;
+            }
+        }
+
+        return lines;
+    }
+
+    /// <summary>Each seat claims the free tile it attuned and pays for it, unless another seat attuned the same tile:
+    /// then nobody gets it and nobody pays.</summary>
+    private void ResolveAttunes(List<Orders> attunes, List<string> lines)
+    {
+        var prices = attunes.ToDictionary(o => o.Seat, o => Rules.AttunePrice(seats[o.Seat].Tiles.Count));
+        foreach (var claim in attunes.GroupBy(o => o.Target!.Value))
+        {
+            if (claim.Count() > 1)
+            {
+                lines.Add($"{string.Join(" and ", claim.Select(o => $"Seat {o.Seat + 1}"))} all attune {Describe(claim.Key)}: nobody gets it.");
+                continue;
+            }
+
+            var seat = seats[claim.Single().Seat];
+            seat.Mana -= prices[seat.Index];
+            seat.Take(claim.Key);
+            lines.Add($"Seat {seat.Index + 1} attunes {Describe(claim.Key)} for {prices[seat.Index]} mana.");
+        }
+    }
+
+    /// <summary>Banks the round's points: for land held and for mana produced (the remainder carries over).</summary>
+    private void BankPoints(List<string> lines)
+    {
+        foreach (var seat in seats)
+        {
+            var land = seat.Tiles.Count * Rules.PointsPerTileHeld;
+            var produced = seat.ProducedCarry + seat.ProducedThisRound;
+            var mana = produced / Rules.ManaPerPoint;
+            seat.ProducedCarry = produced % Rules.ManaPerPoint;
+            seat.ProducedThisRound = 0;
+            seat.Score += land + mana;
+            lines.Add($"Seat {seat.Index + 1} banks {Plural(land + mana, "point")} ({land} for land, {mana} for mana), {seat.Score} in all.");
+        }
+    }
+
+    private string? MovesProblem(Orders orders, List<string> lines)
+    {
+        var seat = seats[orders.Seat];
+        var free = new Dictionary<Hex, Army>();
+        foreach (var move in orders.Moves)
+        {
+            if (!seat.Tiles.Contains(move.From) || !seat.Tiles.Contains(move.To))
+            {
+                return $"Units can only move between your own tiles ({move.From} to {move.To}).";
+            }
+
+            if (!move.From.IsNextTo(move.To))
+            {
+                return $"Units move one step at a time; {move.From} and {move.To} aren't next to each other.";
+            }
+
+            // Units that arrived this round have taken their step, so only the ones that started here can leave.
+            var left = free.TryGetValue(move.From, out var f) ? f : UnitsOn(move.From);
+            if (!move.Units.IsValid || move.Units.IsEmpty || !left.Holds(move.Units))
+            {
+                return $"There aren't {move.Units} at {move.From} to move.";
+            }
+
+            free[move.From] = left - move.Units;
+            lines.Add($"Move {move.Units} from {move.From} to {move.To}.");
+        }
+
+        return null;
+    }
+
+    private string? StanceProblem(Orders orders, List<string> lines)
+    {
+        var seat = seats[orders.Seat];
+        if (orders.Target is not { } target)
+        {
+            lines.Add($"{orders.Stance}, aimed at nothing: only the moves happen.");
+            return null;
+        }
+
+        if (!Map.Contains(target))
+        {
+            return $"{target} isn't on the map.";
+        }
+
+        switch (orders.Stance)
+        {
+            case Stance.Attune:
+            {
+                if (!Map[target].IsUnveiled || OwnerOf(target) is not null)
+                {
+                    return $"Only a free, unveiled tile can be attuned; {target} isn't one.";
+                }
+
+                if (!seat.Tiles.Any(h => h.IsNextTo(target)))
+                {
+                    return $"{target} isn't next to any of your tiles.";
+                }
+
+                var price = Rules.AttunePrice(seat.Tiles.Count);
+                if (price > seat.Mana)
+                {
+                    return $"Attuning costs {price} mana; you have {seat.Mana}.";
+                }
+
+                lines.Add($"Attune {Describe(target)} for {price} mana, leaving {seat.Mana - price}. If a rival attunes it too, nobody gets it.");
+                return null;
+            }
+
+            case Stance.Summon:
+            {
+                if (!seat.Tiles.Contains(target))
+                {
+                    return $"Units can only be summoned on your own tiles; {target} isn't yours.";
+                }
+
+                var cost = Rules.CostOf(orders.Kind) * orders.Count;
+                if (orders.Count < 0 || cost > seat.Mana)
+                {
+                    return $"{orders.Kind}s cost {Rules.CostOf(orders.Kind)} mana each; you have {seat.Mana}.";
+                }
+
+                lines.Add($"Summon {Army.Of(orders.Kind, orders.Count)} at {target} for {cost} mana, leaving {seat.Mana - cost}.");
+                return null;
+            }
+
+            default:
+                return $"Unknown stance {orders.Stance}.";
+        }
+    }
+
+    private static string Plural(int n, string word) => n == 1 ? $"1 {word}" : $"{n} {word}s";
+}
