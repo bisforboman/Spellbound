@@ -24,11 +24,11 @@ src/
   Spellbound.Domain/        pure game rules (no dependencies): Match, GameMap, Battle, the bots and the simulation;
                             Round is the one type the host uses
   Spellbound.Web/           Blazor app
-    Hosting/                the reusable game host: accounts, the database (HostDatabase, SQL scripts in Sql/), rounds,
+    Hosting/                the reusable game host: accounts, the database (HostDatabase, SQL scripts in Sql/), games,
                             admin page, bans, backups,
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
     Components/Account/     sign-in and account pages (part of the host, not yet moved into Hosting/)
-    PlaceholderGame.cs      the game's place until M1 builds the new one: answers the host's hooks (below)
+    SpellboundGame.cs       the game behind the host's hooks (below); Data/ holds its matches (MatchStore, MatchJson)
     Components/Pages/Home   the landing page
     Data/Sql/               the game's SQL scripts (009 dropped the old game's tables; the next game starts at 010)
     wwwroot/fonts/          the theme's fonts, self-hosted, with their licences (OFL-*.txt); see theme.md
@@ -53,12 +53,12 @@ extension points designed for a single game tend to come out wrong.
   Spellbound), and nothing else from `Spellbound.Domain` or the game's web code. `HostingBoundaryTests` enforces this
   on both the compiled types and the source files.
 - **The game plugs in** through `Hosting/GameHooks.cs`: `IGameSchema` (the game's own SQL scripts, migrated after
-  the host's; hooks get the host's `DbSession`, so both save in one transaction), `IRoundLifecycle` (the game the server always keeps running,
-  `AlwaysOnMode` and `NextAlwaysOn()`: its mode, length and rules; and `OnGameEndedAsync`, what happens when a game ends,
-  inside the reset's transaction) and `IPlayerSummaries` (how a player shows on the admin page), and
+  the host's; hooks get the host's `DbSession`, so both save in one transaction), `IGameLifecycle` (`OnGameEndedAsync`,
+  what happens when the host ends a game, inside that transaction; and `DescribeAsync`, a line about a game for the
+  admin page), `IPlayerSummaries` (how a player shows on the admin page), and
   `IAccountLifecycle` (deleting an account deletes the player's game data in the same transaction, and the data
   download includes it). `AdminPageOptions.GameSections` adds game sections to the admin page.
-  `PlaceholderGame` implements the hooks for now: it keeps a round going and stores nothing about players.
+  `SpellboundGame` implements the hooks: its games are matches, which it starts on demand (`MatchStore`).
 - `Program.cs` calls `AddGameHost()`, `UseGameHostAsync()` and `MapGameHost()` for the host, then registers the game.
 - **Tables** are split the same way: `Hosting/Sql` creates `accounts`, `games`, `bans`, `account_networks` and
   `server_secrets`; `Data/Sql` holds the game's scripts. The old game's tables are gone (`008` dropped Skirmish's,
@@ -69,8 +69,9 @@ extension points designed for a single game tend to come out wrong.
 ### Many games at once (M5)
 
 A server runs **many games**: the host's `games` table (`HostedGame`: id, mode, round number, start, end, `ended_at`
-once wrapped up, and the rules as jsonb the host never reads). The server always keeps one running (`AlwaysOnMode`),
-numbered per mode; `PlaceholderGame` runs mode `placeholder` with no rules (`{}`). Bans are global (per account).
+once wrapped up, and the rules and state as jsonb the host never reads). The game starts them on demand
+(`HostStore.InsertGameAsync`), numbered per mode; Spellbound's are mode `match`. The host ends one at its end or when
+an admin ends it. Bans are global (per account).
 
 ## Persistence notes
 
@@ -97,10 +98,10 @@ numbered per mode; `PlaceholderGame` runs mode `placeholder` with no rules (`{}`
     tests, so a change to `System.Random` can't break a saved match. Never `HashCode` (it differs per process).
 - **Times** are stored as UTC (`timestamptz`); `DbSession` converts any `DateTimeOffset` with another offset.
   PostgreSQL keeps whole microseconds, so a time that must compare exactly after a round trip should be rounded to them.
-- **Rounds:** each round is a row in `games`. `RoundKeeper`, a hosted `BackgroundService`, checks every minute: it
-  creates round 1 on first start, and after a round ends it lets the game wrap it up (`OnGameEndedAsync`), marks the
-  game ended and starts the next in one transaction, under a transaction advisory lock per mode, so two hosts can't
-  both reset.
+- **Games:** each game is a row in `games`, started on demand. `GameKeeper`, a hosted `BackgroundService`, checks
+  every minute and ends each game past its `ends_at`: with the row locked, it lets the game wrap it up
+  (`OnGameEndedAsync`) and sets `ended_at` in one transaction, so two hosts can't both end it. The admin page's
+  "end now" does the same. A match that plays to its end sets `ended_at` itself, in the transaction of its last round.
 - **Notifications** (`Hosting/Push.cs`, `Hosting/WebPushCrypto.cs`): Web Push with .NET's own cryptography, no
   package. Players turn them on per device on the Account page (`wwwroot/push.js` subscribes with the server's VAPID
   key; `wwwroot/sw.js`, a service worker with no fetch handler, shows them). `push_subscriptions` holds each device's
@@ -161,7 +162,7 @@ numbered per mode; `PlaceholderGame` runs mode `placeholder` with no rules (`{}`
   cron job (see [deploy.md](deploy.md#backups)).
 - **Cloudflare** free tier in front for DNS, DDoS protection and static asset caching.
 - **PWA manifest and service worker**, so the game installs to the home screen without an app store.
-- Global events (round end and reset) run in the `RoundKeeper` hosted service.
+- Global events (ending games at their end) run in the `GameKeeper` hosted service.
   Players never need a per-player job.
 - CI: GitHub Actions builds and tests on every push, builds the Docker image and checks that it starts
   (`.github/workflows/ci.yml`).

@@ -3,7 +3,7 @@
 A text-first multiplayer strategy game for phones: a dark hex map, an opening mana auction, one stance per round,
 Imps and Golems, 8 rounds, points banked as you go. It is a clean-slate design (19 Oct 2026); the old game (the Realm,
 an Archmage-style strategy game, and its Mageborn rework) was removed and is in the git history at `b171e46`. The
-platform it ran on stays, with `PlaceholderGame` in the game's place until M1 builds the new one.
+platform it ran on stays; the new game plugs into it as `SpellboundGame`, its matches started on demand.
 
 Read these before making changes:
 - `docs/game-design.md`: the rules and first-guess numbers (the source of truth for gameplay)
@@ -47,8 +47,8 @@ seed); revisit it as M1 is built, and don't assume the old game's turns or mages
 - **Balance numbers live in one rules type**, stored with each game, never hardcoded elsewhere (the old game's was
   `GameRules`, bound from configuration as the preset for the next round).
 - **Actions either fully succeed or change nothing**, and say what happened in short, readable lines.
-- **No per-player timers or background loops.** Background jobs are only for global events such as round resets
-  (`RoundKeeper`): one job for every game.
+- **No per-player timers or background loops.** Background jobs are only for global events such as ending games
+  at their end (`GameKeeper`): one job for every game.
 - **The web layer is thin:** load, call one domain method with `TimeProvider.GetUtcNow()`, then save, in one
   transaction, with the player's row locked (`SELECT … FOR UPDATE`) so a double tap waits for the first.
 - **Make the domain deterministic.** Any randomness comes through an injected, seedable source, so it can be replayed
