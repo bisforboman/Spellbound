@@ -8,6 +8,15 @@ The platform it ran on stays and is already built (see *Already built* below), s
 adjusted to it: persistence is plain Npgsql on PostgreSQL with numbered SQL scripts (not EF Core), and integration
 tests run on a real PostgreSQL (not in-memory SQLite). `PlaceholderGame` holds the game's place until M1 replaces it.
 
+## Decisions (19 Oct 2026)
+- **M1's domain starts now**, alongside the paper playtest: the playtest changes numbers, which live in `GameRules`,
+  not the shape.
+- **A match is a host game:** each match is a row in the host's `games` table (mode, seats, state); the always-on
+  round goes away. This changes `Hosting/` (`RoundKeeper`, the admin page's round controls) when persistence is built.
+- **A match is stored as one jsonb snapshot** (bringing back `DomainJson` from `b171e46`): it is small and changes
+  once per round. Tables only if game history or ladders need queries later.
+- M1 is synchronous: bots commit at once, so commit-and-wait, timeouts and timers wait for M2.
+
 ## M0: Bootstrap and paper test
 - [x] Design draft, architecture notes, CLAUDE.md
 - [x] ~~Domain rules for the turn-bank economy~~ *superseded by the clean-slate design*
@@ -19,7 +28,8 @@ tests run on a real PostgreSQL (not in-memory SQLite). `PlaceholderGame` holds t
 ## M1: A game against bots
 Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 
-- [ ] Domain: hex map (19 or 37 tiles), tile types and yields fixed at Unveil, all from a seed
+- [x] Domain: hex map (19 or 37 tiles), tile types and yields fixed at Unveil, all from a seed (`Hex`, `GameMap`,
+  `GameRules`, `SeededRandom`)
 - [ ] Domain: setup (starting mana, trait draft of the same 3 for everyone)
 - [ ] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [ ] Domain: a round's submission (one stance + moves) and its validation
@@ -27,13 +37,15 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [ ] Domain: later Unveils in rounds 2 and 4, monster guards
 - [ ] Domain: banked scoring, last-tile protection, end of game
 - [ ] Domain unit tests, including a scripted full game that always resolves the same way
-- [ ] Bots: a simple bid rule and a simple stance rule
+- [ ] Bots: a simple bid rule and a simple stance rule, and a bot-vs-bot simulator that plays many seeded games and
+  reports on the paper prototype's "watch for" list
 - [ ] Bind `GameRules` from configuration (`TimeProvider.System` is already registered)
-- [ ] Persistence for games, seats, tiles, units and submissions: SQL scripts in `Data/Sql` from `010`, through the
-  host's `DbSession` *(was "EF Core mapping and a migration")*; the game replaces `PlaceholderGame` behind the host's
-  hooks
+- [ ] Persistence: a match as one jsonb snapshot in the host's `games` row, through the host's `DbSession` (see
+  Decisions) *(was "EF Core mapping for games, seats, tiles, units and submissions")*; the game replaces
+  `PlaceholderGame` behind the host's hooks, which change from one always-on round to matches started on demand
 - [ ] Pages: new game (pick a trait), the opening auction, the map with tap-to-select tiles, the stance buttons, the
-  round report, the end screen
+  round report, the end screen. Each action shows its cost and result first: Attune's price, what a Summon's mana
+  buys, both sides' power before an attack
 - [ ] Battle report text in the art direction's tone ([theme](theme.md))
 - [ ] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll *(the layout and theme exist;
   the game's pages need the pass)*
