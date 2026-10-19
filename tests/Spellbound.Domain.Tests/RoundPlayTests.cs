@@ -48,7 +48,7 @@ public class RoundPlayTests
         var tile = match.Seats[0].Tiles.First();
         var mana = match.Seats[0].Mana;
 
-        var report = match.Resolve(HoldAll(match, Orders.Summon(0, tile, UnitKind.Golem, 2)));
+        var report = match.Resolve(HoldAll(match, Orders.Summon(0, tile, UnitKind.Golem, 2)), new SeededRandom(7));
 
         Assert.True(report.Succeeded, string.Join('\n', report.Lines));
         Assert.Equal(new Army(0, 2), match.UnitsOn(tile));
@@ -63,7 +63,7 @@ public class RoundPlayTests
         var match = Opened(rules: GameRules.Default with { GolemUpkeep = 100 });
         var tile = match.Seats[0].Tiles.First();
 
-        var report = match.Resolve(HoldAll(match, Orders.Summon(0, tile, UnitKind.Golem, 1)));
+        var report = match.Resolve(HoldAll(match, Orders.Summon(0, tile, UnitKind.Golem, 1)), new SeededRandom(7));
 
         Assert.Equal(Army.None, match.UnitsOn(tile));
         Assert.Contains(report.Lines, l => l.Contains("can't pay for 1 Golem", StringComparison.Ordinal));
@@ -77,7 +77,7 @@ public class RoundPlayTests
         var mana = match.Seats[0].Mana;
 
         var check = match.Check(Orders.Attune(0, target));
-        var report = match.Resolve(HoldAll(match, Orders.Attune(0, target)));
+        var report = match.Resolve(HoldAll(match, Orders.Attune(0, target)), new SeededRandom(7));
 
         Assert.Contains(check.Lines, l => l.Contains("for 4 mana", StringComparison.Ordinal));
         Assert.True(report.Succeeded);
@@ -94,7 +94,7 @@ public class RoundPlayTests
         var target = FreeNeighbours(match, 0).Intersect(FreeNeighbours(match, 1)).First();
         var before = match.Seats.Select(s => s.Mana - s.Tiles.Sum(h => match.Map[h].Yield!.Value)).ToList();
 
-        var report = match.Resolve(HoldAll(match, Orders.Attune(0, target), Orders.Attune(1, target)));
+        var report = match.Resolve(HoldAll(match, Orders.Attune(0, target), Orders.Attune(1, target)), new SeededRandom(7));
 
         Assert.True(report.Succeeded);
         Assert.Null(match.OwnerOf(target));
@@ -108,10 +108,10 @@ public class RoundPlayTests
         var match = FirstWhere(m => FreeNeighbours(m, 0).Any());
         var target = FreeNeighbours(match, 0).First();
         var home = match.Seats[0].Tiles.First(h => h.IsNextTo(target));
-        match.Resolve(HoldAll(match, Orders.Summon(0, home, UnitKind.Imp, 3)));
-        match.Resolve(HoldAll(match, Orders.Attune(0, target)));
+        match.Resolve(HoldAll(match, Orders.Summon(0, home, UnitKind.Imp, 3)), new SeededRandom(7));
+        match.Resolve(HoldAll(match, Orders.Attune(0, target)), new SeededRandom(7));
 
-        var report = match.Resolve(HoldAll(match, Orders.Hold(0, new Move(home, target, new Army(2, 0)))));
+        var report = match.Resolve(HoldAll(match, Orders.Hold(0, new Move(home, target, new Army(2, 0)))), new SeededRandom(7));
 
         Assert.True(report.Succeeded, string.Join('\n', report.Lines));
         Assert.Equal(new Army(1, 0), match.UnitsOn(home));
@@ -124,13 +124,13 @@ public class RoundPlayTests
         var match = FirstWhere(m => FreeNeighbours(m, 0).Any());
         var target = FreeNeighbours(match, 0).First();
         var home = match.Seats[0].Tiles.First(h => h.IsNextTo(target));
-        match.Resolve(HoldAll(match, Orders.Summon(0, home, UnitKind.Imp, 2)));
-        match.Resolve(HoldAll(match, Orders.Attune(0, target)));
+        match.Resolve(HoldAll(match, Orders.Summon(0, home, UnitKind.Imp, 2)), new SeededRandom(7));
+        match.Resolve(HoldAll(match, Orders.Attune(0, target)), new SeededRandom(7));
         var before = Snapshot(match);
 
         var there = new Move(home, target, new Army(2, 0));
         var back = new Move(target, home, new Army(2, 0));
-        var report = match.Resolve(HoldAll(match, Orders.Hold(0, there, back)));
+        var report = match.Resolve(HoldAll(match, Orders.Hold(0, there, back)), new SeededRandom(7));
 
         Assert.False(report.Succeeded);
         Assert.Equal(before, Snapshot(match));
@@ -184,7 +184,7 @@ public class RoundPlayTests
         };
         var before = Snapshot(match);
 
-        var report = match.Resolve(orders);
+        var report = match.Resolve(orders, new SeededRandom(7));
 
         Assert.False(report.Succeeded);
         Assert.Contains(reason, Assert.Single(report.Lines), StringComparison.Ordinal);
@@ -212,7 +212,7 @@ public class RoundPlayTests
         var match = Opened();
         var produced = match.Seats.Select(s => s.Tiles.Sum(h => match.Map[h].Yield!.Value)).ToList();
 
-        match.Resolve(HoldAll(match));
+        match.Resolve(HoldAll(match), new SeededRandom(7));
 
         Assert.All(match.Seats, s =>
         {
@@ -228,14 +228,14 @@ public class RoundPlayTests
         for (var round = 1; round <= 8; round++)
         {
             Assert.Equal(round, match.CurrentRound);
-            Assert.True(match.Resolve(HoldAll(match)).Succeeded);
+            Assert.True(match.Resolve(HoldAll(match), new SeededRandom(7)).Succeeded);
         }
 
         Assert.Equal(MatchPhase.Ended, match.Phase);
         Assert.NotEmpty(match.Winners);
         Assert.Equal(match.Standings[0], match.Winners[0]);
         var before = Snapshot(match);
-        Assert.False(match.Resolve(HoldAll(match)).Succeeded);
+        Assert.False(match.Resolve(HoldAll(match), new SeededRandom(7)).Succeeded);
         Assert.Equal(before, Snapshot(match));
     }
 
@@ -244,7 +244,7 @@ public class RoundPlayTests
     {
         var match = Match.Start(2, GameRules.Default, new SeededRandom(1));
 
-        Assert.False(match.Resolve([Orders.Hold(0), Orders.Hold(1)]).Succeeded);
+        Assert.False(match.Resolve([Orders.Hold(0), Orders.Hold(1)], new SeededRandom(7)).Succeeded);
         Assert.False(match.Check(Orders.Hold(0)).Succeeded);
     }
 
@@ -264,7 +264,7 @@ public class RoundPlayTests
                 && match.Check(Orders.Attune(s.Index, h)).Succeeded
                     ? Orders.Attune(s.Index, h)
                     : Orders.Summon(s.Index, s.Tiles.First(), UnitKind.Imp, Math.Min(2, s.Mana))).ToList();
-            lines.AddRange(match.Resolve(orders).Lines);
+            lines.AddRange(match.Resolve(orders, new SeededRandom(7)).Lines);
         }
 
         return string.Join('\n', lines) + Snapshot(match);

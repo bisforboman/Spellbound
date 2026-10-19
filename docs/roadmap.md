@@ -34,12 +34,11 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   for the traits themselves
 - [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [x] Domain: a round's submission (one stance + moves) and its validation (`Orders`, `Match.Check`)
-- [ ] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles; all but
-  attacks and battles are in (`Match.Resolve`)
-- [ ] Domain: later Unveils in rounds 2 and 4, monster guards
-- [ ] Domain: banked scoring, last-tile protection, end of game; scoring for land and mana and the end of game are
-  in, conquest points and the last tile come with attacks
-- [ ] Domain unit tests, including a scripted full game that always resolves the same way
+- [x] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles
+  (`Match.Resolve`, `Battle`)
+- [x] Domain: later Unveils in rounds 2 and 4, monster guards
+- [x] Domain: banked scoring, last-tile protection, end of game
+- [x] Domain unit tests, including a scripted full game that always resolves the same way
 - [ ] Bots: a simple bid rule and a simple stance rule, and a bot-vs-bot simulator that plays many seeded games and
   reports on the paper prototype's "watch for" list
 - [ ] Bind `GameRules` from configuration (`TimeProvider.System` is already registered)

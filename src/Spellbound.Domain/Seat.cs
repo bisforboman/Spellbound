@@ -24,6 +24,9 @@ public sealed class Seat
     /// <summary>Mana produced this round, scored at the round's end.</summary>
     public int ProducedThisRound { get; internal set; }
 
+    /// <summary>Rival tiles taken and monster tiles cleared this round, scored at the round's end.</summary>
+    public int ConquestsThisRound { get; internal set; }
+
     /// <summary>Produced mana not yet worth a point, carried to the next round's scoring.</summary>
     public int ProducedCarry { get; internal set; }
 

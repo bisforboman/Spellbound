@@ -35,19 +35,22 @@ public sealed partial class Match
         }
 
         var lines = new List<string>();
-        return (MovesProblem(orders, lines) ?? StanceProblem(orders, lines)) is { } problem
+        var positions = new Dictionary<Hex, Army>();
+        return (MovesProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)) is { } problem
             ? Report.Fail(problem)
             : new Report(true, lines);
     }
 
     /// <summary>
-    /// Resolves the round with every seat's orders: moves, then Attunes and Summons, then points are banked
-    /// (docs/game-design.md, Round order). Then the next round starts with income and upkeep, or after the last round
-    /// the match ends. Fails, changing nothing, unless every seat has exactly one set of orders and all of them check.
+    /// Resolves the round with every seat's orders: moves, then Attunes and Summons, then attacks, then points are
+    /// banked (docs/game-design.md, Round order). Then the next round starts (with a later Unveil in rounds 2 and 4,
+    /// then income and upkeep), or after the last round the match ends. Fails, changing nothing, unless every seat has
+    /// exactly one set of orders and all of them check.
     /// </summary>
-    public Report Resolve(IReadOnlyCollection<Orders> orders)
+    public Report Resolve(IReadOnlyCollection<Orders> orders, IRandomSource random)
     {
         ArgumentNullException.ThrowIfNull(orders);
+        ArgumentNullException.ThrowIfNull(random);
         if (Phase != MatchPhase.Rounds)
         {
             return Report.Fail("Orders are only given during the rounds.");
@@ -89,10 +92,11 @@ public sealed partial class Match
             lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.");
         }
 
+        ResolveAttacks(byseat.Where(o => o.Stance == Stance.Attack && o.Target is not null).ToList(), lines);
         BankPoints(lines);
         if (CurrentRound < Rules.Rounds)
         {
-            lines.AddRange(StartRound());
+            lines.AddRange(StartRound(random));
         }
         else
         {
@@ -104,12 +108,14 @@ public sealed partial class Match
         return new Report(true, lines);
     }
 
-    /// <summary>Starts the next round: every seat collects its land's mana, then pays its Golems' upkeep. A Golem
-    /// that can't be paid for dissolves, on the seat's tiles in board order.</summary>
-    private List<string> StartRound()
+    /// <summary>Starts the next round: a later Unveil if it's one of their rounds, then every seat collects its
+    /// land's mana and pays its Golems' upkeep. A Golem that can't be paid for dissolves, on the seat's tiles in board
+    /// order.</summary>
+    private List<string> StartRound(IRandomSource random)
     {
         CurrentRound++;
         var lines = new List<string> { $"Round {CurrentRound} of {Rules.Rounds} begins." };
+        LaterUnveil(random, lines);
         foreach (var seat in seats)
         {
             var income = seat.Tiles.Sum(h => Map[h].Yield ?? 0);
@@ -169,14 +175,19 @@ public sealed partial class Match
             var land = seat.Tiles.Count * Rules.PointsPerTileHeld;
             var produced = seat.ProducedCarry + seat.ProducedThisRound;
             var mana = produced / Rules.ManaPerPoint;
+            var conquest = seat.ConquestsThisRound * Rules.PointsPerConquest;
             seat.ProducedCarry = produced % Rules.ManaPerPoint;
             seat.ProducedThisRound = 0;
-            seat.Score += land + mana;
-            lines.Add($"Seat {seat.Index + 1} banks {Plural(land + mana, "point")} ({land} for land, {mana} for mana), {seat.Score} in all.");
+            seat.ConquestsThisRound = 0;
+            seat.Score += land + mana + conquest;
+            lines.Add($"Seat {seat.Index + 1} banks {Plural(land + mana + conquest, "point")} ({land} for land, {mana} for mana"
+                      + (conquest > 0 ? $", {conquest} for conquest" : "") + $"), {seat.Score} in all.");
         }
     }
 
-    private string? MovesProblem(Orders orders, List<string> lines)
+    /// <summary>Checks a seat's moves one by one; <paramref name="positions"/> gets where its units stand after them
+    /// (for the tiles the moves touch).</summary>
+    private string? MovesProblem(Orders orders, List<string> lines, Dictionary<Hex, Army> positions)
     {
         var seat = seats[orders.Seat];
         var free = new Dictionary<Hex, Army>();
@@ -200,13 +211,15 @@ public sealed partial class Match
             }
 
             free[move.From] = left - move.Units;
+            positions[move.From] = (positions.TryGetValue(move.From, out var p) ? p : UnitsOn(move.From)) - move.Units;
+            positions[move.To] = (positions.TryGetValue(move.To, out var q) ? q : UnitsOn(move.To)) + move.Units;
             lines.Add($"Move {move.Units} from {move.From} to {move.To}.");
         }
 
         return null;
     }
 
-    private string? StanceProblem(Orders orders, List<string> lines)
+    private string? StanceProblem(Orders orders, List<string> lines, Dictionary<Hex, Army> positions)
     {
         var seat = seats[orders.Seat];
         if (orders.Target is not { } target)
@@ -227,6 +240,11 @@ public sealed partial class Match
                 if (!Map[target].IsUnveiled || OwnerOf(target) is not null)
                 {
                     return $"Only a free, unveiled tile can be attuned; {target} isn't one.";
+                }
+
+                if (Map[target].IsGuarded)
+                {
+                    return $"{target} is guarded by monsters: clear it with an attack.";
                 }
 
                 if (!seat.Tiles.Any(h => h.IsNextTo(target)))
@@ -262,6 +280,9 @@ public sealed partial class Match
                 lines.Add($"Summon {Army.Of(orders.Kind, orders.Count)} at {target} for {cost} mana, leaving {seat.Mana - cost}.");
                 return null;
             }
+
+            case Stance.Attack:
+                return AttackProblem(orders, target, lines, positions);
 
             default:
                 return $"Unknown stance {orders.Stance}.";

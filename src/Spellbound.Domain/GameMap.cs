@@ -59,6 +59,9 @@ public sealed class GameMap
         return true;
     }
 
+    /// <summary>Puts monster guards of this power on a tile (0 clears them).</summary>
+    internal void SetGuard(Hex hex, int power) => tiles[hex] = tiles[hex] with { Guard = power };
+
     /// <summary>
     /// Splits a set of hexes into connected groups: hexes next to each other are in the same group. Units can only
     /// move within a group (docs/game-design.md, Map). Groups come out in a fixed order (by their first hex).

@@ -51,6 +51,21 @@ public sealed record GameRules
     public int AttuneBasePrice { get; init; } = 1;
     public int AttunePricePerTile { get; init; } = 1;
 
+    /// <summary>The rounds that start with a later Unveil, which reveals the tiles still dark, split evenly (an odd one
+    /// goes to the earlier round). After the last of them the whole map is revealed.</summary>
+    public IReadOnlyList<int> LaterUnveilRounds { get; init; } = [2, 4];
+
+    /// <summary>A tile revealed in a later Unveil is guarded on this many faces of a die with
+    /// <see cref="GuardDieFaces"/> faces: 2 in 6, about one in three.</summary>
+    public int GuardedFaces { get; init; } = 2;
+    public int GuardDieFaces { get; init; } = 6;
+
+    /// <summary>The battle power of a tile's monster guard.</summary>
+    public int MonsterPower { get; init; } = 3;
+
+    /// <summary>Points banked for each rival tile taken or monster tile cleared.</summary>
+    public int PointsPerConquest { get; init; } = 1;
+
     /// <summary>Points banked at the end of every round for each tile held.</summary>
     public int PointsPerTileHeld { get; init; } = 1;
 
@@ -72,6 +87,8 @@ public sealed record GameRules
     }
 
     public int CostOf(UnitKind kind) => kind == UnitKind.Golem ? GolemCost : ImpCost;
+
+    public int PowerOf(UnitKind kind) => kind == UnitKind.Golem ? GolemPower : ImpPower;
 
     public int AttunePrice(int tilesHeld) => AttuneBasePrice + AttunePricePerTile * tilesHeld;
 
