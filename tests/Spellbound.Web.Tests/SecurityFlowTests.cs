@@ -181,7 +181,7 @@ public sealed partial class SecurityFlowTests : TestDatabase
         var root = json.RootElement;
         Assert.Equal(Merlin, root.GetProperty("account").GetProperty("email").GetString());
         Assert.Equal(1, root.GetProperty("signInNetworks").GetArrayLength());
-        Assert.Empty(root.GetProperty("game").EnumerateObject()); // the placeholder game stores nothing about players
+        Assert.Equal(0, root.GetProperty("game").GetProperty("matches").GetArrayLength()); // in no match yet
         Assert.Equal(HttpStatusCode.Redirect, anonymous.StatusCode); // to sign in
     }
 
