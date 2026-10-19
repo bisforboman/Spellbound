@@ -88,8 +88,8 @@ Most of this was built for the old game and stays:
 - The game host (`Hosting/`): games and rounds kept running by `RoundKeeper`, the admin page, bans, multi-account
   signals, rate limits, alerts, nightly backups with a tested restore, web push notifications
 - The privacy notice, the art theme "The Burned Grimoire" ([theme](theme.md)), and the playtest tool
-- Pieces of the old game that may come back, from `b171e46`: `DomainJson` (jsonb snapshots of domain objects), the
-  action log, the balance simulation, the sigil generator, the ledger preview
+- Pieces of the old game that may come back, from `b171e46`: the action log, the sigil generator, the ledger preview
+  (`DomainJson` and the balance simulation are replaced by `MatchState` and `Simulation`)
 
 ## Later
 - Traits (full list), spells, more stances, more unit kinds and tile types, defender bonuses, teams, a ranked ladder
