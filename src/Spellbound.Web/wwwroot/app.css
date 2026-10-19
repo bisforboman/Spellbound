@@ -204,6 +204,7 @@ html, body {
 
 /* Muted action colours, to sit in the greys: olive for good news and Ready, rust for danger, ochre for warnings */
 [data-bs-theme=dark] {
+    --bs-code-color: var(--ink); /* inline code in the ink, not Bootstrap's pink */
     --bs-success: #6f8a4e;
     --bs-success-rgb: 111, 138, 78;
     --bs-success-text-emphasis: #b8cc9a;

@@ -234,8 +234,8 @@ namespace Spellbound.Playtest
                     await page.ClickAsync("form[action='Account/DevSignIn'] button[type=submit]");
                     await page.WaitForURLAsync($"{options.Url}/");
                     await WaitForCircuitAsync(page);
-                    await Expect(page, "The game is being designed again");
-                    await Expect(page, "Round 1 runs until");
+                    await Expect(page, "Your matches");
+                    await Expect(page, "in a match yet");
                 });
             }
 
@@ -270,22 +270,13 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("A player who isn't an admin saw the admin page.");
                 }
             });
+            // No page starts a match yet, so ending one ("End game … now") gets its step with the new-game page (M1,
+            // pages); AdminFlowTests covers it until then.
             await StepAsync(ada, "admin", async page =>
             {
                 await GoAsync(page, "/admin");
+                await Expect(page, "No games are running");
                 await Expect(page, "Problems");
-            });
-            await StepAsync(ada, "end-round", async page =>
-            {
-                await GoAsync(page, "/admin");
-                await page.ClickAsync("button:has-text('now…')");
-                await page.ClickAsync("button:has-text('Yes, end round')");
-                await Expect(page, "round 2 has started");
-            });
-            await StepAsync(ada, "home-after-reset", async page =>
-            {
-                await GoAsync(page, "/");
-                await Expect(page, "Round 2 runs until");
             });
             await StepAsync(ada, "problems", async page =>
             {

@@ -170,7 +170,6 @@ public sealed partial class SecurityFlowTests : TestDatabase
     {
         var client = Client();
         await SignInAsync(client, Merlin);
-        await factory.Services.GetRequiredService<RoundKeeper>().TickAsync();
 
         var download = await client.GetAsync(new Uri("/Account/Data", UriKind.Relative));
         var anonymous = await Client().GetAsync(new Uri("/Account/Data", UriKind.Relative));

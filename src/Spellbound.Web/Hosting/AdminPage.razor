@@ -3,7 +3,6 @@
 @using System.Globalization
 @using System.Security.Claims
 @inject AdminService Admin
-@inject TimeProvider Time
 @inject Microsoft.Extensions.Options.IOptions<AdminPageOptions> Sections
 @inject AlertSink Alerts
 @inject IConfiguration Configuration
@@ -16,39 +15,33 @@
     <p class="alert alert-info" role="status">@status</p>
 }
 
-<h2 class="h4">Round</h2>
-@if (round is null)
+<h2 class="h4">Games</h2>
+@if (games.Count == 0)
 {
-    <p class="text-muted">No round has started yet.</p>
+    <p class="text-muted">No games are running.</p>
 }
-else
+@foreach (var running in games)
 {
-    <table class="table stats">
-        <tbody>
-            <tr><th>Round</th><td>@round.Number</td></tr>
-            <tr><th>Started</th><td>@Utc(round.StartsAt)</td></tr>
-            <tr><th>Ends</th><td>@Utc(round.EndsAt)</td></tr>
-        </tbody>
-    </table>
-
-    <form @onsubmit="ChangeEndAsync">
-        <label class="form-label" for="ends">New end (UTC)</label>
-        <input id="ends" type="datetime-local" class="form-control form-control-lg" @bind="newEnd" />
-        <button type="submit" class="btn btn-primary btn-lg w-100 mt-2" disabled="@busy">Change end</button>
-    </form>
-
-    @if (!confirmEnd)
-    {
-        <button type="button" class="btn btn-outline-danger btn-lg w-100 mt-3" disabled="@busy" @onclick="() => confirmEnd = true">End round @round.Number now…</button>
-    }
-    else
-    {
-        <div class="alert alert-warning mt-3">
-            <p>This lets the game wrap up round @round.Number and starts round @(round.Number + 1). It can't be undone.</p>
-            <button type="button" class="btn btn-danger btn-lg w-100" disabled="@busy" @onclick="EndNowAsync">Yes, end round @round.Number now</button>
-            <button type="button" class="btn btn-link w-100" @onclick="() => confirmEnd = false">Cancel</button>
+    var hosted = running.Game;
+    <div class="admin-player">
+        <div>
+            <b>Game @hosted.Id</b> <span class="text-muted">· @running.Description</span>
+            <small class="text-muted d-block">Started @Utc(hosted.Round.StartsAt) · ends by @Utc(hosted.Round.EndsAt)</small>
+            <small class="d-block">@(running.Players.Count == 0 ? "No players, only bots." : string.Join(", ", running.Players))</small>
         </div>
-    }
+        @if (confirmEnd != hosted.Id)
+        {
+            <button type="button" class="btn btn-outline-danger w-100 mt-2" disabled="@busy" @onclick="() => confirmEnd = hosted.Id">End game @hosted.Id now…</button>
+        }
+        else
+        {
+            <div class="alert alert-warning mt-2 mb-0">
+                <p>This ends game @hosted.Id where it stands. Nobody can play it after this. It can't be undone.</p>
+                <button type="button" class="btn btn-danger btn-lg w-100" disabled="@busy" @onclick="() => EndNowAsync(hosted.Id)">Yes, end game @hosted.Id now</button>
+                <button type="button" class="btn btn-link btn-lg w-100" @onclick="() => confirmEnd = null">Cancel</button>
+            </div>
+        }
+    </div>
 }
 
 <h2 class="h4 mt-4">Backups</h2>
@@ -65,13 +58,13 @@ else
 <h2 class="h4 mt-4">Players</h2>
 @if (players.Count == 0)
 {
-    <p class="text-muted">Nobody is playing this round.</p>
+    <p class="text-muted">Nobody is playing a game, and nobody is banned.</p>
 }
 @foreach (var player in players)
 {
     <div class="admin-player">
         <div>
-            <b>@(player.Player?.Name ?? "(not playing this round)")</b>
+            <b>@(player.Player?.Name ?? "(not in a running game)")</b>
             @if (player.Player is not null)
             {
                 <span class="text-muted"> · @player.Player.Details</span>
@@ -134,7 +127,7 @@ else
             @foreach (var player in network.Players)
             {
                 <li>
-                    @(player.Email ?? player.OwnerId)@(player.Player is { } summary ? $" · {summary.Name}, {summary.Details}" : " · not playing this round")
+                    @(player.Email ?? player.OwnerId)@(player.Player is { } summary ? $" · {summary.Name}, {summary.Details}" : " · not in a running game")
                     @if (player.Ban is not null)
                     {
                         <span class="text-danger"> · banned</span>
@@ -156,11 +149,10 @@ else
 
     private string adminOwnerId = string.Empty;
     private string adminEmail = string.Empty;
-    private Round? round;
+    private IReadOnlyList<AdminGame> games = [];
     private IReadOnlyList<AdminPlayer> players = [];
     private IReadOnlyList<AdminSharedNetwork> sharedNetworks = [];
-    private DateTime newEnd;
-    private bool confirmEnd;
+    private long? confirmEnd;
     private string? banning;
     private string reason = string.Empty;
     private string? status;
@@ -176,19 +168,12 @@ else
 
     private async Task LoadAsync()
     {
-        round = await Admin.GetRoundAsync();
+        games = await Admin.GetRunningGamesAsync();
         players = await Admin.GetPlayersAsync();
         sharedNetworks = await Admin.GetSharedNetworksAsync();
-        if (round is not null)
-        {
-            newEnd = round.EndsAt.UtcDateTime;
-        }
     }
 
-    private Task ChangeEndAsync() =>
-        RunAsync(() => Admin.ChangeRoundEndAsync(new DateTimeOffset(DateTime.SpecifyKind(newEnd, DateTimeKind.Utc))));
-
-    private Task EndNowAsync() => RunAsync(() => Admin.ChangeRoundEndAsync(Time.GetUtcNow()));
+    private Task EndNowAsync(long id) => RunAsync(() => Admin.EndGameNowAsync(id));
 
     private Task BanAsync(string ownerId) => RunAsync(() => Admin.BanAsync(adminOwnerId, adminEmail, ownerId, reason));
 
@@ -207,7 +192,7 @@ else
         try
         {
             status = await action();
-            confirmEnd = false;
+            confirmEnd = null;
             banning = null;
             await LoadAsync();
         }

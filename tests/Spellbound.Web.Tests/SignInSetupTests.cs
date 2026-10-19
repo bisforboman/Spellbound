@@ -57,7 +57,7 @@ public sealed class SignInSetupTests : TestDatabase
         foreach (var expected in new[]
         {
             "Test Operator", "privacy@spellbound.test", "a test server", "on a test box for 30 days", "the last 5",
-            "Your account", "Your sign-in networks", "30 days", "Your game", "Bans", "Cookies", "Google",
+            "Your account", "Your sign-in networks", "30 days", "Your game", "which matches you sit in", "Bans", "Cookies", "Google",
             "Notifications",
             "Download my data", "Delete my account", "data protection authority",
         })

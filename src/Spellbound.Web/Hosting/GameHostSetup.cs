@@ -37,9 +37,9 @@ public static class GameHostSetup
         services.AddHttpClient(PushSender.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(15));
         services.AddHostedService<PushSender>();
 
-        // Rounds, admin, backups, multi-account signals.
-        services.AddSingleton<RoundKeeper>();
-        services.AddHostedService(sp => sp.GetRequiredService<RoundKeeper>());
+        // Games, admin, backups, multi-account signals.
+        services.AddSingleton<GameKeeper>();
+        services.AddHostedService(sp => sp.GetRequiredService<GameKeeper>());
         services.AddSingleton<BackupKeeper>();
         services.AddHostedService(sp => sp.GetRequiredService<BackupKeeper>());
         services.AddSingleton<AccountSignals>();

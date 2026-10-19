@@ -37,7 +37,7 @@ One small Linux server runs three containers from `docker-compose.yml`:
 
    ```sh
    docker compose up -d --build
-   docker compose logs -f app   # wait for "Round 1 started", then Ctrl+C
+   docker compose logs -f app   # wait for "Application started", then Ctrl+C
    ```
 
    The very first start creates the tables; the log lists each "Applied database script".
@@ -86,7 +86,7 @@ Development sign-in.
 
 ## Alerts
 
-Every error the app logs (an unhandled error, a failed or overdue backup, a failed round check) is listed on the
+Every error the app logs (an unhandled error, a failed or overdue backup, a failed game check) is listed on the
 admin page under **Problems**, since the app last started. To also get a push, set `ALERT_WEBHOOK_URL` in `.env`:
 
 - **ntfy** (a notification on your phone): install the ntfy app, subscribe to a topic with a long, unguessable name,
@@ -123,7 +123,7 @@ updates them when it starts. Players see a short reconnect while the app restart
 ## Day to day
 
 - **Logs**: `docker compose logs -f app` (or `db`, `caddy`).
-- **Look at the data**: `docker compose exec db psql -U spellbound` (for example `select id, mode, number, ends_at from games where ended_at is null;`, the round being run).
+- **Look at the data**: `docker compose exec db psql -U spellbound` (for example `select id, mode, number, ends_at from games where ended_at is null;`, the games running).
 - **Health**: `https://your.domain/healthz` answers `Healthy` while the app is up.
 - **Change a setting** (admins, rate limits, …): add it to the `environment` list of `app` in
   `docker-compose.yml` or to `.env`, then `docker compose up -d`.

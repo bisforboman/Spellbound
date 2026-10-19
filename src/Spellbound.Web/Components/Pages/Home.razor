@@ -1,20 +1,43 @@
 @page "/"
 @attribute [Authorize]
-@inject PlaceholderGame Game
+@using System.Security.Claims
+@using Spellbound.Web.Data
+@inject MatchStore Matches
 
 <PageTitle>Spellbound</PageTitle>
 <h1>Spellbound</h1>
 
-<p>The game is being designed again from the bottom. The platform it will run on is here: your account, sign-in,
-    notifications and the admin tools.</p>
-@if (round is not null)
+<p>The game's rules are built and its matches are saved; the pages to play them come next.</p>
+
+<h2 class="h4">Your matches</h2>
+@if (matches is null)
 {
-    <p class="text-muted">Round @round.Number runs until @round.EndsAt.ToString("d MMM yyyy", System.Globalization.CultureInfo.InvariantCulture).</p>
+    <p class="text-muted">Loading…</p>
+}
+else if (matches.Count == 0)
+{
+    <p class="text-muted">You aren't in a match yet.</p>
+}
+else
+{
+    <ul>
+        @foreach (var match in matches)
+        {
+            <li>Match @match.Id, seat @(match.Seat + 1): @match.Description</li>
+        }
+    </ul>
 }
 <p><a href="Account/Manage">Your account</a></p>
 
 @code {
-    private Round? round;
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
 
-    protected override async Task OnInitializedAsync() => round = await Game.GetRoundAsync();
+    private IReadOnlyList<PlayerMatch>? matches;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
+        matches = ownerId is null ? [] : await Matches.ListForAsync(ownerId);
+    }
 }

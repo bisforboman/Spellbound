@@ -6,7 +6,7 @@ stance per round, Imps and Golems, 8 rounds, points banked as you go.
 The old game (the Realm and its Mageborn rework) was removed on 18 Oct 2026 and is in the git history at `b171e46`.
 The platform it ran on stays and is already built (see *Already built* below), so some items here are ticked or
 adjusted to it: persistence is plain Npgsql on PostgreSQL with numbered SQL scripts (not EF Core), and integration
-tests run on a real PostgreSQL (not in-memory SQLite). `PlaceholderGame` holds the game's place until M1 replaces it.
+tests run on a real PostgreSQL (not in-memory SQLite). The new game plugs in as `SpellboundGame` (it replaced `PlaceholderGame` in M1).
 
 ## Decisions (19 Oct 2026)
 - **M1's domain starts now**, alongside the paper playtest: the playtest changes numbers, which live in `GameRules`,
@@ -45,7 +45,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [ ] Bind `GameRules` from configuration (`TimeProvider.System` is already registered)
 - [x] Persistence: a match as one jsonb snapshot in the host's `games` row, through the host's `DbSession` (see
   Decisions) *(was "EF Core mapping for games, seats, tiles, units and submissions")* (`MatchState`, `MatchStore`)
-- [ ] The host runs matches started on demand instead of one always-on round (`RoundKeeper`, `IRoundLifecycle`, the
+- [x] The host runs matches started on demand instead of one always-on round (`RoundKeeper`, `IRoundLifecycle`, the
   home page), and the game replaces `PlaceholderGame` behind the host's hooks. The admin page lists running matches
   (round, players) with an "end now" per match (owner's choice, 19 Oct 2026)
 - [ ] Pages: new game (pick a trait), the opening auction, the map with tap-to-select tiles, the stance buttons, the
@@ -85,7 +85,7 @@ Most of this was built for the old game and stays:
 
 ## Already built: the platform
 - Blazor Server on .NET 10, PostgreSQL through plain Npgsql, numbered SQL migrations ([architecture](architecture.md))
-- The game host (`Hosting/`): games and rounds kept running by `RoundKeeper`, the admin page, bans, multi-account
+- The game host (`Hosting/`): games started on demand and ended at their end by `GameKeeper`, the admin page, bans, multi-account
   signals, rate limits, alerts, nightly backups with a tested restore, web push notifications
 - The privacy notice, the art theme "The Burned Grimoire" ([theme](theme.md)), and the playtest tool
 - Pieces of the old game that may come back, from `b171e46`: the action log, the sigil generator, the ledger preview

@@ -1,3 +1,5 @@
+using Spellbound.Web.Data;
+using Spellbound.Domain;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -7,7 +9,7 @@ using Spellbound.Web.Hosting;
 
 namespace Spellbound.Web.Tests;
 
-/// <summary>The admin policy, bans and round changes through the real app, with real accounts.</summary>
+/// <summary>The admin policy, bans and running games through the real app, with real accounts.</summary>
 public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
 {
     private const string AdminEmail = "admin@spellbound.test";
@@ -22,7 +24,9 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         factory = CreateApp(b => b.UseSetting("Admins:0", AdminEmail));
     }
 
-    private PlaceholderGame Game => factory.Services.GetRequiredService<PlaceholderGame>();
+    private MatchStore Matches => factory.Services.GetRequiredService<MatchStore>();
+
+    private DateTimeOffset Now => factory.Services.GetRequiredService<TimeProvider>().GetUtcNow();
 
     private AdminService Admin => factory.Services.GetRequiredService<AdminService>();
 
@@ -30,7 +34,6 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await factory.Services.GetRequiredService<RoundKeeper>().TickAsync();
         adminId = await CreateUserAsync(AdminEmail);
         merlinId = await CreateUserAsync("merlin@spellbound.test");
         morganaId = await CreateUserAsync("morgana@spellbound.test");
@@ -85,21 +88,23 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
     }
 
     [Fact]
-    public async Task Admin_can_extend_the_round_or_end_it_now()
+    public async Task Admin_lists_running_games_with_their_players_and_can_end_one_now()
     {
-        var round = (await Game.GetRoundAsync())!;
+        var first = await Matches.CreateAsync([merlinId, null, morganaId], GameRules.Default, Now);
+        var second = await Matches.CreateAsync([null, null], GameRules.Default, Now);
 
-        Assert.Equal($"Round 1 now ends {round.EndsAt.AddDays(7):u}.", await Admin.ChangeRoundEndAsync(round.EndsAt.AddDays(7)));
-        var local = round.EndsAt.AddDays(8).ToOffset(TimeSpan.FromHours(2)); // a time typed in another time zone
-        await Admin.ChangeRoundEndAsync(local);
-        Assert.Equal(local, (await Game.GetRoundAsync())!.EndsAt);
-        Assert.StartsWith("Round 1 started", await Admin.ChangeRoundEndAsync(round.StartsAt), StringComparison.Ordinal);
-        Assert.Equal(1, (await Game.GetRoundAsync())!.Number);
+        var games = await Admin.GetRunningGamesAsync();
 
-        var now = factory.Services.GetRequiredService<TimeProvider>().GetUtcNow();
-        Assert.Equal("Round 1 has ended and round 2 has started.", await Admin.ChangeRoundEndAsync(now));
+        Assert.Equal([first, second], games.Select(g => g.Game.Id));
+        Assert.Equal("Opening auction 1 of 3, 3 seats", games[0].Description);
+        Assert.Equal([$"Seat 1 in game {first}", $"Seat 3 in game {first}"], games[0].Players);
+        Assert.Empty(games[1].Players);
+        Assert.Equal($"Seat 1 in game {first}", Assert.Single(await Admin.GetPlayersAsync(), p => p.OwnerId == merlinId).Player!.Name);
 
-        Assert.Equal(2, (await Game.GetRoundAsync())!.Number);
+        Assert.Equal($"Game {first} has ended.", await Admin.EndGameNowAsync(first));
+        Assert.Equal($"Game {first} isn't running.", await Admin.EndGameNowAsync(first));
+        Assert.Equal([second], (await Admin.GetRunningGamesAsync()).Select(g => g.Game.Id));
+        Assert.False((await Matches.ApplyAsync(first, Now, (m, r) => m.Match.Auction([], r)))!.Succeeded);
     }
 
     [Fact]
@@ -118,15 +123,19 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
     }
 
     [Fact]
-    public async Task The_home_page_shows_the_round_to_a_signed_in_player()
+    public async Task The_home_page_lists_a_signed_in_players_matches()
     {
         using var merlin = Client();
+        using var morgana = Client();
         await SignInAsync(merlin, "merlin@spellbound.test");
+        await SignInAsync(morgana, "morgana@spellbound.test");
+        var id = await Matches.CreateAsync([null, merlinId], GameRules.Default, Now);
 
         var home = await merlin.GetStringAsync(new Uri("/", UriKind.Relative));
+        var other = await morgana.GetStringAsync(new Uri("/", UriKind.Relative));
 
-        Assert.Contains("The game is being designed again", home, StringComparison.Ordinal);
-        Assert.Contains("Round 1 runs until", home, StringComparison.Ordinal);
+        Assert.Contains($"Match {id}, seat 2: Opening auction 1 of 3", home, StringComparison.Ordinal);
+        Assert.Contains("in a match yet.", other, StringComparison.Ordinal);
     }
 
     public override void Dispose()
