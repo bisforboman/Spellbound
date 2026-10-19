@@ -171,6 +171,41 @@ public class OpeningTests
         Assert.NotEqual(PlayOpening(5), PlayOpening(6));
     }
 
+    [Fact]
+    public void CheckBid_shows_what_a_bid_costs_and_gets_without_changing_anything()
+    {
+        var match = NewMatch(3);
+        var tile = match.OnAuction[0];
+        var before = Snapshot(match);
+
+        var bid = match.CheckBid(new Bid(1, tile, 3));
+        var pass = match.CheckBid(Bid.Pass(1));
+
+        Assert.True(bid.Succeeded);
+        Assert.StartsWith("Bid 3 mana on the", bid.Lines[0], StringComparison.Ordinal);
+        Assert.Contains("keep 6 mana", bid.Lines[1], StringComparison.Ordinal);
+        Assert.True(pass.Succeeded);
+        Assert.Equal(before, Snapshot(match));
+    }
+
+    [Theory]
+    [InlineData(0, "can bid from 1 to 9")]
+    [InlineData(10, "can bid from 1 to 9")]
+    [InlineData(-1, "isn't up for auction")]
+    [InlineData(-2, "There is no seat 4")]
+    public void CheckBid_refuses_a_bid_that_cant_be_made(int amount, string reason)
+    {
+        var match = NewMatch(3);
+        var bid = amount switch
+        {
+            -1 => new Bid(0, match.Map.Dark.First().Hex, 1),
+            -2 => new Bid(3, match.OnAuction[0], 1),
+            _ => new Bid(0, match.OnAuction[0], amount),
+        };
+
+        Assert.Contains(reason, Assert.Single(match.CheckBid(bid).Lines), StringComparison.Ordinal);
+    }
+
     private static string PlayOpening(int seed)
     {
         var random = new SeededRandom(seed);

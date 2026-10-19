@@ -771,3 +771,109 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         opacity: 0.9;
     }
 }
+
+/* The match map (Components/Game/HexMap.razor): soot hexes for dark land, charred leather once unveiled, filled with the
+   owner's ink. Marked tiles (on auction) get a dashed bone edge; the chosen one a solid edge in the page's ink. */
+.hex-map {
+    display: block;
+    width: 100%;
+    max-width: 30rem;
+    margin: 0 auto 0.75rem;
+    user-select: none;
+}
+
+    .hex-map .hex {
+        cursor: pointer;
+        outline: none;
+    }
+
+    .hex-map polygon {
+        fill: var(--paper-deep);
+        stroke: var(--paper-edge);
+        stroke-width: 1.5;
+    }
+
+    .hex-map .dark polygon {
+        fill: #0d0b09;
+        stroke: #2a231c;
+    }
+
+    .hex-map .marked polygon {
+        stroke: var(--ink);
+        stroke-dasharray: 4 3;
+        stroke-width: 2;
+    }
+
+    .hex-map .selected polygon, .hex-map .hex:focus-visible polygon {
+        stroke: var(--school);
+        stroke-dasharray: none;
+        stroke-width: 3.5;
+    }
+
+    .hex-map text {
+        fill: var(--ink);
+        text-anchor: middle;
+        dominant-baseline: middle;
+        pointer-events: none;
+        font-family: var(--font-label);
+    }
+
+    .hex-map .hex-yield {
+        font-size: 17px;
+        font-weight: 700;
+    }
+
+    .hex-map .hex-note {
+        font-size: 11px;
+        fill: var(--ink-soft);
+    }
+
+    .hex-map .yours .hex-note {
+        fill: var(--ink);
+    }
+
+/* A seat's ink: a small swatch before its name */
+.seat-ink::before {
+    content: "";
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    margin-right: 0.35em;
+    border-radius: 2px;
+    background: var(--seat);
+    vertical-align: baseline;
+}
+
+.match-status, .tile-panel {
+    font-variant-numeric: lining-nums tabular-nums;
+}
+
+.tile-panel {
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--paper-edge);
+}
+
+.match-report p {
+    margin: 0 0 0.25rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px dashed var(--paper-edge);
+}
+
+tr.you td {
+    box-shadow: inset 0 -1px 0 var(--school);
+}
+
+/* The standings: a plain ledger of seats, numbers right-aligned */
+.standings th {
+    font-family: var(--font-label);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    white-space: nowrap;
+}
+
+    .standings td:not(:first-child), .standings th:not(:first-child) {
+        text-align: right;
+        font-variant-numeric: lining-nums tabular-nums;
+    }

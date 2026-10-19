@@ -1,0 +1,171 @@
+@page "/match/{Id:long}"
+@attribute [Authorize]
+@inject MatchPlay Play
+
+<PageTitle>Match @Id</PageTitle>
+
+@if (loading)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (view is null)
+{
+    <h1>Not found</h1>
+    <p>There is no match @Id that you sit in. <a href="">Back home</a></p>
+}
+else
+{
+    var match = view.Match;
+    var me = match.Seats[you];
+    <h1>Match @Id</h1>
+    <p class="match-status">
+        <b>@MatchStore.Describe(match, view.IsRunning)</b>.
+        You are seat @(you + 1), in <span class="seat-ink" style="--seat: @Seats.Ink(you)">your ink</span>:
+        <span class="ledger-line">@me.Mana mana, @me.Tiles.Count tiles, @me.Score points.</span>
+    </p>
+
+    <HexMap Match="match" You="you" Selected="selected" Highlight="auction" OnSelect="Select" />
+
+    @if (selected is { } tile)
+    {
+        <p class="tile-panel">@Seats.Describe(match, tile, you)@(auction.Contains(tile) ? ", up for auction" : "").</p>
+    }
+
+    @if (status is not null)
+    {
+        <p class="alert alert-warning" role="alert">@status</p>
+    }
+
+    @if (view.IsRunning && match.Phase == MatchPhase.Opening)
+    {
+        <h2 class="h4">Opening auction @match.OpeningUnveil of @match.Rules.OpeningUnveils</h2>
+        <p>Bid mana on one tile, or pass. Tap a marked tile on the map, or choose here:</p>
+        @foreach (var hex in match.OnAuction)
+        {
+            var h = hex;
+            <label class="choice">
+                <input type="radio" name="bid-tile" checked="@(selected == h)" @onchange="() => Select(h)" />
+                <span>@Seats.Describe(match, h, you)</span>
+            </label>
+        }
+
+        <label class="form-label mt-2" for="amount">Your bid (mana)</label>
+        <input id="amount" type="number" class="form-control form-control-lg" min="@match.Rules.MinBid" max="@me.Mana" @bind="amount" @bind:event="oninput" />
+
+        var check = selected is { } chosen && auction.Contains(chosen) ? match.CheckBid(new Bid(you, chosen, amount)) : null;
+        @if (check is not null)
+        {
+            <div class="ledger mt-2">
+                @foreach (var line in check.Lines)
+                {
+                    <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@line</p>
+                }
+            </div>
+        }
+
+        <button type="button" class="btn btn-primary btn-lg w-100" disabled="@(busy || check is not { Succeeded: true })" @onclick="BidAsync">Bid @amount mana</button>
+        <button type="button" class="btn btn-outline-primary btn-lg w-100 mt-2" disabled="@busy" @onclick="PassAsync">Pass</button>
+    }
+    else if (view.IsRunning && match.Phase == MatchPhase.Rounds)
+    {
+        <h2 class="h4">Round @match.CurrentRound of @match.Rules.Rounds</h2>
+        <p class="text-muted">The rounds' orders come next. For now you can look at the map and the standings.</p>
+    }
+
+    @if (view.LastReport.Count > 0)
+    {
+        <h2 class="h4 mt-4">What just happened</h2>
+        <div class="match-report">
+            @foreach (var line in view.LastReport)
+            {
+                <p>@Seats.Mark(line, you)</p>
+            }
+        </div>
+    }
+
+    <h2 class="h4 mt-4">Standings</h2>
+    <table class="table standings">
+        <thead><tr><th>Seat</th><th>Points</th><th>Tiles</th><th>Mana</th></tr></thead>
+        <tbody>
+            @foreach (var seat in match.Standings)
+            {
+                <tr class="@(seat.Index == you ? "you" : "")">
+                    <td><span class="seat-ink" style="--seat: @Seats.Ink(seat.Index)">@Seats.Name(view, seat.Index, you)</span></td>
+                    <td>@seat.Score</td>
+                    <td>@seat.Tiles.Count</td>
+                    <td>@seat.Mana</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (match.Phase == MatchPhase.Ended && match.Winners.Count > 0)
+    {
+        <p><b>@string.Join(" and ", match.Winners.Select(w => Seats.Name(view, w.Index, you))) @(match.Winners.Count == 1 && match.Winners[0].Index != you ? "wins" : "win").</b></p>
+    }
+    <p><a href="">Back home</a></p>
+}
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private string ownerId = string.Empty;
+    private LoadedMatch? view;
+    private int you;
+    private IReadOnlySet<Hex> auction = new HashSet<Hex>();
+    private Hex? selected;
+    private int amount = 1;
+    private string? status;
+    private bool loading = true;
+    private bool busy;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        await LoadAsync();
+        loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        view = await Play.ViewAsync(Id, ownerId);
+        you = view?.SeatOf(ownerId) ?? 0;
+        auction = view?.Match.OnAuction.ToHashSet() ?? [];
+        if (selected is { } s && view?.Match.Map.Contains(s) != true)
+        {
+            selected = null;
+        }
+
+        amount = Math.Clamp(amount, view?.Match.Rules.MinBid ?? 1, Math.Max(1, view?.Match.Seats[you].Mana ?? 1));
+    }
+
+    private void Select(Hex hex) => selected = hex;
+
+    private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, selected, amount));
+
+    private Task PassAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, null, 0));
+
+    private async Task ActAsync(Func<Task<Report>> action)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var report = await action();
+            status = report.Succeeded ? null : report.Lines[0];
+            selected = null;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

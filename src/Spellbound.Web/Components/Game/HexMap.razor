@@ -1,0 +1,84 @@
+@* The board as inline SVG (docs/theme.md): pointy-top hexes, each a button. Dark tiles are soot; unveiled ones show
+   their yield, are filled with their owner's ink, and show units and monster guards. The same choices are offered as
+   plain buttons on the page, so the map is a convenience, not the only way. *@
+
+<svg class="hex-map" viewBox="@ViewBox" role="group" aria-label="The map">
+    @foreach (var tile in Match.Map.Tiles.OrderBy(t => t.Hex.R).ThenBy(t => t.Hex.Q))
+    {
+        var hex = tile.Hex;
+        var (x, y) = Center(hex);
+        var owner = Match.OwnerOf(hex);
+        var units = Match.UnitsOn(hex);
+        var classes = "hex" + (tile.IsUnveiled ? "" : " dark") + (Highlight?.Contains(hex) == true ? " marked" : "")
+                      + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "");
+        <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You)"
+           @onclick="() => OnSelect.InvokeAsync(hex)" @onkeydown="e => KeyAsync(e, hex)">
+            <polygon points="@Points(x, y)" style="@(owner is { } o ? $"fill: color-mix(in srgb, {Seats.Ink(o)} 38%, var(--paper-deep))" : "")" />
+            @if (tile.IsUnveiled)
+            {
+                @Label(x, y - 4, "hex-yield", tile.Yield.ToString()!)
+                @if (tile.IsGuarded)
+                {
+                    @Label(x, y + 16, "hex-note", $"☠{tile.Guard}")
+                }
+                else if (!units.IsEmpty)
+                {
+                    @Label(x, y + 16, "hex-note", UnitText(units))
+                }
+            }
+        </g>
+    }
+</svg>
+
+@code {
+    private const double Size = 30;
+    private static readonly double Root3 = Math.Sqrt(3);
+
+    [Parameter, EditorRequired]
+    public Match Match { get; set; } = default!;
+
+    [Parameter]
+    public int? You { get; set; }
+
+    [Parameter]
+    public Hex? Selected { get; set; }
+
+    /// <summary>Tiles to mark, for example the ones on auction.</summary>
+    [Parameter]
+    public IReadOnlySet<Hex>? Highlight { get; set; }
+
+    [Parameter]
+    public EventCallback<Hex> OnSelect { get; set; }
+
+    private string ViewBox
+    {
+        get
+        {
+            var centers = Match.Map.Tiles.Select(t => Center(t.Hex)).ToList();
+            var (w, h) = (Size * Root3 / 2 + 2, Size + 2);
+            var (minX, minY) = (centers.Min(c => c.X) - w, centers.Min(c => c.Y) - h);
+            return $"{F(minX)} {F(minY)} {F(centers.Max(c => c.X) + w - minX)} {F(centers.Max(c => c.Y) + h - minY)}";
+        }
+    }
+
+    private static (double X, double Y) Center(Hex hex) => (Size * Root3 * (hex.Q + hex.R / 2.0), Size * 1.5 * hex.R);
+
+    private static string Points(double x, double y) =>
+        string.Join(' ', Enumerable.Range(0, 6).Select(i =>
+        {
+            var angle = Math.PI / 180 * (60 * i - 30);
+            return $"{F(x + (Size - 1) * Math.Cos(angle))},{F(y + (Size - 1) * Math.Sin(angle))}";
+        }));
+
+    private static string UnitText(Army army) =>
+        string.Join(' ', new[] { army.Imps > 0 ? $"{army.Imps}i" : null, army.Golems > 0 ? $"{army.Golems}g" : null }.OfType<string>());
+
+    /// <summary>An SVG text element (Razor keeps the text tag for itself).</summary>
+    private static MarkupString Label(double x, double y, string css, string text) =>
+        new($"<text x=\"{F(x)}\" y=\"{F(y)}\" class=\"{css}\">{System.Net.WebUtility.HtmlEncode(text)}</text>");
+
+    private static string F(double value) => value.ToString("0.#", CultureInfo.InvariantCulture);
+
+    private Task KeyAsync(KeyboardEventArgs e, Hex hex) =>
+        e.Key is "Enter" or " " ? OnSelect.InvokeAsync(hex) : Task.CompletedTask;
+}

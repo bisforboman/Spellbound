@@ -5,8 +5,9 @@ using Spellbound.Domain;
 
 namespace Spellbound.Web.Data;
 
-/// <summary>What a match keeps in its games row: the seed its randomness comes from, and the match itself.</summary>
-public sealed record StoredMatch(int Seed, MatchState Match);
+/// <summary>What a match keeps in its games row: the seed its randomness comes from, the match itself, and the lines of
+/// the last action's report, so the match page can show what just happened.</summary>
+public sealed record StoredMatch(int Seed, MatchState Match, IReadOnlyList<string>? LastReport = null);
 
 /// <summary>
 /// JSON for a match's state and rules in the games row. The domain's <see cref="MatchState"/> and

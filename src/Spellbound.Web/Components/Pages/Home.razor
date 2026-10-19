@@ -7,9 +7,10 @@
 <PageTitle>Spellbound</PageTitle>
 <h1>Spellbound</h1>
 
-<p>The game's rules are built and its matches are saved; the pages to play them come next.</p>
+<p>A dark map, an opening mana auction, eight rounds of secret stances. Play a match against bots.</p>
+<a class="btn btn-primary btn-lg w-100" href="match/new">New match</a>
 
-<h2 class="h4">Your matches</h2>
+<h2 class="h4 mt-4">Your matches</h2>
 @if (matches is null)
 {
     <p class="text-muted">Loading…</p>
@@ -20,10 +21,10 @@ else if (matches.Count == 0)
 }
 else
 {
-    <ul>
+    <ul class="match-list">
         @foreach (var match in matches)
         {
-            <li>Match @match.Id, seat @(match.Seat + 1): @match.Description</li>
+            <li><a href="match/@match.Id">Match @match.Id</a>, seat @(match.Seat + 1): @match.Description</li>
         }
     </ul>
 }

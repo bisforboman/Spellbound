@@ -1,0 +1,43 @@
+@page "/match/new"
+@attribute [Authorize]
+@inject MatchPlay Play
+@inject NavigationManager Navigation
+
+<PageTitle>New match</PageTitle>
+<h1>New match</h1>
+
+<p>You against bots, played at once: you bid and give your orders, and the bots answer straight away.</p>
+
+<fieldset>
+    <legend class="h5">Players</legend>
+    @for (var n = GameRules.Default.MinPlayers; n <= GameRules.Default.MaxPlayers; n++)
+    {
+        var count = n;
+        <label class="choice">
+            <input type="radio" name="players" checked="@(players == count)" @onchange="() => players = count" />
+            <span><b>@count players</b>: you and @(count - 1) @(count == 2 ? "bot" : "bots"), on a map of @(GameRules.Default.MapRadius(count) == 2 ? 19 : 37) tiles.</span>
+        </label>
+    }
+</fieldset>
+
+<button type="button" class="btn btn-primary btn-lg w-100 mt-2" disabled="@busy" @onclick="StartAsync">Start the match</button>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private int players = 3;
+    private bool busy;
+
+    private async Task StartAsync()
+    {
+        if (busy || (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } ownerId)
+        {
+            return;
+        }
+
+        busy = true;
+        var id = await Play.StartAsync(ownerId, players, GameRules.Default);
+        Navigation.NavigateTo($"match/{id}");
+    }
+}
