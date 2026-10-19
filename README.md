@@ -2,8 +2,9 @@
 
 A text-first multiplayer game for phones. It is a hobby project.
 
-- **Gameplay:** being designed again from the bottom (18 Oct 2026). The platform it runs on is built: sign-in,
-  accounts, rounds, the admin page, backups and notifications. The old game is in the git history (see the roadmap).
+- **Gameplay:** a clean-slate design ([game design](docs/game-design.md)): a dark hex map, an opening mana auction, one
+  stance per round, Imps and Golems, 8 rounds. The platform it runs on is built: sign-in, accounts, rounds, the admin
+  page, backups and notifications. The old game is in the git history (see the roadmap).
 - **Stack:** .NET 10, Blazor Server (interactive server rendering), PostgreSQL (plain Npgsql), sign-in with Google.
 - **Hosting plan:** one small VPS running Docker Compose with Caddy, installable on phones as a PWA.
 
@@ -24,6 +25,7 @@ page (`/admin`), list that email under `Admins` in `appsettings.json`, or set it
 
 ## Docs
 
+- [Game design](docs/game-design.md) and the [paper prototype](docs/skirmish-paper-prototype.md)
 - [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Deploying](docs/deploy.md)

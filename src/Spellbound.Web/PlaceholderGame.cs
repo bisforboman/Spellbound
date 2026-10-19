@@ -4,7 +4,7 @@ using Spellbound.Web.Hosting;
 namespace Spellbound.Web;
 
 /// <summary>
-/// The game's place while the game is designed again (docs/roadmap.md): it answers the host's questions
+/// The game's place until M1 builds the new one (docs/game-design.md, docs/roadmap.md): it answers the host's questions
 /// (Hosting/GameHooks.cs) so the platform runs, keeps a round going, and stores nothing about players. Its schema is the
 /// game's SQL scripts so far, the last of which drops the old game's tables.
 /// </summary>

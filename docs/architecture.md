@@ -8,8 +8,9 @@
   in its own container next to the app
 - **xUnit** for domain tests, plus `WebApplicationFactory` integration tests for the web app
 
-**The game was scrapped on 18 Oct 2026** to be designed again from the bottom (see the roadmap). What remains is the
-platform it ran on. The old game (the Realm and the Mageborn rework) is in the git history at `b171e46`.
+**The game was scrapped on 18 Oct 2026** and is being rebuilt to a clean-slate design ([game design](game-design.md),
+milestones in the [roadmap](roadmap.md)). What remains is the platform the old game ran on; the old game (the Realm
+and the Mageborn rework) is in the git history at `b171e46`.
 
 Blazor Server keeps state on the server and sends small UI diffs over SignalR. That keeps the phone's work light.
 The trade-off is that it needs a live connection, which is acceptable for a game that is played online anyway. If
@@ -26,7 +27,7 @@ src/
                             admin page, bans, backups,
                             rate limits, multi-account signals (namespace Spellbound.Web.Hosting)
     Components/Account/     sign-in and account pages (part of the host, not yet moved into Hosting/)
-    PlaceholderGame.cs      the game's place until the new design lands: answers the host's hooks (below)
+    PlaceholderGame.cs      the game's place until M1 builds the new one: answers the host's hooks (below)
     Components/Pages/Home   the landing page
     Data/Sql/               the game's SQL scripts (009 dropped the old game's tables; the next game starts at 010)
     wwwroot/fonts/          the theme's fonts, self-hosted, with their licences (OFL-*.txt); see theme.md
@@ -36,7 +37,7 @@ tools/
 tests/
   Spellbound.Domain.Tests/  xUnit tests for the rules (for now, Round's)
   Spellbound.Web.Tests/     integration tests: real app on a real PostgreSQL, a fresh database per test
-docs/                       architecture, roadmap, theme, deploy
+docs/                       game design and paper prototype, architecture, roadmap, theme, deploy
 scripts/bootstrap.ps1       one-time project generation
 ```
 

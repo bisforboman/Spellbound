@@ -1,14 +1,16 @@
 # Spellbound
 
-A text-first multiplayer game for phones. **The game is being designed again from the bottom** (18 Oct 2026): the old
-game (the Realm, an Archmage-style strategy game, and its Mageborn rework) was removed and is in the git history at
-`b171e46`. What's here is the platform it ran on, with `PlaceholderGame` in the game's place.
+A text-first multiplayer strategy game for phones: a dark hex map, an opening mana auction, one stance per round,
+Imps and Golems, 8 rounds, points banked as you go. It is a clean-slate design (19 Oct 2026); the old game (the Realm,
+an Archmage-style strategy game, and its Mageborn rework) was removed and is in the git history at `b171e46`. The
+platform it ran on stays, with `PlaceholderGame` in the game's place until M1 builds the new one.
 
 Read these before making changes:
-- `docs/roadmap.md`: what was removed, what stays, and M8, the new game
+- `docs/game-design.md`: the rules and first-guess numbers (the source of truth for gameplay)
+- `docs/skirmish-paper-prototype.md`: the one-page version for a paper playtest
+- `docs/roadmap.md`: milestones and the current checklist
 - `docs/architecture.md`: stack, project layout, the game host boundary, hosting plan
-- `docs/theme.md`: the art theme, which stays
-- The new design document, once the owner has written it (the roadmap will say where)
+- `docs/theme.md`: the art theme
 
 ## First run
 
@@ -36,16 +38,16 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 
 ## Architecture rules
 
-These held for the old game. The first group is **to be redefined with the new design** (M8); until then, follow them
-for any game code, and don't assume turns, mages or `GameRules` exist.
+The first group held for the old game and still fits the new design (simultaneous, secret rounds resolved from a
+seed); revisit it as M1 is built, and don't assume the old game's turns or mages exist.
 
 - **All game rules live in `Spellbound.Domain`.** It is pure C#. It has no database, ASP.NET or I/O references,
   and it never reads the clock. Callers pass `DateTimeOffset now` in.
 - **Balance numbers live in one rules type**, stored with each game, never hardcoded elsewhere (the old game's was
   `GameRules`, bound from configuration as the preset for the next round).
 - **Actions either fully succeed or change nothing**, and say what happened in short, readable lines.
-- **No per-player timers or background loops.** Anything that regenerates is computed on read from stored timestamps.
-  Background jobs are only for global events such as round resets (`RoundKeeper`): one job for every game.
+- **No per-player timers or background loops.** Background jobs are only for global events such as round resets
+  (`RoundKeeper`): one job for every game.
 - **The web layer is thin:** load, call one domain method with `TimeProvider.GetUtcNow()`, then save, in one
   transaction, with the player's row locked (`SELECT … FOR UPDATE`) so a double tap waits for the first.
 - **Make the domain deterministic.** Any randomness comes through an injected, seedable source, so it can be replayed
