@@ -46,6 +46,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Wild | 0–4 | 2 |
 
 - A tile's yield is decided **once, when it is unveiled**: it gets a fixed value within its type's range and keeps it for the whole game. The value is visible from then on, so players know exactly what they are bidding on.
+- **The odds** are the paper prototype's die: Shifting yields 1, 2 or 3 with equal chance; Wild yields 0 or 4 one time in six each, 1 or 3 one time in six each, and 2 two times in six.
 - **Mix:** roughly **equal thirds** of each type (19 hexes: 7 Steady, 6 Shifting, 6 Wild).
 
 ## Unveil
