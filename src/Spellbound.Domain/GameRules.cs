@@ -20,6 +20,17 @@ public sealed record GameRules
     public int MinPlayers { get; init; } = 2;
     public int MaxPlayers { get; init; } = 5;
 
+    // Setup and the opening (docs/game-design.md, Resources and Unveil)
+
+    /// <summary>The mana each player starts with; it also pays the opening's bids.</summary>
+    public int StartingMana { get; init; } = 9;
+
+    /// <summary>How many Unveils the opening has. Each auctions one tile per player and leaves one free.</summary>
+    public int OpeningUnveils { get; init; } = 3;
+
+    /// <summary>The unauctioned tiles each opening Unveil reveals and leaves free.</summary>
+    public int OpeningFreeTilesPerUnveil { get; init; } = 1;
+
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.
     // On average every type yields 2.
 

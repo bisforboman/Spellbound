@@ -30,8 +30,9 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 
 - [x] Domain: hex map (19 or 37 tiles), tile types and yields fixed at Unveil, all from a seed (`Hex`, `GameMap`,
   `GameRules`, `SeededRandom`)
-- [ ] Domain: setup (starting mana, trait draft of the same 3 for everyone)
-- [ ] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
+- [ ] Domain: setup (starting mana, trait draft of the same 3 for everyone); starting mana is in, the trait draft waits
+  for the traits themselves
+- [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [ ] Domain: a round's submission (one stance + moves) and its validation
 - [ ] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles
 - [ ] Domain: later Unveils in rounds 2 and 4, monster guards
