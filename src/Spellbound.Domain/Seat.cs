@@ -1,6 +1,7 @@
 namespace Spellbound.Domain;
 
-/// <summary>One player's place in a match: their mana and the tiles they hold. Seats are numbered from 0.</summary>
+/// <summary>One player's place in a match: their mana, the tiles they hold and their banked points. Seats are
+/// numbered from 0.</summary>
 public sealed class Seat
 {
     private readonly HashSet<Hex> tiles = [];
@@ -16,6 +17,15 @@ public sealed class Seat
     public int Mana { get; internal set; }
 
     public IReadOnlySet<Hex> Tiles => tiles;
+
+    /// <summary>Points banked so far; they are never taken away.</summary>
+    public int Score { get; internal set; }
+
+    /// <summary>Mana produced this round, scored at the round's end.</summary>
+    public int ProducedThisRound { get; internal set; }
+
+    /// <summary>Produced mana not yet worth a point, carried to the next round's scoring.</summary>
+    public int ProducedCarry { get; internal set; }
 
     internal void Take(Hex hex) => tiles.Add(hex);
 

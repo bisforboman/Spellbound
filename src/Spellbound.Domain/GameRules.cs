@@ -34,6 +34,29 @@ public sealed record GameRules
     /// <summary>The unauctioned tiles each opening Unveil reveals and leaves free.</summary>
     public int OpeningFreeTilesPerUnveil { get; init; } = 1;
 
+    // Rounds (docs/game-design.md, Rounds and stances, Units, Taking unowned tiles, Scoring and winning)
+
+    /// <summary>How many rounds a match lasts after the opening.</summary>
+    public int Rounds { get; init; } = 8;
+
+    public int ImpPower { get; init; } = 1;
+    public int ImpCost { get; init; } = 1;
+    public int GolemPower { get; init; } = 3;
+    public int GolemCost { get; init; } = 2;
+
+    /// <summary>The mana each Golem costs at the start of every round, after income.</summary>
+    public int GolemUpkeep { get; init; } = 1;
+
+    /// <summary>An Attune costs this plus <see cref="AttunePricePerTile"/> for every tile the player already holds.</summary>
+    public int AttuneBasePrice { get; init; } = 1;
+    public int AttunePricePerTile { get; init; } = 1;
+
+    /// <summary>Points banked at the end of every round for each tile held.</summary>
+    public int PointsPerTileHeld { get; init; } = 1;
+
+    /// <summary>One point for every this much mana a player's land produced; the remainder carries over.</summary>
+    public int ManaPerPoint { get; init; } = 4;
+
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.
     // On average every type yields 2.
 
@@ -47,6 +70,10 @@ public sealed record GameRules
         ArgumentOutOfRangeException.ThrowIfGreaterThan(players, MaxPlayers);
         return players <= SmallMapMaxPlayers ? SmallMapRadius : LargeMapRadius;
     }
+
+    public int CostOf(UnitKind kind) => kind == UnitKind.Golem ? GolemCost : ImpCost;
+
+    public int AttunePrice(int tilesHeld) => AttuneBasePrice + AttunePricePerTile * tilesHeld;
 
     public IReadOnlyList<int> YieldsOf(TileType type) => type switch
     {
