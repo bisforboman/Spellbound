@@ -239,7 +239,7 @@ public class AttackTests
     }
 
     [Fact]
-    public void A_scripted_game_with_attacks_always_plays_out_the_same()
+    public void A_bot_game_with_attacks_always_plays_out_the_same()
     {
         var first = PlayAggressively(11);
 
@@ -248,46 +248,21 @@ public class AttackTests
         Assert.Contains("The match is over", first, StringComparison.Ordinal);
     }
 
-    /// <summary>Every seat attacks the weakest rival or monster tile next to it when it has the power, else attunes
-    /// when it can, else summons Imps.</summary>
+    /// <summary>A whole match between bots, from the opening to the end.</summary>
     private static string PlayAggressively(int seed)
     {
-        var match = Opened(seed);
         var random = new SeededRandom(seed);
+        var match = Match.Start(3, GameRules.Default, random);
         var lines = new List<string>();
-        while (match.Phase == MatchPhase.Rounds)
+        while (match.Phase != MatchPhase.Ended)
         {
-            var orders = match.Seats.Select(s => Choose(match, s)).ToList();
-            var report = match.Resolve(orders, random);
+            var report = match.Phase == MatchPhase.Opening
+                ? match.Auction([.. match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random))], random)
+                : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random))], random);
             Assert.True(report.Succeeded, string.Join('\n', report.Lines));
             lines.AddRange(report.Lines);
         }
 
         return string.Join('\n', lines);
-    }
-
-    private static Orders Choose(Match match, Seat seat)
-    {
-        var mine = seat.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
-        foreach (var from in mine.Where(h => !match.UnitsOn(h).IsEmpty))
-        {
-            var army = match.UnitsOn(from);
-            var target = match.Map.NeighboursOf(from).OrderBy(h => h.Q).ThenBy(h => h.R).Where(h =>
-                match.OwnerOf(h) is { } o ? o != seat.Index && match.UnitsOn(h).Power(match.Rules) < army.Power(match.Rules)
-                    : match.Map[h].IsGuarded && match.Map[h].Guard < army.Power(match.Rules)).Cast<Hex?>().FirstOrDefault();
-            if (target is { } t)
-            {
-                return Attack(seat.Index, from, t, army);
-            }
-        }
-
-        var free = mine.SelectMany(match.Map.NeighboursOf).Distinct().OrderBy(h => h.Q).ThenBy(h => h.R)
-            .Where(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded).Cast<Hex?>().FirstOrDefault();
-        if (free is { } f && match.Check(Orders.Attune(seat.Index, f)).Succeeded)
-        {
-            return Orders.Attune(seat.Index, f);
-        }
-
-        return Orders.Summon(seat.Index, mine[0], UnitKind.Imp, Math.Min(4, seat.Mana));
     }
 }
