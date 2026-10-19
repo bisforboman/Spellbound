@@ -134,7 +134,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         var home = await merlin.GetStringAsync(new Uri("/", UriKind.Relative));
         var other = await morgana.GetStringAsync(new Uri("/", UriKind.Relative));
 
-        Assert.Contains($"Match {id}, seat 2: Opening auction 1 of 3", home, StringComparison.Ordinal);
+        Assert.Contains($"<a href=\"match/{id}\">Match {id}</a>, seat 2: Opening auction 1 of 3", home, StringComparison.Ordinal);
         Assert.Contains("in a match yet.", other, StringComparison.Ordinal);
     }
 

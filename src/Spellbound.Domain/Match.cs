@@ -125,24 +125,55 @@ public sealed partial class Match
             return "Every seat needs exactly one bid or pass.";
         }
 
-        foreach (var bid in bids)
+        return bids.Select(OneBidProblem).FirstOrDefault(p => p is not null);
+    }
+
+    /// <summary>What one seat's bid would cost and get, or why it can't be made. Changes nothing.</summary>
+    public Report CheckBid(Bid bid)
+    {
+        ArgumentNullException.ThrowIfNull(bid);
+        if (Phase != MatchPhase.Opening)
         {
-            if (bid.Tile is not { } tile)
-            {
-                continue;
-            }
+            return Report.Fail("The opening auctions are over.");
+        }
 
-            if (!onAuction.Contains(tile))
-            {
-                return $"Seat {bid.Seat + 1} bid on {tile}, which isn't up for auction.";
-            }
+        if (bid.Seat < 0 || bid.Seat >= seats.Count)
+        {
+            return Report.Fail($"There is no seat {bid.Seat + 1}.");
+        }
 
-            if (bid.Amount < Rules.MinBid || bid.Amount > seats[bid.Seat].Mana)
-            {
-                return seats[bid.Seat].Mana < Rules.MinBid
-                    ? $"Seat {bid.Seat + 1} has too little mana to bid and must pass."
-                    : $"Seat {bid.Seat + 1} can bid from {Rules.MinBid} to {seats[bid.Seat].Mana} mana, or pass.";
-            }
+        if (OneBidProblem(bid) is { } problem)
+        {
+            return Report.Fail(problem);
+        }
+
+        return bid.Tile is not { } tile
+            ? new Report(true, ["Pass: you pay nothing and get one of the tiles nobody wins, at random."])
+            : new Report(true,
+            [
+                $"Bid {bid.Amount} mana on {Describe(tile)}.",
+                $"If yours is the only highest bid, you pay {bid.Amount} and keep {seats[bid.Seat].Mana - bid.Amount} mana.",
+                "If you're outbid or tied, you pay nothing and get one of the tiles nobody wins, at random.",
+            ]);
+    }
+
+    private string? OneBidProblem(Bid bid)
+    {
+        if (bid.Tile is not { } tile)
+        {
+            return null;
+        }
+
+        if (!onAuction.Contains(tile))
+        {
+            return $"Seat {bid.Seat + 1} bid on {tile}, which isn't up for auction.";
+        }
+
+        if (bid.Amount < Rules.MinBid || bid.Amount > seats[bid.Seat].Mana)
+        {
+            return seats[bid.Seat].Mana < Rules.MinBid
+                ? $"Seat {bid.Seat + 1} has too little mana to bid and must pass."
+                : $"Seat {bid.Seat + 1} can bid from {Rules.MinBid} to {seats[bid.Seat].Mana} mana, or pass.";
         }
 
         return null;

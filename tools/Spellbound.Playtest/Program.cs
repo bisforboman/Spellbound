@@ -260,6 +260,42 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Send me a test notification')");
                 await Expect(page, "A test notification is on its way");
             });
+            await StepAsync(merlin, "new-match", async page =>
+            {
+                await GoAsync(page, "/");
+                await page.ClickAsync("a:has-text('New match')");
+                await Expect(page, "Start the match");
+                await page.ClickAsync("button:has-text('Start the match')");
+                await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
+                await Expect(page, "Opening auction 1 of 3");
+            });
+            await StepAsync(merlin, "bid", async page =>
+            {
+                await page.Locator("input[name='bid-tile']").First.CheckAsync();
+                await page.FillAsync("#amount", "2");
+                await Expect(page, "If yours is the only highest bid");
+                await page.ClickAsync("button:has-text('Bid 2 mana')");
+                await Expect(page, "Opening auction 2 of 3");
+                await Expect(page, "What just happened");
+            });
+            await StepAsync(merlin, "pass-to-the-rounds", async page =>
+            {
+                await page.ClickAsync("button:has-text('Pass')");
+                await Expect(page, "Opening auction 3 of 3");
+                await page.ClickAsync("button:has-text('Pass')");
+                await Expect(page, "Round 1 of 8");
+                await Expect(page, "The rounds begin");
+            });
+            await StepAsync(morgana, "big-map", async page =>
+            {
+                // Five players: the 37-tile map, the one whose hexes are smallest at 360 px.
+                await GoAsync(page, "/match/new");
+                await page.ClickAsync("label:has-text('5 players')");
+                await page.ClickAsync("button:has-text('Start the match')");
+                await Expect(page, "Opening auction 1 of 3");
+                await page.Locator(".hex-map .hex.marked").First.ClickAsync();
+                await Expect(page, "up for auction");
+            });
             await StepAsync(morgana, "privacy", page => GoAsync(page, "/privacy", interactive: false));
             await StepAsync(morgana, "not-an-admin", async page =>
             {
@@ -270,13 +306,23 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("A player who isn't an admin saw the admin page.");
                 }
             });
-            // No page starts a match yet, so ending one ("End game … now") gets its step with the new-game page (M1,
-            // pages); AdminFlowTests covers it until then.
             await StepAsync(ada, "admin", async page =>
             {
                 await GoAsync(page, "/admin");
-                await Expect(page, "No games are running");
+                await Expect(page, "Round 1 of 8, 3 seats");
                 await Expect(page, "Problems");
+            });
+            await StepAsync(ada, "end-game", async page =>
+            {
+                await GoAsync(page, "/admin");
+                await page.Locator("button:has-text('now…')").First.ClickAsync();
+                await page.ClickAsync("button:has-text('Yes, end game')");
+                await Expect(page, "has ended");
+            });
+            await StepAsync(merlin, "home-after-end", async page =>
+            {
+                await GoAsync(page, "/");
+                await Expect(page, "Ended early by an admin");
             });
             await StepAsync(ada, "problems", async page =>
             {

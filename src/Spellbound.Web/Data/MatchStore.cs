@@ -4,7 +4,28 @@ using Spellbound.Web.Hosting;
 namespace Spellbound.Web.Data;
 
 /// <summary>A match as it is loaded: the game it is, who sits where (null for a bot), and the match itself.</summary>
-public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match Match);
+public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match Match)
+{
+    /// <summary>What the last action said, or empty before the first.</summary>
+    public IReadOnlyList<string> LastReport { get; init; } = [];
+
+    /// <summary>False once the match is over or an admin ended it.</summary>
+    public bool IsRunning { get; init; } = true;
+
+    /// <summary>The seat this account sits in, or null.</summary>
+    public int? SeatOf(string ownerId)
+    {
+        for (var seat = 0; seat < Owners.Count; seat++)
+        {
+            if (Owners[seat] == ownerId)
+            {
+                return seat;
+            }
+        }
+
+        return null;
+    }
+}
 
 /// <summary>A match a player sits in, for their list: its id, their seat, where it stands, and whether it still runs.</summary>
 public sealed record PlayerMatch(long Id, int Seat, string Description, bool IsRunning);
@@ -51,7 +72,7 @@ public sealed class MatchStore(HostDatabase database)
     public async Task<LoadedMatch?> LoadAsync(long id)
     {
         await using var db = await database.BeginAsync();
-        return await LoadAsync(db, id, forUpdate: false) is { } loaded ? loaded.Match : null;
+        return await LoadAsync(db, id, forUpdate: false) is { } loaded ? loaded.Match with { IsRunning = loaded.IsRunning } : null;
     }
 
     /// <summary>
@@ -76,7 +97,7 @@ public sealed class MatchStore(HostDatabase database)
         var report = action(loaded.Match, StepRandom(loaded.Seed, loaded.Match.Match));
         if (report.Succeeded)
         {
-            await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(loaded.Seed, loaded.Match.Match.Save())));
+            await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), report.Lines)));
             if (loaded.Match.Match.Phase == MatchPhase.Ended)
             {
                 await db.EndGameAsync(id, now);
@@ -144,6 +165,6 @@ public sealed class MatchStore(HostDatabase database)
         }
 
         var match = Match.Load(stored.Match, MatchJson.Deserialize<GameRules>(game.RulesJson));
-        return (stored.Seed, new LoadedMatch(id, owners, match), game.IsRunning);
+        return (stored.Seed, new LoadedMatch(id, owners, match) { LastReport = stored.LastReport ?? [] }, game.IsRunning);
     }
 }
