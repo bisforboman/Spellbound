@@ -21,7 +21,8 @@ mobile reconnects become a problem, action pages can use static server rendering
 ```
 Spellbound.slnx
 src/
-  Spellbound.Domain/        pure game rules (no dependencies); for now only Round, which the host uses
+  Spellbound.Domain/        pure game rules (no dependencies): Match, GameMap, Battle, the bots and the simulation;
+                            Round is the one type the host uses
   Spellbound.Web/           Blazor app
     Hosting/                the reusable game host: accounts, the database (HostDatabase, SQL scripts in Sql/), rounds,
                             admin page, bans, backups,
@@ -34,8 +35,9 @@ src/
 tools/
   Spellbound.Playtest/      plays every page in a phone-sized browser (Playwright) against a fresh app and database,
                             with screenshots and a report (.claude/skills/playtest)
+  Spellbound.Simulator/     plays many seeded bot-vs-bot matches and prints a balance report (Markdown)
 tests/
-  Spellbound.Domain.Tests/  xUnit tests for the rules (for now, Round's)
+  Spellbound.Domain.Tests/  xUnit tests for the rules: map, opening, rounds, battles, bots
   Spellbound.Web.Tests/     integration tests: real app on a real PostgreSQL, a fresh database per test
 docs/                       game design and paper prototype, architecture, roadmap, theme, deploy
 scripts/bootstrap.ps1       one-time project generation
