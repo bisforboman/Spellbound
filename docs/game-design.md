@@ -97,6 +97,8 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 6. **Attacks** resolve.
    - Units sent to attack **have left** their tile: they don't defend it if it's attacked in the same round.
    - If **several players attack the same tile**, all of them fight the defender together in **one battle**; if the attackers win, the surviving attackers then fight each other for the tile.
+   - Units that moved this round can attack: moves resolve first.
+   - Each attacked tile has one battle, and the battles are fought in board order (this decides whether a tile is still its owner's last when its battle comes).
 7. **Scoring:** points are banked (see *Scoring and winning*).
 
 ## Units
@@ -156,7 +158,13 @@ Kept simple for now, to be extended later.
 - **A won attack:** the attacker's surviving units **move into** the captured tile.
 - Battles against monsters use the same rules, with the guards as the defender.
 - **No defender bonus** for now: ties already go to the defender, so an attacker needs strictly more power. A bonus (from a stance, terrain or units that stay put) can be added later.
-- **A rival's last tile:** if an attack on it wins, the defending units die, but the tile **stays with the defender** (empty). The attacker's units stay where they were, and **no conquest point** is scored.
+- **A rival's last tile:** if an attack on it wins, the defending units die, but the tile **stays with the defender** (empty). The attacker's units stay where they were, and **no conquest point** is scored. The surviving attackers go back to the tile they attacked from (the first in board order, if they came from several); if that tile was lost in the same round, they dissolve.
+- **Several attackers** (decided 19 Oct 2026):
+  - Together they lose power to the defender **weakest units first, across all of them**, seat order deciding between equal units.
+  - If they win, the **strongest survivor takes the tile** and loses power equal to the next strongest's total (weakest first, as always); the other survivors are wiped out.
+  - A **tie at the top** wipes out all the survivors and nobody takes the tile: it stays with the defender (empty), or for a monster tile it stays free, its guards gone.
+  - A tie against monsters gives the tile to the attacker who sent the most power; if that's a tie too, nobody gets it.
+- **Monster guards** fight as one unit of their power, so a weaker attack never wears them down.
 
 ## Resources
 

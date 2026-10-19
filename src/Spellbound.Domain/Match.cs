@@ -111,7 +111,7 @@ public sealed partial class Match
             OpeningUnveil = 0;
             Phase = MatchPhase.Rounds;
             lines.Add("The opening is over. The rounds begin.");
-            lines.AddRange(StartRound());
+            lines.AddRange(StartRound(random));
         }
 
         return new Report(true, lines);
@@ -168,5 +168,6 @@ public sealed partial class Match
         }
     }
 
-    private string Describe(Hex hex) => $"the {Map[hex].Type} tile at {hex} (yields {Map[hex].Yield})";
+    private string Describe(Hex hex) =>
+        $"the {Map[hex].Type} tile at {hex} (yields {Map[hex].Yield}" + (Map[hex].IsGuarded ? $", guarded by power {Map[hex].Guard})" : ")");
 }
