@@ -27,23 +27,15 @@ public static class HostStore
     public static bool IsBusy(Exception exception) =>
         exception is PostgresException { SqlState: PostgresErrorCodes.LockNotAvailable or PostgresErrorCodes.DeadlockDetected };
 
-    /// <summary>
-    /// The running game of a mode (the newest one not yet wrapped up), or null before the first one. With
-    /// <paramref name="forUpdate"/>, locks its row.
-    /// </summary>
-    public static Task<HostedGame?> LoadRunningGameAsync(this DbSession db, string mode, bool forUpdate = false) =>
-        db.SingleAsync(
-            "SELECT id, mode, number, starts_at, ends_at, rules::text FROM games WHERE mode = $1 AND ended_at IS NULL"
-            + " ORDER BY id DESC LIMIT 1" + (forUpdate ? " FOR UPDATE" : ""),
-            ReadGame,
-            mode);
+    private const string GameColumns = "id, mode, number, starts_at, ends_at, rules::text, ended_at";
+
+    /// <summary>Every game not yet wrapped up, oldest first.</summary>
+    public static Task<List<HostedGame>> LoadRunningGamesAsync(this DbSession db) =>
+        db.QueryAsync($"SELECT {GameColumns} FROM games WHERE ended_at IS NULL ORDER BY id", ReadGame);
 
     /// <summary>A game by id, running or ended. With <paramref name="forUpdate"/>, locks its row.</summary>
     public static Task<HostedGame?> LoadGameAsync(this DbSession db, long id, bool forUpdate = false) =>
-        db.SingleAsync(
-            "SELECT id, mode, number, starts_at, ends_at, rules::text FROM games WHERE id = $1" + (forUpdate ? " FOR UPDATE" : ""),
-            ReadGame,
-            id);
+        db.SingleAsync($"SELECT {GameColumns} FROM games WHERE id = $1" + (forUpdate ? " FOR UPDATE" : ""), ReadGame, id);
 
     /// <summary>The state a game keeps in its row (as it wrote it), or null if it has none.</summary>
     public static Task<string?> LoadGameStateAsync(this DbSession db, long id) =>
@@ -71,7 +63,7 @@ public static class HostStore
         return (await db.LoadGameAsync(id))!; // as stored: PostgreSQL normalises the rules' JSON
     }
 
-    /// <summary>Marks a game as over and wrapped up.</summary>
+    /// <summary>Marks a game as over and wrapped up. Call it in the transaction that wraps it up.</summary>
     public static Task EndGameAsync(this DbSession db, long id, DateTimeOffset now) =>
         db.ExecuteAsync("UPDATE games SET ended_at = $2 WHERE id = $1", id, now);
 
@@ -90,5 +82,6 @@ public static class HostStore
 
     private static HostedGame ReadGame(NpgsqlDataReader r) =>
         new(r.GetInt64(0), r.GetString(1),
-            new Round(r.GetInt32(2), r.GetFieldValue<DateTimeOffset>(3), r.GetFieldValue<DateTimeOffset>(4)), r.GetString(5));
+            new Round(r.GetInt32(2), r.GetFieldValue<DateTimeOffset>(3), r.GetFieldValue<DateTimeOffset>(4)), r.GetString(5),
+            r.IsDBNull(6) ? null : r.GetFieldValue<DateTimeOffset>(6));
 }

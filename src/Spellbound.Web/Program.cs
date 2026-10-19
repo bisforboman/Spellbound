@@ -10,14 +10,12 @@ builder.Services.AddRazorComponents()
 // The reusable host (Hosting/): accounts, database, rounds, admin, backups and abuse protection.
 builder.AddGameHost();
 
-// The game's place while it is designed again: it answers the host's questions and keeps a round going.
-builder.Services.AddSingleton<PlaceholderGame>();
-builder.Services.AddSingleton<IGameSchema>(sp => sp.GetRequiredService<PlaceholderGame>());
-builder.Services.AddSingleton<IRoundLifecycle>(sp => sp.GetRequiredService<PlaceholderGame>());
-builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<PlaceholderGame>());
-builder.Services.AddSingleton<IAccountLifecycle>(sp => sp.GetRequiredService<PlaceholderGame>());
-
-// Matches, stored in the host's games table (docs/architecture.md).
+// The game behind the host's hooks, and its matches (stored in the host's games table; docs/architecture.md).
+builder.Services.AddSingleton<SpellboundGame>();
+builder.Services.AddSingleton<IGameSchema>(sp => sp.GetRequiredService<SpellboundGame>());
+builder.Services.AddSingleton<IGameLifecycle>(sp => sp.GetRequiredService<SpellboundGame>());
+builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<SpellboundGame>());
+builder.Services.AddSingleton<IAccountLifecycle>(sp => sp.GetRequiredService<SpellboundGame>());
 builder.Services.AddSingleton<Spellbound.Web.Data.MatchStore>();
 
 var app = builder.Build();

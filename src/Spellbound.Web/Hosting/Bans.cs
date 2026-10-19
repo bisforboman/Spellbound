@@ -2,7 +2,7 @@ namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// Banned players by owner id. A banned player can't sign in, and the game leaves them out of anything public (see
-/// <see cref="IRoundLifecycle.OnGameEndedAsync"/>). Unbanning reverses it.
+/// <see cref="IGameLifecycle.OnGameEndedAsync"/>). Unbanning reverses it.
 /// </summary>
 public sealed class BanList(IReadOnlyDictionary<string, Ban> bans)
 {

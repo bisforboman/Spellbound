@@ -9,32 +9,34 @@ public interface IGameSchema
 }
 
 /// <summary>
-/// A game the server runs: its id, its mode (the game's own name for a kind of game), its round (number, start and end)
-/// and its rules, which the game writes and reads and the host only stores.
+/// A game the server runs: its id, its mode (the game's own name for a kind of game), its clock (number within its mode,
+/// start, and the end by which it is wrapped up at the latest), its rules, which the game writes and reads and the host
+/// only stores, and when it was wrapped up (null while it runs).
 /// </summary>
-public sealed record HostedGame(long Id, string Mode, Round Round, string RulesJson);
+public sealed record HostedGame(long Id, string Mode, Round Round, string RulesJson, DateTimeOffset? EndedAt = null)
+{
+    public bool IsRunning => EndedAt is null;
+}
 
-/// <summary>What the host needs to start a game: its mode, how long it lasts and the rules it runs under.</summary>
+/// <summary>What the host needs to start a game: its mode, how long it may run and the rules it runs under.</summary>
 public sealed record NewGame(string Mode, TimeSpan Length, string RulesJson);
 
-/// <summary>What the hosting code needs from the game about games and their rounds.</summary>
-public interface IRoundLifecycle
+/// <summary>
+/// What the hosting code needs from the game about its games. The game starts its own games (on demand, through
+/// <see cref="HostStore.InsertGameAsync"/>); the host ends any still running at their end (<see cref="GameKeeper"/>) or
+/// when an admin ends one.
+/// </summary>
+public interface IGameLifecycle
 {
     /// <summary>
-    /// The game the server always keeps running: when one ends, the next of the same mode starts. Asked each time one
-    /// starts, so it can carry the settings in force then.
-    /// </summary>
-    NewGame NextAlwaysOn();
-
-    /// <summary>The mode of the game the server always keeps running (<see cref="NextAlwaysOn"/>'s).</summary>
-    string AlwaysOnMode { get; }
-
-    /// <summary>
-    /// Called once when a game has ended, before the next one starts, inside the transaction that moves it on:
-    /// anything written through <paramref name="db"/> here is saved with it (or not at all). Banned players are in
-    /// <paramref name="bans"/>; leave them out of anything public, such as a hall of fame.
+    /// Called once when a game is ended by the host, inside the transaction that ends it: anything written through
+    /// <paramref name="db"/> here is saved with it (or not at all). Banned players are in <paramref name="bans"/>; leave
+    /// them out of anything public, such as a hall of fame.
     /// </summary>
     Task OnGameEndedAsync(DbSession db, HostedGame ended, BanList bans, CancellationToken cancellationToken);
+
+    /// <summary>A short line about where a game is, for the admin page (for example its round).</summary>
+    Task<string> DescribeAsync(DbSession db, HostedGame game);
 }
 
 /// <summary>What the hosting code tells the game about accounts.</summary>

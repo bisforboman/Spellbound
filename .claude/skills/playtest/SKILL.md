@@ -10,9 +10,9 @@ platform's pages; each page and action the new game adds gets a step. It:
 
 1. creates a fresh `spellbound_playtest` database;
 2. starts the app;
-3. signs in three players at 360×740 (one of them an admin) and checks the home page;
-4. visits the account page (data download), notifications, privacy, the admin page (and that a player who isn't an
-   admin is refused), and ends the round from the admin page;
+3. signs in three players at 360×740 (one of them an admin) and checks the home page (their matches: none yet);
+4. visits the account page (data download), notifications, privacy, and the admin page (no games running yet; a
+   player who isn't an admin is refused). Starting and ending a match get steps with the new-game page;
 5. checks the admin page's **Problems** list at the end.
 
 Every step is screenshotted and checked. A step fails on any of these: sideways scrolling at 360 px, Blazor's error

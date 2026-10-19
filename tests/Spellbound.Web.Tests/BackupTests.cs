@@ -47,8 +47,8 @@ public sealed class BackupTests : TestDatabase
 
         var fresh = CreateDatabase(); // empty: no migration has run
         Assert.True(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
-        Assert.Equal(1, (await WithDbAsync(db => db.LoadRunningGameAsync(PlaceholderGame.Mode), fresh))!.Round.Number);
-        Assert.Empty(await SchemaMigrator.MigrateAsync(fresh, [HostStore.Schema, PlaceholderGame.GameSchema])); // up to date
+        Assert.Equal(1, (await WithDbAsync(db => db.LoadGameAsync(1), fresh))!.Round.Number);
+        Assert.Empty(await SchemaMigrator.MigrateAsync(fresh, [HostStore.Schema, SpellboundGame.GameSchema])); // up to date
 
         // Once there's data, a restore is refused, so a leftover setting can't overwrite a live game.
         Assert.False(await Keeper(fresh).RestoreIfEmptyAsync(newest!));
@@ -102,10 +102,10 @@ public sealed class BackupTests : TestDatabase
 
     private Task SeedAsync() => WithDbAsync(db =>
     {
-        var round = Round.First(T0, PlaceholderGame.RoundLength);
+        var round = Round.First(T0, TimeSpan.FromDays(28));
         return db.ExecuteAsync(
-            "INSERT INTO games (id, mode, number, starts_at, ends_at, rules, created_at) VALUES (1, $1, $2, $3, $4, '{}', $3)",
-            PlaceholderGame.Mode, round.Number, round.StartsAt, round.EndsAt);
+            "INSERT INTO games (id, mode, number, starts_at, ends_at, rules, created_at) VALUES (1, 'test', $1, $2, $3, '{}', $2)",
+            round.Number, round.StartsAt, round.EndsAt);
     });
 
     private sealed class ManualTime(DateTimeOffset start) : TimeProvider

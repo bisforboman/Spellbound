@@ -63,13 +63,14 @@ public sealed class MatchStoreTests : TestDatabase
 
         while ((await store.LoadAsync(id))!.Match.Phase != MatchPhase.Ended)
         {
-            var report = await store.ApplyAsync(id, BotsPlay);
+            var report = await store.ApplyAsync(id, Now, BotsPlay);
             var expected = BotsPlay(new LoadedMatch(id, [null, null, null], memory), MatchStore.StepRandom(9, memory));
             Assert.Equal(expected.Lines, report!.Lines);
             steps++;
         }
 
         Assert.Equal(3 + 8, steps);
+        Assert.Equal(Now, (await WithDbAsync(db => db.LoadGameAsync(id)))!.EndedAt); // its game ended with it
         Assert.Equal(MatchJson.Serialize(memory.Save()), MatchJson.Serialize((await store.LoadAsync(id))!.Match.Save()));
     }
 
@@ -79,7 +80,7 @@ public sealed class MatchStoreTests : TestDatabase
         var id = await store.CreateAsync([null, null], GameRules.Default, Now, seed: 2);
         var before = await WithDbAsync(db => db.LoadGameStateAsync(id));
 
-        var report = await store.ApplyAsync(id, (loaded, random) => loaded.Match.Auction([Bid.Pass(0)], random));
+        var report = await store.ApplyAsync(id, Now, (loaded, random) => loaded.Match.Auction([Bid.Pass(0)], random));
 
         Assert.False(report!.Succeeded);
         Assert.Equal(before, await WithDbAsync(db => db.LoadGameStateAsync(id)));
@@ -91,11 +92,42 @@ public sealed class MatchStoreTests : TestDatabase
         var id = await store.CreateAsync([null, null, null], GameRules.Default, Now, seed: 4);
 
         // Each passes the auction it finds; if both read the same state, the second save would undo the first.
-        var reports = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => Task.Run(() => store.ApplyAsync(id,
+        var reports = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => Task.Run(() => store.ApplyAsync(id, Now,
             (loaded, random) => loaded.Match.Auction([.. loaded.Match.Seats.Select(s => Bid.Pass(s.Index))], random)))));
 
         Assert.All(reports, r => Assert.True(r!.Succeeded));
         Assert.Equal(3, (await store.LoadAsync(id))!.Match.OpeningUnveil);
+    }
+
+    [Fact]
+    public async Task A_match_whose_game_was_ended_takes_no_more_actions()
+    {
+        var id = await store.CreateAsync([null, null], GameRules.Default, Now, seed: 3);
+        await WithDbAsync(db => db.EndGameAsync(id, Now).ContinueWith(_ => 0));
+        var before = await WithDbAsync(db => db.LoadGameStateAsync(id));
+
+        var report = await store.ApplyAsync(id, Now, BotsPlay);
+
+        Assert.Equal("This match has ended.", Assert.Single(report!.Lines));
+        Assert.Equal(before, await WithDbAsync(db => db.LoadGameStateAsync(id)));
+        Assert.Equal("Ended early by an admin", MatchStore.Describe((await store.LoadAsync(id))!.Match, isRunning: false));
+    }
+
+    [Fact]
+    public async Task A_player_sees_the_matches_they_sit_in()
+    {
+        await AddAccountAsync("alice");
+        var first = await store.CreateAsync(["alice", null], GameRules.Default, Now, seed: 1);
+        await store.CreateAsync([null, null], GameRules.Default, Now, seed: 2);
+        var second = await store.CreateAsync([null, "alice"], GameRules.Default, Now, seed: 3);
+        await store.ApplyAsync(second, Now, BotsPlay);
+
+        var list = await store.ListForAsync("alice");
+
+        Assert.Equal(
+            [new PlayerMatch(second, 1, "Opening auction 2 of 3", true), new PlayerMatch(first, 0, "Opening auction 1 of 3", true)],
+            list);
+        Assert.Empty(await store.ListForAsync("bob"));
     }
 
     [Fact]
@@ -104,7 +136,7 @@ public sealed class MatchStoreTests : TestDatabase
         var other = await WithDbAsync(db => db.InsertGameAsync(new NewGame("placeholder", TimeSpan.FromDays(1), "{}"), Now));
 
         Assert.Null(await store.LoadAsync(other.Id));
-        Assert.Null(await store.ApplyAsync(other.Id, BotsPlay));
+        Assert.Null(await store.ApplyAsync(other.Id, Now, BotsPlay));
         Assert.Null(await store.LoadAsync(12345));
     }
 
@@ -114,7 +146,7 @@ public sealed class MatchStoreTests : TestDatabase
         await AddAccountAsync("alice");
         await AddAccountAsync("bob");
         var id = await store.CreateAsync([null, "alice", "bob"], GameRules.Default, Now, seed: 1);
-        var game = new PlaceholderGame(new HostDatabase(source));
+        var game = new SpellboundGame();
 
         var export = MatchJson.Serialize(await WithDbAsync(db => game.ExportAsync(db, "alice")));
         await WithDbAsync(db => db.ExecuteAsync("DELETE FROM accounts WHERE id = 'bob'"));

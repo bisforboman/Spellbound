@@ -6,6 +6,9 @@ namespace Spellbound.Web.Data;
 /// <summary>A match as it is loaded: the game it is, who sits where (null for a bot), and the match itself.</summary>
 public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match Match);
 
+/// <summary>A match a player sits in, for their list: its id, their seat, where it stands, and whether it still runs.</summary>
+public sealed record PlayerMatch(long Id, int Seat, string Description, bool IsRunning);
+
 /// <summary>
 /// Matches in the database (docs/architecture.md): each is a row in the host's games table, its rules in the row's
 /// rules and its state (<see cref="StoredMatch"/>) in the row's state, plus a match_players row per human seat. Every
@@ -52,10 +55,11 @@ public sealed class MatchStore(HostDatabase database)
     }
 
     /// <summary>
-    /// Runs one action on a match with its row locked: <paramref name="action"/> gets the match and the randomness
-    /// for this step, and the match is saved only if the action succeeds. Null if there is no such match.
+    /// Runs one action on a running match with its row locked: <paramref name="action"/> gets the match and the
+    /// randomness for this step, and the match is saved only if the action succeeds. When the match is over, its game
+    /// ends with it. Null if there is no such match; a failed report if it has ended (or an admin ended it).
     /// </summary>
-    public async Task<Report?> ApplyAsync(long id, Func<LoadedMatch, IRandomSource, Report> action)
+    public async Task<Report?> ApplyAsync(long id, DateTimeOffset now, Func<LoadedMatch, IRandomSource, Report> action)
     {
         ArgumentNullException.ThrowIfNull(action);
         await using var db = await database.BeginAsync();
@@ -64,15 +68,54 @@ public sealed class MatchStore(HostDatabase database)
             return null;
         }
 
+        if (!loaded.IsRunning)
+        {
+            return Report.Fail("This match has ended.");
+        }
+
         var report = action(loaded.Match, StepRandom(loaded.Seed, loaded.Match.Match));
         if (report.Succeeded)
         {
             await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(loaded.Seed, loaded.Match.Match.Save())));
+            if (loaded.Match.Match.Phase == MatchPhase.Ended)
+            {
+                await db.EndGameAsync(id, now);
+            }
+
             await db.CommitAsync();
         }
 
         return report;
     }
+
+    /// <summary>The matches a player sits in, newest first.</summary>
+    public async Task<IReadOnlyList<PlayerMatch>> ListForAsync(string ownerId)
+    {
+        await using var db = await database.BeginAsync();
+        var seats = await db.QueryAsync(
+            "SELECT game_id, seat FROM match_players WHERE owner_id = $1 ORDER BY game_id DESC",
+            r => (Id: r.GetInt64(0), Seat: r.GetInt32(1)),
+            ownerId);
+        var list = new List<PlayerMatch>();
+        foreach (var (id, seat) in seats)
+        {
+            if (await LoadAsync(db, id, forUpdate: false) is { } loaded)
+            {
+                list.Add(new PlayerMatch(id, seat, Describe(loaded.Match.Match, loaded.IsRunning), loaded.IsRunning));
+            }
+        }
+
+        return list;
+    }
+
+    /// <summary>Where a match stands, in a few words.</summary>
+    public static string Describe(Match match, bool isRunning) => (isRunning, match.Phase) switch
+    {
+        (_, MatchPhase.Ended) => $"Over after {match.Rules.Rounds} rounds",
+        (false, _) => "Ended early by an admin",
+        (_, MatchPhase.Opening) => $"Opening auction {match.OpeningUnveil} of {match.Rules.OpeningUnveils}",
+        _ => $"Round {match.CurrentRound} of {match.Rules.Rounds}",
+    };
 
     /// <summary>The randomness for a match's next step, from its seed and where it is: each opening auction and each
     /// round gets its own, so a step never depends on how often the match was saved before it. Not HashCode, which
@@ -83,7 +126,9 @@ public sealed class MatchStore(HostDatabase database)
         _ => seed + 100 + match.CurrentRound,
     }));
 
-    private static async Task<(int Seed, LoadedMatch Match)?> LoadAsync(DbSession db, long id, bool forUpdate)
+    /// <summary>A match in an open transaction, with its seed and whether its game still runs; null if the game isn't
+    /// a match.</summary>
+    internal static async Task<(int Seed, LoadedMatch Match, bool IsRunning)?> LoadAsync(DbSession db, long id, bool forUpdate)
     {
         if (await db.LoadGameAsync(id, forUpdate) is not { Mode: Mode } game || await db.LoadGameStateAsync(id) is not { } json)
         {
@@ -99,6 +144,6 @@ public sealed class MatchStore(HostDatabase database)
         }
 
         var match = Match.Load(stored.Match, MatchJson.Deserialize<GameRules>(game.RulesJson));
-        return (stored.Seed, new LoadedMatch(id, owners, match));
+        return (stored.Seed, new LoadedMatch(id, owners, match), game.IsRunning);
     }
 }

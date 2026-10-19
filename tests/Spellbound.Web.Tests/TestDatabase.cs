@@ -79,7 +79,7 @@ public abstract class TestDatabase : IDisposable
         Execute($"DROP DATABASE IF EXISTS {template} WITH (FORCE)");
         Execute($"CREATE DATABASE {template}");
         // No pooling, so no connection is left open: PostgreSQL only copies a template nobody is connected to.
-        SchemaMigrator.MigrateAsync(WithDatabase(template) + ";Pooling=false", [HostStore.Schema, PlaceholderGame.GameSchema])
+        SchemaMigrator.MigrateAsync(WithDatabase(template) + ";Pooling=false", [HostStore.Schema, SpellboundGame.GameSchema])
             .GetAwaiter().GetResult();
 
         AppDomain.CurrentDomain.ProcessExit += (_, _) => Execute($"DROP DATABASE IF EXISTS {template} WITH (FORCE)");
