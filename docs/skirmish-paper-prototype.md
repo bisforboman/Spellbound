@@ -14,7 +14,7 @@ A one-page version of `game-design.md` for a first test on a table. All numbers 
 
 Do this **three times**:
 1. **Unveil:** turn over 4 random face-down tiles. The first 3 are auctioned; the 4th stays free. 12 tiles are revealed in total, 3 of them free.
-2. **Auction:** each player secretly writes one of the 3 tiles and a bid, or "pass". Reveal together.
+2. **Auction:** each player secretly writes one of the 3 tiles and a bid of at least 1 mana, or "pass". Reveal together.
    - Highest bid on a tile wins it and pays. Losers don't pay.
    - A tie for the top bid: nobody gets that tile; it joins the leftovers.
    - Everyone who didn't win gets a random leftover tile for free.
@@ -48,7 +48,7 @@ After round 8, most points wins. Tie-break: most tiles held, then most mana in h
 
 ## Watch for
 
-- Is 9 starting mana enough for the opening? Do bids end up all 0s and 1s, or does someone spend everything?
+- Is 9 starting mana enough for the opening? Do bids end up all 1s and 2s, or does someone spend everything?
 - Are there enough free tiles to attune after the opening, or does the 19-hex map run out at once?
 - Is Attune at 1 + tiles held too cheap or too dear?
 - Do Imps pile up into an unbeatable horde?

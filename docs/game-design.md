@@ -70,6 +70,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 - The highest bid on a tile wins it and pays. **Losing bidders don't pay.**
 - Players who lost or passed each get **one of the tiles nobody bid on, at random, for free**. So everyone ends each Unveil with exactly one new tile.
 - **Ties:** if the top bids on a tile are tied, nobody gets it and nobody pays; the tile becomes one of the random leftovers.
+- The smallest bid is **1 mana**; to spend nothing, pass. So bidding always costs something if you win, and passing keeps its meaning. Leftovers are handed out in seat order, each drawn at random from those still left.
 - Won or leftover tiles don't need to connect to your other tiles (scattered holdings are allowed).
 
 ## Rounds and stances

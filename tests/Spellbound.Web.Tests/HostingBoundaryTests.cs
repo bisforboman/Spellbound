@@ -41,7 +41,11 @@ public sealed class HostingBoundaryTests
             .Where(name => !name.Contains('<', StringComparison.Ordinal))
             .Distinct()
             .ToList();
-        var pattern = new Regex($@"\b({string.Join('|', gameTypeNames.Select(Regex.Escape))})\b|Spellbound\.Web\.(Data|Components\.Game)\b");
+        // A name used as a type: not a member (after a dot), a method (before a bracket, unless constructed with new)
+        // or a named tuple element or argument (before a colon), so everyday words like Match and Report stay free.
+        var names = string.Join('|', gameTypeNames.Select(Regex.Escape));
+        var pattern = new Regex(
+            $@"\bnew\s+({names})\b|(?<![.\w])({names})\b(?!\s*[(:])|Spellbound\.Web\.(Data|Components\.Game)\b");
 
         var offenders = Directory.EnumerateFiles(HostingSourceDirectory())
             .Where(f => f.EndsWith(".cs", StringComparison.Ordinal) || f.EndsWith(".razor", StringComparison.Ordinal))
