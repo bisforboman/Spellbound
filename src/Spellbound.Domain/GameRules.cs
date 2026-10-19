@@ -28,6 +28,9 @@ public sealed record GameRules
     /// <summary>How many Unveils the opening has. Each auctions one tile per player and leaves one free.</summary>
     public int OpeningUnveils { get; init; } = 3;
 
+    /// <summary>The smallest bid in an opening auction. A player who wants to spend nothing passes instead.</summary>
+    public int MinBid { get; init; } = 1;
+
     /// <summary>The unauctioned tiles each opening Unveil reveals and leaves free.</summary>
     public int OpeningFreeTilesPerUnveil { get; init; } = 1;
 

@@ -109,18 +109,18 @@ public class OpeningTests
     }
 
     [Fact]
-    public void A_bid_of_zero_can_win_an_uncontested_tile()
+    public void The_minimum_bid_wins_an_uncontested_tile()
     {
         var match = NewMatch(2);
         var tile = match.OnAuction[1];
 
-        match.Auction([new Bid(0, tile, 0), Bid.Pass(1)], new SeededRandom(2));
+        match.Auction([new Bid(0, tile, 1), Bid.Pass(1)], new SeededRandom(2));
 
         Assert.Equal(0, match.OwnerOf(tile));
-        Assert.Equal(9, match.Seats[0].Mana);
+        Assert.Equal(8, match.Seats[0].Mana);
     }
 
-    public static TheoryData<string> BadBids => ["missing", "twice", "unknown seat", "not on auction", "too much", "negative"];
+    public static TheoryData<string> BadBids => ["missing", "twice", "unknown seat", "not on auction", "too much", "zero", "negative"];
 
     [Theory]
     [MemberData(nameof(BadBids))]
@@ -136,6 +136,7 @@ public class OpeningTests
             "unknown seat" => [Bid.Pass(0), Bid.Pass(2)],
             "not on auction" => [new Bid(0, offAuction, 1), Bid.Pass(1)],
             "too much" => [new Bid(0, tile, 10), Bid.Pass(1)],
+            "zero" => [new Bid(0, tile, 0), Bid.Pass(1)],
             _ => [new Bid(0, tile, -1), Bid.Pass(1)],
         };
         var before = Snapshot(match);

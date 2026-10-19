@@ -136,9 +136,11 @@ public sealed class Match
                 return $"Seat {bid.Seat + 1} bid on {tile}, which isn't up for auction.";
             }
 
-            if (bid.Amount < 0 || bid.Amount > seats[bid.Seat].Mana)
+            if (bid.Amount < Rules.MinBid || bid.Amount > seats[bid.Seat].Mana)
             {
-                return $"Seat {bid.Seat + 1} can bid from 0 to {seats[bid.Seat].Mana} mana.";
+                return seats[bid.Seat].Mana < Rules.MinBid
+                    ? $"Seat {bid.Seat + 1} has too little mana to bid and must pass."
+                    : $"Seat {bid.Seat + 1} can bid from {Rules.MinBid} to {seats[bid.Seat].Mana} mana, or pass.";
             }
         }
 
