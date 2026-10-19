@@ -251,12 +251,14 @@ public sealed partial class Match
                     return $"Units can only be summoned on your own tiles; {target} isn't yours.";
                 }
 
-                var cost = Rules.CostOf(orders.Kind) * orders.Count;
-                if (orders.Count < 0 || cost > seat.Mana)
+                // Checked by division, so a huge count can't overflow into a cheap one.
+                var each = Rules.CostOf(orders.Kind);
+                if (orders.Count < 0 || orders.Count > seat.Mana / each)
                 {
-                    return $"{orders.Kind}s cost {Rules.CostOf(orders.Kind)} mana each; you have {seat.Mana}.";
+                    return $"{orders.Kind}s cost {each} mana each; you have {seat.Mana}.";
                 }
 
+                var cost = each * orders.Count;
                 lines.Add($"Summon {Army.Of(orders.Kind, orders.Count)} at {target} for {cost} mana, leaving {seat.Mana - cost}.");
                 return null;
             }

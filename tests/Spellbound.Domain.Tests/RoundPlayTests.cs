@@ -171,7 +171,7 @@ public class RoundPlayTests
         List<Orders> orders = problem switch
         {
             "summon on a rival's tile" => HoldAll(match, Orders.Summon(0, rival, UnitKind.Imp, 1)),
-            "summon too many" => HoldAll(match, Orders.Summon(0, mine[0], UnitKind.Golem, 100)),
+            "summon too many" => HoldAll(match, Orders.Summon(0, mine[0], UnitKind.Golem, int.MaxValue)),
             "attune an owned tile" => HoldAll(match, Orders.Attune(0, rival)),
             "attune far away" => HoldAll(match, Orders.Attune(0, lonely)),
             "attune too dear" => HoldAll(match, Orders.Attune(0, free)),
