@@ -16,6 +16,7 @@ builder.Services.AddSingleton<IGameSchema>(sp => sp.GetRequiredService<Spellboun
 builder.Services.AddSingleton<IGameLifecycle>(sp => sp.GetRequiredService<SpellboundGame>());
 builder.Services.AddSingleton<IPlayerSummaries>(sp => sp.GetRequiredService<SpellboundGame>());
 builder.Services.AddSingleton<IAccountLifecycle>(sp => sp.GetRequiredService<SpellboundGame>());
+builder.Services.AddSingleton(Spellbound.Web.Data.RulesSetup.FromConfiguration(builder.Configuration));
 builder.Services.AddSingleton<Spellbound.Web.Data.MatchStore>();
 builder.Services.AddSingleton<Spellbound.Web.Data.MatchPlay>();
 
