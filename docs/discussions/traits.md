@@ -11,8 +11,9 @@ rules are in [game-design.md](../game-design.md#traits).
 - **Build around it, not a small bonus.** Each trait should change which stance a player reaches for (Attune to
   expand, Summon then Attack to fight, or clearing monsters), not just add points.
 - **Trait goals are hidden until the end, and the main score is visible.** So every goal is **capped**, or the
-  visible scoreboard would mean little. The caps below are 8–10 points: about 15% of a typical final score (the
-  simulator's 3-player bot games end around 55 points: about 40 for land, 12 for mana, 3 for conquest).
+  visible scoreboard would mean little. The caps below were 8–10 points: about 15% of a typical final score (the
+  simulator's 3-player bot games then ended around 55 points). *Since 20 Oct 2026 scores are about a third of that
+  (around 18), so the caps are now 3 and the goals a third as rich; the table in game-design.md has the numbers.*
 - **The biggest realm pays the most to grow** (principle 13) and **everyone stays in the game** (principle 12). So no
   trait makes Attune cheaper or adds mana: those snowball. Every trait here is an **end-of-game score** over things the
   game already tracks, so it is small to build and easy to balance.

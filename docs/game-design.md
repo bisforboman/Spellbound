@@ -29,12 +29,12 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 | Trait | Pulls towards | Goal at the end (hidden), cap |
 |---|---|---|
-| Wildheart | Wild land | 2 points per Wild tile held, up to 10 |
-| Hearthkeeper | Steady land | 2 points per Steady tile held, up to 10 |
-| Weaver | one connected realm | 1 point per tile in your largest connected group, up to 10 |
-| Wanderer | many separate footholds | 2 points per separate group of tiles, up to 8 |
-| Beastbane | clearing monsters | 2 points per monster tile cleared, up to 8 (on top of the conquest point) |
-| Warbrand | taking rivals' land | 2 points per rival tile taken, up to 10 (on top of the conquest point) |
+| Wildheart | Wild land | 1 point per 2 Wild tiles held, up to 3 |
+| Hearthkeeper | Steady land | 1 point per 2 Steady tiles held, up to 3 |
+| Weaver | one connected realm | 1 point per 3 tiles in your largest connected group, up to 3 |
+| Wanderer | many separate footholds | 1 point per separate group of tiles beyond the first, up to 3 |
+| Beastbane | clearing monsters | 1 point per monster tile cleared, up to 3 (on top of the conquest point) |
+| Warbrand | taking rivals' land | 1 point per rival tile taken, up to 3 (on top of the conquest point) |
 
 - No trait changes the Attune price, income or upkeep: they would snowball (principles 12 and 13).
 - *Open:* how often each trait wins; the simulator will report win rate and goal points by trait once they're built.
@@ -221,12 +221,15 @@ income. Costs are flat and small.
 
 | Source | Points |
 |---|---|
-| Land held | 1 per tile you hold |
-| Mana produced | 1 per 4 mana your land produced (remainders carry over to the next round) |
+| Land held | 1 per 3 tiles held, counted every round and added up (holding 4 tiles for 3 rounds is 12, so 4 points; remainders carry over) |
+| Mana produced | 1 per 12 mana your land produced (remainders carry over to the next round) |
 | Conquest | 1 per rival tile taken or monster tile cleared (kept even if the tile is lost again) |
 | Trait goals | set by each trait |
 
 - **Tie-break:** most tiles held at the end; if still tied, most mana in hand.
+- **Scale** (changed 20 Oct 2026): a 3-player game ends around **18 points** a seat (about 12 for land, 5 for mana,
+  1 for conquest) instead of 55. Land and mana keep their balance; the winner is the same as before in about 94 of 100
+  simulated games. A conquest point now weighs more (about 5% of a score instead of 2%), on purpose: it rewards attacks.
 
 ## Player elimination
 

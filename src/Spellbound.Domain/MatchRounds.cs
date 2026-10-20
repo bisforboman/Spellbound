@@ -172,7 +172,9 @@ public sealed partial class Match
     {
         foreach (var seat in seats)
         {
-            var land = seat.Tiles.Count * Rules.PointsPerTileHeld;
+            var held = seat.LandCarry + seat.Tiles.Count;
+            var land = held / Rules.TilesPerPoint;
+            seat.LandCarry = held % Rules.TilesPerPoint;
             var produced = seat.ProducedCarry + seat.ProducedThisRound;
             var mana = produced / Rules.ManaPerPoint;
             var conquest = seat.ConquestsThisRound * Rules.PointsPerConquest;

@@ -13,7 +13,7 @@ public sealed partial class Match
         [.. Map.Tiles.OrderBy(t => t.Hex.Q).ThenBy(t => t.Hex.R).Select(t => new TileState(t.Hex, t.Type, t.Yield, t.Guard))],
         [.. seats.Select(s => new SeatState(
             s.Mana, s.Score, s.ProducedThisRound, s.ProducedCarry, s.ConquestsThisRound,
-            [.. s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)]))],
+            [.. s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)], s.LandCarry))],
         [.. units.Where(u => !u.Value.IsEmpty).OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R)
             .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))]);
 
@@ -35,6 +35,7 @@ public sealed partial class Match
                 Score = s.Score,
                 ProducedThisRound = s.ProducedThisRound,
                 ProducedCarry = s.ProducedCarry,
+                LandCarry = s.LandCarry,
                 ConquestsThisRound = s.ConquestsThisRound,
             };
             foreach (var hex in s.Tiles)
