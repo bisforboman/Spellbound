@@ -224,7 +224,7 @@ public sealed partial class Match
         var seat = seats[orders.Seat];
         if (orders.Target is not { } target)
         {
-            lines.Add($"{orders.Stance}, aimed at nothing: only the moves happen.");
+            lines.Add("Nothing to spend this round: only the moves happen.");
             return null;
         }
 

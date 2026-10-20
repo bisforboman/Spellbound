@@ -313,9 +313,10 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Commit:')");
                 await Expect(page, "Round 3 of 8");
             });
-            await StepAsync(merlin, "attack-or-hold", async page =>
+            // An attack if the map offers one (a rival or monsters next to the Imps), else a hold: the match isn't seeded,
+            // so which it is varies from run to run.
+            await StepAsync(merlin, "attack-pick", async page =>
             {
-                // An attack if the map offers one (a rival or monsters next to the Imps), else a hold.
                 await page.ClickAsync("label:has-text('Attack:')");
                 var targets = page.Locator("input[name='target']");
                 if (await targets.CountAsync() > 0)
@@ -323,7 +324,9 @@ namespace Spellbound.Playtest
                     await targets.First.CheckAsync();
                     await Expect(page, "Send from");
                 }
-
+            });
+            await StepAsync(merlin, "attack-commit", async page =>
+            {
                 if (await page.Locator("button:has-text('Commit:'):not([disabled])").CountAsync() == 0)
                 {
                     await page.ClickAsync("label:has-text('Hold:')");
