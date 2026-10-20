@@ -21,6 +21,7 @@ public sealed record MatchState(
 public sealed record TileState(Hex Hex, TileType Type, int? Yield, int Guard);
 
 public sealed record SeatState(
-    int Mana, int Score, int ProducedThisRound, int ProducedCarry, int ConquestsThisRound, IReadOnlyList<Hex> Tiles);
+    int Mana, int Score, int ProducedThisRound, int ProducedCarry, int ConquestsThisRound, IReadOnlyList<Hex> Tiles,
+    int LandCarry = 0);
 
 public sealed record UnitsState(Hex Hex, int Imps, int Golems);

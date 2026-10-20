@@ -28,7 +28,7 @@ public class RoundPlayTests
 
     private static string Snapshot(Match match) =>
         $"{match.Phase} {match.CurrentRound} "
-        + string.Join(" | ", match.Seats.Select(s => $"{s.Mana} {s.Score} {s.ProducedThisRound} {s.ProducedCarry}: "
+        + string.Join(" | ", match.Seats.Select(s => $"{s.Mana} {s.Score} {s.ProducedThisRound} {s.ProducedCarry} {s.LandCarry}: "
             + string.Join(' ', s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).Select(h => $"{h}{match.UnitsOn(h)}"))));
 
     [Fact]
@@ -207,18 +207,32 @@ public class RoundPlayTests
     }
 
     [Fact]
-    public void Points_are_banked_for_land_and_every_four_mana_produced_with_the_rest_carried()
+    public void Points_are_banked_for_every_three_tile_rounds_and_twelve_mana_with_the_rest_carried()
     {
         var match = Opened();
         var produced = match.Seats.Select(s => s.Tiles.Sum(h => match.Map[h].Yield!.Value)).ToList();
 
         match.Resolve(HoldAll(match), new SeededRandom(7));
 
+        // Three tiles for one round: 3 tile-rounds, 1 point and nothing carried.
         Assert.All(match.Seats, s =>
         {
-            Assert.Equal(3 + produced[s.Index] / 4, s.Score);
-            Assert.Equal(produced[s.Index] % 4, s.ProducedCarry);
+            Assert.Equal(1 + produced[s.Index] / 12, s.Score);
+            Assert.Equal(0, s.LandCarry);
+            Assert.Equal(produced[s.Index] % 12, s.ProducedCarry);
         });
+    }
+
+    [Fact]
+    public void Land_that_isnt_worth_a_point_yet_carries_to_the_next_round()
+    {
+        var match = Opened(rules: GameRules.Default with { TilesPerPoint = 2, ManaPerPoint = 1000 });
+
+        match.Resolve(HoldAll(match), new SeededRandom(7));
+        Assert.All(match.Seats, s => Assert.Equal((1, 1), (s.Score, s.LandCarry))); // 3 tile-rounds: 1 point, 1 left
+
+        match.Resolve(HoldAll(match), new SeededRandom(7));
+        Assert.All(match.Seats, s => Assert.Equal((3, 0), (s.Score, s.LandCarry))); // 1 + 3 more: 2 points, none left
     }
 
     [Fact]

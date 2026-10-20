@@ -61,4 +61,15 @@ public class SavingTests
 
         Assert.Throws<NotSupportedException>(() => Match.Load(state, GameRules.Default));
     }
+
+    [Fact]
+    public void A_match_saved_before_land_carried_over_still_loads()
+    {
+        var json = Json(Match.Start(2, GameRules.Default, new SeededRandom(1)).Save());
+        var old = System.Text.RegularExpressions.Regex.Replace(json, ",\"LandCarry\":0", "");
+
+        Assert.DoesNotContain("LandCarry", old, StringComparison.Ordinal);
+        var loaded = Match.Load(JsonSerializer.Deserialize<MatchState>(old)!, GameRules.Default);
+        Assert.All(loaded.Seats, s => Assert.Equal(0, s.LandCarry));
+    }
 }

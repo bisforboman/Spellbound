@@ -30,6 +30,9 @@ public sealed class Seat
     /// <summary>Produced mana not yet worth a point, carried to the next round's scoring.</summary>
     public int ProducedCarry { get; internal set; }
 
+    /// <summary>Tile-rounds not yet worth a point, carried to the next round's scoring.</summary>
+    public int LandCarry { get; internal set; }
+
     internal void Take(Hex hex) => tiles.Add(hex);
 
     internal void Lose(Hex hex) => tiles.Remove(hex);

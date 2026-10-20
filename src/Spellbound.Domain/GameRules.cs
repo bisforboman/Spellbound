@@ -66,11 +66,12 @@ public sealed record GameRules
     /// <summary>Points banked for each rival tile taken or monster tile cleared.</summary>
     public int PointsPerConquest { get; init; } = 1;
 
-    /// <summary>Points banked at the end of every round for each tile held.</summary>
-    public int PointsPerTileHeld { get; init; } = 1;
+    /// <summary>One point for every this many tiles held, counted every round and added up: holding 4 tiles for 3 rounds
+    /// is 12 tile-rounds, 4 points. The remainder carries over.</summary>
+    public int TilesPerPoint { get; init; } = 3;
 
     /// <summary>One point for every this much mana a player's land produced; the remainder carries over.</summary>
-    public int ManaPerPoint { get; init; } = 4;
+    public int ManaPerPoint { get; init; } = 12;
 
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.
     // On average every type yields 2.

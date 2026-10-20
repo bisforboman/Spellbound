@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
+using Match = Spellbound.Domain.Match;
 
 namespace Spellbound.Domain;
 
@@ -7,8 +9,13 @@ namespace Spellbound.Domain;
 /// Plays many seeded bot-against-bot matches and measures what the paper prototype asks to watch for
 /// (docs/skirmish-paper-prototype.md, "Watch for"). Pure and deterministic: the same arguments give the same report.
 /// </summary>
-public static class Simulation
+public static partial class Simulation
 {
+    [GeneratedRegex(@"\((\d+) for land, (\d+) for mana(?:, (\d+) for conquest)?\)")]
+    private static partial Regex BankedRegex();
+
+    private static Regex BankedLine => BankedRegex();
+
     public static SimulationReport Run(int players, int games, int seed, GameRules rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
@@ -71,6 +78,13 @@ public static class Simulation
             }
 
             round.AttuneClashes += lines.Count(l => l.Contains(" attune ", StringComparison.Ordinal) && l.EndsWith("nobody gets it.", StringComparison.Ordinal));
+            foreach (System.Text.RegularExpressions.Match banked in BankedLine.Matches(string.Join('\n', lines)))
+            {
+                report.LandPoints += int.Parse(banked.Groups[1].Value, CultureInfo.InvariantCulture);
+                report.ManaPoints += int.Parse(banked.Groups[2].Value, CultureInfo.InvariantCulture);
+                report.ConquestPoints += banked.Groups[3].Success ? int.Parse(banked.Groups[3].Value, CultureInfo.InvariantCulture) : 0;
+            }
+
             round.LastTileSaves += lines.Count(l => l.Contains("last tile", StringComparison.Ordinal));
         }
 
@@ -115,6 +129,9 @@ public sealed class SimulationReport(int players, int games, int seed, int round
     public int Games => games;
     public List<int> Bids { get; } = [];
     public int Passes { get; internal set; }
+    public int LandPoints { get; internal set; }
+    public int ManaPoints { get; internal set; }
+    public int ConquestPoints { get; internal set; }
     public int OpeningTies { get; internal set; }
     public List<int> ManaAfterOpening { get; } = [];
     public IReadOnlyList<RoundStats> Rounds { get; } = [.. Enumerable.Range(0, rounds).Select(_ => new RoundStats())];
@@ -152,6 +169,8 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine("## The end");
         md.AppendLine(c, $"- Most Imps on one tile at the end: average {Avg(MostImpsOnATile)}, highest {MostImpsOnATile.DefaultIfEmpty().Max()}.");
         md.AppendLine(c, $"- Final scores: average {Avg(FinalScores)}; first minus last: average {Avg(Spreads)}.");
+        string PerSeat(int points) => FinalScores.Count == 0 ? "-" : ((double)points / FinalScores.Count).ToString("0.0", c);
+        md.AppendLine(c, $"- Points per seat by source: land {PerSeat(LandPoints)}, mana {PerSeat(ManaPoints)}, conquest {PerSeat(ConquestPoints)}.");
         md.AppendLine(c, $"- Wins by seat (shared wins count for each): {string.Join(", ", WinsBySeat.Select((w, i) => $"seat {i + 1}: {w}"))}.");
         return md.ToString();
     }
