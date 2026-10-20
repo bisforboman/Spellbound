@@ -92,6 +92,7 @@ public sealed partial class Match
             lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.");
         }
 
+        ResolveCasts(byseat.Where(o => o.Stance == Stance.Cast && o.Target is not null), lines);
         ResolveAttacks(byseat.Where(o => o.Stance == Stance.Attack && o.Target is not null).ToList(), lines);
         BankPoints(lines);
         if (CurrentRound < Rules.Rounds)
@@ -105,6 +106,7 @@ public sealed partial class Match
                       + (Winners.Count == 1 ? "wins." : "share the win."));
         }
 
+        ClearRoundSpells();
         return new Report(true, lines);
     }
 
@@ -118,7 +120,7 @@ public sealed partial class Match
         LaterUnveil(random, lines);
         foreach (var seat in seats)
         {
-            var income = seat.Tiles.Sum(h => Map[h].Yield ?? 0);
+            var income = seat.Tiles.Sum(YieldFor);
             seat.Mana += income;
             seat.ProducedThisRound = income;
             lines.Add($"Seat {seat.Index + 1} collects {income} mana.");
@@ -285,6 +287,9 @@ public sealed partial class Match
 
             case Stance.Attack:
                 return AttackProblem(orders, target, lines, positions);
+
+            case Stance.Cast:
+                return SpellProblem(orders, target, lines);
 
             default:
                 return $"Unknown stance {orders.Stance}.";

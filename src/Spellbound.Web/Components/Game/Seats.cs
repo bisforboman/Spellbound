@@ -29,7 +29,7 @@ public static class Seats
         {
             var seat = $"Seat {me + 1}";
             line = Regex.Replace(line, $@"\b{seat}'s\b", "your");
-            line = Regex.Replace(line, $@"\b{seat} (wins|gets|moves|summons|collects|pays|banks|attunes|takes|has)\b",
+            line = Regex.Replace(line, $@"\b{seat} (wins|gets|moves|summons|collects|pays|banks|attunes|takes|casts|has)\b",
                 m => "You " + (m.Groups[1].Value == "has" ? "have" : m.Groups[1].Value[..^1]));
             line = Regex.Replace(line, $@"\b{seat}\b", "you");
         }

@@ -27,7 +27,11 @@ public class BotTests
     [Fact]
     public void A_bot_holds_when_nothing_it_would_do_checks()
     {
-        var rules = GameRules.Default with { AttuneBasePrice = 1000, ImpCost = 1000, GolemCost = 1000 };
+        var rules = GameRules.Default with
+        {
+            AttuneBasePrice = 1000, ImpCost = 1000, GolemCost = 1000,
+            ScorchManaPerPower = 1000, WardCost = 1000, LeylineMinCost = 1000, BlightCost = 1000, LureCost = 1000,
+        };
         var random = new SeededRandom(3);
         var match = Match.Start(3, rules, random);
         while (match.Phase == MatchPhase.Opening)

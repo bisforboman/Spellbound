@@ -192,8 +192,8 @@ Kept simple for now, to be extended later.
 
 Decided 20 Oct 2026 (the reasoning is in `discussions/spells.md`). **Cast** is a stance: a round you cast is a round
 you don't attune, summon or attack. A spell's target is one of your tiles or a tile next to your land, its cost and
-effect are shown before you commit, and its effect lasts **this round only**; no spell changes yields, prices or
-income. Costs are flat and small.
+effect are shown before you commit, and its effect lasts **this round only** (except Lure's, below); no spell changes
+yields, prices or income. Costs are flat and small.
 
 | Spell | Cost | Target | Effect (this round) |
 |---|---|---|---|
@@ -201,11 +201,20 @@ income. Costs are flat and small.
 | Ward | 3 mana | one of your tiles | Its defence counts 3 more power in this round's battles. |
 | Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
 | Blight | 4 mana | a rival's tile next to yours | It yields nothing in the next round's income. |
-| Lure | 3 mana | a monster tile next to yours | Its guards fight with 1 less power this round. |
+| Lure | 3 mana | a monster tile next to yours | Its guards lose 1 power **for good**, never below 1 (decided 20 Oct 2026: as a stance, a this-round Lure could never be followed by your own attack). |
 
-- *Open:* whether a Cast stance is enough of a use for mana. Mana piles up in Attune rounds (bots end with 50–60
-  unspent), and a stance competes with Attune instead of using its leftover. Spells could instead be cast alongside
-  the stance, like moves; the simulator's mana numbers will show which is needed.
+- **How spells resolve:** in seat order, after Attunes and Summons and before attacks. Two Wards on one tile add up, and
+  two Scorches both burn.
+- **Ward takes the blows first:** when a warded tile holds, its defenders lose only the attack power the Ward didn't
+  absorb.
+- **An attack goes with what's left:** if a rival's Scorch burns units on the tile an attack leaves from, the attack
+  sends only the units still there, or doesn't happen if none are.
+- **Leyline** can't carry units that also step this round.
+
+- *Open:* whether a Cast stance is enough of a use for mana. The first measurement (1,000 bot games, 3 players):
+  bots that cast only with a purpose spend about 3 mana a match on spells and still end with **52 unspent**; bots that
+  cast whenever they are rich spend 21 and end with 25, but attune less and attack less. So as a stance, spells use the
+  surplus only by replacing Attunes. Casting alongside the stance, like moves, remains the alternative.
 
 ## Scoring and winning
 

@@ -87,7 +87,7 @@ public sealed partial class Match
         return null;
     }
 
-    private int DefencePower(Hex target) => OwnerOf(target) is null ? Map[target].Guard : UnitsOn(target).Power(Rules);
+    private int DefencePower(Hex target) => OwnerOf(target) is null ? Map[target].Guard : UnitsOn(target).Power(Rules) + Ward(target);
 
     private string DefenceText(Hex target) =>
         OwnerOf(target) is { } owner ? $"Seat {owner + 1}'s, held by {UnitsOn(target)}" : "guarded by monsters";
@@ -101,6 +101,20 @@ public sealed partial class Match
     /// </summary>
     private void ResolveAttacks(List<Orders> attacks, List<string> lines)
     {
+        // An attack goes with the units still there: a rival's Scorch may have burned some since the orders were given.
+        attacks = [.. attacks.Select(o => o with
+        {
+            Attackers = [.. o.Attackers.Select(go => go with
+            {
+                Units = new Army(Math.Min(go.Units.Imps, UnitsOn(go.From).Imps), Math.Min(go.Units.Golems, UnitsOn(go.From).Golems)),
+            }).Where(go => !go.Units.IsEmpty)],
+        })];
+        foreach (var empty in attacks.Where(o => o.Attackers.Count == 0))
+        {
+            lines.Add($"Seat {empty.Seat + 1}'s attack on {empty.Target} has no units left to send.");
+        }
+
+        attacks = [.. attacks.Where(o => o.Attackers.Count > 0)];
         foreach (var go in attacks.SelectMany(o => o.Attackers))
         {
             units[go.From] = UnitsOn(go.From) - go.Units;
@@ -125,7 +139,8 @@ public sealed partial class Match
         {
             if (owner is not null)
             {
-                units[target] = Battle.TakeLosses(UnitsOn(target), attack, Rules);
+                // A Ward takes the blows first: the defenders lose only what gets past it.
+                units[target] = Battle.TakeLosses(UnitsOn(target), Math.Max(0, attack - Ward(target)), Rules);
             }
 
             lines.Add($"The attack fails: the attackers are wiped out. The defenders keep {(owner is null ? "the tile" : UnitsOn(target).ToString())}.");

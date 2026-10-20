@@ -63,6 +63,23 @@ public sealed record GameRules
     /// <summary>The battle power of a tile's monster guard.</summary>
     public int MonsterPower { get; init; } = 3;
 
+    // Spells (docs/game-design.md, Spells)
+
+    public int ScorchManaPerPower { get; init; } = 2;
+    public int WardCost { get; init; } = 3;
+
+    /// <summary>The defence a Ward adds to its tile in this round's battles.</summary>
+    public int WardPower { get; init; } = 3;
+
+    public int LeylineManaPerUnit { get; init; } = 1;
+    public int LeylineMinCost { get; init; } = 2;
+    public int BlightCost { get; init; } = 4;
+    public int LureCost { get; init; } = 3;
+
+    /// <summary>How much a Lure weakens a monster guard, for good; a guard never drops below <see cref="MinGuard"/>.</summary>
+    public int LurePower { get; init; } = 1;
+    public int MinGuard { get; init; } = 1;
+
     /// <summary>Points banked for each rival tile taken or monster tile cleared.</summary>
     public int PointsPerConquest { get; init; } = 1;
 
