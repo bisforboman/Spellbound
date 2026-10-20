@@ -12,7 +12,7 @@ platform's pages; each page and action the new game adds gets a step. It:
 2. starts the app;
 3. signs in three players at 360×740 (one of them an admin) and checks the home page (their matches: none yet);
 4. visits the account page (data download) and notifications; starts a 3-player match, bids, and passes through the
-   opening to round 1; starts a 5-player match (the 37-tile map) and taps a hex; visits privacy and the admin page (a
+   opening to round 1, then summons, attunes, attacks if the map offers it, and holds to the end of round 8; starts a 5-player match (the 37-tile map) and taps a hex; visits privacy and the admin page (a
    player who isn't an admin is refused), where the admin ends the first match, and its player sees it ended;
 5. checks the admin page's **Problems** list at the end.
 

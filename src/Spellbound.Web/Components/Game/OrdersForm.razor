@@ -1,0 +1,183 @@
+@* A round's orders (docs/game-design.md, Rounds and stances): one stance, what it aims at, and for an attack the units
+   that go. The tile comes from the map or the plain choices here; the preview is Match.Check's own lines. *@
+
+<h2 class="h4">Round @Match.CurrentRound of @Match.Rules.Rounds: your stance</h2>
+
+<fieldset class="stances">
+    @foreach (var choice in Choices)
+    {
+        var s = choice;
+        <label class="choice">
+            <input type="radio" name="stance" checked="@(stance == s.Key)" @onchange="() => stance = s.Key" />
+            <span><b>@s.Key</b>: @s.Value</span>
+        </label>
+    }
+</fieldset>
+
+@switch (stance)
+{
+    case "Attune":
+        <p>Tap a free tile next to your land, or choose one:</p>
+        @Targets(FreeNextToYou())
+        break;
+
+    case "Summon":
+        <p>Tap one of your tiles, or choose one:</p>
+        @Targets(Me.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R))
+        <div class="d-flex gap-2 mt-2">
+            <label class="choice flex-fill">
+                <input type="radio" name="kind" checked="@(kind == UnitKind.Imp)" @onchange="() => kind = UnitKind.Imp" />
+                <span><b>Imps</b>: power @Match.Rules.ImpPower, @Match.Rules.ImpCost mana</span>
+            </label>
+            <label class="choice flex-fill">
+                <input type="radio" name="kind" checked="@(kind == UnitKind.Golem)" @onchange="() => kind = UnitKind.Golem" />
+                <span><b>Golems</b>: power @Match.Rules.GolemPower, @Match.Rules.GolemCost mana, upkeep @Match.Rules.GolemUpkeep</span>
+            </label>
+        </div>
+        <label class="form-label" for="count">How many</label>
+        <input id="count" type="number" class="form-control form-control-lg" min="1" @bind="count" @bind:event="oninput" />
+        break;
+
+    case "Attack":
+        <p>Tap a rival's tile or a monster tile next to your units, or choose one:</p>
+        @Targets(AttackTargets())
+        @if (Selected is { } target && AttackTargets().Contains(target))
+        {
+            <p class="mt-2">Send from:</p>
+            @foreach (var from in Sources(target))
+            {
+                var f = from;
+                var here = Match.UnitsOn(f);
+                var sent = sends.GetValueOrDefault(f, here);
+                <div class="attack-source">
+                    <span>@f (@here)</span>
+                    @if (here.Imps > 0)
+                    {
+                        <label>Imps <input type="number" class="form-control" min="0" max="@here.Imps" value="@sent.Imps"
+                                           @oninput="e => Send(f, sent with { Imps = Parse(e, here.Imps) })" /></label>
+                    }
+                    @if (here.Golems > 0)
+                    {
+                        <label>Golems <input type="number" class="form-control" min="0" max="@here.Golems" value="@sent.Golems"
+                                             @oninput="e => Send(f, sent with { Golems = Parse(e, here.Golems) })" /></label>
+                    }
+                </div>
+            }
+        }
+        break;
+
+    default:
+        <p>Hold: spend nothing this round.</p>
+        break;
+}
+
+@{
+    var orders = Build();
+    var check = orders is null ? null : Match.Check(orders);
+}
+@if (check is not null)
+{
+    <div class="ledger mt-2">
+        @foreach (var line in check.Lines)
+        {
+            <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@line</p>
+        }
+    </div>
+}
+<button type="button" class="btn btn-primary btn-lg w-100 mt-2" disabled="@(Busy || check is not { Succeeded: true })"
+        @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance</button>
+
+@code {
+    private static readonly IReadOnlyDictionary<string, string> Choices = new Dictionary<string, string>
+    {
+        ["Attune"] = "claim a free tile next to your land",
+        ["Summon"] = "spend mana on units",
+        ["Attack"] = "send units at a rival's or a monster's tile",
+        ["Hold"] = "do nothing this round",
+    };
+
+    [Parameter, EditorRequired]
+    public Match Match { get; set; } = default!;
+
+    [Parameter]
+    public int You { get; set; }
+
+    [Parameter]
+    public Hex? Selected { get; set; }
+
+    [Parameter]
+    public EventCallback<Hex> OnSelect { get; set; }
+
+    [Parameter]
+    public EventCallback<Orders> OnCommit { get; set; }
+
+    [Parameter]
+    public bool Busy { get; set; }
+
+    private string stance = "Summon";
+    private UnitKind kind = UnitKind.Imp;
+    private int count = 1;
+    private readonly Dictionary<Hex, Army> sends = [];
+    private int round;
+
+    private Seat Me => Match.Seats[You];
+
+    protected override void OnParametersSet()
+    {
+        if (round != Match.CurrentRound)
+        {
+            round = Match.CurrentRound;
+            sends.Clear();
+            count = 1;
+        }
+    }
+
+    /// <summary>The orders as chosen so far, or null if they don't aim at anything yet.</summary>
+    private Orders? Build() => (stance, Selected) switch
+    {
+        ("Hold", _) => Orders.Hold(You),
+        (_, null) => null,
+        ("Attune", { } t) => Orders.Attune(You, t),
+        ("Summon", { } t) => Orders.Summon(You, t, kind, count),
+        ("Attack", { } t) => Orders.Attack(You, t,
+            [.. Sources(t).Select(f => new Move(f, t, sends.GetValueOrDefault(f, Match.UnitsOn(f)))).Where(m => !m.Units.IsEmpty)]),
+        _ => null,
+    };
+
+    private RenderFragment Targets(IEnumerable<Hex> hexes) => __builder =>
+    {
+        var list = hexes.ToList();
+        if (list.Count == 0)
+        {
+            <p class="text-muted">None this round.</p>
+            return;
+        }
+
+        foreach (var hex in list)
+        {
+            var h = hex;
+            <label class="choice">
+                <input type="radio" name="target" checked="@(Selected == h)" @onchange="() => OnSelect.InvokeAsync(h)" />
+                <span>@Seats.Describe(Match, h, You)</span>
+            </label>
+        }
+    };
+
+    private IEnumerable<Hex> FreeNextToYou() =>
+        Me.Tiles.SelectMany(Match.Map.NeighboursOf).Distinct()
+            .Where(h => Match.Map[h].IsUnveiled && !Match.Map[h].IsGuarded && Match.OwnerOf(h) is null)
+            .OrderBy(h => h.Q).ThenBy(h => h.R);
+
+    private IReadOnlyList<Hex> AttackTargets() =>
+        [.. Me.Tiles.Where(h => !Match.UnitsOn(h).IsEmpty).SelectMany(Match.Map.NeighboursOf).Distinct()
+            .Where(h => Match.OwnerOf(h) is { } o ? o != You : Match.Map[h].IsGuarded)
+            .OrderBy(h => h.Q).ThenBy(h => h.R)];
+
+    private IEnumerable<Hex> Sources(Hex target) =>
+        Me.Tiles.Where(h => h.IsNextTo(target) && !Match.UnitsOn(h).IsEmpty).OrderBy(h => h.Q).ThenBy(h => h.R);
+
+    private void Send(Hex from, Army army) => sends[from] = army;
+
+    private static int Parse(ChangeEventArgs e, int max) =>
+        int.TryParse(e.Value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? Math.Clamp(n, 0, max) : 0;
+}
