@@ -118,9 +118,82 @@
     </div>
 }
 
+<h3 class="h5 mt-3">Spell <small class="text-muted">(any stance, optional)</small></h3>
+<p class="text-muted">One spell a round, paid on top of the stance. Spells work after Attunes and Summons, before attacks.</p>
+<fieldset class="spells">
+    <label class="choice">
+        <input type="radio" name="spell" checked="@(spell is null)" @onchange="() => ChooseSpell(null)" />
+        <span><b>No spell</b></span>
+    </label>
+    @foreach (var choice in SpellChoices())
+    {
+        var c = choice;
+        <label class="choice">
+            <input type="radio" name="spell" checked="@(spell == c.Spell)" @onchange="() => ChooseSpell(c.Spell)" />
+            <span><b>@c.Spell</b> (@c.Cost): @c.Effect</span>
+        </label>
+    }
+</fieldset>
+@if (spell is { } chosen)
+{
+    var targets = SpellTargets(chosen).ToList();
+    <div class="move-form">
+        @if (targets.Count == 0)
+        {
+            <p class="text-muted">No tile for @chosen this round.</p>
+        }
+        else
+        {
+            <label class="form-label" for="spell-target">@(chosen == Spell.Leyline ? "From" : "On")</label>
+            <select id="spell-target" class="form-select" @bind="spellTarget" @bind:after="SpellTargetChosen">
+                <option value="">Choose a tile</option>
+                @foreach (var h in targets)
+                {
+                    <option value="@Key(h)">@Seats.Describe(Match, h, You, Owners)</option>
+                }
+            </select>
+        }
+        @if (Parse(spellTarget) is { } on)
+        {
+            @if (chosen == Spell.Scorch)
+            {
+                <label class="form-label mt-2" for="scorch-power">Power to burn (@Match.Rules.ScorchManaPerPower mana each)</label>
+                <input id="scorch-power" type="number" class="form-control form-control-lg" min="1" max="@Match.UnitsOn(on).Power(Match.Rules)"
+                       @bind="scorchPower" @bind:event="oninput" />
+            }
+            else if (chosen == Spell.Leyline)
+            {
+                <label class="form-label mt-2" for="leyline-to">To</label>
+                <select id="leyline-to" class="form-select" @bind="leylineTo">
+                    <option value="">Choose another tile of yours</option>
+                    @foreach (var h in Me.Tiles.Where(h => h != on).OrderBy(h => h.Q).ThenBy(h => h.R))
+                    {
+                        <option value="@Key(h)">@h</option>
+                    }
+                </select>
+                var free = Movable(on);
+                <div class="attack-source">
+                    @if (free.Imps > 0)
+                    {
+                        <label>Imps <input id="leyline-imps" type="number" class="form-control" min="0" max="@free.Imps" @bind="leylineImps" @bind:event="oninput" /></label>
+                    }
+                    @if (free.Golems > 0)
+                    {
+                        <label>Golems <input id="leyline-golems" type="number" class="form-control" min="0" max="@free.Golems" @bind="leylineGolems" @bind:event="oninput" /></label>
+                    }
+                </div>
+            }
+        }
+    </div>
+}
+
 @{
     var orders = Build();
     var check = orders is null ? null : Match.Check(orders);
+}
+@if (check is null && spell is { } waiting && BuildStance() is not null)
+{
+    <p class="text-muted mt-2">Choose where @waiting goes, or choose No spell.</p>
 }
 @if (check is not null)
 {
@@ -132,7 +205,7 @@
     </div>
 }
 <button type="button" class="btn btn-primary btn-lg w-100 mt-2" disabled="@(Busy || check is not { Succeeded: true })"
-        @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance</button>
+        @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance@(orders?.Cast is { } cast ? $" and {cast.Spell}" : "")</button>
 
 @code {
     private static readonly IReadOnlyDictionary<string, string> Choices = new Dictionary<string, string>
@@ -174,6 +247,12 @@
     private int moveImps;
     private int moveGolems;
     private int round;
+    private Spell? spell;
+    private string spellTarget = string.Empty;
+    private int scorchPower = 1;
+    private string leylineTo = string.Empty;
+    private int leylineImps;
+    private int leylineGolems;
 
     private Seat Me => Match.Seats[You];
 
@@ -185,11 +264,37 @@
             sends.Clear();
             moves.Clear();
             count = 1;
+            ChooseSpell(null);
         }
     }
 
-    /// <summary>The orders as chosen so far, or null if they don't aim at anything yet.</summary>
-    private Orders? Build() => (stance, Selected) switch
+    /// <summary>The orders as chosen so far, with the spell if one is chosen, or null if they don't aim at anything
+    /// yet.</summary>
+    private Orders? Build() => BuildStance() is { } orders && WithSpell(orders) is { } all ? all : null;
+
+    private Orders? WithSpell(Orders orders)
+    {
+        if (spell is not { } chosen)
+        {
+            return orders;
+        }
+
+        if (Parse(spellTarget) is not { } on)
+        {
+            return null;
+        }
+
+        if (chosen != Spell.Leyline)
+        {
+            return orders.Casting(chosen, on, chosen == Spell.Scorch ? scorchPower : 0);
+        }
+
+        return Parse(leylineTo) is { } to
+            ? orders.CastingLeyline(new Move(on, to, new Army(Math.Max(0, leylineImps), Math.Max(0, leylineGolems))))
+            : null;
+    }
+
+    private Orders? BuildStance() => (stance, Selected) switch
     {
         ("Hold", _) => Orders.Hold(You, [.. moves]),
         (_, null) => null,
@@ -232,6 +337,45 @@
     {
         var movable = Parse(moveFrom) is { } from ? Movable(from) : Army.None;
         (moveImps, moveGolems) = (movable.Imps, movable.Golems);
+    }
+
+    private void ChooseSpell(Spell? chosen)
+    {
+        spell = chosen;
+        (spellTarget, scorchPower, leylineTo, leylineImps, leylineGolems) = (string.Empty, 1, string.Empty, 0, 0);
+    }
+
+    private void SpellTargetChosen()
+    {
+        var free = Parse(spellTarget) is { } on ? Movable(on) : Army.None;
+        (leylineImps, leylineGolems, leylineTo) = (free.Imps, free.Golems, string.Empty);
+    }
+
+    private IEnumerable<(Spell Spell, string Cost, string Effect)> SpellChoices()
+    {
+        var r = Match.Rules;
+        yield return (Spell.Scorch, $"{r.ScorchManaPerPower} mana per power", "burn units on a rival's tile next to yours");
+        yield return (Spell.Ward, $"{r.WardCost} mana", $"one of your tiles defends with {r.WardPower} more power this round");
+        yield return (Spell.Leyline, $"{r.LeylineManaPerUnit} mana per unit, at least {r.LeylineMinCost}", "send units between any two of your tiles");
+        yield return (Spell.Blight, $"{r.BlightCost} mana", "a rival's tile next to yours yields nothing next round");
+        yield return (Spell.Lure, $"{r.LureCost} mana", $"a monster tile next to yours loses {r.LurePower} guard power for good");
+    }
+
+    /// <summary>The tiles a spell can aim at (for a Leyline, where the units leave from).</summary>
+    private IEnumerable<Hex> SpellTargets(Spell chosen)
+    {
+        var nextToYou = Me.Tiles.SelectMany(Match.Map.NeighboursOf).Distinct().ToList();
+        var rivals = nextToYou.Where(h => Match.OwnerOf(h) is { } o && o != You);
+        var found = chosen switch
+        {
+            Spell.Scorch => rivals.Where(h => Match.UnitsOn(h).Power(Match.Rules) > 0),
+            Spell.Ward => Me.Tiles,
+            Spell.Leyline => Me.Tiles.Count > 1 ? Me.Tiles.Where(h => !Movable(h).IsEmpty) : [],
+            Spell.Blight => rivals,
+            Spell.Lure => nextToYou.Where(h => Match.OwnerOf(h) is null && Match.Map[h].IsGuarded && Match.Map[h].Guard > Match.Rules.MinGuard),
+            _ => [],
+        };
+        return found.OrderBy(h => h.Q).ThenBy(h => h.R);
     }
 
     private static string Key(Hex hex) => $"{hex.Q},{hex.R}";
