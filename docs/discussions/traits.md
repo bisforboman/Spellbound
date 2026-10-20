@@ -1,7 +1,7 @@
-# Traits: a first pool (proposal, 20 Oct 2026)
+# Traits: the first pool (decided 20 Oct 2026)
 
-A proposal for the open question in [game-design.md](../game-design.md#traits), "the traits themselves". Nothing here is
-a rule yet; the owner picks, and then the chosen ones go into the design document.
+How the first traits were chosen. The owner took all six below, with each match offering 3 drawn from its seed; the
+rules are in [game-design.md](../game-design.md#traits).
 
 ## What the design already asks of a trait
 
