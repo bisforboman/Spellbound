@@ -23,8 +23,21 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 - At setup, **every player is offered the same 3 traits** and drafts **1**. Two players can end up with the same trait.
 - A trait is something to **build around**: it should pull a player towards a strategy (certain tiles, a way of expanding, a style of play), not just add a small bonus.
 - Traits are **hidden during the opening Unveils** and **revealed when the regular rounds start**. During the opening auctions, players can only guess at each other's traits from how they bid.
-- Traits can give **trait goals**: their own way to score (see *Scoring and winning*). Idea: a trait that scores for land of one type.
-- *Open:* the traits themselves.
+- Traits can give **trait goals**: their own way to score (see *Scoring and winning*).
+- **The pool** (decided 20 Oct 2026; the reasoning is in `discussions/traits.md`). Each match offers **3 of these 6**,
+  chosen from its seed. Every trait goal is scored once, at the end, and is capped:
+
+| Trait | Pulls towards | Goal at the end (hidden), cap |
+|---|---|---|
+| Wildheart | Wild land | 2 points per Wild tile held, up to 10 |
+| Hearthkeeper | Steady land | 2 points per Steady tile held, up to 10 |
+| Weaver | one connected realm | 1 point per tile in your largest connected group, up to 10 |
+| Wanderer | many separate footholds | 2 points per separate group of tiles, up to 8 |
+| Beastbane | clearing monsters | 2 points per monster tile cleared, up to 8 (on top of the conquest point) |
+| Warbrand | taking rivals' land | 2 points per rival tile taken, up to 10 (on top of the conquest point) |
+
+- No trait changes the Attune price, income or upkeep: they would snowball (principles 12 and 13).
+- *Open:* how often each trait wins; the simulator will report win rate and goal points by trait once they're built.
 
 ## Map
 
@@ -201,5 +214,5 @@ Kept simple for now, to be extended later.
 
 ## Next to shape
 
-1. The traits themselves.
+1. Building the traits and checking them in the simulator (win rate and goal points by trait).
 2. A first paper playtest (`skirmish-paper-prototype.md`); then revisit stances and the numbers.
