@@ -156,7 +156,7 @@ public sealed partial class Match
         {
             if (claim.Count() > 1)
             {
-                lines.Add($"{string.Join(" and ", claim.Select(o => $"Seat {o.Seat + 1}"))} all attune {Describe(claim.Key)}: nobody gets it.");
+                lines.Add($"{string.Join(" and ", claim.Select(o => $"Seat {o.Seat + 1}"))} {(claim.Count() == 2 ? "both" : "all")} attune {Describe(claim.Key)}: nobody gets it.");
                 continue;
             }
 

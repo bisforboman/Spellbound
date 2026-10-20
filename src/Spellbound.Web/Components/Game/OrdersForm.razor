@@ -47,7 +47,7 @@
             @foreach (var from in Sources(target))
             {
                 var f = from;
-                var here = Match.UnitsOn(f);
+                var here = AfterMoves(f);
                 var sent = sends.GetValueOrDefault(f, here);
                 <div class="attack-source">
                     <span>@f (@here)</span>
@@ -69,6 +69,53 @@
     default:
         <p>Hold: spend nothing this round.</p>
         break;
+}
+
+<h3 class="h5 mt-3">Moves <small class="text-muted">(any stance, optional)</small></h3>
+<p class="text-muted">Units step to a neighbouring tile of yours, once a round. Moves happen first, so moved units can attack.</p>
+@foreach (var move in moves.ToList())
+{
+    var m = move;
+    <div class="attack-source">
+        <span>@m.Units from @m.From to @m.To</span>
+        <button type="button" class="btn btn-link" @onclick="() => moves.Remove(m)">Remove</button>
+    </div>
+}
+@if (MoveFroms().Any())
+{
+    <div class="move-form">
+        <label class="form-label" for="move-from">From</label>
+        <select id="move-from" class="form-select" @bind="moveFrom" @bind:after="FromChosen">
+            <option value="">Choose a tile with units</option>
+            @foreach (var h in MoveFroms())
+            {
+                <option value="@Key(h)">@h (@Movable(h))</option>
+            }
+        </select>
+        @if (Parse(moveFrom) is { } from)
+        {
+            <label class="form-label mt-2" for="move-to">To</label>
+            <select id="move-to" class="form-select" @bind="moveTo">
+                <option value="">Choose a neighbouring tile of yours</option>
+                @foreach (var h in Me.Tiles.Where(from.IsNextTo).OrderBy(h => h.Q).ThenBy(h => h.R))
+                {
+                    <option value="@Key(h)">@h</option>
+                }
+            </select>
+            var movable = Movable(from);
+            <div class="attack-source">
+                @if (movable.Imps > 0)
+                {
+                    <label>Imps <input type="number" class="form-control" min="0" max="@movable.Imps" @bind="moveImps" /></label>
+                }
+                @if (movable.Golems > 0)
+                {
+                    <label>Golems <input type="number" class="form-control" min="0" max="@movable.Golems" @bind="moveGolems" /></label>
+                }
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-lg w-100 mt-2" disabled="@(Parse(moveTo) is null)" @onclick="AddMove">Add this move</button>
+        }
+    </div>
 }
 
 @{
@@ -118,6 +165,11 @@
     private UnitKind kind = UnitKind.Imp;
     private int count = 1;
     private readonly Dictionary<Hex, Army> sends = [];
+    private readonly List<Move> moves = [];
+    private string moveFrom = string.Empty;
+    private string moveTo = string.Empty;
+    private int moveImps;
+    private int moveGolems;
     private int round;
 
     private Seat Me => Match.Seats[You];
@@ -128,6 +180,7 @@
         {
             round = Match.CurrentRound;
             sends.Clear();
+            moves.Clear();
             count = 1;
         }
     }
@@ -135,14 +188,54 @@
     /// <summary>The orders as chosen so far, or null if they don't aim at anything yet.</summary>
     private Orders? Build() => (stance, Selected) switch
     {
-        ("Hold", _) => Orders.Hold(You),
+        ("Hold", _) => Orders.Hold(You, [.. moves]),
         (_, null) => null,
-        ("Attune", { } t) => Orders.Attune(You, t),
-        ("Summon", { } t) => Orders.Summon(You, t, kind, count),
+        ("Attune", { } t) => Orders.Attune(You, t, [.. moves]),
+        ("Summon", { } t) => Orders.Summon(You, t, kind, count, [.. moves]),
         ("Attack", { } t) => Orders.Attack(You, t,
-            [.. Sources(t).Select(f => new Move(f, t, sends.GetValueOrDefault(f, Match.UnitsOn(f)))).Where(m => !m.Units.IsEmpty)]),
+            [.. Sources(t).Select(f => new Move(f, t, sends.GetValueOrDefault(f, AfterMoves(f)))).Where(m => !m.Units.IsEmpty)],
+            [.. moves]),
         _ => null,
     };
+
+    /// <summary>The units on a tile once the planned moves are made.</summary>
+    private Army AfterMoves(Hex hex) =>
+        moves.Aggregate(Match.UnitsOn(hex), (army, m) => m.From == hex ? army - m.Units : m.To == hex ? army + m.Units : army);
+
+    /// <summary>The units on a tile that can still move: those that started the round there and aren't moving yet.</summary>
+    private Army Movable(Hex hex) =>
+        moves.Where(m => m.From == hex).Aggregate(Match.UnitsOn(hex), (army, m) => army - m.Units);
+
+    private IEnumerable<Hex> MoveFroms() =>
+        Me.Tiles.Where(h => !Movable(h).IsEmpty && Me.Tiles.Any(h.IsNextTo)).OrderBy(h => h.Q).ThenBy(h => h.R);
+
+    private void AddMove()
+    {
+        if (Parse(moveFrom) is { } from && Parse(moveTo) is { } to)
+        {
+            var movable = Movable(from);
+            var army = new Army(Math.Clamp(moveImps, 0, movable.Imps), Math.Clamp(moveGolems, 0, movable.Golems));
+            if (!army.IsEmpty)
+            {
+                moves.Add(new Move(from, to, army));
+                sends.Clear(); // an attack's sources change with the moves; they default to everything there again
+            }
+        }
+
+        (moveFrom, moveTo, moveImps, moveGolems) = (string.Empty, string.Empty, 0, 0);
+    }
+
+    private void FromChosen()
+    {
+        var movable = Parse(moveFrom) is { } from ? Movable(from) : Army.None;
+        (moveImps, moveGolems) = (movable.Imps, movable.Golems);
+    }
+
+    private static string Key(Hex hex) => $"{hex.Q},{hex.R}";
+
+    private static Hex? Parse(string key) =>
+        key.Split(',') is [var q, var r] && int.TryParse(q, CultureInfo.InvariantCulture, out var qq)
+        && int.TryParse(r, CultureInfo.InvariantCulture, out var rr) ? new Hex(qq, rr) : null;
 
     private RenderFragment Targets(IEnumerable<Hex> hexes) => __builder =>
     {
@@ -169,12 +262,12 @@
             .OrderBy(h => h.Q).ThenBy(h => h.R);
 
     private IReadOnlyList<Hex> AttackTargets() =>
-        [.. Me.Tiles.Where(h => !Match.UnitsOn(h).IsEmpty).SelectMany(Match.Map.NeighboursOf).Distinct()
+        [.. Me.Tiles.Where(h => !AfterMoves(h).IsEmpty).SelectMany(Match.Map.NeighboursOf).Distinct()
             .Where(h => Match.OwnerOf(h) is { } o ? o != You : Match.Map[h].IsGuarded)
             .OrderBy(h => h.Q).ThenBy(h => h.R)];
 
     private IEnumerable<Hex> Sources(Hex target) =>
-        Me.Tiles.Where(h => h.IsNextTo(target) && !Match.UnitsOn(h).IsEmpty).OrderBy(h => h.Q).ThenBy(h => h.R);
+        Me.Tiles.Where(h => h.IsNextTo(target) && !AfterMoves(h).IsEmpty).OrderBy(h => h.Q).ThenBy(h => h.R);
 
     private void Send(Hex from, Army army) => sends[from] = army;
 

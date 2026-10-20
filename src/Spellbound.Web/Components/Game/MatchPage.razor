@@ -82,7 +82,7 @@ else
         <div class="match-report">
             @foreach (var line in view.LastReport)
             {
-                <p>@Seats.Mark(line, you)</p>
+                <p>@Seats.Phrase(line, view.Owners, you)</p>
             }
         </div>
     }

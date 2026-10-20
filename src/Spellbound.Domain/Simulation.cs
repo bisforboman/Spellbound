@@ -70,7 +70,7 @@ public static class Simulation
                 }
             }
 
-            round.AttuneClashes += lines.Count(l => l.Contains(" all attune ", StringComparison.Ordinal));
+            round.AttuneClashes += lines.Count(l => l.Contains(" attune ", StringComparison.Ordinal) && l.EndsWith("nobody gets it.", StringComparison.Ordinal));
             round.LastTileSaves += lines.Count(l => l.Contains("last tile", StringComparison.Ordinal));
         }
 

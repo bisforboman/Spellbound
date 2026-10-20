@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+using Match = Spellbound.Domain.Match;
 using Spellbound.Domain;
 using Spellbound.Web.Data;
 
@@ -15,9 +17,34 @@ public static class Seats
     public static string Name(LoadedMatch match, int seat, int? you) =>
         seat == you ? "You" : match.Owners[seat] is null ? $"Bot {seat + 1}" : $"Seat {seat + 1}";
 
-    /// <summary>A report line with the player's own seat marked, so they can find themselves in it.</summary>
-    public static string Mark(string line, int? you) =>
-        you is { } seat ? line.Replace($"Seat {seat + 1} ", $"Seat {seat + 1} (you) ", StringComparison.Ordinal) : line;
+    /// <summary>
+    /// A report line in the player's words: their seat becomes "you" (with the verb to match: "Seat 1 wins" reads "You
+    /// win"), and bots are "Bot N". The domain writes "Seat N" so its lines read the same for everyone.
+    /// </summary>
+    public static string Phrase(string line, IReadOnlyList<string?> owners, int? you)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        ArgumentNullException.ThrowIfNull(owners);
+        if (you is { } me)
+        {
+            var seat = $"Seat {me + 1}";
+            line = Regex.Replace(line, $@"\b{seat}'s\b", "your");
+            line = Regex.Replace(line, $@"\b{seat} (wins|gets|moves|summons|collects|pays|banks|attunes|takes|has)\b",
+                m => "You " + (m.Groups[1].Value == "has" ? "have" : m.Groups[1].Value[..^1]));
+            line = Regex.Replace(line, $@"\b{seat}\b", "you");
+        }
+
+        for (var i = 0; i < owners.Count; i++)
+        {
+            if (owners[i] is null && i != you)
+            {
+                line = Regex.Replace(line, $@"\bSeat {i + 1}\b", $"Bot {i + 1}");
+            }
+        }
+
+        // Capitalise the start of each sentence ("you collect" at the start of a line, "The match is over. you win").
+        return Regex.Replace(line, @"(^|[.:!?] )(you|your)\b", m => m.Groups[1].Value + char.ToUpperInvariant(m.Groups[2].Value[0]) + m.Groups[2].Value[1..]);
+    }
 
     /// <summary>What a tile is, in a few words, for its label and the tile panel.</summary>
     public static string Describe(Match match, Hex hex, int? you)
