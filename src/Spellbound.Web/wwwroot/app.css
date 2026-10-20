@@ -877,3 +877,23 @@ tr.you td {
         text-align: right;
         font-variant-numeric: lining-nums tabular-nums;
     }
+
+/* An attack's sources: one row per tile next to the target, with how many of each unit go */
+.attack-source {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--paper-edge);
+}
+
+    .attack-source label {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .attack-source input {
+        width: 5rem;
+    }

@@ -286,6 +286,66 @@ namespace Spellbound.Playtest
                 await Expect(page, "Round 1 of 8");
                 await Expect(page, "The rounds begin");
             });
+            await StepAsync(merlin, "summon", async page =>
+            {
+                await page.ClickAsync("label:has-text('Summon:')");
+                await page.Locator("input[name='target']").First.CheckAsync();
+                await page.FillAsync("#count", "3");
+                await Expect(page, "Summon 3 Imps");
+                await page.ClickAsync("button:has-text('Commit: Summon')");
+                await Expect(page, "Round 2 of 8");
+                await Expect(page, "summons 3 Imps");
+            });
+            await StepAsync(merlin, "attune", async page =>
+            {
+                await page.ClickAsync("label:has-text('Attune:')");
+                var free = page.Locator("input[name='target']");
+                if (await free.CountAsync() == 0)
+                {
+                    await page.ClickAsync("label:has-text('Hold:')");
+                }
+                else
+                {
+                    await free.First.CheckAsync();
+                }
+
+                await Expect(page, "mana");
+                await page.ClickAsync("button:has-text('Commit:')");
+                await Expect(page, "Round 3 of 8");
+            });
+            // An attack if the map offers one (a rival or monsters next to the Imps), else a hold: the match isn't seeded,
+            // so which it is varies from run to run.
+            await StepAsync(merlin, "attack-pick", async page =>
+            {
+                await page.ClickAsync("label:has-text('Attack:')");
+                var targets = page.Locator("input[name='target']");
+                if (await targets.CountAsync() > 0)
+                {
+                    await targets.First.CheckAsync();
+                    await Expect(page, "Send from");
+                }
+            });
+            await StepAsync(merlin, "attack-commit", async page =>
+            {
+                if (await page.Locator("button:has-text('Commit:'):not([disabled])").CountAsync() == 0)
+                {
+                    await page.ClickAsync("label:has-text('Hold:')");
+                }
+
+                await page.ClickAsync("button:has-text('Commit:')");
+                await Expect(page, "Round 4 of 8");
+            });
+            await StepAsync(merlin, "to-the-end", async page =>
+            {
+                for (var round = 4; round <= 8; round++)
+                {
+                    await page.ClickAsync("label:has-text('Hold:')");
+                    await page.ClickAsync("button:has-text('Commit: Hold')");
+                    await Expect(page, round < 8 ? $"Round {round + 1} of 8" : "The match is over");
+                }
+
+                await Expect(page, "Over after 8 rounds");
+            });
             await StepAsync(morgana, "big-map", async page =>
             {
                 // Five players: the 37-tile map, the one whose hexes are smallest at 360 px.
@@ -309,7 +369,7 @@ namespace Spellbound.Playtest
             await StepAsync(ada, "admin", async page =>
             {
                 await GoAsync(page, "/admin");
-                await Expect(page, "Round 1 of 8, 3 seats");
+                await Expect(page, "Opening auction 1 of 3, 5 seats");
                 await Expect(page, "Problems");
             });
             await StepAsync(ada, "end-game", async page =>
@@ -319,7 +379,7 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Yes, end game')");
                 await Expect(page, "has ended");
             });
-            await StepAsync(merlin, "home-after-end", async page =>
+            await StepAsync(morgana, "home-after-end", async page =>
             {
                 await GoAsync(page, "/");
                 await Expect(page, "Ended early by an admin");

@@ -27,6 +27,13 @@ public sealed class MatchPlay(MatchStore store, TimeProvider time)
             [.. match.Seats.Select(s => s.Index == seat ? new Bid(seat, tile, tile is null ? 0 : amount) : Bot.ChooseBid(match, s.Index, random))],
             random));
 
+    /// <summary>The player's orders for the round (their seat is filled in) with the bots' orders, resolving the
+    /// round.</summary>
+    public Task<Report> OrdersAsync(long id, string ownerId, Orders orders) =>
+        ApplyAsync(id, ownerId, (match, seat, random) => match.Resolve(
+            [.. match.Seats.Select(s => s.Index == seat ? orders with { Seat = seat } : Bot.ChooseOrders(match, s.Index, random))],
+            random));
+
     private async Task<Report> ApplyAsync(long id, string ownerId, Func<Match, int, IRandomSource, Report> action) =>
         await store.ApplyAsync(id, time.GetUtcNow(), (loaded, random) =>
         {

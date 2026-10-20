@@ -68,8 +68,12 @@ else
     }
     else if (view.IsRunning && match.Phase == MatchPhase.Rounds)
     {
-        <h2 class="h4">Round @match.CurrentRound of @match.Rules.Rounds</h2>
-        <p class="text-muted">The rounds' orders come next. For now you can look at the map and the standings.</p>
+        <OrdersForm Match="match" You="you" Selected="selected" OnSelect="Select" OnCommit="CommitAsync" Busy="busy" />
+    }
+    else if (match.Phase == MatchPhase.Ended)
+    {
+        <h2 class="h4">The match is over</h2>
+        <p>After @match.Rules.Rounds rounds, the most points wins; ties go to the most tiles, then the most mana.</p>
     }
 
     @if (view.LastReport.Count > 0)
@@ -145,6 +149,8 @@ else
     private void Select(Hex hex) => selected = hex;
 
     private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, selected, amount));
+
+    private Task CommitAsync(Orders orders) => ActAsync(() => Play.OrdersAsync(Id, ownerId, orders));
 
     private Task PassAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, null, 0));
 
