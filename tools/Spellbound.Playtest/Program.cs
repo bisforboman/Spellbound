@@ -289,16 +289,29 @@ namespace Spellbound.Playtest
             await StepAsync(merlin, "summon", async page =>
             {
                 await page.ClickAsync("label:has-text('Summon:')");
+                await Expect(page, "Tap one of your tiles");
                 await page.Locator("input[name='target']").First.CheckAsync();
                 await page.FillAsync("#count", "3");
                 await Expect(page, "Summon 3 Imps");
                 await page.ClickAsync("button:has-text('Commit: Summon')");
                 await Expect(page, "Round 2 of 8");
-                await Expect(page, "summons 3 Imps");
+                await Expect(page, "You summon 3 Imps");
+            });
+            await StepAsync(merlin, "move", async page =>
+            {
+                // A move if two of Merlin's tiles touch (the match isn't seeded, so not every run can).
+                if (await page.Locator("#move-from option").CountAsync() > 1)
+                {
+                    await page.SelectOptionAsync("#move-from", new SelectOptionValue { Index = 1 });
+                    await page.SelectOptionAsync("#move-to", new SelectOptionValue { Index = 1 });
+                    await page.ClickAsync("button:has-text('Add this move')");
+                    await Expect(page, "Remove");
+                }
             });
             await StepAsync(merlin, "attune", async page =>
             {
                 await page.ClickAsync("label:has-text('Attune:')");
+                await Expect(page, "Tap a free tile next to your land"); // the stance's own choices, not the last one's
                 var free = page.Locator("input[name='target']");
                 if (await free.CountAsync() == 0)
                 {
@@ -318,6 +331,7 @@ namespace Spellbound.Playtest
             await StepAsync(merlin, "attack-pick", async page =>
             {
                 await page.ClickAsync("label:has-text('Attack:')");
+                await Expect(page, "Tap a rival's tile");
                 var targets = page.Locator("input[name='target']");
                 if (await targets.CountAsync() > 0)
                 {

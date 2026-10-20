@@ -56,7 +56,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
     last report, standings and the end; the home page links your matches
   - [x] 6b: the rounds' orders (stance buttons, targets, how many units attack from each tile, `Match.Check` as the
     preview), the round report, the end screen
-  - [ ] 6c: moves, the report's tone; the trait pick waits for the traits themselves
+  - [x] 6c: moves (any number, each unit one step, before the stance), and reports in the player's words ("You win",
+    "Bot 2 attunes"); the trait pick waits for the traits themselves
 - [ ] Battle report text in the art direction's tone ([theme](theme.md))
 - [ ] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll *(the layout and theme exist;
   the game's pages need the pass)*
