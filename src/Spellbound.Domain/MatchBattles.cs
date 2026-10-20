@@ -104,9 +104,11 @@ public sealed partial class Match
         // An attack goes with the units still there: a rival's Scorch may have burned some since the orders were given.
         attacks = [.. attacks.Select(o => o with
         {
-            Attackers = [.. o.Attackers.Select(go => go with
+            Attackers = [.. o.Attackers.GroupBy(go => go.From).Select(from =>
             {
-                Units = new Army(Math.Min(go.Units.Imps, UnitsOn(go.From).Imps), Math.Min(go.Units.Golems, UnitsOn(go.From).Golems)),
+                var sent = from.Aggregate(Army.None, (a, go) => a + go.Units);
+                var there = UnitsOn(from.Key);
+                return new Move(from.Key, o.Target!.Value, new Army(Math.Min(sent.Imps, there.Imps), Math.Min(sent.Golems, there.Golems)));
             }).Where(go => !go.Units.IsEmpty)],
         })];
         foreach (var empty in attacks.Where(o => o.Attackers.Count == 0))

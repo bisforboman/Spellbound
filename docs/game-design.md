@@ -210,6 +210,7 @@ yields, prices or income. Costs are flat and small.
 - **An attack goes with what's left:** if a rival's Scorch burns units on the tile an attack leaves from, the attack
   sends only the units still there, or doesn't happen if none are.
 - **Leyline** can't carry units that also step this round.
+- **Blight follows the tile:** if a blighted tile changes hands in the same round, its new owner gets nothing from it.
 
 - *Open:* whether a Cast stance is enough of a use for mana. The first measurement (1,000 bot games, 3 players):
   bots that cast only with a purpose spend about 3 mana a match on spells and still end with **52 unspent**; bots that
