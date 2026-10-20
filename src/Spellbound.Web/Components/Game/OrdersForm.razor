@@ -150,6 +150,9 @@
     public int You { get; set; }
 
     [Parameter]
+    public IReadOnlyList<string?>? Owners { get; set; }
+
+    [Parameter]
     public Hex? Selected { get; set; }
 
     [Parameter]
@@ -251,7 +254,7 @@
             var h = hex;
             <label class="choice">
                 <input type="radio" name="target" checked="@(Selected == h)" @onchange="() => OnSelect.InvokeAsync(h)" />
-                <span>@Seats.Describe(Match, h, You)</span>
+                <span>@Seats.Describe(Match, h, You, Owners)</span>
             </label>
         }
     };

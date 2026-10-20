@@ -11,7 +11,7 @@
         var units = Match.UnitsOn(hex);
         var classes = "hex" + (tile.IsUnveiled ? "" : " dark") + (Highlight?.Contains(hex) == true ? " marked" : "")
                       + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "");
-        <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You)"
+        <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners)"
            @onclick="() => OnSelect.InvokeAsync(hex)" @onkeydown="e => KeyAsync(e, hex)">
             <polygon points="@Points(x, y)" style="@(owner is { } o ? $"fill: color-mix(in srgb, {Seats.Ink(o)} 38%, var(--paper-deep))" : "")" />
             @if (tile.IsUnveiled)
@@ -39,6 +39,10 @@
 
     [Parameter]
     public int? You { get; set; }
+
+    /// <summary>Who sits in each seat (null for a bot), to name them.</summary>
+    [Parameter]
+    public IReadOnlyList<string?>? Owners { get; set; }
 
     [Parameter]
     public Hex? Selected { get; set; }

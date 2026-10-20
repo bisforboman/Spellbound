@@ -48,6 +48,12 @@ Self-hosted variable woff2 files (Latin subset) in `wwwroot/fonts/`, each with i
 
 They replaced IM Fell English SC and the system sans-serif.
 
+## Battle stamps (the new game)
+
+The match page's report brands each battle the player fought with a stamp after its last line (`Verdicts.cs`, the
+`.stamp` CSS): **Conquered** (you took the tile) or **Repelled** / **Thwarted** (your attack failed or took nothing)
+when you attacked, **Held** or **Lost** when you defended. Battles between others stay plain lines.
+
 ## Sigils, the turn moon, the mana vial, battle stamps
 
 Built for the old game and removed with it; they are in the git history at `b171e46`: `SigilGenerator.cs` (a mage's

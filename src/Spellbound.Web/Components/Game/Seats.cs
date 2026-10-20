@@ -47,7 +47,7 @@ public static class Seats
     }
 
     /// <summary>What a tile is, in a few words, for its label and the tile panel.</summary>
-    public static string Describe(Match match, Hex hex, int? you)
+    public static string Describe(Match match, Hex hex, int? you, IReadOnlyList<string?>? owners = null)
     {
         var tile = match.Map[hex];
         if (!tile.IsUnveiled)
@@ -55,7 +55,7 @@ public static class Seats
             return $"Dark tile at {hex}";
         }
 
-        var owner = match.OwnerOf(hex) is { } o ? (o == you ? "yours" : $"seat {o + 1}'s") : tile.IsGuarded ? $"guarded by monsters (power {tile.Guard})" : "free";
+        var owner = match.OwnerOf(hex) is { } o ? (o == you ? "yours" : owners?[o] is null && owners is not null ? $"Bot {o + 1}'s" : $"seat {o + 1}'s") : tile.IsGuarded ? $"guarded by monsters (power {tile.Guard})" : "free";
         var units = match.UnitsOn(hex) is { IsEmpty: false } army ? $", {army}" : "";
         return $"{tile.Type} tile at {hex}, yields {tile.Yield}, {owner}{units}";
     }
