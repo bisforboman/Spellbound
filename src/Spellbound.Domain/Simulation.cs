@@ -49,10 +49,26 @@ public static partial class Simulation
             foreach (var order in orders)
             {
                 round.Stances[order.Target is null ? "Hold" : order.Stance.ToString()]++;
+                if (order.Cast is { } cast)
+                {
+                    round.Spells++;
+                    report.Casts[cast.Spell.ToString()] = report.Casts.GetValueOrDefault(cast.Spell.ToString()) + 1;
+                }
+
+                if (order.Stance == Stance.Summon && order.Target is not null)
+                {
+                    (order.Kind == UnitKind.Golem ? report.GolemsSummoned : report.ImpsSummoned).Add(order.Count);
+                }
                 if (order.Stance != Stance.Attune && PricedOut(match, order.Seat))
                 {
                     round.PricedOut++;
                 }
+            }
+
+            var costs = orders.Select(o => (o.Seat, o.Stance, o.Target, Cost: match.StanceCostOf(o))).ToList();
+            foreach (var order in orders)
+            {
+                report.ManaSpent["Spell"] = report.ManaSpent.GetValueOrDefault("Spell") + match.SpellCostOf(order);
             }
 
             var owners = match.Map.Tiles.ToDictionary(t => t.Hex, t => (Owner: match.OwnerOf(t.Hex), t.IsGuarded));
@@ -78,6 +94,15 @@ public static partial class Simulation
             }
 
             round.AttuneClashes += lines.Count(l => l.Contains(" attune ", StringComparison.Ordinal) && l.EndsWith("nobody gets it.", StringComparison.Ordinal));
+            foreach (var (seatIndex, stance, target, cost) in costs.Where(c => c.Cost > 0))
+            {
+                // An Attune that clashed was free.
+                if (stance != Stance.Attune || match.OwnerOf(target!.Value) == seatIndex)
+                {
+                    report.ManaSpent[stance.ToString()] = report.ManaSpent.GetValueOrDefault(stance.ToString()) + cost;
+                }
+            }
+
             foreach (System.Text.RegularExpressions.Match banked in BankedLine.Matches(string.Join('\n', lines)))
             {
                 report.LandPoints += int.Parse(banked.Groups[1].Value, CultureInfo.InvariantCulture);
@@ -89,6 +114,7 @@ public static partial class Simulation
         }
 
         report.MostImpsOnATile.Add(match.Map.Tiles.Max(t => match.UnitsOn(t.Hex).Imps));
+        report.ManaLeft.AddRange(match.Seats.Select(s => s.Mana));
         report.FinalScores.AddRange(match.Seats.Select(s => s.Score));
         report.Spreads.Add(match.Standings[0].Score - match.Standings[^1].Score);
         foreach (var winner in match.Winners)
@@ -123,6 +149,7 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         public int MonstersCleared { get; internal set; }
         public int LastTileSaves { get; internal set; }
         public Dictionary<string, int> Stances { get; } = new() { ["Attack"] = 0, ["Attune"] = 0, ["Summon"] = 0, ["Hold"] = 0 };
+        public int Spells { get; internal set; }
     }
 
     public int Players => players;
@@ -130,6 +157,11 @@ public sealed class SimulationReport(int players, int games, int seed, int round
     public List<int> Bids { get; } = [];
     public int Passes { get; internal set; }
     public int LandPoints { get; internal set; }
+    public List<int> ManaLeft { get; } = [];
+    public Dictionary<string, int> ManaSpent { get; } = [];
+    public Dictionary<string, int> Casts { get; } = [];
+    public List<int> ImpsSummoned { get; } = [];
+    public List<int> GolemsSummoned { get; } = [];
     public int ManaPoints { get; internal set; }
     public int ConquestPoints { get; internal set; }
     public int OpeningTies { get; internal set; }
@@ -155,12 +187,12 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine();
         md.AppendLine("## The rounds (per game)");
         md.AppendLine();
-        md.AppendLine("| Round | Free tiles | Attack | Attune | Summon | Hold | Attuned | Clashes | Priced out | Conquests | Monsters cleared | Last tile saved |");
-        md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|");
+        md.AppendLine("| Round | Free tiles | Attack | Attune | Summon | Hold | Spells | Attuned | Clashes | Priced out | Conquests | Monsters cleared | Last tile saved |");
+        md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
         for (var r = 0; r < Rounds.Count; r++)
         {
             var s = Rounds[r];
-            md.AppendLine(c, $"| {r + 1} | {PerGame(s.FreeTiles)} | {PerGame(s.Stances["Attack"])} | {PerGame(s.Stances["Attune"])} | {PerGame(s.Stances["Summon"])} | {PerGame(s.Stances["Hold"])} | {PerGame(s.Attunes)} | {PerGame(s.AttuneClashes)} | {PerGame(s.PricedOut)} | {PerGame(s.Conquests)} | {PerGame(s.MonstersCleared)} | {PerGame(s.LastTileSaves)} |");
+            md.AppendLine(c, $"| {r + 1} | {PerGame(s.FreeTiles)} | {PerGame(s.Stances["Attack"])} | {PerGame(s.Stances["Attune"])} | {PerGame(s.Stances["Summon"])} | {PerGame(s.Stances["Hold"])} | {PerGame(s.Spells)} | {PerGame(s.Attunes)} | {PerGame(s.AttuneClashes)} | {PerGame(s.PricedOut)} | {PerGame(s.Conquests)} | {PerGame(s.MonstersCleared)} | {PerGame(s.LastTileSaves)} |");
         }
 
         md.AppendLine();
@@ -172,6 +204,13 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         string PerSeat(int points) => FinalScores.Count == 0 ? "-" : ((double)points / FinalScores.Count).ToString("0.0", c);
         md.AppendLine(c, $"- Points per seat by source: land {PerSeat(LandPoints)}, mana {PerSeat(ManaPoints)}, conquest {PerSeat(ConquestPoints)}.");
         md.AppendLine(c, $"- Wins by seat (shared wins count for each): {string.Join(", ", WinsBySeat.Select((w, i) => $"seat {i + 1}: {w}"))}.");
+        md.AppendLine();
+        md.AppendLine("## Mana");
+        md.AppendLine(c, $"- Left unspent at the end: average {Avg(ManaLeft)} a seat, highest {ManaLeft.DefaultIfEmpty().Max()}.");
+        string PerSeatSpent(string key) => FinalScores.Count == 0 ? "0" : ((double)ManaSpent.GetValueOrDefault(key) / FinalScores.Count).ToString("0.0", c);
+        md.AppendLine(c, $"- Spent per seat over a match: Attune {PerSeatSpent("Attune")}, Summon {PerSeatSpent("Summon")}, spells {PerSeatSpent("Spell")}.");
+        md.AppendLine(c, $"- Spells cast per game: {(Casts.Count == 0 ? "none" : string.Join(", ", Casts.OrderBy(k => k.Key).Select(k => $"{k.Key} {PerGame(k.Value)}")))}.");
+        md.AppendLine(c, $"- Summoned per game: {PerGame(ImpsSummoned.Sum())} Imps, {PerGame(GolemsSummoned.Sum())} Golems.");
         return md.ToString();
     }
 }

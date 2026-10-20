@@ -31,7 +31,15 @@ public static class Bot
     {
         ArgumentNullException.ThrowIfNull(match);
         ArgumentNullException.ThrowIfNull(random);
-        return Candidates(match, seat, random).FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+        var orders = Candidates(match, seat, random).FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+
+        // With mana to spare after the stance, a spell alongside it.
+        if (match.Seats[seat].Mana - match.CostOf(orders) < SpareMana)
+        {
+            return orders;
+        }
+
+        return Casts(match, seat).Select(cast => orders with { Cast = cast }).FirstOrDefault(o => match.Check(o).Succeeded) ?? orders;
     }
 
     /// <summary>One of the hexes scoring within 1 of the best, at random, so bots don't all reach for the same one.</summary>
@@ -40,6 +48,43 @@ public static class Bot
         var best = hexes.Max(score);
         var good = hexes.Where(h => score(h) >= best - 1).OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
         return good[random.Next(good.Count)];
+    }
+
+    /// <summary>The mana a bot keeps after its stance before it also casts a spell.</summary>
+    private const int SpareMana = 6;
+
+    /// <summary>Spells with a purpose, most urgent first: Ward a threatened tile; Lure or Scorch a target its units
+    /// next to it can then beat; Blight a rival's best tile next to it.</summary>
+    private static IEnumerable<SpellCast> Casts(Match match, int seat)
+    {
+        var rules = match.Rules;
+        var mine = match.Seats[seat].Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
+        int Power(Hex h) => match.UnitsOn(h).Power(rules);
+        int MyPowerNextTo(Hex target) => mine.Where(target.IsNextTo).Sum(Power);
+        var rivals = mine.SelectMany(match.Map.NeighboursOf).Distinct()
+            .Where(h => match.OwnerOf(h) is { } o && o != seat).OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
+
+        foreach (var threatened in mine.Where(h => match.Map.NeighboursOf(h).Any(n => rivals.Contains(n) && Power(n) > Power(h))))
+        {
+            yield return new SpellCast(Spell.Ward, threatened);
+        }
+
+        foreach (var monster in mine.SelectMany(match.Map.NeighboursOf).Distinct().OrderBy(h => h.Q).ThenBy(h => h.R)
+                     .Where(h => match.OwnerOf(h) is null && match.Map[h].Guard > rules.MinGuard
+                                 && MyPowerNextTo(h) >= match.Map[h].Guard - rules.LurePower))
+        {
+            yield return new SpellCast(Spell.Lure, monster);
+        }
+
+        foreach (var rival in rivals.Where(h => Power(h) > 0 && MyPowerNextTo(h) > 0 && MyPowerNextTo(h) <= Power(h)))
+        {
+            yield return new SpellCast(Spell.Scorch, rival, Power(rival) - MyPowerNextTo(rival) + 1);
+        }
+
+        foreach (var rival in rivals.Where(h => match.Map[h].Yield >= 3).OrderByDescending(h => match.Map[h].Yield))
+        {
+            yield return new SpellCast(Spell.Blight, rival);
+        }
     }
 
     private static IEnumerable<Orders> Candidates(Match match, int seat, IRandomSource random)
@@ -65,9 +110,10 @@ public static class Bot
             yield return attack;
         }
 
-        // Attune: one of the best-yielding free tiles next to its land.
         var free = mine.SelectMany(match.Map.NeighboursOf).Distinct()
             .Where(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded).ToList();
+
+        // Attune: one of the best-yielding free tiles next to its land.
         if (free.Count > 0)
         {
             yield return Orders.Attune(seat, PickGood(free, h => match.Map[h].Yield!.Value, random));

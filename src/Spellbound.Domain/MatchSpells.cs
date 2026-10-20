@@ -1,0 +1,212 @@
+namespace Spellbound.Domain;
+
+/// <summary>Spells, cast alongside the stance (docs/game-design.md, Spells). They resolve after moves, Attunes and
+/// Summons, in seat order, and before attacks; Blight lands in the next round's income.</summary>
+public sealed partial class Match
+{
+    // This round's Wards (extra defence by tile) and Blights (tiles that yield nothing in the next income). Both are
+    // used up within the Resolve that makes them, so they are never saved.
+    private readonly Dictionary<Hex, int> wards = [];
+    private readonly HashSet<Hex> blights = [];
+
+    /// <summary>What a seat's orders cost in mana if they go through, stance and spell together (an Attune that clashes
+    /// costs nothing).</summary>
+    public int CostOf(Orders orders) => StanceCostOf(orders) + SpellCostOf(orders);
+
+    /// <summary>What the stance part of a seat's orders costs.</summary>
+    public int StanceCostOf(Orders orders)
+    {
+        ArgumentNullException.ThrowIfNull(orders);
+        return orders.Target is null ? 0 : orders.Stance switch
+        {
+            Stance.Attune => Rules.AttunePrice(seats[orders.Seat].Tiles.Count),
+            Stance.Summon => Rules.CostOf(orders.Kind) * orders.Count,
+            _ => 0,
+        };
+    }
+
+    /// <summary>What the spell cast alongside the stance costs, if any.</summary>
+    public int SpellCostOf(Orders orders)
+    {
+        ArgumentNullException.ThrowIfNull(orders);
+        return orders.Cast is not { } cast ? 0 : cast.Spell switch
+        {
+            Spell.Scorch => Rules.ScorchManaPerPower * cast.Count,
+            Spell.Ward => Rules.WardCost,
+            Spell.Leyline => Math.Max(Rules.LeylineMinCost,
+                Rules.LeylineManaPerUnit * ((cast.Transfer?.Units.Imps ?? 0) + (cast.Transfer?.Units.Golems ?? 0))),
+            Spell.Blight => Rules.BlightCost,
+            Spell.Lure => Rules.LureCost,
+            _ => 0,
+        };
+    }
+
+    /// <summary>Checks the spell cast alongside the stance; a Leyline updates <paramref name="positions"/> (where the
+    /// seat's units stand), so the stance's attack is checked against where they will be.</summary>
+    private string? SpellProblem(Orders orders, List<string> lines, Dictionary<Hex, Army> positions)
+    {
+        if (orders.Cast is not { } cast)
+        {
+            return null;
+        }
+
+        var target = cast.Target;
+        if (!Map.Contains(target))
+        {
+            return $"{target} isn't on the map.";
+        }
+
+        var seat = seats[orders.Seat];
+        var nextToYou = seat.Tiles.Any(h => h.IsNextTo(target));
+        var owner = OwnerOf(target);
+        var cost = 0;
+        string effect;
+        switch (cast.Spell)
+        {
+            case Spell.Scorch:
+            {
+                if (owner is null || owner == seat.Index || !nextToYou)
+                {
+                    return "Scorch needs a rival's tile next to yours.";
+                }
+
+                var army = UnitsOn(target);
+                var power = army.Power(Rules);
+                if (power == 0)
+                {
+                    return $"There is nothing at {target} to burn.";
+                }
+
+                if (cast.Count < 1 || cast.Count > power)
+                {
+                    return $"Scorch can burn from 1 to {power} power at {target}.";
+                }
+
+                if (cast.Count > seat.Mana / Rules.ScorchManaPerPower)
+                {
+                    return $"Scorch costs {Rules.ScorchManaPerPower} mana per power; you have {seat.Mana}.";
+                }
+
+                cost = SpellCostOf(orders);
+                effect = $"burn {cast.Count} power of {army} at {target}, leaving {Battle.TakeLosses(army, cast.Count, Rules)}";
+                break;
+            }
+
+            case Spell.Ward:
+                if (owner != seat.Index)
+                {
+                    return "Ward needs one of your tiles.";
+                }
+
+                cost = Rules.WardCost;
+                effect = $"{target} defends with {Rules.WardPower} more power this round";
+                break;
+
+            case Spell.Leyline:
+            {
+                if (cast.Transfer is not { } move || move.From != target || move.From == move.To
+                    || !seat.Tiles.Contains(move.From) || !seat.Tiles.Contains(move.To))
+                {
+                    return "Leyline needs two different tiles of yours.";
+                }
+
+                // Units that step this round can't also ride the leyline.
+                var free = orders.Moves.Where(m => m.From == move.From).Aggregate(UnitsOn(move.From), (a, m) => a - m.Units);
+                if (!move.Units.IsValid || move.Units.IsEmpty || !free.Holds(move.Units))
+                {
+                    return $"There aren't {move.Units} at {move.From} to send.";
+                }
+
+                cost = SpellCostOf(orders);
+                effect = $"move {move.Units} from {move.From} to {move.To}";
+                positions[move.From] = (positions.TryGetValue(move.From, out var p) ? p : UnitsOn(move.From)) - move.Units;
+                positions[move.To] = (positions.TryGetValue(move.To, out var q) ? q : UnitsOn(move.To)) + move.Units;
+                break;
+            }
+
+            case Spell.Blight:
+                if (owner is null || owner == seat.Index || !nextToYou)
+                {
+                    return "Blight needs a rival's tile next to yours.";
+                }
+
+                cost = Rules.BlightCost;
+                effect = $"{Describe(target)} yields nothing in the next round's income";
+                break;
+
+            case Spell.Lure:
+                if (owner is not null || !Map[target].IsGuarded || !nextToYou)
+                {
+                    return "Lure needs a monster tile next to yours.";
+                }
+
+                if (Map[target].Guard <= Rules.MinGuard)
+                {
+                    return $"The guards at {target} can't be weakened any further.";
+                }
+
+                cost = Rules.LureCost;
+                effect = $"the guards at {target} drop to power {Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower)}, for good";
+                break;
+
+            default:
+                return $"Unknown spell {cast.Spell}.";
+        }
+
+        if (cost > seat.Mana)
+        {
+            return $"{cast.Spell} costs {cost} mana; you have {seat.Mana}.";
+        }
+
+        lines.Add($"Cast {cast.Spell} for {cost} mana: {effect}.");
+        return null;
+    }
+
+    /// <summary>Every seat's spell, in seat order: they pay, and the spell takes effect.</summary>
+    private void ResolveCasts(IEnumerable<Orders> orders, List<string> lines)
+    {
+        foreach (var order in orders.Where(o => o.Cast is not null))
+        {
+            var seat = seats[order.Seat];
+            var cast = order.Cast!;
+            var target = cast.Target;
+            seat.Mana -= SpellCostOf(order);
+            switch (cast.Spell)
+            {
+                case Spell.Scorch:
+                    var before = UnitsOn(target);
+                    units[target] = Battle.TakeLosses(before, cast.Count, Rules);
+                    lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {before - UnitsOn(target)} burn.");
+                    break;
+                case Spell.Ward:
+                    wards[target] = wards.GetValueOrDefault(target) + Rules.WardPower;
+                    lines.Add($"Seat {seat.Index + 1} casts Ward on {target}: it defends with {Rules.WardPower} more power this round.");
+                    break;
+                case Spell.Leyline:
+                    var move = cast.Transfer!;
+                    units[move.From] = UnitsOn(move.From) - move.Units;
+                    units[move.To] = UnitsOn(move.To) + move.Units;
+                    lines.Add($"Seat {seat.Index + 1} casts Leyline: {move.Units} travel from {move.From} to {move.To}.");
+                    break;
+                case Spell.Blight:
+                    blights.Add(target);
+                    lines.Add($"Seat {seat.Index + 1} casts Blight on {Describe(target)}: it yields nothing next round.");
+                    break;
+                case Spell.Lure:
+                    Map.SetGuard(target, Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower));
+                    lines.Add($"Seat {seat.Index + 1} casts Lure on {target}: its guards drop to power {Map[target].Guard}.");
+                    break;
+            }
+        }
+    }
+
+    private int Ward(Hex hex) => wards.GetValueOrDefault(hex);
+
+    private int YieldFor(Hex hex) => blights.Contains(hex) ? 0 : Map[hex].Yield ?? 0;
+
+    private void ClearRoundSpells()
+    {
+        wards.Clear();
+        blights.Clear();
+    }
+}

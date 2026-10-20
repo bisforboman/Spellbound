@@ -1,8 +1,9 @@
 # Spells: the first set (decided 20 Oct 2026)
 
-How the first spells were chosen. The owner took all five, with **flat, small costs**, and chose **Cast as a fourth
-stance** rather than a spell alongside the stance (decision 1 below argues the other way; the open question it leaves
-is in [game-design.md](../game-design.md#spells)). The rules are in the design document.
+How the first spells were chosen. The owner took all five, with **flat, small costs**. They first chose **Cast as a
+fourth stance**; once built, the simulator showed that as a stance spells used the surplus only by replacing Attunes
+(bots still ended with 52 mana unspent), so the owner moved them **alongside the stance**, as decision 1 below
+recommends (26 unspent). The rules are in [game-design.md](../game-design.md#spells).
 
 ## The problem they solve
 
@@ -66,10 +67,10 @@ Notes, spell by spell:
 
 - The orders form gains a **Spell (optional)** section, like Moves: a spell, its target, and for Scorch and Leyline how
   much, with the cost and effect in the preview. The 44 px rule and a playtest step apply.
-- **Bots must cast too**, or the simulator can't measure the sink. Rules: Scorch the defence of a tile they are about
-  to attack if it turns a loss into a win; Ward a threatened tile (a rival with more power next to it); Lure a monster
-  tile they can then clear; Blight a rival's best tile next to them when they have mana to spare; Leyline when a group
-  of theirs has no units.
+- **Bots must cast too**, or the simulator can't measure the sink. As built: a bot with mana to spare beyond its next
+  Attune Wards a threatened tile, Lures a monster its units can then beat, or Scorches a rival tile its units can then
+  beat; once it can't attune, it may also Blight a rival's best tile. Leyline isn't in the bots yet, and in the first
+  runs they almost never found a Lure or Scorch worth casting, so those three are unmeasured.
 
 ## How we'd check
 

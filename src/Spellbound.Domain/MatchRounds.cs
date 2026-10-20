@@ -36,9 +36,23 @@ public sealed partial class Match
 
         var lines = new List<string>();
         var positions = new Dictionary<Hex, Army>();
-        return (MovesProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)) is { } problem
-            ? Report.Fail(problem)
-            : new Report(true, lines);
+        if ((MovesProblem(orders, lines, positions) ?? SpellProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)) is { } problem)
+        {
+            return Report.Fail(problem);
+        }
+
+        var mana = seats[orders.Seat].Mana;
+        if (orders.Cast is not null && CostOf(orders) > mana)
+        {
+            return Report.Fail($"Your stance and spell cost {CostOf(orders)} mana together; you have {mana}.");
+        }
+
+        if (orders.Cast is not null)
+        {
+            lines.Add($"All together: {CostOf(orders)} mana, leaving {mana - CostOf(orders)}.");
+        }
+
+        return new Report(true, lines);
     }
 
     /// <summary>
@@ -92,6 +106,7 @@ public sealed partial class Match
             lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.");
         }
 
+        ResolveCasts(byseat, lines);
         ResolveAttacks(byseat.Where(o => o.Stance == Stance.Attack && o.Target is not null).ToList(), lines);
         BankPoints(lines);
         if (CurrentRound < Rules.Rounds)
@@ -105,6 +120,7 @@ public sealed partial class Match
                       + (Winners.Count == 1 ? "wins." : "share the win."));
         }
 
+        ClearRoundSpells();
         return new Report(true, lines);
     }
 
@@ -118,7 +134,7 @@ public sealed partial class Match
         LaterUnveil(random, lines);
         foreach (var seat in seats)
         {
-            var income = seat.Tiles.Sum(h => Map[h].Yield ?? 0);
+            var income = seat.Tiles.Sum(YieldFor);
             seat.Mana += income;
             seat.ProducedThisRound = income;
             lines.Add($"Seat {seat.Index + 1} collects {income} mana.");

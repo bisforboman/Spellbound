@@ -33,8 +33,10 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   `GameRules`, `SeededRandom`)
 - [ ] Domain: setup (starting mana, trait draft of the same 3 for everyone); starting mana is in; the traits are
   designed (six, three offered per match: game-design.md, Traits), still to build, with the simulator's check by trait
-- [ ] Domain: spells (the Cast stance and five spells: game-design.md, Spells), designed, still to build, with the
-  simulator's mana numbers (unspent at the end, spent per stance and per spell) to check them
+- [x] Domain: spells (five spells cast alongside the stance: game-design.md, Spells), bots that cast, and the
+  simulator's mana numbers (unspent at the end, spent per stance and on spells, spells cast, Imps and Golems summoned)
+- [ ] Pages: a "Spell (optional)" section on the orders form (a spell, its target and how much, with the preview), and
+  its playtest step
 - [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [x] Domain: a round's submission (one stance + moves) and its validation (`Orders`, `Match.Check`)
 - [x] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles

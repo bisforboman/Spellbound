@@ -18,6 +18,8 @@ public class SeatsTests
     [InlineData("The match is over. Seat 1 and Seat 3 share the win.", "The match is over. You and Bot 3 share the win.")]
     [InlineData("Seat 1 can't pay for 1 Golem: they dissolve.", "You can't pay for 1 Golem: they dissolve.")]
     [InlineData("Seat 10 is not seat 1.", "Seat 10 is not seat 1.")]
+    [InlineData("Seat 1 casts Ward on (1, 0): it defends with 3 more power this round.", "You cast Ward on (1, 0): it defends with 3 more power this round.")]
+    [InlineData("Seat 1's attack on (1, 0) has no units left to send.", "Your attack on (1, 0) has no units left to send.")]
     public void A_report_line_reads_in_the_players_words(string line, string phrased)
     {
         Assert.Equal(phrased, Seats.Phrase(line, Owners, 0));
