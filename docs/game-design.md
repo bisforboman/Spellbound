@@ -90,10 +90,11 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 - Each round, every player secretly picks **one stance**. Then all stances resolve together.
 - A stance should be **one button** on a phone: the round's main decision is a single tap.
-- **Three stances** to start with:
+- **Four stances**:
   - **Attack:** attack a rival's or a monster-guarded tile with units (see *Battles*).
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
+  - **Cast:** spend mana on one spell (see *Spells*).
 - Alongside the stance, players can **move units** freely (see *Units*).
 - A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon): only the moves happen. A player is never forced to spend.
 - More stances (for example a defensive Hold, or Scry to peek at hidden things) can be added after the first playtest.
@@ -106,7 +107,8 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 2. **Upkeep:** pay 1 mana per Golem; a Golem that can't be paid for dissolves.
 3. **Commit:** every player secretly commits one stance plus any moves. When all have committed, everything is revealed.
 4. **Moves** resolve. Defenders can reinforce a threatened tile in the same round; attackers can't be sure what they'll meet.
-5. **Attune and Summon** resolve. New tiles exist and new units can defend before attacks.
+5. **Attune, Summon and Cast** resolve. New tiles exist, new units can defend, and spells take effect before attacks
+   (Blight waits for the next round's income).
 6. **Attacks** resolve.
    - Units sent to attack **have left** their tile: they don't defend it if it's attacked in the same round.
    - If **several players attack the same tile**, all of them fight the defender together in **one battle**; if the attackers win, the surviving attackers then fight each other for the tile.
@@ -184,7 +186,26 @@ Kept simple for now, to be extended later.
 - **Mana:** produced by tiles (see *Tiles*); pays for opening bids, attuning and summoning.
 - **Starting mana: 9.** Players start with nothing else: no tiles until the opening, and no units.
 - **Unspent mana carries over** to the next round, including whatever is left after the opening auctions.
-- **Spells** are planned as a later use for mana.
+- **Spells** use mana with the Cast stance (see *Spells*).
+
+## Spells
+
+Decided 20 Oct 2026 (the reasoning is in `discussions/spells.md`). **Cast** is a stance: a round you cast is a round
+you don't attune, summon or attack. A spell's target is one of your tiles or a tile next to your land, its cost and
+effect are shown before you commit, and its effect lasts **this round only**; no spell changes yields, prices or
+income. Costs are flat and small.
+
+| Spell | Cost | Target | Effect (this round) |
+|---|---|---|---|
+| Scorch | 2 mana per power | a rival's tile next to yours | Burns that much of its units' power, weakest first (the battle loss rule). Monsters are immune. |
+| Ward | 3 mana | one of your tiles | Its defence counts 3 more power in this round's battles. |
+| Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
+| Blight | 4 mana | a rival's tile next to yours | It yields nothing in the next round's income. |
+| Lure | 3 mana | a monster tile next to yours | Its guards fight with 1 less power this round. |
+
+- *Open:* whether a Cast stance is enough of a use for mana. Mana piles up in Attune rounds (bots end with 50–60
+  unspent), and a stance competes with Attune instead of using its leftover. Spells could instead be cast alongside
+  the stance, like moves; the simulator's mana numbers will show which is needed.
 
 ## Scoring and winning
 
