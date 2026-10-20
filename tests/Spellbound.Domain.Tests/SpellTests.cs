@@ -15,10 +15,10 @@ public class SpellTests
         Play(match, Orders.Summon(1, theirs, UnitKind.Golem, 1));
         var mana = match.Seats[0].Mana;
 
-        var check = match.Check(Orders.Cast(0, Spell.Scorch, theirs, 3));
-        var report = Play(match, Orders.Cast(0, Spell.Scorch, theirs, 3));
+        var check = match.Check(Orders.Hold(0).Casting(Spell.Scorch, theirs, 3));
+        var report = Play(match, Orders.Hold(0).Casting(Spell.Scorch, theirs, 3));
 
-        Assert.Contains("for 6 mana", Assert.Single(check.Lines), StringComparison.Ordinal);
+        Assert.Contains(check.Lines, l => l.StartsWith("Cast Scorch for 6 mana", StringComparison.Ordinal));
         Assert.Equal(new Army(0, 1), match.UnitsOn(theirs)); // 2 Imps burn first, then the Golem would go past 3
         Assert.Contains(report.Lines, l => l.Contains("casts Scorch", StringComparison.Ordinal));
         Assert.Equal(mana - 6, match.Seats[0].Mana - match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value));
@@ -31,7 +31,7 @@ public class SpellTests
         var (mine, theirs) = Border(match, 0, 1)!.Value;
         Play(match, Orders.Summon(0, mine, UnitKind.Imp, 4), Orders.Summon(1, theirs, UnitKind.Golem, 1));
 
-        var report = Play(match, Orders.Attack(0, theirs, [new Move(mine, theirs, new Army(4, 0))]), Orders.Cast(1, Spell.Ward, theirs));
+        var report = Play(match, Orders.Attack(0, theirs, [new Move(mine, theirs, new Army(4, 0))]), Orders.Hold(1).Casting(Spell.Ward, theirs));
 
         Assert.Contains(report.Lines, l => l.Contains("power 4 against 6", StringComparison.Ordinal));
         Assert.Equal(1, match.OwnerOf(theirs));
@@ -46,7 +46,7 @@ public class SpellTests
         var (from, to) = tiles.SelectMany(a => tiles.Where(b => a != b && !a.IsNextTo(b)).Select(b => (a, b))).First();
         Play(match, Orders.Summon(0, from, UnitKind.Imp, 3));
 
-        var report = Play(match, Orders.CastLeyline(0, new Move(from, to, new Army(2, 0))));
+        var report = Play(match, Orders.Hold(0).CastingLeyline(new Move(from, to, new Army(2, 0))));
 
         Assert.Equal(new Army(1, 0), match.UnitsOn(from));
         Assert.Equal(new Army(2, 0), match.UnitsOn(to));
@@ -55,7 +55,7 @@ public class SpellTests
         if (tiles.Where(from.IsNextTo).Cast<Hex?>().FirstOrDefault() is { } next)
         {
             var stepped = new Move(from, next, new Army(1, 0));
-            Assert.False(match.Check(Orders.CastLeyline(0, new Move(from, to, new Army(1, 0)), stepped)).Succeeded);
+            Assert.False(match.Check(Orders.Hold(0, stepped).CastingLeyline(new Move(from, to, new Army(1, 0)))).Succeeded);
         }
     }
 
@@ -67,7 +67,7 @@ public class SpellTests
         var income = match.Seats[1].Tiles.Sum(h => match.Map[h].Yield!.Value);
         var before = match.Seats[1].Mana;
 
-        var report = Play(match, Orders.Cast(0, Spell.Blight, theirs));
+        var report = Play(match, Orders.Hold(0).Casting(Spell.Blight, theirs));
 
         Assert.Equal(before + income - match.Map[theirs].Yield!.Value, match.Seats[1].Mana);
         Assert.Contains(report.Lines, l => l.Contains($"Seat 2 collects {income - match.Map[theirs].Yield} mana", StringComparison.Ordinal));
@@ -85,12 +85,12 @@ public class SpellTests
         Play(match);
         var monster = Guarded(match)!.Value;
 
-        Play(match, Orders.Cast(0, Spell.Lure, monster));
+        Play(match, Orders.Hold(0).Casting(Spell.Lure, monster));
         Assert.Equal(2, match.Map[monster].Guard);
-        Play(match, Orders.Cast(0, Spell.Lure, monster));
+        Play(match, Orders.Hold(0).Casting(Spell.Lure, monster));
         Assert.Equal(1, match.Map[monster].Guard);
 
-        Assert.Contains("can't be weakened", Assert.Single(match.Check(Orders.Cast(0, Spell.Lure, monster)).Lines), StringComparison.Ordinal);
+        Assert.Contains("can't be weakened", Assert.Single(match.Check(Orders.Hold(0).Casting(Spell.Lure, monster)).Lines), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -101,11 +101,58 @@ public class SpellTests
         var target = match.Seats[1].Tiles.First(from.IsNextTo);
         Play(match, Orders.Summon(0, from, UnitKind.Imp, 4));
 
-        var report = Play(match, Orders.Attack(0, target, [new Move(from, target, new Army(4, 0))]), Orders.Cast(2, Spell.Scorch, from, 4));
+        var report = Play(match, Orders.Attack(0, target, [new Move(from, target, new Army(4, 0))]), Orders.Hold(2).Casting(Spell.Scorch, from, 4));
 
         Assert.Contains(report.Lines, l => l.Contains("has no units left to send", StringComparison.Ordinal));
         Assert.Equal(1, match.OwnerOf(target));
         Assert.Equal(Army.None, match.UnitsOn(from));
+    }
+
+    [Fact]
+    public void A_spell_is_cast_alongside_the_stance_and_both_are_paid()
+    {
+        var match = FirstWhere(m => Border(m, 0, 1) is not null
+            && m.Seats[0].Tiles.SelectMany(m.Map.NeighboursOf).Any(h => m.Map[h].IsUnveiled && m.OwnerOf(h) is null && !m.Map[h].IsGuarded));
+        var (mine, _) = Border(match, 0, 1)!.Value;
+        var free = match.Seats[0].Tiles.SelectMany(match.Map.NeighboursOf)
+            .First(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded);
+        var orders = Orders.Attune(0, free).Casting(Spell.Ward, mine);
+
+        var check = match.Check(orders);
+        Play(match, orders);
+
+        Assert.Contains(check.Lines, l => l.StartsWith("Cast Ward for 3 mana", StringComparison.Ordinal));
+        Assert.Contains(check.Lines, l => l.StartsWith("All together: 7 mana", StringComparison.Ordinal)); // Attune 4 + Ward 3
+        Assert.Equal(0, match.OwnerOf(free));
+    }
+
+    [Fact]
+    public void A_stance_and_spell_too_dear_together_change_nothing()
+    {
+        var match = Bordering();
+        var (mine, _) = Border(match, 0, 1)!.Value;
+        var all = match.Seats[0].Mana;
+        var before = Snapshot(match);
+
+        var report = match.Resolve(
+            [Orders.Summon(0, mine, UnitKind.Imp, all).Casting(Spell.Ward, mine), Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+
+        Assert.Contains("cost " + (all + 3) + " mana together", Assert.Single(report.Lines), StringComparison.Ordinal);
+        Assert.Equal(before, Snapshot(match));
+    }
+
+    [Fact]
+    public void Scorch_softens_a_defence_before_your_own_attack_in_the_same_round()
+    {
+        var match = Bordering();
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        Play(match, Orders.Summon(0, mine, UnitKind.Imp, 3), Orders.Summon(1, theirs, UnitKind.Golem, 1));
+
+        // 3 Imps against a Golem would tie; Scorch can't burn part of a Golem, so it burns all 3 power first.
+        Play(match, Orders.Attack(0, theirs, [new Move(mine, theirs, new Army(3, 0))]).Casting(Spell.Scorch, theirs, 3));
+
+        Assert.Equal(0, match.OwnerOf(theirs));
+        Assert.Equal(new Army(3, 0), match.UnitsOn(theirs));
     }
 
     public static TheoryData<string, string> BadCasts => new()
@@ -131,14 +178,14 @@ public class SpellTests
 
         var orders = problem switch
         {
-            "scorch your own tile" => Orders.Cast(0, Spell.Scorch, mine, 1),
-            "scorch more than is there" => Orders.Cast(0, Spell.Scorch, theirs, 3),
-            "scorch nothing" => Orders.Cast(1, Spell.Scorch, mine, 1),
-            "ward a rival's tile" => Orders.Cast(0, Spell.Ward, theirs),
-            "blight your own tile" => Orders.Cast(0, Spell.Blight, mine),
-            "lure a tile without monsters" => Orders.Cast(0, Spell.Lure, theirs),
-            "leyline to the same tile" => Orders.CastLeyline(0, new Move(mine, mine, new Army(1, 0))),
-            _ => Orders.Cast(0, Spell.Ward, mine),
+            "scorch your own tile" => Orders.Hold(0).Casting(Spell.Scorch, mine, 1),
+            "scorch more than is there" => Orders.Hold(0).Casting(Spell.Scorch, theirs, 3),
+            "scorch nothing" => Orders.Hold(1).Casting(Spell.Scorch, mine, 1),
+            "ward a rival's tile" => Orders.Hold(0).Casting(Spell.Ward, theirs),
+            "blight your own tile" => Orders.Hold(0).Casting(Spell.Blight, mine),
+            "lure a tile without monsters" => Orders.Hold(0).Casting(Spell.Lure, theirs),
+            "leyline to the same tile" => Orders.Hold(0).CastingLeyline(new Move(mine, mine, new Army(1, 0))),
+            _ => Orders.Hold(0).Casting(Spell.Ward, mine),
         };
         var before = Snapshot(match);
 

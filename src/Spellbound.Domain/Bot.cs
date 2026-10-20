@@ -31,7 +31,15 @@ public static class Bot
     {
         ArgumentNullException.ThrowIfNull(match);
         ArgumentNullException.ThrowIfNull(random);
-        return Candidates(match, seat, random).FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+        var orders = Candidates(match, seat, random).FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+
+        // With mana to spare after the stance, a spell alongside it.
+        if (match.Seats[seat].Mana - match.CostOf(orders) < SpareMana)
+        {
+            return orders;
+        }
+
+        return Casts(match, seat).Select(cast => orders with { Cast = cast }).FirstOrDefault(o => match.Check(o).Succeeded) ?? orders;
     }
 
     /// <summary>One of the hexes scoring within 1 of the best, at random, so bots don't all reach for the same one.</summary>
@@ -42,12 +50,12 @@ public static class Bot
         return good[random.Next(good.Count)];
     }
 
-    /// <summary>The mana a bot keeps beyond its next Attune before it casts instead.</summary>
+    /// <summary>The mana a bot keeps after its stance before it also casts a spell.</summary>
     private const int SpareMana = 6;
 
     /// <summary>Spells with a purpose, most urgent first: Ward a threatened tile; Lure or Scorch a target its units
     /// next to it can then beat; Blight a rival's best tile next to it.</summary>
-    private static IEnumerable<Orders> Casts(Match match, int seat)
+    private static IEnumerable<SpellCast> Casts(Match match, int seat)
     {
         var rules = match.Rules;
         var mine = match.Seats[seat].Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
@@ -58,24 +66,24 @@ public static class Bot
 
         foreach (var threatened in mine.Where(h => match.Map.NeighboursOf(h).Any(n => rivals.Contains(n) && Power(n) > Power(h))))
         {
-            yield return Orders.Cast(seat, Spell.Ward, threatened);
+            yield return new SpellCast(Spell.Ward, threatened);
         }
 
         foreach (var monster in mine.SelectMany(match.Map.NeighboursOf).Distinct().OrderBy(h => h.Q).ThenBy(h => h.R)
                      .Where(h => match.OwnerOf(h) is null && match.Map[h].Guard > rules.MinGuard
                                  && MyPowerNextTo(h) >= match.Map[h].Guard - rules.LurePower))
         {
-            yield return Orders.Cast(seat, Spell.Lure, monster);
+            yield return new SpellCast(Spell.Lure, monster);
         }
 
         foreach (var rival in rivals.Where(h => Power(h) > 0 && MyPowerNextTo(h) > 0 && MyPowerNextTo(h) <= Power(h)))
         {
-            yield return Orders.Cast(seat, Spell.Scorch, rival, Power(h: rival) - MyPowerNextTo(rival) + 1);
+            yield return new SpellCast(Spell.Scorch, rival, Power(rival) - MyPowerNextTo(rival) + 1);
         }
 
         foreach (var rival in rivals.Where(h => match.Map[h].Yield >= 3).OrderByDescending(h => match.Map[h].Yield))
         {
-            yield return Orders.Cast(seat, Spell.Blight, rival);
+            yield return new SpellCast(Spell.Blight, rival);
         }
     }
 
@@ -102,30 +110,13 @@ public static class Bot
             yield return attack;
         }
 
-        // With mana to spare beyond the next Attune, a spell first; otherwise Attune, then a spell before summoning.
         var free = mine.SelectMany(match.Map.NeighboursOf).Distinct()
             .Where(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded).ToList();
-        var flush = me.Mana >= rules.AttunePrice(me.Tiles.Count) + SpareMana;
-        if (flush)
-        {
-            foreach (var cast in Casts(match, seat).Where(o => o.Spell != Spell.Blight))
-            {
-                yield return cast;
-            }
-        }
 
         // Attune: one of the best-yielding free tiles next to its land.
         if (free.Count > 0)
         {
             yield return Orders.Attune(seat, PickGood(free, h => match.Map[h].Yield!.Value, random));
-        }
-
-        if (!flush && me.Mana >= SpareMana)
-        {
-            foreach (var cast in Casts(match, seat))
-            {
-                yield return cast;
-            }
         }
 
         // Summon: half its mana (at least one unit's worth) on a tile next to a rival, monsters or free land.
