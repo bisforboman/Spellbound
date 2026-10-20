@@ -42,7 +42,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Domain unit tests, including a scripted full game that always resolves the same way
 - [x] Bots: a simple bid rule and a simple stance rule, and a bot-vs-bot simulator that plays many seeded games and
   reports on the paper prototype's "watch for" list (`Bot`, `Simulation`, `tools/Spellbound.Simulator`)
-- [ ] Bind `GameRules` from configuration (`TimeProvider.System` is already registered)
+- [x] Bind `GameRules` from configuration (`RulesSetup`, section `GameRules`; each match keeps the rules it started with)
 - [x] Persistence: a match as one jsonb snapshot in the host's `games` row, through the host's `DbSession` (see
   Decisions) *(was "EF Core mapping for games, seats, tiles, units and submissions")* (`MatchState`, `MatchStore`)
 - [x] The host runs matches started on demand instead of one always-on round (`RoundKeeper`, `IRoundLifecycle`, the

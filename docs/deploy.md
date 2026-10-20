@@ -133,6 +133,14 @@ updates them when it starts. Players see a short reconnect while the app restart
   image. Minor updates come with `docker compose pull db && docker compose up -d`. A new major version needs a dump
   and restore (as in Restoring, below) and a newer client in the `Dockerfile`, so it's a planned change, not an update.
 
+## Game rules
+
+New matches start under the rules in `GameRules` (`src/Spellbound.Domain/GameRules.cs`, explained in
+[game-design.md](game-design.md)). To try other numbers without a new build, set them in the environment, for example
+`GameRules__StartingMana=12` or `GameRules__Rounds=6`; a list is given item by item (`GameRules__WildYields__0=0`,
+`GameRules__WildYields__1=4`, …) and replaces the whole default list. Restart the app to apply them. Each match keeps the
+rules it started with, so matches already running don't change.
+
 ## Rate limits
 
 The app limits requests per IP address (see `RateLimits` in [Architecture](architecture.md#persistence-notes)). A

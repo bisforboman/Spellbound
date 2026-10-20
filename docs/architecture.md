@@ -83,6 +83,8 @@ an admin ends it. Bans are global (per account).
 - **Data access** is SQL through `HostDatabase` and `DbSession` (`Hosting/Database.cs`): one transaction per call,
   positional parameters (`$1`, `$2`), a `Jsonb` wrapper for jsonb values. Row locks (`SELECT … FOR UPDATE`) with a
   5-second `lock_timeout` are how the old game made a double tap wait for the first one.
+- **Rules for new matches** come from `RulesSetup`: `GameRules.Default` with any number overridden in the `GameRules`
+  configuration section (see deploy.md, "Game rules"). Each match stores its own rules, so a change only reaches new ones.
 - **Matches** (`Data/MatchStore.cs`): a match is a row in the host's `games` table (mode `match`). The row's `rules`
   holds its `GameRules` and its `state` (added by `Hosting/Sql/004`, opaque to the host like `rules`) holds a
   `StoredMatch`: the match's seed and its `MatchState`, the domain's explicit snapshot (`Match.Save`/`Match.Load`).
