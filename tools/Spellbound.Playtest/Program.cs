@@ -349,9 +349,28 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Commit:')");
                 await Expect(page, "Round 4 of 8");
             });
+            // A Ward on one of Merlin's tiles alongside a hold: every seat has a tile, and Ward is among the cheapest spells.
+            await StepAsync(merlin, "spell-pick", async page =>
+            {
+                await page.ClickAsync("label:has-text('Hold:')");
+                await page.ClickAsync("label:has-text('Ward')");
+                await Expect(page, "Choose where Ward goes");
+                await page.SelectOptionAsync("#spell-target", new SelectOptionValue { Index = 1 });
+                await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
+            });
+            await StepAsync(merlin, "spell-commit", async page =>
+            {
+                if (await page.Locator("button:has-text('Commit: Hold and Ward'):not([disabled])").CountAsync() == 0)
+                {
+                    await page.ClickAsync("label:has-text('No spell')"); // too little mana this run
+                }
+
+                await page.ClickAsync("button:has-text('Commit:')");
+                await Expect(page, "Round 5 of 8");
+            });
             await StepAsync(merlin, "to-the-end", async page =>
             {
-                for (var round = 4; round <= 8; round++)
+                for (var round = 5; round <= 8; round++)
                 {
                     await page.ClickAsync("label:has-text('Hold:')");
                     await page.ClickAsync("button:has-text('Commit: Hold')");
