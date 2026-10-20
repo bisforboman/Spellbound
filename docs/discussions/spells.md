@@ -1,7 +1,8 @@
-# Spells: a first set (proposal, 20 Oct 2026)
+# Spells: the first set (decided 20 Oct 2026)
 
-A proposal for "spells as a later use for mana" ([game-design.md](../game-design.md#resources)). Nothing here is a
-rule yet; the owner picks, and then the chosen ones go into the design document.
+How the first spells were chosen. The owner took all five, with **flat, small costs**, and chose **Cast as a fourth
+stance** rather than a spell alongside the stance (decision 1 below argues the other way; the open question it leaves
+is in [game-design.md](../game-design.md#spells)). The rules are in the design document.
 
 ## The problem they solve
 

@@ -33,6 +33,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   `GameRules`, `SeededRandom`)
 - [ ] Domain: setup (starting mana, trait draft of the same 3 for everyone); starting mana is in; the traits are
   designed (six, three offered per match: game-design.md, Traits), still to build, with the simulator's check by trait
+- [ ] Domain: spells (the Cast stance and five spells: game-design.md, Spells), designed, still to build, with the
+  simulator's mana numbers (unspent at the end, spent per stance and per spell) to check them
 - [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [x] Domain: a round's submission (one stance + moves) and its validation (`Orders`, `Match.Check`)
 - [x] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles
@@ -100,6 +102,6 @@ Most of this was built for the old game and stays:
   (`DomainJson` and the balance simulation are replaced by `MatchState` and `Simulation`)
 
 ## Later
-- Traits (full list), spells, more stances, more unit kinds and tile types, defender bonuses, teams, a ranked ladder
+- Traits (full list), more stances, more unit kinds and tile types, defender bonuses, teams, a ranked ladder
 - Real email (an SMTP service), if the game ever needs it
 - More sign-in options (Apple, passkeys), linked to the same account
