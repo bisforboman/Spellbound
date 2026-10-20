@@ -16,7 +16,7 @@
         var count = n;
         <label class="choice">
             <input type="radio" name="players" checked="@(players == count)" @onchange="() => players = count" />
-            <span><b>@count players</b>: you and @(count - 1) @(count == 2 ? "bot" : "bots"), on a map of @(Rules.MapRadius(count) == 2 ? 19 : 37) tiles.</span>
+            <span><b>@count players</b>: you and @(count - 1) @(count == 2 ? "bot" : "bots"), on a map of @Hex.Within(Rules.MapRadius(count)).Count tiles.</span>
         </label>
     }
 </fieldset>
