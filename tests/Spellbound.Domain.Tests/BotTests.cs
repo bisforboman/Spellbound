@@ -14,6 +14,12 @@ public class BotTests
 
         Assert.Equal(25 * players, report.FinalScores.Count);
         Assert.True(report.WinsBySeat.Sum() >= 25);
+        Assert.All(report.BySeat, seat =>
+        {
+            Assert.Equal(25, seat.Opening.Count);
+            Assert.Equal(25, seat.End.Count);
+            Assert.All(seat.Opening, o => Assert.Equal(GameRules.Default.OpeningUnveils, o.Tiles));
+        });
     }
 
     [Fact]

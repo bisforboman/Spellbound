@@ -34,6 +34,11 @@ public static class Simulation
         }
 
         report.ManaAfterOpening.AddRange(match.Seats.Select(s => s.Mana));
+        foreach (var seat in match.Seats)
+        {
+            report.BySeat[seat.Index].Opening.Add((seat.Tiles.Count, seat.Mana, seat.Tiles.Sum(h => match.Map[h].Yield ?? 0)));
+        }
+
         while (match.Phase == MatchPhase.Rounds)
         {
             var round = report.Rounds[match.CurrentRound - 1];
@@ -76,6 +81,11 @@ public static class Simulation
 
         report.MostImpsOnATile.Add(match.Map.Tiles.Max(t => match.UnitsOn(t.Hex).Imps));
         report.FinalScores.AddRange(match.Seats.Select(s => s.Score));
+        foreach (var seat in match.Seats)
+        {
+            report.BySeat[seat.Index].End.Add((seat.Tiles.Count, seat.Score));
+        }
+
         report.Spreads.Add(match.Standings[0].Score - match.Standings[^1].Score);
         foreach (var winner in match.Winners)
         {
@@ -111,6 +121,13 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         public Dictionary<string, int> Stances { get; } = new() { ["Attack"] = 0, ["Attune"] = 0, ["Summon"] = 0, ["Hold"] = 0 };
     }
 
+    /// <summary>One seat's numbers over all games, to show which phase opens a gap between seats.</summary>
+    public sealed class SeatStats
+    {
+        public List<(int Tiles, int Mana, int Yield)> Opening { get; } = [];
+        public List<(int Tiles, int Score)> End { get; } = [];
+    }
+
     public int Players => players;
     public int Games => games;
     public List<int> Bids { get; } = [];
@@ -122,6 +139,7 @@ public sealed class SimulationReport(int players, int games, int seed, int round
     public List<int> FinalScores { get; } = [];
     public List<int> Spreads { get; } = [];
     public int[] WinsBySeat { get; } = new int[players];
+    public IReadOnlyList<SeatStats> BySeat { get; } = [.. Enumerable.Range(0, players).Select(_ => new SeatStats())];
 
     public string ToMarkdown()
     {
@@ -153,6 +171,21 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine(c, $"- Most Imps on one tile at the end: average {Avg(MostImpsOnATile)}, highest {MostImpsOnATile.DefaultIfEmpty().Max()}.");
         md.AppendLine(c, $"- Final scores: average {Avg(FinalScores)}; first minus last: average {Avg(Spreads)}.");
         md.AppendLine(c, $"- Wins by seat (shared wins count for each): {string.Join(", ", WinsBySeat.Select((w, i) => $"seat {i + 1}: {w}"))}.");
+        md.AppendLine();
+        md.AppendLine("## By seat (averages per game)");
+        md.AppendLine();
+        md.AppendLine("| Seat | Tiles after the opening | Mana after the opening | Yield after the opening | Tiles at the end | Final score | Wins |");
+        md.AppendLine("|---|---|---|---|---|---|---|");
+        for (var i = 0; i < BySeat.Count; i++)
+        {
+            var s = BySeat[i];
+            md.AppendLine(c, $"| {i + 1} | {Avg(s.Opening.Select(o => o.Tiles))} | {Avg(s.Opening.Select(o => o.Mana))} | {Avg(s.Opening.Select(o => o.Yield))} | {Avg(s.End.Select(e => e.Tiles))} | {Avg(s.End.Select(e => e.Score))} | {WinsBySeat[i]} |");
+        }
+
+        // Wins are binomial: with no seat bias each seat expects games / players, give or take one standard deviation.
+        var share = 1.0 / players;
+        md.AppendLine();
+        md.AppendLine(c, $"With no seat bias, each seat wins about {(games * share).ToString("0", c)} games, give or take {Math.Sqrt(games * share * (1 - share)).ToString("0", c)} (one standard deviation); shared wins add a little. Check a gap with more games or another seed before reading it as a bias.");
         return md.ToString();
     }
 }
