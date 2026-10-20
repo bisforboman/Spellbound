@@ -58,7 +58,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
     preview), the round report, the end screen
   - [x] 6c: moves (any number, each unit one step, before the stance), and reports in the player's words ("You win",
     "Bot 2 attunes"); the trait pick waits for the traits themselves
-- [ ] Battle report text in the art direction's tone ([theme](theme.md))
+- [x] Battle report text in the art direction's tone ([theme](theme.md)): your battles end in a stamp (Conquered,
+  Repelled, Thwarted, Held, Lost), and the report and tile labels say "you" and "Bot N"
 - [ ] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll *(the layout and theme exist;
   the game's pages need the pass)*
 - [x] PWA manifest and icons so the game can be added to the home screen *(already built)*

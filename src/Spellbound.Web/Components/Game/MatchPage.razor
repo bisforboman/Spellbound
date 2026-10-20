@@ -24,11 +24,11 @@ else
         <span class="ledger-line">@me.Mana mana, @me.Tiles.Count tiles, @me.Score points.</span>
     </p>
 
-    <HexMap Match="match" You="you" Selected="selected" Highlight="auction" OnSelect="Select" />
+    <HexMap Match="match" You="you" Owners="view.Owners" Selected="selected" Highlight="auction" OnSelect="Select" />
 
     @if (selected is { } tile)
     {
-        <p class="tile-panel">@Seats.Describe(match, tile, you)@(auction.Contains(tile) ? ", up for auction" : "").</p>
+        <p class="tile-panel">@Seats.Describe(match, tile, you, view.Owners)@(auction.Contains(tile) ? ", up for auction" : "").</p>
     }
 
     @if (status is not null)
@@ -45,7 +45,7 @@ else
             var h = hex;
             <label class="choice">
                 <input type="radio" name="bid-tile" checked="@(selected == h)" @onchange="() => Select(h)" />
-                <span>@Seats.Describe(match, h, you)</span>
+                <span>@Seats.Describe(match, h, you, view.Owners)</span>
             </label>
         }
 
@@ -68,7 +68,7 @@ else
     }
     else if (view.IsRunning && match.Phase == MatchPhase.Rounds)
     {
-        <OrdersForm Match="match" You="you" Selected="selected" OnSelect="Select" OnCommit="CommitAsync" Busy="busy" />
+        <OrdersForm Match="match" You="you" Owners="view.Owners" Selected="selected" OnSelect="Select" OnCommit="CommitAsync" Busy="busy" />
     }
     else if (match.Phase == MatchPhase.Ended)
     {
@@ -80,9 +80,14 @@ else
     {
         <h2 class="h4 mt-4">What just happened</h2>
         <div class="match-report">
-            @foreach (var line in view.LastReport)
+            @{ var verdicts = Verdicts.Find(view.LastReport, you); }
+            @for (var i = 0; i < view.LastReport.Count; i++)
             {
-                <p>@Seats.Phrase(line, view.Owners, you)</p>
+                <p>@Seats.Phrase(view.LastReport[i], view.Owners, you)</p>
+                @if (verdicts.TryGetValue(i, out var verdict))
+                {
+                    <p class="stamp-line"><span class="stamp @(verdict.Won ? "stamp-victory" : "stamp-defeat")">@verdict.Text</span></p>
+                }
             }
         </div>
     }
