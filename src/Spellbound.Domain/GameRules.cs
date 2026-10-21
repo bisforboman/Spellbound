@@ -47,9 +47,13 @@ public sealed record GameRules
     /// <summary>The mana each Golem costs at the start of every round, after income.</summary>
     public int GolemUpkeep { get; init; } = 1;
 
-    /// <summary>An Attune costs this plus <see cref="AttunePricePerTile"/> for every tile the player already holds.</summary>
+    /// <summary>An Attune costs this plus <see cref="AttunePricePerTile"/> for each of the first
+    /// <see cref="AttuneCheapTiles"/> tiles the player already holds, and <see cref="AttunePricePerTileBeyond"/> for
+    /// each tile beyond them: cheap for a small realm, dear for a big one.</summary>
     public int AttuneBasePrice { get; init; } = 1;
-    public int AttunePricePerTile { get; init; } = 3;
+    public int AttunePricePerTile { get; init; } = 1;
+    public int AttuneCheapTiles { get; init; } = 3;
+    public int AttunePricePerTileBeyond { get; init; } = 3;
 
     /// <summary>The rounds that start with a later Unveil, which reveals the tiles still dark, split evenly (an odd one
     /// goes to the earlier round). After the last of them the whole map is revealed.</summary>
@@ -159,7 +163,8 @@ public sealed record GameRules
 
     public int PowerOf(UnitKind kind) => kind == UnitKind.Golem ? GolemPower : ImpPower;
 
-    public int AttunePrice(int tilesHeld) => AttuneBasePrice + AttunePricePerTile * tilesHeld;
+    public int AttunePrice(int tilesHeld) => AttuneBasePrice + AttunePricePerTile * Math.Min(tilesHeld, AttuneCheapTiles)
+        + AttunePricePerTileBeyond * Math.Max(0, tilesHeld - AttuneCheapTiles);
 
     public IReadOnlyList<int> YieldsOf(TileType type) => type switch
     {

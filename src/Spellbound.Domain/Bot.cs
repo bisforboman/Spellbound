@@ -217,6 +217,9 @@ public static class Bot
         var richAttune = richFree.Count == 0 ? null
             : Orders.Attune(seat, richFree.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First());
 
+        // Every plan takes land while it's cheap (a small realm's price): no real player passes up a tile for a few mana.
+        var cheap = attune is not null && rules.AttunePrice(me.Tiles.Count) <= rules.AttunePrice(rules.AttuneCheapTiles) ? attune : null;
+
         var border = mine.Where(h => match.Map.NeighboursOf(h).Any(n => match.OwnerOf(n) != seat)).ToList();
         var at = border.FirstOrDefault(mine[0]);
         var army = Orders.Summon(seat, at, UnitKind.Imp, Math.Max(1, me.Mana * 3 / 4));
@@ -239,12 +242,12 @@ public static class Bot
         IEnumerable<Orders?> order = plan switch
         {
             // A Warlord grows its army until it has a stack worth sending (8 power), then takes land as well.
-            Plan.Warlord => mine.Max(Power) >= WarlordStack ? [attack, defend, attune, army] : [attack, defend, army, attune],
-            Plan.Builder => [defend, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, attune, monsterAttack, some],
-            Plan.Spellcaster => [attack, defend, match.CurrentRound >= 2 ? Build(Upgrade.Sanctum) : null, attune, some],
+            Plan.Warlord => mine.Max(Power) >= WarlordStack ? [attack, defend, attune, army] : [attack, defend, cheap, army, attune],
+            Plan.Builder => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, attune, monsterAttack, some],
+            Plan.Spellcaster => [attack, defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Sanctum) : null, attune, some],
             Plan.Expander => [defend, attune, attack, some],
             // An Economist grows income: a Shrine on its best tile (from round 2), rich land first, monsters it can beat.
-            Plan.Economist => [defend, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, attune, some],
+            Plan.Economist => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, attune, some],
             _ => [],
         };
         return order.OfType<Orders>();
@@ -336,8 +339,9 @@ public static class Bot
             }
         }
 
-        // Every other round it summons before it attunes, so it has units to fight with.
-        var unitsFirst = match.CurrentRound % 2 == 0;
+        // Every other round it summons before it attunes, so it has units to fight with; but land comes first while it's
+        // cheap.
+        var unitsFirst = match.CurrentRound % 2 == 0 && rules.AttunePrice(me.Tiles.Count) > rules.AttunePrice(rules.AttuneCheapTiles);
         foreach (var orders in unitsFirst ? summons.Append(attune) : summons.Prepend(attune))
         {
             if (orders is not null)

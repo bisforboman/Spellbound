@@ -132,3 +132,35 @@ Still open:
   on and more neighbours to fight.
 - Every plan but Balanced ends with 14–19 mana. Part of that is the last round's income, which arrives after the last
   orders.
+
+## Third pass: after the second AI-taste session (21 Oct 2026)
+
+The bots and the AI players disagreed. At 1 + 3 per tile the strategy bots were even, but four of six AI players
+(`../playtests/ai-feedback.md`) couldn't grow after round 1: "growth came only from fighting". The bots couldn't
+show that, because most of them attuned only in round 1 anyway.
+
+The owner chose two changes:
+- **Attune 1 + 1 per tile for the first 3 tiles, then + 3 per tile beyond** (4 mana at 3 tiles, 7 at 4, 10 at 5).
+- **Blight not on the same tile two rounds running.**
+
+Every plan now takes land while it's cheap (at a small realm's price), before its own priorities. The Balanced bot
+does the same. No real player passes up a tile for a few mana, so a plan that does isn't a fair test.
+
+| Plan | 3 players: win rate | 5 players: win rate | Score | Land | Mana | Conquest | Upgrades | Mana left |
+|---|---|---|---|---|---|---|---|---|
+| Balanced | 21% | – | 19.7 | 9.9 | 5.5 | 0.8 | 2.5 | 11 |
+| Warlord | 34% | 23% | 20.8 | 10.8 | 5.7 | 2.4 | 0.8 | 21 |
+| Builder | 30% | 15% | 20.8 | 10.5 | 6.0 | 0.8 | 2.5 | 24 |
+| Spellcaster | 24% | 19% | 20.0 | 10.4 | 5.3 | 1.1 | 2.0 | 19 |
+| Expander | **56%** | **28%** | 22.9 | 13.5 | 6.7 | 1.1 | 0.4 | 25 |
+| Economist | 34% | 15% | 21.0 | 10.5 | 6.2 | 0.8 | 2.5 | 25 |
+
+- **Growth is open again.** In the everyday simulator, bots attune 1.6 times in round 2 (almost never before).
+- **The always-attune Expander bot is strong again**, and stays above the band with 5 players too. It is the one
+  plan that keeps attuning at the dear price.
+- **Other prices change little.** A steeper price beyond 3 tiles (+5) brings it to 49%. Scoring land at 1 per 4
+  tile-rounds brings it to 51%. The price beyond 3 tiles barely matters between +2 and +3.
+- **The owner chose to accept the strong Expander bot for now.** A third AI-taste session will judge the curve with
+  players who all grow, which the bots can't show.
+
+Still open: the march on empty tiles (the Wargamer's six captures in match 1), and catch-up for the last player.

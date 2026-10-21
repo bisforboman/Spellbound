@@ -80,7 +80,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   (on the owner's subscription, no API key); the first session's findings are in `playtests/2026-10-21-ai-players.md`
 - [x] Upgrades (Shrine, Tower, Sanctum) with the Build stance, from the AI tastes' feedback: rules, bots, simulator,
   the orders form and its playtest step
-- [x] Strategy bots (`--plans` in the simulator) and a retune so more plans pay off: Attune 1 + 3 per tile, 2 points
+- [x] Strategy bots (`--plans` in the simulator) and a retune so more plans pay off: Attune 1 + 1 per tile to 3 tiles then + 3 (after the second AI-taste session), Blight not on the same tile two rounds running, 2 points
   per conquest, mana produced 1 per 10, no points for unspent mana (`discussions/strategies.md`)
 - [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)
 

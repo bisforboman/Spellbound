@@ -9,6 +9,9 @@ public sealed partial class Match
     private readonly Dictionary<Hex, int> wards = [];
     private readonly HashSet<Hex> blights = [];
 
+    // The tiles blighted last round (they yielded nothing this round's income), which can't be blighted again now.
+    private readonly HashSet<Hex> blightedLastRound = [];
+
     /// <summary>What a seat's orders cost in mana if they go through, stance and spell together (an Attune that clashes
     /// costs nothing).</summary>
     public int CostOf(Orders orders) => StanceCostOf(orders) + SpellCostOf(orders);
@@ -154,6 +157,11 @@ public sealed partial class Match
                     return "Blight needs a rival's tile next to yours.";
                 }
 
+                if (blightedLastRound.Contains(target))
+                {
+                    return $"{target} was blighted last round; a tile can't be blighted two rounds running.";
+                }
+
                 cost = Rules.BlightCost;
                 effect = $"{Describe(target)} yields nothing in the next round's income";
                 break;
@@ -248,6 +256,8 @@ public sealed partial class Match
 
     private void ClearRoundSpells()
     {
+        blightedLastRound.Clear();
+        blightedLastRound.UnionWith(blights);
         wards.Clear();
         blights.Clear();
     }
