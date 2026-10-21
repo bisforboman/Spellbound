@@ -42,7 +42,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Golemwright | Golems | 1 point per 3 Golems you have at the end |
 | Spellweaver | casting every kind of spell | 1 point per different spell cast beyond the first |
 | Warden | keeping the land you started with | 1 point per tile from your opening still held, beyond the first (so at most 2) |
-| Hexer | Scorch and Blight | 1 point per Scorch or Blight cast |
+| Hexer | Scorch and Blight | 1 point per Scorch or Blight cast (a Scorch counts only if it burns something) |
 
 - No trait changes the Attune price, income, upkeep or a cost: they would snowball (principles 12 and 13).
 - **Measured** (1,000 bot games each; bots draft at random, bid like their trait and lean towards their trait's
@@ -233,6 +233,9 @@ yields, prices or income. Costs are flat and small.
   `playtests/2026-10-21-ai-players.md`): units that moved away before it, units another seat's Scorch burned first,
   or a Golem too strong to burn whole cost nothing. Its price went from 2 to 3 mana per power: at 2 it beat
   summoning defenders, because it stopped an attack before it landed without guessing which tile it would hit.
+  A Scorch too small to burn anything there (1 power against a Golem) is refused; one that ends up burning nothing
+  costs nothing and doesn't count as a cast for Hexer or Spellweaver (a free trait point otherwise, found by the
+  second AI session).
 - **Blight follows the tile:** if a blighted tile changes hands in the same round, its new owner gets nothing from it.
 
 - **Measured** (1,000 bot games, 3 players): cast alongside the stance, bots spend about 20 mana a match on spells

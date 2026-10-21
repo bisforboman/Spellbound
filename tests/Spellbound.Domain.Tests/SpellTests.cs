@@ -173,6 +173,27 @@ public class SpellTests
     }
 
     [Fact]
+    public void A_Scorch_that_would_burn_nothing_is_refused_and_one_that_burns_nothing_doesnt_count_for_traits()
+    {
+        var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Seats[1].Tiles.Any(t => t != b.Theirs && t.IsNextTo(b.Theirs)));
+        var (_, theirs) = Border(match, 0, 1)!.Value;
+        var away = match.Seats[1].Tiles.First(t => t != theirs && t.IsNextTo(theirs));
+        Play(match, Orders.Summon(1, theirs, UnitKind.Golem, 1));
+        var before = Snapshot(match);
+
+        // 1 power can't burn a Golem of power 3: refused, changing nothing.
+        var tooSmall = match.Check(Orders.Hold(0).Casting(Spell.Scorch, theirs, 1));
+        Assert.False(tooSmall.Succeeded);
+        Assert.Contains("would burn nothing", tooSmall.Lines[0], StringComparison.Ordinal);
+        Assert.Equal(before, Snapshot(match));
+
+        // A Scorch whose Golem walks away burns nothing, costs nothing, and isn't a cast for Hexer or Spellweaver.
+        Play(match, Orders.Hold(0).Casting(Spell.Scorch, theirs, 3), Orders.Hold(1, new Move(theirs, away, new Army(0, 1))));
+        Assert.Equal(0, match.Seats[0].HexesCast);
+        Assert.Empty(match.Seats[0].SpellsCast);
+    }
+
+    [Fact]
     public void An_attacks_preview_counts_your_own_Scorch()
     {
         var match = Bordering();
