@@ -113,22 +113,26 @@ public class TraitTests
     public void Goals_count_what_the_match_tracks_and_stop_at_the_cap()
     {
         var all = Enum.GetValues<Spell>();
-        var spellweaver = SeatZero(s => s with { Trait = Trait.Spellweaver, SpellsCast = all, HexesCast = 2 });
+        var spellweaver = SeatZero(s => s with { Trait = Trait.Spellweaver, SpellsCast = all, HexesCast = 2, RoundsCast = 5 });
+        var steady = SeatZero(s => s with { Trait = Trait.Spellweaver, SpellsCast = all, HexesCast = 2, RoundsCast = 6 });
         var hexer = SeatZero(s => s with { Trait = Trait.Hexer, SpellsCast = all, HexesCast = 3 });
 
-        Assert.Equal((5, 3), spellweaver.TraitGoal(spellweaver.Seats[0])); // 4 beyond the first, capped at 3
+        Assert.Equal((5, 2), spellweaver.TraitGoal(spellweaver.Seats[0])); // 1 per 2 different spells
+        Assert.Equal((5, 3), steady.TraitGoal(steady.Seats[0])); // and 1 for casting in 6 rounds
         Assert.Equal((3, 3), hexer.TraitGoal(hexer.Seats[0])); // 1 point per Scorch or Blight
     }
 
     [Fact]
     public void Weaver_and_Wanderer_count_connected_groups()
     {
-        Hex[] tiles = [new(0, 0), new(1, 0), new(1, -1), new(-2, 2)]; // a group of 3 and one apart
+        Hex[] tiles = [new(0, 0), new(1, 0), new(1, -1), new(0, -1), new(-2, 2), new(-2, 1)]; // groups of 4 and 2
         var weaver = SeatZero(s => s with { Trait = Trait.Weaver, Tiles = tiles });
         var wanderer = SeatZero(s => s with { Trait = Trait.Wanderer, Tiles = tiles });
+        var lone = SeatZero(s => s with { Trait = Trait.Wanderer, Tiles = [new(0, 0), new(1, 0), new(-2, 2)] });
 
-        Assert.Equal((3, 1), weaver.TraitGoal(weaver.Seats[0]));
-        Assert.Equal((2, 1), wanderer.TraitGoal(wanderer.Seats[0]));
+        Assert.Equal((4, 1), weaver.TraitGoal(weaver.Seats[0])); // 1 per 2 tiles beyond the first 2
+        Assert.Equal((2, 2), wanderer.TraitGoal(wanderer.Seats[0])); // 1 per group of 2 or more
+        Assert.Equal((1, 1), lone.TraitGoal(lone.Seats[0])); // a lone tile isn't a group
     }
 
     /// <summary>A fresh match whose first seat is changed through its saved state.</summary>
@@ -137,6 +141,26 @@ public class TraitTests
         var state = Fresh().Save();
         var seats = state.Seats.Select((s, i) => i == 0 ? change(s) : s with { Tiles = [] }).ToList();
         return Match.Load(state with { Seats = seats }, GameRules.Default);
+    }
+
+    [Fact]
+    public void Unspent_mana_scores_at_the_end()
+    {
+        var match = Opened(1);
+        Report report = null!;
+        while (match.Phase == MatchPhase.Rounds)
+        {
+            report = Play(match);
+        }
+
+        // Everyone held all match, so everyone has mana left: 1 point per 10.
+        foreach (var seat in match.Seats.Where(s => s.Mana >= 10))
+        {
+            Assert.Contains(report.Lines, l => l.StartsWith(
+                $"Seat {seat.Index + 1}'s {seat.Mana} unspent mana is worth {seat.Mana / 10} point", StringComparison.Ordinal));
+        }
+
+        Assert.Contains(match.Seats, s => s.Mana >= 10);
     }
 
     [Fact]

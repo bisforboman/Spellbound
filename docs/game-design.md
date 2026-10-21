@@ -35,22 +35,22 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 |---|---|---|
 | Wildheart | Wild land | 1 point per Wild tile held |
 | Hearthkeeper | Steady land | 1 point per Steady tile held |
-| Weaver | one connected realm | 1 point per 3 tiles in your largest connected group |
-| Wanderer | many separate footholds | 1 point per separate group of tiles beyond the first |
+| Weaver | one connected realm | 1 point per 2 tiles in your largest connected group beyond the first 2 (4 tiles = 1, 6 = 2, 8 = 3) |
+| Wanderer | many separate footholds | 1 point per separate group of 2 or more tiles (a lone tile doesn't count) |
 | Beastbane | clearing monsters | 1 point per monster tile cleared (on top of the conquest point) |
 | Warbrand | taking rivals' land | 1 point per rival tile taken (on top of the conquest point) |
 | Golemwright | Golems | 1 point per 3 Golems you have at the end |
-| Spellweaver | casting every kind of spell | 1 point per different spell cast beyond the first |
+| Spellweaver | casting every kind of spell | 1 point per 2 different spells cast, and 1 for casting spells in 6 rounds |
 | Warden | keeping the land you started with | 1 point per tile from your opening still held, beyond the first (so at most 2) |
 | Hexer | Scorch and Blight | 1 point per Scorch or Blight cast (a Scorch counts only if it burns something) |
 
 - No trait changes the Attune price, income, upkeep or a cost: they would snowball (principles 12 and 13).
 - **Measured** (1,000 bot games each; bots draft at random, bid like their trait and lean towards their trait's
-  tiles, units and spells): every trait wins between 27% and 38% of 3-player games (33% is even) and between 17% and
-  24% of 5-player games (20% is even). Wanderer and Spellweaver win least, Golemwright and Beastbane most. Goals average
-  0.5 (Beastbane) to 1.9 points (Hearthkeeper, Warbrand). *(21 Oct 2026: Golemwright went from 1 point per 2 Golems to
-  per 3, and Hexer from per 2 Scorches and Blights to per 1, once bots bid like their trait; see
-  `discussions/traits.md`.)*
+  tiles, units and spells): every trait wins between 25% and 39% of 3-player games (33% is even) and between 16% and
+  24% of 5-player games (20% is even). Spellweaver and Weaver win least. Goals average 0.5 (Beastbane) to 1.9 points.
+  *(21 Oct 2026, after the AI players' sessions: Spellweaver no longer hits its cap by round 4 (1 per 2 spells plus 1
+  for casting in 6 rounds); Wanderer counts groups of 2 or more instead of groups beyond the first; Weaver scores
+  from 4 tiles (bots' groups are often 3, so its bot average fell from 0.9 to 0.7); see `playtests/`.)*
 
 ## Map
 
@@ -215,7 +215,7 @@ yields, prices or income. Costs are flat and small.
 | Scorch | 3 mana per power that burns | a rival's tile next to yours | Burns up to that much of its units' power, weakest first (the battle loss rule). You pay only for what burns. Monsters are immune. |
 | Ward | 3 mana | one of your tiles, or the tile you attune this round | Its defence counts 3 more power in this round's battles. |
 | Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
-| Blight | 4 mana | a rival's tile next to yours | It yields nothing in the next round's income. |
+| Blight | 3 mana | a rival's tile next to yours | It yields nothing in the next round's income. |
 | Lure | 3 mana | a monster tile next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
 
 - **How spells resolve:** in seat order, after Attunes and Summons and before attacks. Two Wards on one tile add up, and
@@ -262,6 +262,7 @@ yields, prices or income. Costs are flat and small.
 | Mana produced | 1 per 12 mana your land produced (remainders carry over to the next round) |
 | Conquest | 1 per rival tile taken or monster tile cleared (kept even if the tile is lost again) |
 | Trait goals | set by each trait, scored once at the end, up to 3 (see *Traits*) |
+| Unspent mana | 1 per 10 mana left at the end, scored once (decided 21 Oct 2026: both AI sessions ended with 27–67 mana unspent, and late Scorches were dumps of mana worth nothing) |
 
 - **Tie-break:** most tiles held at the end; if still tied, most mana in hand.
 - **Scale** (changed 20 Oct 2026): a 3-player game ends around **18 points** a seat (about 12 for land, 5 for mana,

@@ -30,6 +30,7 @@ public sealed record SeatState(
     int MonstersCleared = 0,
     int RivalTilesTaken = 0,
     IReadOnlyList<Spell>? SpellsCast = null,
-    int HexesCast = 0);
+    int HexesCast = 0,
+    int RoundsCast = 0);
 
 public sealed record UnitsState(Hex Hex, int Imps, int Golems);

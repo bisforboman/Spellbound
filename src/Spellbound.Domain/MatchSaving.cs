@@ -15,7 +15,7 @@ public sealed partial class Match
             s.Mana, s.Score, s.ProducedThisRound, s.ProducedCarry, s.ConquestsThisRound,
             [.. s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)], s.LandCarry,
             [.. s.Offer], s.Trait, s.TraitPoints, [.. s.OpeningTiles], s.MonstersCleared, s.RivalTilesTaken,
-            [.. s.SpellsCast.Order()], s.HexesCast))],
+            [.. s.SpellsCast.Order()], s.HexesCast, s.RoundsCast))],
         [.. units.Where(u => !u.Value.IsEmpty).OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R)
             .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))]);
 
@@ -52,6 +52,7 @@ public sealed partial class Match
             }
 
             seat.HexesCast = s.HexesCast;
+            seat.RoundsCast = s.RoundsCast;
             foreach (var hex in s.Tiles)
             {
                 seat.Take(hex);
