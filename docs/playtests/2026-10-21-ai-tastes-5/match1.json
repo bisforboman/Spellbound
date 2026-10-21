@@ -411,7 +411,9 @@
     "Upgrades": [],
     "Blighted": []
   },
-  "Pending": {},
+  "Pending": {
+    "1": "{\u0022stance\u0022:\u0022attune\u0022,\u0022target\u0022:\u00220,0\u0022}"
+  },
   "LastReport": [
     "Round 2.",
     "Seat 2 attunes the Wild tile at (0, 1) (yields 1) for 7 mana.",
