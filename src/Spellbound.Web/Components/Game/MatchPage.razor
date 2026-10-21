@@ -17,6 +17,7 @@ else
 {
     var match = view.Match;
     var me = match.Seats[you];
+    <div class="match-page">
     <h1>Match @Id</h1>
     <p class="match-status">
         <b>@MatchStore.Describe(match, view.IsRunning)</b>.
@@ -29,13 +30,16 @@ else
         <p class="trait-line">Your trait: <b>@mine</b>, @match.GoalText(mine)</p>
     }
 
+    <section id="map">
     <HexMap Match="match" You="you" Owners="view.Owners" Selected="selected" Highlight="auction" OnSelect="Select" />
 
     @if (selected is { } tile)
     {
         <p class="tile-panel">@Seats.Describe(match, tile, you, view.Owners)@(auction.Contains(tile) ? ", up for auction" : "").</p>
     }
+    </section>
 
+    <section id="orders">
     @if (status is not null)
     {
         <p class="alert alert-warning" role="alert">@status</p>
@@ -56,7 +60,12 @@ else
                 </label>
             }
         </fieldset>
-        <button type="button" class="btn btn-primary btn-lg w-100 mt-2" disabled="@(busy || trait is null)" @onclick="ChooseTraitAsync">Choose @(trait?.ToString() ?? "a trait")</button>
+        <div class="action-bar">
+            <p class="action-sum">@(trait is { } t2 ? $"{t2}: {match.GoalText(t2)}" : "Choose one of your two traits.")</p>
+            <div class="action-row">
+                <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || trait is null)" @onclick="ChooseTraitAsync">Choose @(trait?.ToString() ?? "a trait")</button>
+            </div>
+        </div>
     }
     else if (view.IsRunning && match.Phase == MatchPhase.Opening)
     {
@@ -85,8 +94,13 @@ else
             </div>
         }
 
-        <button type="button" class="btn btn-primary btn-lg w-100" disabled="@(busy || check is not { Succeeded: true })" @onclick="BidAsync">Bid @amount mana</button>
-        <button type="button" class="btn btn-outline-primary btn-lg w-100 mt-2" disabled="@busy" @onclick="PassAsync">Pass</button>
+        <div class="action-bar">
+            <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@(check?.Lines[0] ?? "Choose a tile to bid on, or pass.")</p>
+            <div class="action-row">
+                <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="PassAsync">Pass</button>
+                <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || check is not { Succeeded: true })" @onclick="BidAsync">Bid @amount mana</button>
+            </div>
+        </div>
     }
     else if (view.IsRunning && match.Phase == MatchPhase.Rounds)
     {
@@ -97,23 +111,40 @@ else
         <h2 class="h4">The match is over</h2>
         <p>After @match.Rules.Rounds rounds, the most points wins; ties go to the most tiles, then the most mana.</p>
     }
+    </section>
 
     @if (view.LastReport.Count > 0)
     {
+        <section id="report">
         <h2 class="h4 mt-4">What just happened</h2>
         <div class="match-report">
-            @{ var verdicts = Verdicts.Find(view.LastReport, you); }
+            @{
+                var verdicts = Verdicts.Find(view.LastReport, you);
+                var yours = Verdicts.Yours(view.LastReport, you);
+                var hidden = view.LastReport.Count - yours.Count;
+            }
             @for (var i = 0; i < view.LastReport.Count; i++)
             {
-                <p>@Seats.Phrase(view.LastReport[i], view.Owners, you)</p>
-                @if (verdicts.TryGetValue(i, out var verdict))
+                @if (fullReport || yours.Contains(i))
                 {
-                    <p class="stamp-line"><span class="stamp @(verdict.Won ? "stamp-victory" : "stamp-defeat")">@verdict.Text</span></p>
+                    <p>@Seats.Phrase(view.LastReport[i], view.Owners, you)</p>
+                    @if (verdicts.TryGetValue(i, out var verdict))
+                    {
+                        <p class="stamp-line"><span class="stamp @(verdict.Won ? "stamp-victory" : "stamp-defeat")">@verdict.Text</span></p>
+                    }
                 }
             }
         </div>
+        @if (hidden > 0)
+        {
+            <button type="button" class="btn btn-link report-toggle" @onclick="() => fullReport = !fullReport">
+                @(fullReport ? "Only what concerns you" : $"Everything that happened ({hidden} more {(hidden == 1 ? "line" : "lines")})")
+            </button>
+        }
+        </section>
     }
 
+    <section id="standings">
     <h2 class="h4 mt-4">Standings</h2>
     <table class="table standings">
         <thead><tr><th>Seat</th><th>Points</th><th>Tiles</th><th>Mana</th></tr></thead>
@@ -138,7 +169,16 @@ else
     {
         <p><b>@string.Join(" and ", match.Winners.Select(w => Seats.Name(view, w.Index, you))) @(match.Winners.Count == 1 && match.Winners[0].Index != you ? "wins" : "win").</b></p>
     }
+    </section>
     <p><a href="">Back home</a></p>
+    </div>
+
+    <nav class="match-tabs" aria-label="Match">
+        <a href="match/@Id#map">Map</a>
+        <a href="match/@Id#orders">@(match.Phase == MatchPhase.Ended ? "End" : "Orders")</a>
+        <a href="match/@Id#report">Report</a>
+        <a href="match/@Id#standings">Standings</a>
+    </nav>
 }
 
 @code {
@@ -155,6 +195,7 @@ else
     private Hex? selected;
     private int amount = 1;
     private Trait? trait;
+    private bool fullReport;
     private string? status;
     private bool loading = true;
     private bool busy;

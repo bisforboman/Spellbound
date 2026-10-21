@@ -53,4 +53,24 @@ public class VerdictsTests
     {
         Assert.Empty(Verdicts.Find([Attack, "Seat 1 takes (0, 1) with 1 Imp."], you: 2));
     }
+
+    [Fact]
+    public void The_short_report_keeps_your_lines_your_battles_and_where_the_match_is()
+    {
+        string[] lines =
+        [
+            "Round 3.",
+            "Seat 2 attunes the Wild tile at (1, 1) (yields 2) for 4 mana.",
+            Attack,
+            "Seat 1 takes (0, 1) with 1 Imp.",
+            "Seat 3 (2 Imps) attack the Steady tile at (2, 0) (yields 2), Seat 2's, held by no units: power 2 against 0.",
+            "Seat 3 takes (2, 0) with 2 Imps.",
+            "Seat 1 banks 5 points.",
+            "Seat 10 banks 1 point.",
+            "Round 4 of 8 begins.",
+        ];
+
+        Assert.Equal([0, 2, 3, 6, 8], Verdicts.Yours(lines, you: 0).Order());
+        Assert.Equal([0, 1, 2, 3, 4, 5, 8], Verdicts.Yours(lines, you: 1).Order()); // defended twice
+    }
 }
