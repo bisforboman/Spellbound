@@ -125,8 +125,8 @@ internal static class View
 
         A ROUND: income, then Golem upkeep ({{r.GolemUpkeep}} mana each; unpaid Golems dissolve). Then each player picks
         ONE stance, plus any moves, plus at most ONE spell:
-          attune: claim a free, unguarded tile next to yours. Costs {{r.AttuneBasePrice}} + {{r.AttunePricePerTile}} per
-            tile you hold. Two players attuning the same tile: nobody gets it, nobody pays.
+          attune: claim a free, unguarded tile next to yours. Costs {{r.AttuneBasePrice}} + {{r.AttunePricePerTile}} for
+            each of the first {{r.AttuneCheapTiles}} tiles you hold, + {{r.AttunePricePerTileBeyond}} for each tile beyond them. Two players attuning the same tile: nobody gets it, nobody pays.
           summon: units on one of your tiles. Imp: power {{r.ImpPower}}, {{r.ImpCost}} mana. Golem: power
             {{r.GolemPower}}, {{r.GolemCost}} mana, upkeep {{r.GolemUpkeep}}.
           attack: a rival's tile or a monster tile next to your units; say how many units go from each of your tiles next
@@ -151,7 +151,8 @@ internal static class View
             power this round.
           Spells see the round as it will be: they can use what you attune or summon this round.
           leyline ({{r.LeylineManaPerUnit}} per unit, at least {{r.LeylineMinCost}}): move units between any two of your tiles.
-          blight ({{r.BlightCost}} mana): a rival's tile next to yours yields nothing in the next round's income.
+          blight ({{r.BlightCost}} mana): a rival's tile next to yours yields nothing in the next round's income; not the
+            same tile two rounds running.
           lure ({{r.LureCost}} mana): a monster tile next to yours loses {{r.LurePower}} guard power for good (never below {{r.MinGuard}}).
 
         POINTS, banked every round and never lost: 1 per {{r.TilesPerPoint}} tile-rounds held (tiles held, added up each

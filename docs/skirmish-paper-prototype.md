@@ -26,7 +26,7 @@ Each player now holds 3 tiles, scattered or connected.
 1. **Income:** each player collects the mana yield of every tile they hold.
 2. **Upkeep:** pay 1 mana per Golem. A Golem you can't pay for dissolves.
 3. **Commit, in secret:** one stance plus any unit moves. Reveal together. (Later Unveils in rounds 2 and 4 happen before income.)
-   - **Attune:** claim one free, unguarded tile next to any tile you own. Cost: **1 + 3 × the number of tiles you hold**. If two players attune the same tile, nobody gets it and nobody pays.
+   - **Attune:** claim one free, unguarded tile next to any tile you own. Cost: **1 + 1 for each of your first 3 tiles, + 3 for each tile beyond**. If two players attune the same tile, nobody gets it and nobody pays.
    - **Summon:** spend mana on one kind of unit, placed on one of your tiles. **Imp:** power 1, costs 1. **Golem:** power 3, costs 2, upkeep 1.
    - **Attack:** pick a rival's tile or a monster tile next to one of yours, and the units that attack (from your adjacent tiles).
    - **Moves:** any number of units, each one step between your own adjacent tiles, within a connected group.
@@ -50,7 +50,7 @@ After round 8, most points wins. Tie-break: most tiles held, then most mana in h
 
 - Is 9 starting mana enough for the opening? Do bids end up all 1s and 2s, or does someone spend everything?
 - Are there enough free tiles to attune after the opening, or does the 19-hex map run out at once?
-- Is Attune at 1 + 3 × tiles held too cheap or too dear?
+- Is this Attune price too cheap or too dear?
 - Do Imps pile up into an unbeatable horde?
 - Is anyone ever attacked, or does everyone just attune?
 - How long does a round take to explain and to play?

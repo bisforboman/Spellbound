@@ -76,6 +76,28 @@ public class SpellTests
     }
 
     [Fact]
+    public void A_tile_cant_be_blighted_two_rounds_running_even_after_a_save()
+    {
+        var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Map[b.Theirs].Yield > 0);
+        var (_, theirs) = Border(match, 0, 1)!.Value;
+        Play(match, Orders.Hold(0).Casting(Spell.Blight, theirs));
+        match = Match.Load(match.Save(), match.Rules);
+        var again = Orders.Hold(0).Casting(Spell.Blight, theirs);
+        var before = System.Text.Json.JsonSerializer.Serialize(match.Save());
+
+        var check = match.Check(again);
+        var report = match.Resolve([again, Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+
+        Assert.False(check.Succeeded);
+        Assert.Contains("can't be blighted two rounds running", check.Lines[0], StringComparison.Ordinal);
+        Assert.False(report.Succeeded);
+        Assert.Equal(before, System.Text.Json.JsonSerializer.Serialize(match.Save()));
+
+        Play(match);
+        Assert.True(match.Check(again).Succeeded); // a round later it can be blighted again
+    }
+
+    [Fact]
     public void Lure_weakens_monster_guards_for_good_but_not_below_one()
     {
         var rules = GameRules.Default with { GuardedFaces = 6 };
@@ -122,7 +144,7 @@ public class SpellTests
         Play(match, orders);
 
         Assert.Contains(check.Lines, l => l.StartsWith("Cast Ward for 3 mana", StringComparison.Ordinal));
-        Assert.Contains(check.Lines, l => l.StartsWith("All together: 13 mana", StringComparison.Ordinal)); // Attune 10 + Ward 3
+        Assert.Contains(check.Lines, l => l.StartsWith("All together: 7 mana", StringComparison.Ordinal)); // Attune 4 + Ward 3
         Assert.Equal(0, match.OwnerOf(free));
     }
 

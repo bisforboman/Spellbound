@@ -14,7 +14,8 @@ public sealed record MatchState(
     IReadOnlyList<TileState> Tiles,
     IReadOnlyList<SeatState> Seats,
     IReadOnlyList<UnitsState> Units,
-    IReadOnlyList<UpgradeState>? Upgrades = null)
+    IReadOnlyList<UpgradeState>? Upgrades = null,
+    IReadOnlyList<Hex>? Blighted = null)
 {
     public const int CurrentVersion = 1;
 }
