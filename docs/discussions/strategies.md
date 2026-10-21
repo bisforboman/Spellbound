@@ -17,13 +17,14 @@ dotnet run --project tools/Spellbound.Simulator -- --players 3 --games 2000 --pl
 | Balanced | today's bot: attack what it can beat, else attune or summon (alternating rounds), build and cast with spare mana | the usual |
 | Warlord | attack; otherwise summon an Imp army (¾ of its mana) until it holds a stack of 8 power, then attune too | spells with 3 to spare; Scorch first |
 | Builder | upgrades from round 2 (a Shrine, or a Tower on a threatened tile), then attune; fights only monsters | spells only with 10 to spare |
-| Spellcaster | attack what it can beat, then a Sanctum, then attune | a spell every round it can afford |
+| Spellcaster | attack what it can beat, then a Sanctum (from round 2), then attune | a spell every round it can afford |
 | Expander | attune every round it can | spells only with 10 to spare |
 | Hoarder | passes every auction; attunes only while it's cheap (4 or less); clears monsters it can beat; otherwise holds | Ward only, with 12 to spare |
-| Economist (replaced the Hoarder) | a Shrine on its best open tile from round 2, then attunes only rich land (yield 2 or more), clears monsters it can beat | Ward or Blight only, with 10 to spare |
+| Economist (replaced the Hoarder) | a Shrine on its best open tile from round 2, then attunes rich land (yield 2 or more) first, clears monsters it can beat, else attunes any land | Ward or Blight only, with 10 to spare |
 
 Every plan defends first when a rival's stack next to it outweighs its own: it summons just enough Imps there. Every
-plan gives only orders that check.
+plan gives only orders that check. In the last round every plan (Balanced too) attacks if it can, else buys an
+upgrade, because mana left at the end scores nothing.
 
 The setup:
 - With 5 players, each match has the five specialists, one each.
@@ -99,3 +100,35 @@ Against the band (27–40% with 3 players, 16–24% with 5):
 With 3 players, four of six plans are now in the band (three were before), and none is below 0.7× except the
 Spellcaster. With 5 players the spread is narrower (11–28% instead of 5–42%), but only the Spellcaster is inside the
 band: the Warlord and the Expander sit just above it, the Builder and the Economist below.
+
+## Second pass (21 Oct 2026)
+
+First, the bots were fixed where they played badly:
+- The Spellcaster built its Sanctum in round 1, which starved its land; it now waits for round 2, as the others do.
+- The Economist skipped land when nothing rich was next to it; it now falls back to any land.
+- Every bot now spends in the last round: an attack, else an upgrade.
+
+That brought the Spellcaster from 18% to 25%, but the Expander still won 55% of 3-player games. The simulator gained
+`--set Rule=value` to measure a rule change before making it. Of the two options, scoring land at 1 per 4 tile-rounds
+only brought the Expander to 50% and cut every score by about 2.5. **Attune at 1 + 3 per tile held** brought it to
+41%, with land points almost unchanged (9.6 to 9.4 a seat). The owner chose that.
+
+| Plan | 3 players: win rate | 5 players: win rate | Score | Land | Mana | Conquest | Upgrades | Mana left |
+|---|---|---|---|---|---|---|---|---|
+| Balanced | 28% | – | 18.8 | 9.2 | 5.1 | 1.6 | 2.0 | 8 |
+| Warlord | 37% | 25% | 19.8 | 9.5 | 5.1 | 3.4 | 0.8 | 16 |
+| Builder | 33% | 15% | 19.2 | 9.2 | 5.6 | 1.1 | 2.4 | 18 |
+| Spellcaster | 28% | 22% | 18.5 | 9.3 | 4.9 | 1.7 | 1.5 | 14 |
+| Expander | 41% | 24% | 19.9 | 11.3 | 5.9 | 1.4 | 0.3 | 17 |
+| Economist | 33% | 14% | 19.2 | 9.2 | 5.8 | 1.1 | 2.3 | 19 |
+
+With 3 players every plan is now between 0.85× and 1.25× a fair share. With 5 players the spread is 14–25%:
+- the Spellcaster and the Expander are in the band;
+- the Warlord is just above it;
+- the Builder and the Economist are just below it, but not under 0.7×.
+
+Still open:
+- With 5 players, the plans that stay home (Builder, Economist) do a little worse. A crowded map leaves less to build
+  on and more neighbours to fight.
+- Every plan but Balanced ends with 14–19 mana. Part of that is the last round's income, which arrives after the last
+  orders.

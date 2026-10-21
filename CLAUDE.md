@@ -33,6 +33,7 @@ dotnet run --project src/Spellbound.Web
 dotnet run --project tools/Spellbound.Playtest     # plays every page in a phone-sized browser; see .claude/skills/playtest
 dotnet run --project tools/Spellbound.Simulator -- --players 3 --games 1000   # bot-vs-bot balance report (Markdown)
 dotnet run --project tools/Spellbound.Simulator -- --players 3 --games 2000 --plans   # strategy bots: does each plan pay off?
+dotnet run --project tools/Spellbound.Simulator -- --plans --set AttunePricePerTile=3   # measure a rule change before making it
 ```
 
 To change a table (not the jsonb game state), add a numbered SQL script: `src/Spellbound.Web/Hosting/Sql/` for the
