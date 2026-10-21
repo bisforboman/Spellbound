@@ -65,3 +65,58 @@ the Casual player asked for twice. Not designed yet.
 This would be a second fix for the same complaint that reinforcements (#89) just addressed: mana piles up, and there
 is one action a round. The fifth AI-taste session hasn't measured reinforcements yet. Shipping both without that
 measurement would make it hard to tell which helped.
+
+## Decided so far (21 Oct 2026, the owner)
+
+- Design follow orders in detail now.
+- Measure reinforcements first, in the fifth AI-taste session.
+- Build follow orders after that, knowing what reinforcements did.
+
+## Follow orders in detail (a proposal, not yet built)
+
+**The rule.** Alongside your stance you may commit one **follow order**:
+- It is an Attune, a Summon or a Build, in a stance other than your own.
+- It **happens only if some rival's stance this round is the same** (and is aimed at something).
+- If it happens, it costs the usual price **plus 2 mana**. If it doesn't, it costs nothing and nothing happens.
+- No following Attack. A conditional attack would be a second army order every round, too strong and too much to
+  read.
+
+**The privilege of the one who chose.**
+- They pay the normal price.
+- **They win a clash with a follower:** if a chooser and a follower attune the same tile, the chooser gets it.
+  Normally a clash gives the tile to nobody. Between followers, or between choosers, nobody gets it, as now.
+
+**When it resolves:** with its stance's step, so a follow Attune with the Attunes, a follow Summon with the Summons
+and a follow Build with the Builds. Spells come after, so a follow Summon can be warded or ride a Leyline.
+
+**What it costs to check:** when you commit, the check counts the follow order as if it will happen. Your stance, your
+spell and the follow order must fit your mana together, so nothing fails later.
+
+**The report:**
+- "Seat 3 follows Attune: attunes the Wild tile at (1, 0) for 6 mana."
+- A follow order that doesn't happen is reported only to its seat: "Nobody chose Summon; your follow order did
+  nothing."
+- The fog applies as for any order.
+
+**One extra, not two.** The orders form already has four extras. Follow orders and reinforcements share one slot,
+"Alongside": with an Attack you may reinforce, or follow; with any other stance, follow. That keeps the form at four
+extras.
+
+**Bots:**
+- follow Attune when cheap land is next to them and their own stance isn't Attune;
+- follow Summon when a rival's stack threatens them;
+- follow Build from round 3 with mana to spare.
+- Their follow orders go through the same `Check`, so the strategy bots measure it with `--plans` like everything
+  else.
+
+**What it touches:**
+- `Orders` (a `Follow` part);
+- `Check` (a follow problem and the combined cost);
+- `Resolve` (which stances were chosen, then the follow orders in each step, and the chooser's clash privilege);
+- bots, the orders form, the Table's JSON and rules text, tests, docs, and a playtest step.
+
+Medium.
+
+**Numbers to measure first** (with `--set`):
+- the surcharge: +2, or +1;
+- whether Build is followable.

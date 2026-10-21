@@ -1,32 +1,16 @@
 {
   "Seed": 71,
-  "Step": 0,
+  "Step": 3,
   "AiSeats": [
     0,
     1
   ],
   "Match": {
     "Version": 1,
-    "Phase": "Opening",
-    "OpeningUnveil": 1,
-    "CurrentRound": 0,
-    "OnAuction": [
-      {
-        "Q": 0,
-        "R": 2,
-        "S": -2
-      },
-      {
-        "Q": -1,
-        "R": 0,
-        "S": 1
-      },
-      {
-        "Q": 2,
-        "R": 0,
-        "S": -2
-      }
-    ],
+    "Phase": "Rounds",
+    "OpeningUnveil": 0,
+    "CurrentRound": 1,
+    "OnAuction": [],
     "Tiles": [
       {
         "Hex": {
@@ -35,7 +19,7 @@
           "S": 2
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 3,
         "Guard": 0
       },
       {
@@ -45,7 +29,7 @@
           "S": 1
         },
         "Type": "Wild",
-        "Yield": null,
+        "Yield": 4,
         "Guard": 0
       },
       {
@@ -65,7 +49,7 @@
           "S": 2
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -95,7 +79,7 @@
           "S": -1
         },
         "Type": "Wild",
-        "Yield": null,
+        "Yield": 4,
         "Guard": 0
       },
       {
@@ -115,7 +99,7 @@
           "S": 1
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -165,7 +149,7 @@
           "S": 0
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 1,
         "Guard": 0
       },
       {
@@ -195,7 +179,7 @@
           "S": 0
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -205,7 +189,7 @@
           "S": -1
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 3,
         "Guard": 0
       },
       {
@@ -221,20 +205,52 @@
     ],
     "Seats": [
       {
-        "Mana": 9,
+        "Mana": 12,
         "Score": 0,
-        "ProducedThisRound": 0,
+        "ProducedThisRound": 7,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
-        "Tiles": [],
+        "Tiles": [
+          {
+            "Q": -2,
+            "R": 1,
+            "S": 1
+          },
+          {
+            "Q": -1,
+            "R": -1,
+            "S": 2
+          },
+          {
+            "Q": -1,
+            "R": 0,
+            "S": 1
+          }
+        ],
         "LandCarry": 0,
         "Offer": [
           "Hexer",
           "Golemwright"
         ],
-        "Trait": null,
+        "Trait": "Golemwright",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": -2,
+            "R": 1,
+            "S": 1
+          },
+          {
+            "Q": -1,
+            "R": -1,
+            "S": 2
+          },
+          {
+            "Q": -1,
+            "R": 0,
+            "S": 1
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
         "SpellsCast": [],
@@ -244,20 +260,52 @@
         "GuessPoints": 0
       },
       {
-        "Mana": 9,
+        "Mana": 14,
         "Score": 0,
-        "ProducedThisRound": 0,
+        "ProducedThisRound": 8,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
-        "Tiles": [],
+        "Tiles": [
+          {
+            "Q": -1,
+            "R": 2,
+            "S": -1
+          },
+          {
+            "Q": 0,
+            "R": -1,
+            "S": 1
+          },
+          {
+            "Q": 0,
+            "R": 2,
+            "S": -2
+          }
+        ],
         "LandCarry": 0,
         "Offer": [
           "Hearthkeeper",
           "Weaver"
         ],
-        "Trait": null,
+        "Trait": "Weaver",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": -1,
+            "R": 2,
+            "S": -1
+          },
+          {
+            "Q": 0,
+            "R": -1,
+            "S": 1
+          },
+          {
+            "Q": 0,
+            "R": 2,
+            "S": -2
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
         "SpellsCast": [],
@@ -267,12 +315,28 @@
         "GuessPoints": 0
       },
       {
-        "Mana": 9,
+        "Mana": 13,
         "Score": 0,
-        "ProducedThisRound": 0,
+        "ProducedThisRound": 10,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
-        "Tiles": [],
+        "Tiles": [
+          {
+            "Q": -2,
+            "R": 0,
+            "S": 2
+          },
+          {
+            "Q": 2,
+            "R": -1,
+            "S": -1
+          },
+          {
+            "Q": 2,
+            "R": 0,
+            "S": -2
+          }
+        ],
         "LandCarry": 0,
         "Offer": [
           "Beastbane",
@@ -280,7 +344,23 @@
         ],
         "Trait": "Beastbane",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": -2,
+            "R": 0,
+            "S": 2
+          },
+          {
+            "Q": 2,
+            "R": -1,
+            "S": -1
+          },
+          {
+            "Q": 2,
+            "R": 0,
+            "S": -2
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
         "SpellsCast": [],
@@ -295,6 +375,35 @@
     "Blighted": []
   },
   "Pending": {},
-  "LastReport": [],
-  "LastReportTags": null
+  "LastReport": [
+    "Seat 3 wins the Shifting tile at (2, -1) (yields 3) for 2 mana.",
+    "Seat 1 gets the Steady tile at (-1, -1) (yields 2) for free.",
+    "Seat 2 gets the Steady tile at (0, -1) (yields 2) for free.",
+    "The opening is over. The rounds begin.",
+    "Every trait stays secret until the end. Guess a rival\u0027s alongside your orders, once per rival.",
+    "Round 1 of 8 begins.",
+    "Seat 1 collects 7 mana.",
+    "Seat 2 collects 8 mana.",
+    "Seat 3 collects 10 mana."
+  ],
+  "LastReportTags": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+      "Seat": 0,
+      "At": []
+    },
+    {
+      "Seat": 1,
+      "At": []
+    },
+    {
+      "Seat": 2,
+      "At": []
+    }
+  ]
 }

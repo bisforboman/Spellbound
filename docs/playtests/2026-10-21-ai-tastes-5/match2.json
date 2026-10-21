@@ -1,6 +1,6 @@
 {
   "Seed": 72,
-  "Step": 0,
+  "Step": 2,
   "AiSeats": [
     0,
     1
@@ -8,22 +8,22 @@
   "Match": {
     "Version": 1,
     "Phase": "Opening",
-    "OpeningUnveil": 1,
+    "OpeningUnveil": 3,
     "CurrentRound": 0,
     "OnAuction": [
       {
         "Q": 0,
-        "R": 2,
-        "S": -2
+        "R": 0,
+        "S": 0
       },
       {
-        "Q": -1,
-        "R": 2,
-        "S": -1
+        "Q": 0,
+        "R": -2,
+        "S": 2
       },
       {
-        "Q": -2,
-        "R": 2,
+        "Q": 1,
+        "R": -1,
         "S": 0
       }
     ],
@@ -65,7 +65,7 @@
           "S": 2
         },
         "Type": "Wild",
-        "Yield": null,
+        "Yield": 1,
         "Guard": 0
       },
       {
@@ -105,7 +105,7 @@
           "S": 2
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -125,7 +125,7 @@
           "S": 0
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 1,
         "Guard": 0
       },
       {
@@ -135,7 +135,7 @@
           "S": -1
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -155,7 +155,7 @@
           "S": 1
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -165,7 +165,7 @@
           "S": 0
         },
         "Type": "Wild",
-        "Yield": null,
+        "Yield": 3,
         "Guard": 0
       },
       {
@@ -195,7 +195,7 @@
           "S": 0
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -215,24 +215,35 @@
           "S": -2
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       }
     ],
     "Seats": [
       {
-        "Mana": 9,
+        "Mana": 5,
         "Score": 0,
         "ProducedThisRound": 0,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
-        "Tiles": [],
+        "Tiles": [
+          {
+            "Q": -2,
+            "R": 2,
+            "S": 0
+          },
+          {
+            "Q": 0,
+            "R": 1,
+            "S": -1
+          }
+        ],
         "LandCarry": 0,
         "Offer": [
           "Warden",
           "Weaver"
         ],
-        "Trait": null,
+        "Trait": "Weaver",
         "TraitPoints": 0,
         "OpeningTiles": [],
         "MonstersCleared": 0,
@@ -244,18 +255,29 @@
         "GuessPoints": 0
       },
       {
-        "Mana": 9,
+        "Mana": 6,
         "Score": 0,
         "ProducedThisRound": 0,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
-        "Tiles": [],
+        "Tiles": [
+          {
+            "Q": 0,
+            "R": 2,
+            "S": -2
+          },
+          {
+            "Q": 2,
+            "R": 0,
+            "S": -2
+          }
+        ],
         "LandCarry": 0,
         "Offer": [
           "Beastbane",
           "Wildheart"
         ],
-        "Trait": null,
+        "Trait": "Wildheart",
         "TraitPoints": 0,
         "OpeningTiles": [],
         "MonstersCleared": 0,
@@ -272,7 +294,18 @@
         "ProducedThisRound": 0,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
-        "Tiles": [],
+        "Tiles": [
+          {
+            "Q": -1,
+            "R": -1,
+            "S": 2
+          },
+          {
+            "Q": -1,
+            "R": 2,
+            "S": -1
+          }
+        ],
         "LandCarry": 0,
         "Offer": [
           "Spellweaver",
@@ -295,6 +328,14 @@
     "Blighted": []
   },
   "Pending": {},
-  "LastReport": [],
-  "LastReportTags": null
+  "LastReport": [
+    "Seat 1 wins the Shifting tile at (0, 1) (yields 2) for 4 mana.",
+    "Seat 2 gets the Steady tile at (2, 0) (yields 2) for free.",
+    "Seat 3 gets the Wild tile at (-1, -1) (yields 1) for free."
+  ],
+  "LastReportTags": [
+    null,
+    null,
+    null
+  ]
 }
