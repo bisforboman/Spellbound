@@ -31,8 +31,9 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 
 - [x] Domain: hex map (19 or 37 tiles), tile types and yields fixed at Unveil, all from a seed (`Hex`, `GameMap`,
   `GameRules`, `SeededRandom`)
-- [ ] Domain: setup (starting mana, trait draft of the same 3 for everyone); starting mana is in; the traits are
-  designed (six, three offered per match: game-design.md, Traits), still to build, with the simulator's check by trait
+- [x] Domain: setup (starting mana, the trait draft: each player their own 2 of a pool of 10, none shared:
+  game-design.md, Traits), bots that draft and lean towards their trait, and the simulator's win rate and goal points
+  by trait
 - [x] Domain: spells (five spells cast alongside the stance: game-design.md, Spells), bots that cast, and the
   simulator's mana numbers (unspent at the end, spent per stance and on spells, spells cast, Imps and Golems summoned)
 - [x] Pages: a "Spell (optional)" section on the orders form (a spell, its target and how much, with the preview), and
@@ -61,7 +62,9 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   - [x] 6b: the rounds' orders (stance buttons, targets, how many units attack from each tile, `Match.Check` as the
     preview), the round report, the end screen
   - [x] 6c: moves (any number, each unit one step, before the stance), and reports in the player's words ("You win",
-    "Bot 2 attunes"); the trait pick waits for the traits themselves
+    "Bot 2 attunes")
+  - [x] 6d: the trait pick before the first bid, your trait on the match page, rivals' traits once the rounds begin,
+    and each goal in the end report
 - [x] Battle report text in the art direction's tone ([theme](theme.md)): your battles end in a stamp (Conquered,
   Repelled, Thwarted, Held, Lost), and the report and tile labels say "you" and "Bot N"
 - [ ] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll *(the layout and theme exist;

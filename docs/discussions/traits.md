@@ -1,7 +1,9 @@
-# Traits: the first pool (decided 20 Oct 2026)
+# Traits: the pool (decided 20 and 21 Oct 2026)
 
-How the first traits were chosen. The owner took all six below, with each match offering 3 drawn from its seed; the
-rules are in [game-design.md](../game-design.md#traits).
+How the traits were chosen. The owner first took the six below, with each match offering the same 3 to everyone. On
+21 Oct 2026 they asked for every player's trait to be unique: **each player is offered their own 2, none shared**, so
+the pool grew to 10 with four traits about spells and units (*Four more*, below). The rules and numbers as built are in
+[game-design.md](../game-design.md#traits); the numbers in the first table below were the first guesses.
 
 ## What the design already asks of a trait
 
@@ -63,3 +65,32 @@ puts those later).
 Once chosen, each trait is small to build: a seat holds its trait, the end of the match adds its goal, and the bots'
 bid rule leans towards the trait's tiles. Then the simulator reports **win rate and goal points by trait** over
 thousands of seeded games, before any person plays them. A trait that wins too often gets a lower cap.
+
+## Four more (21 Oct 2026)
+
+Each player now gets their own offer of 2, so 5 players need 10 traits. The owner chose to let the new ones build on
+spells and units, which didn't exist when the first six were chosen. They are still end-of-game, capped goals:
+
+| Trait | Pulls towards | Opening tell (intended; bots don't bid this way yet) | Goal at the end, cap 3 |
+|---|---|---|---|
+| **Golemwright** | Golems | Bids on high yields, to pay their upkeep | 1 point per 2 Golems you have |
+| **Spellweaver** | Every kind of spell | Bids on tiles next to rivals and monsters, where most spells aim | 1 point per different spell beyond the first |
+| **Warden** | Keeping the land you started with | Bids on tiles it can defend: next to its own | 1 point per opening tile still held, beyond the first |
+| **Hexer** | Scorch and Blight | Bids on tiles next to rivals | 1 point per 2 Scorches and Blights |
+
+Tried and changed on the way, in the simulator:
+
+- **Warden** first scored attacks beaten back. Bots only attack when they'd win, so it scored almost nothing (0.1 a
+  match); "tiles with units on them" scored nothing either (bots fight from one stack). Keeping the opening's tiles
+  works, but counting all three made it the strongest trait (42% of 3-player wins), hence "beyond the first".
+- **Wildheart and Hearthkeeper** went from 1 point per 2 tiles of their type to 1 per tile: at 1 per 2 they averaged
+  under 1 point and won least.
+- **Hexer** stays at 1 per 2: at 1 per 3 it won least.
+
+### The bots changed too
+
+At first only the bots with a unit trait summoned before attuning (every other round), and they won 46% of 3-player
+games whatever their goal scored: the simulator was measuring that plan, not the traits. Now **every bot** summons
+before attuning every other round, and traits only change what and where (tile type, Golems, where to summon, which
+spell). This plays better than attuning almost every round: conquest points per seat went from 0.8 to 2.5, mana left
+at the end from 26 to 13, and summons from 4 Golems and 12 Imps a game to 12 and 30. Scores stay around 18.

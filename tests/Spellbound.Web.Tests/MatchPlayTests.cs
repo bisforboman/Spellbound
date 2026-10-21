@@ -58,6 +58,30 @@ public sealed class MatchPlayTests : TestDatabase
     }
 
     [Fact]
+    public async Task The_player_drafts_a_trait_and_the_bots_draft_theirs_with_the_first_bid()
+    {
+        var id = await play.StartAsync("alice", 3, GameRules.Default);
+        var offer = (await play.ViewAsync(id, "alice"))!.Match.Seats[0].Offer;
+        var notOffered = Enum.GetValues<Trait>().First(t => !offer.Contains(t));
+        var before = await WithDbAsync(db => db.LoadGameStateAsync(id));
+
+        var refused = await play.TraitAsync(id, "alice", notOffered);
+        Assert.False(refused.Succeeded);
+        Assert.Equal(before, await WithDbAsync(db => db.LoadGameStateAsync(id)));
+
+        var chosen = await play.TraitAsync(id, "alice", offer[1]);
+        var drafted = (await play.ViewAsync(id, "alice"))!.Match;
+        Assert.True(chosen.Succeeded);
+        Assert.Equal(offer[1], drafted.Seats[0].Trait);
+        Assert.All(drafted.Seats.Skip(1), s => Assert.Null(s.Trait));
+
+        Assert.True((await play.BidAsync(id, "alice", null, 0)).Succeeded);
+        var bid = (await play.ViewAsync(id, "alice"))!;
+        Assert.All(bid.Match.Seats, s => Assert.Contains(s.Trait!.Value, s.Offer));
+        Assert.DoesNotContain(bid.LastReport, l => l.Contains("trait", StringComparison.OrdinalIgnoreCase)); // theirs stay secret
+    }
+
+    [Fact]
     public async Task Passing_through_the_opening_reaches_the_rounds()
     {
         var id = await play.StartAsync("alice", 2, GameRules.Default);

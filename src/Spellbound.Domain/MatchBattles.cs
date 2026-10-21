@@ -221,6 +221,11 @@ public sealed partial class Match
         if (OwnerOf(target) is { } loser)
         {
             seats[loser].Lose(target);
+            seats[seat].RivalTilesTaken++;
+        }
+        else
+        {
+            seats[seat].MonstersCleared++;
         }
 
         seats[seat].Take(target);

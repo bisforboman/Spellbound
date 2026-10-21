@@ -267,7 +267,14 @@ namespace Spellbound.Playtest
                 await Expect(page, "Start the match");
                 await page.ClickAsync("button:has-text('Start the match')");
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
+                await Expect(page, "Choose your trait");
+            });
+            await StepAsync(merlin, "trait", async page =>
+            {
+                await page.Locator("input[name='trait']").Nth(1).CheckAsync();
+                await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening auction 1 of 3");
+                await Expect(page, "Your trait:");
             });
             await StepAsync(merlin, "bid", async page =>
             {
@@ -285,6 +292,7 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Pass')");
                 await Expect(page, "Round 1 of 8");
                 await Expect(page, "The rounds begin");
+                await Expect(page, "Rivals' traits:");
             });
             await StepAsync(merlin, "summon", async page =>
             {
@@ -385,6 +393,9 @@ namespace Spellbound.Playtest
                 await GoAsync(page, "/match/new");
                 await page.ClickAsync("label:has-text('5 players')");
                 await page.ClickAsync("button:has-text('Start the match')");
+                await Expect(page, "Choose your trait");
+                await page.Locator("input[name='trait']").First.CheckAsync();
+                await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening auction 1 of 3");
                 await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                 await Expect(page, "up for auction");

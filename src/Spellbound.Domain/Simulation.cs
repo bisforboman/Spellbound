@@ -31,6 +31,14 @@ public static partial class Simulation
 
     private static void Play(Match match, IRandomSource random, SimulationReport report)
     {
+        foreach (var seat in match.Seats)
+        {
+            if (Bot.ChooseTrait(match, seat.Index, random) is { } trait)
+            {
+                match.ChooseTrait(seat.Index, trait);
+            }
+        }
+
         while (match.Phase == MatchPhase.Opening)
         {
             var bids = match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random)).ToList();
@@ -121,6 +129,15 @@ public static partial class Simulation
         {
             report.WinsBySeat[winner.Index]++;
         }
+
+        foreach (var seat in match.Seats.Where(s => s.Trait is not null))
+        {
+            var stats = report.Traits.TryGetValue(seat.Trait!.Value, out var t) ? t : report.Traits[seat.Trait.Value] = new();
+            stats.Seats++;
+            stats.Wins += match.Winners.Contains(seat) ? 1 : 0;
+            stats.GoalPoints += seat.TraitPoints;
+            stats.MaxedOut += seat.TraitPoints == match.Rules.TraitGoalCap ? 1 : 0;
+        }
     }
 
     /// <summary>True when the seat has a free tile next to its land but can't afford to attune it.</summary>
@@ -151,6 +168,16 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         public Dictionary<string, int> Stances { get; } = new() { ["Attack"] = 0, ["Attune"] = 0, ["Summon"] = 0, ["Hold"] = 0 };
         public int Spells { get; internal set; }
     }
+
+    public sealed class TraitStats
+    {
+        public int Seats { get; internal set; }
+        public int Wins { get; internal set; }
+        public int GoalPoints { get; internal set; }
+        public int MaxedOut { get; internal set; }
+    }
+
+    public Dictionary<Trait, TraitStats> Traits { get; } = [];
 
     public int Players => players;
     public int Games => games;
@@ -211,6 +238,19 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine(c, $"- Spent per seat over a match: Attune {PerSeatSpent("Attune")}, Summon {PerSeatSpent("Summon")}, spells {PerSeatSpent("Spell")}.");
         md.AppendLine(c, $"- Spells cast per game: {(Casts.Count == 0 ? "none" : string.Join(", ", Casts.OrderBy(k => k.Key).Select(k => $"{k.Key} {PerGame(k.Value)}")))}.");
         md.AppendLine(c, $"- Summoned per game: {PerGame(ImpsSummoned.Sum())} Imps, {PerGame(GolemsSummoned.Sum())} Golems.");
+        md.AppendLine();
+        md.AppendLine("## Traits");
+        md.AppendLine();
+        md.AppendLine(c, $"A seat wins {(100.0 / players).ToString("0", c)}% of the time on average (a shared win counts for each).");
+        md.AppendLine();
+        md.AppendLine("| Trait | Seats | Win rate | Goal points | At the cap |");
+        md.AppendLine("|---|---|---|---|---|");
+        foreach (var (trait, t) in Traits.OrderBy(k => k.Key))
+        {
+            string Share(int n) => (100.0 * n / t.Seats).ToString("0", c) + "%";
+            md.AppendLine(c, $"| {trait} | {t.Seats} | {Share(t.Wins)} | {((double)t.GoalPoints / t.Seats).ToString("0.0", c)} | {Share(t.MaxedOut)} |");
+        }
+
         return md.ToString();
     }
 }

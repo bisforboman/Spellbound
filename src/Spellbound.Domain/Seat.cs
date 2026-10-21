@@ -33,6 +33,41 @@ public sealed class Seat
     /// <summary>Tile-rounds not yet worth a point, carried to the next round's scoring.</summary>
     public int LandCarry { get; internal set; }
 
+    /// <summary>The traits this seat was offered to draft from; empty in a match without traits.</summary>
+    public IReadOnlyList<Trait> Offer { get; internal set; } = [];
+
+    /// <summary>The trait drafted; hidden from rivals until the rounds begin.</summary>
+    public Trait? Trait { get; internal set; }
+
+    /// <summary>The trait goal's points, once scored at the end.</summary>
+    public int TraitPoints { get; internal set; }
+
+    // What the trait goals count, over the whole match.
+
+    /// <summary>The tiles the seat held when the opening ended.</summary>
+    public IReadOnlyList<Hex> OpeningTiles { get; internal set; } = [];
+
+    public int MonstersCleared { get; internal set; }
+
+    public int RivalTilesTaken { get; internal set; }
+
+    /// <summary>The different spells cast.</summary>
+    public IReadOnlySet<Spell> SpellsCast => spellsCast;
+
+    /// <summary>Scorches and Blights cast.</summary>
+    public int HexesCast { get; internal set; }
+
+    private readonly HashSet<Spell> spellsCast = [];
+
+    internal void Cast(Spell spell)
+    {
+        spellsCast.Add(spell);
+        if (spell is Spell.Scorch or Spell.Blight)
+        {
+            HexesCast++;
+        }
+    }
+
     internal void Take(Hex hex) => tiles.Add(hex);
 
     internal void Lose(Hex hex) => tiles.Remove(hex);

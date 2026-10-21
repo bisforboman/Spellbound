@@ -21,11 +21,27 @@ public sealed class MatchPlay(MatchStore store, TimeProvider time)
     public async Task<LoadedMatch?> ViewAsync(long id, string ownerId) =>
         await store.LoadAsync(id) is { } loaded && loaded.SeatOf(ownerId) is not null ? loaded : null;
 
-    /// <summary>The player's bid (no tile: a pass) with the bots' bids, settling the current opening auction.</summary>
+    /// <summary>The player drafts one of the traits they were offered.</summary>
+    public Task<Report> TraitAsync(long id, string ownerId, Trait trait) =>
+        ApplyAsync(id, ownerId, (match, seat, _) => match.ChooseTrait(seat, trait));
+
+    /// <summary>The player's bid (no tile: a pass) with the bots' bids, settling the current opening auction. Bots
+    /// that haven't drafted a trait yet draft one first, in secret.</summary>
     public Task<Report> BidAsync(long id, string ownerId, Hex? tile, int amount) =>
-        ApplyAsync(id, ownerId, (match, seat, random) => match.Auction(
-            [.. match.Seats.Select(s => s.Index == seat ? new Bid(seat, tile, tile is null ? 0 : amount) : Bot.ChooseBid(match, s.Index, random))],
-            random));
+        ApplyAsync(id, ownerId, (match, seat, random) =>
+        {
+            foreach (var bot in match.Seats.Where(s => s.Index != seat && s.Trait is null))
+            {
+                if (Bot.ChooseTrait(match, bot.Index, random) is { } trait)
+                {
+                    match.ChooseTrait(bot.Index, trait);
+                }
+            }
+
+            return match.Auction(
+                [.. match.Seats.Select(s => s.Index == seat ? new Bid(seat, tile, tile is null ? 0 : amount) : Bot.ChooseBid(match, s.Index, random))],
+                random);
+        });
 
     /// <summary>The player's orders for the round (their seat is filled in) with the bots' orders, resolving the
     /// round.</summary>

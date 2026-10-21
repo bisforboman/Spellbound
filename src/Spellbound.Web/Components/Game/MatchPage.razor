@@ -24,6 +24,11 @@ else
         <span class="ledger-line">@me.Mana mana, @me.Tiles.Count tiles, @me.Score points.</span>
     </p>
 
+    @if (me.Trait is { } mine)
+    {
+        <p class="trait-line">Your trait: <b>@mine</b>, @match.GoalText(mine)</p>
+    }
+
     <HexMap Match="match" You="you" Owners="view.Owners" Selected="selected" Highlight="auction" OnSelect="Select" />
 
     @if (selected is { } tile)
@@ -36,7 +41,24 @@ else
         <p class="alert alert-warning" role="alert">@status</p>
     }
 
-    @if (view.IsRunning && match.Phase == MatchPhase.Opening)
+    @if (view.IsRunning && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null)
+    {
+        <h2 class="h4">Choose your trait</h2>
+        <p>Your trait gives you a goal, scored at the end. Nobody else was offered these, and rivals only learn which
+            you chose when the rounds begin.</p>
+        <fieldset class="traits">
+            @foreach (var offered in me.Offer)
+            {
+                var t = offered;
+                <label class="choice">
+                    <input type="radio" name="trait" checked="@(trait == t)" @onchange="() => trait = t" />
+                    <span><b>@t</b>: @Capitalised(match.GoalText(t))</span>
+                </label>
+            }
+        </fieldset>
+        <button type="button" class="btn btn-primary btn-lg w-100 mt-2" disabled="@(busy || trait is null)" @onclick="ChooseTraitAsync">Choose @(trait?.ToString() ?? "a trait")</button>
+    }
+    else if (view.IsRunning && match.Phase == MatchPhase.Opening)
     {
         <h2 class="h4">Opening auction @match.OpeningUnveil of @match.Rules.OpeningUnveils</h2>
         <p>Bid mana on one tile, or pass. Tap a marked tile on the map, or choose here:</p>
@@ -107,6 +129,11 @@ else
             }
         </tbody>
     </table>
+    @if (match.Phase != MatchPhase.Opening && match.Seats.Any(s => s.Index != you && s.Trait is not null))
+    {
+        <p class="trait-line">Rivals' traits: @string.Join(", ", match.Seats.Where(s => s.Index != you && s.Trait is not null)
+            .Select(s => $"{Seats.Name(view, s.Index, you)} has {s.Trait}")).</p>
+    }
     @if (match.Phase == MatchPhase.Ended && match.Winners.Count > 0)
     {
         <p><b>@string.Join(" and ", match.Winners.Select(w => Seats.Name(view, w.Index, you))) @(match.Winners.Count == 1 && match.Winners[0].Index != you ? "wins" : "win").</b></p>
@@ -127,6 +154,7 @@ else
     private IReadOnlySet<Hex> auction = new HashSet<Hex>();
     private Hex? selected;
     private int amount = 1;
+    private Trait? trait;
     private string? status;
     private bool loading = true;
     private bool busy;
@@ -156,6 +184,10 @@ else
     private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, selected, amount));
 
     private Task CommitAsync(Orders orders) => ActAsync(() => Play.OrdersAsync(Id, ownerId, orders));
+
+    private static string Capitalised(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
+
+    private Task ChooseTraitAsync() => trait is { } t ? ActAsync(() => Play.TraitAsync(Id, ownerId, t)) : Task.CompletedTask;
 
     private Task PassAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, null, 0));
 

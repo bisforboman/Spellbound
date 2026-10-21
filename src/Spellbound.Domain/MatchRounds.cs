@@ -116,6 +116,7 @@ public sealed partial class Match
         else
         {
             Phase = MatchPhase.Ended;
+            ScoreTraits(lines);
             lines.Add($"The match is over. {string.Join(" and ", Winners.Select(s => $"Seat {s.Index + 1}"))} "
                       + (Winners.Count == 1 ? "wins." : "share the win."));
         }
@@ -307,5 +308,7 @@ public sealed partial class Match
         }
     }
 
-    private static string Plural(int n, string word) => n == 1 ? $"1 {word}" : $"{n} {word}s";
+    private static string Plural(int n, string word) => Plural(n, word, word + "s");
+
+    private static string Plural(int n, string word, string words) => n == 1 ? $"1 {word}" : $"{n} {words}";
 }

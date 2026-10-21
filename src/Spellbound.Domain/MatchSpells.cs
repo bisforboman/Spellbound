@@ -171,6 +171,7 @@ public sealed partial class Match
             var cast = order.Cast!;
             var target = cast.Target;
             seat.Mana -= SpellCostOf(order);
+            seat.Cast(cast.Spell);
             switch (cast.Spell)
             {
                 case Spell.Scorch:

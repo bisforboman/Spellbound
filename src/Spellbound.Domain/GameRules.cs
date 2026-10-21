@@ -90,6 +90,26 @@ public sealed record GameRules
     /// <summary>One point for every this much mana a player's land produced; the remainder carries over.</summary>
     public int ManaPerPoint { get; init; } = 12;
 
+    // Traits (docs/game-design.md, Traits)
+
+    /// <summary>The traits each seat is offered to draft one from; no trait is offered to two seats.</summary>
+    public int TraitsOffered { get; init; } = 2;
+
+    /// <summary>The most points a trait goal can add.</summary>
+    public int TraitGoalCap { get; init; } = 3;
+
+    /// <summary>Wildheart and Hearthkeeper: one point per this many tiles of their type.</summary>
+    public int TilesOfTypePerTraitPoint { get; init; } = 1;
+
+    /// <summary>Weaver: one point per this many tiles in the largest connected group.</summary>
+    public int GroupTilesPerTraitPoint { get; init; } = 3;
+
+    /// <summary>Golemwright: one point per this many Golems at the end.</summary>
+    public int GolemsPerTraitPoint { get; init; } = 2;
+
+    /// <summary>Hexer: one point per this many Scorches and Blights cast.</summary>
+    public int HexesPerTraitPoint { get; init; } = 2;
+
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.
     // On average every type yields 2.
 

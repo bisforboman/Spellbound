@@ -10,7 +10,7 @@ Decided discussions (background and the angles that were considered):
 
 A walkthrough of one game from start to finish, kept up to date as rules are settled.
 
-1. **Setup.** The map lies dark. Each player starts with **9 mana** and nothing else. Everyone is offered the **same 3 traits** and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening auctions put them.
+1. **Setup.** The map lies dark. Each player starts with **9 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening auctions put them.
 2. **The opening Unveils.** Traits are still hidden, so nobody knows for sure why a rival bids hard on a tile. Before the first round, three Unveils reveal **3 tiles per player plus 3 extra**, one tile at a time. In each one, as many tiles as there are players go up for a secret mana auction: winners take the tile they bid on, and everyone else gets a random tile nobody wanted. The rest of the revealed tiles stay unowned, for later. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
 3. **The rounds.** The game lasts **8 rounds**. When round 1 starts, all traits are revealed. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
@@ -20,24 +20,35 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 ## Traits
 
-- At setup, **every player is offered the same 3 traits** and drafts **1**. Two players can end up with the same trait.
+- At setup, **each player is offered their own 2 traits**, drawn from the pool by the match's seed, and drafts **1**.
+  No trait is offered to two players, so every player's trait is unique (owner's choice, 21 Oct 2026; it replaced
+  "the same 3 for everyone"). The pool of 10 covers 5 players. A player who hasn't drafted when the opening ends gets
+  the first trait of their offer.
 - A trait is something to **build around**: it should pull a player towards a strategy (certain tiles, a way of expanding, a style of play), not just add a small bonus.
 - Traits are **hidden during the opening Unveils** and **revealed when the regular rounds start**. During the opening auctions, players can only guess at each other's traits from how they bid.
-- Traits can give **trait goals**: their own way to score (see *Scoring and winning*).
-- **The pool** (decided 20 Oct 2026; the reasoning is in `discussions/traits.md`). Each match offers **3 of these 6**,
-  chosen from its seed. Every trait goal is scored once, at the end, and is capped:
+- Traits give **trait goals**: their own way to score (see *Scoring and winning*). Every goal is scored once, at the
+  end, hidden until then, and capped at **3 points**.
+- **The pool** (the first six decided 20 Oct 2026, the last four 21 Oct 2026; the reasoning is in
+  `discussions/traits.md`):
 
-| Trait | Pulls towards | Goal at the end (hidden), cap |
+| Trait | Pulls towards | Goal at the end (hidden), cap 3 |
 |---|---|---|
-| Wildheart | Wild land | 1 point per 2 Wild tiles held, up to 3 |
-| Hearthkeeper | Steady land | 1 point per 2 Steady tiles held, up to 3 |
-| Weaver | one connected realm | 1 point per 3 tiles in your largest connected group, up to 3 |
-| Wanderer | many separate footholds | 1 point per separate group of tiles beyond the first, up to 3 |
-| Beastbane | clearing monsters | 1 point per monster tile cleared, up to 3 (on top of the conquest point) |
-| Warbrand | taking rivals' land | 1 point per rival tile taken, up to 3 (on top of the conquest point) |
+| Wildheart | Wild land | 1 point per Wild tile held |
+| Hearthkeeper | Steady land | 1 point per Steady tile held |
+| Weaver | one connected realm | 1 point per 3 tiles in your largest connected group |
+| Wanderer | many separate footholds | 1 point per separate group of tiles beyond the first |
+| Beastbane | clearing monsters | 1 point per monster tile cleared (on top of the conquest point) |
+| Warbrand | taking rivals' land | 1 point per rival tile taken (on top of the conquest point) |
+| Golemwright | Golems | 1 point per 2 Golems you have at the end |
+| Spellweaver | casting every kind of spell | 1 point per different spell cast beyond the first |
+| Warden | keeping the land you started with | 1 point per tile from your opening still held, beyond the first (so at most 2) |
+| Hexer | Scorch and Blight | 1 point per 2 Scorches and Blights cast |
 
-- No trait changes the Attune price, income or upkeep: they would snowball (principles 12 and 13).
-- *Open:* how often each trait wins; the simulator will report win rate and goal points by trait once they're built.
+- No trait changes the Attune price, income, upkeep or a cost: they would snowball (principles 12 and 13).
+- **Measured** (1,000 bot games each; bots draft at random and lean towards their trait's tiles, units and spells):
+  every trait wins between 28% and 39% of 3-player games (33% is even) and between 16% and 26% of 5-player games
+  (20% is even). Golemwright wins most, partly because bots that summon Golems simply fight better; Hexer and Wanderer
+  least. Goals average 0.4 (Beastbane) to 1.9 points (Hearthkeeper, Warbrand).
 
 ## Map
 
@@ -218,7 +229,9 @@ yields, prices or income. Costs are flat and small.
 
 - **Measured** (1,000 bot games, 3 players): cast alongside the stance, bots spend about 20 mana a match on spells
   and end with about 26 unspent (52 when spells were a stance), while attuning as often as before. Bots reach for
-  Blight most (about 12 a game), then Ward (about 3); Scorch almost never.
+  Blight most (about 12 a game), then Ward (about 3); Scorch almost never. *Since 21 Oct 2026 bots also summon every other round
+  (see `discussions/traits.md`): they spend about 19 mana a match on spells and end with about 13 unspent, and Ward
+  is cast most (about 9 a game), then Blight (about 5).*
 
 ## Scoring and winning
 
@@ -237,12 +250,14 @@ yields, prices or income. Costs are flat and small.
 | Land held | 1 per 3 tiles held, counted every round and added up (holding 4 tiles for 3 rounds is 12, so 4 points; remainders carry over) |
 | Mana produced | 1 per 12 mana your land produced (remainders carry over to the next round) |
 | Conquest | 1 per rival tile taken or monster tile cleared (kept even if the tile is lost again) |
-| Trait goals | set by each trait |
+| Trait goals | set by each trait, scored once at the end, up to 3 (see *Traits*) |
 
 - **Tie-break:** most tiles held at the end; if still tied, most mana in hand.
 - **Scale** (changed 20 Oct 2026): a 3-player game ends around **18 points** a seat (about 12 for land, 5 for mana,
   1 for conquest) instead of 55. Land and mana keep their balance; the winner is the same as before in about 94 of 100
   simulated games. A conquest point now weighs more (about 5% of a score instead of 2%), on purpose: it rewards attacks.
+  *Since 21 Oct 2026 bots summon and fight more (see `discussions/traits.md`): about 10 for land, 4 for mana and 2.5
+  for conquest, and about 1 from trait goals: still about 18 in all.*
 
 ## Player elimination
 
@@ -251,5 +266,4 @@ yields, prices or income. Costs are flat and small.
 
 ## Next to shape
 
-1. Building the traits and checking them in the simulator (win rate and goal points by trait).
-2. A first paper playtest (`skirmish-paper-prototype.md`); then revisit stances and the numbers.
+1. A first paper playtest (`skirmish-paper-prototype.md`); then revisit stances and the numbers.
