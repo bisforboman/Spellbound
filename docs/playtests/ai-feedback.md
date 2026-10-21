@@ -20,7 +20,8 @@ but each one found it missing the thing its favourite games are about.
 ## Third session: after the reading-rivals elements
 
 This is the first session weighted by the owner's identity (`../design-principles.md`). The target tastes played matches 1
-and 2; the outside tastes played match 3. The target tastes average 3.0 (the second session: 2.5 across all six).
+and 2; the outside tastes played match 3. The target tastes average 3.0 over the three sessions: 3.0, then 2.5, now 3.0. Trait guessing is judged
+in the next session (see the defect below).
 The new question was "did reading your rivals matter?"
 
 **A defect in the AI tool, not the game:** the Table's rules never listed the trait names, so every guess was blind
@@ -57,6 +58,10 @@ goals. **So this session can't judge trait guessing.**
 
 **Building still loses to raiding.** Upgrades pass with the tile, so "a capture … takes the tile's upgrade with it"
 (Euro-gamer, outside). The 4X fan and the Bluffer built nothing.
+
+**To watch:** Rally plus a lone Golem clears a power-3 monster with no losses. Three reviewers found it on their own
+(Combo player, Euro-gamer, Bluffer). The bot's defence is predictable: it "always guards the tile you are standing
+next to" (Bluffer). That is a bot artefact, kept as a follow-up.
 
 **Liked:** the Wargamer's tile won, lost and won back ("the best moment"); the Bluffer's reads; the Lure-then-Rally
 and Leyline-then-attack combos (Combo player, 4X fan, Euro-gamer); `check`; banked points.
