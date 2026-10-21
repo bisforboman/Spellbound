@@ -1,0 +1,3 @@
+{"step":0,"seat":1,"action":"{\u0022trait\u0022:\u0022Hexer\u0022}","ok":true,"lines":["Seat 1 chooses Hexer: at the end, 1 point per Scorch or Blight cast, up to 3."]}
+{"step":0,"seat":1,"action":"{\u0022bid\u0022:\u00220,0\u0022,\u0022amount\u0022:3}","ok":true,"lines":["Bid 3 mana on the Wild tile at (0, 0) (yields 2).","If yours is the only highest bid, you pay 3 and keep 6 mana.","If you\u0027re outbid or tied, you pay nothing and get one of the tiles nobody wins, at random."]}
+{"step":0,"seat":2,"action":"{\u0022trait\u0022: \u0022Golemwright\u0022}","ok":true,"lines":["Seat 2 chooses Golemwright: at the end, 1 point per 3 Golems you have, up to 3."]}
