@@ -406,10 +406,6 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("label:has-text('Ward')");
                 await Expect(page, "Choose where Ward goes");
                 await page.SelectOptionAsync("#spell-target", new SelectOptionValue { Index = 1 });
-                // A follow order: Imps at home if a rival summons this round.
-                await page.ClickAsync("button:has-text('Follow a rival')");
-                await page.SelectOptionAsync("#follow-stance", "Summon");
-                await page.SelectOptionAsync("#follow-at", new SelectOptionValue { Index = 1 });
                 // A guess at a rival's secret trait rides along with the orders.
                 await page.ClickAsync("button:has-text('Guess a trait')");
                 await page.SelectOptionAsync("#guess-rival", new SelectOptionValue { Index = 1 });
