@@ -76,6 +76,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Integration test for a round (WebApplicationFactory on a real PostgreSQL, like the platform's tests):
   `RoundFlowTests` commits a round and reads the match page back over HTTP, checks that failed orders change nothing
   and that a double tap waits on the row lock, ends a whole match for the host, and keeps the page to its player
+- [x] AI players: `tools/Spellbound.Table` lets Claude Code agents with a personality play seats from the command line
+  (on the owner's subscription, no API key); the first session's findings are in `playtests/2026-10-21-ai-players.md`
 - [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)
 
 ## M2: Playing with friends

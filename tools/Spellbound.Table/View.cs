@@ -147,7 +147,8 @@ internal static class View
 
         POINTS, banked every round and never lost: 1 per {{r.TilesPerPoint}} tile-rounds held (tiles held, added up each
         round), 1 per {{r.ManaPerPoint}} mana your land produced, {{r.PointsPerConquest}} per rival tile taken or monster
-        tile cleared. Your trait's goal adds up to {{r.TraitGoalCap}} points at the end (hidden until then).
+        tile cleared. Traits are secret during the opening and revealed when the rounds begin; your trait's goal adds up
+        to {{r.TraitGoalCap}} points, scored only at the end.
 
         HOW TO ACT (one JSON object; tiles as "q,r"):
           {"trait": "Weaver"}

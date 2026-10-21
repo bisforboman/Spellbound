@@ -26,6 +26,12 @@ internal abstract record Action
                 return (null, "Send one JSON object.");
             }
 
+            var kinds = new[] { "trait", "bid", "pass", "stance" }.Count(k => Get(root, k) is not null);
+            if (kinds > 1)
+            {
+                return (null, "One action at a time: a trait, a bid, a pass or a stance.");
+            }
+
             if (Get(root, "trait") is { } trait)
             {
                 return Enum.TryParse<Trait>(trait.GetString(), ignoreCase: true, out var t)
