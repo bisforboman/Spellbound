@@ -14,64 +14,75 @@
     Spellbound is run by <b>@Show(Notice.Operator, "the operator")</b>, who decides what happens to your data. Questions
     or requests: <b>@Show(Notice.Contact, "ask the game's admin")</b>.
 </p>
+<p class="text-muted">Tap a heading to read it.</p>
 
-<h2 class="h5">What the game stores, and why</h2>
-<ul>
-    <li>
-        <b>Your account:</b> the email address and the account id Google gives when you sign in, and when you joined and
-        last signed in. To sign you in and to recognise the game's admins. The game sends no email.
-    </li>
-    <li>
-        <b>Your sign-in networks:</b> a keyed hash of the internet address you sign in from (it can't be turned back into
-        the address), kept for 30 days. To spot one person playing several accounts.
-    </li>
-    <li>
-        <b>Your game:</b> which matches you sit in and your seat in each, with each match's state (the map, everyone's
-        mana, land, units and points). To play the matches. If you delete your account, your seats are no longer linked to
-        you and play on as computer players; the matches themselves stay.
-    </li>
-    <li>
-        <b>Notifications</b>, if you turn them on: for each device, the address your browser's push service gave it and
-        the browser's keys. To send you notifications about your games. Kept until you turn them off there, the push
-        service forgets the device, or you delete your account.
-    </li>
-    <li>
-        <b>Bans:</b> if you're banned, the reason, when, and which admin. Kept even after your account is deleted, so a
-        ban can't be shed that way.
-    </li>
-</ul>
+<details class="fold">
+    <summary>What the game stores, and why</summary>
+    <ul>
+        <li>
+            <b>Your account:</b> the email address and the account id Google gives when you sign in, and when you joined and
+            last signed in. To sign you in and to recognise the game's admins. The game sends no email.
+        </li>
+        <li>
+            <b>Your sign-in networks:</b> a keyed hash of the internet address you sign in from (it can't be turned back into
+            the address), kept for 30 days. To spot one person playing several accounts.
+        </li>
+        <li>
+            <b>Your game:</b> which matches you sit in and your seat in each, with each match's state (the map, everyone's
+            mana, land, units and points). To play the matches. If you delete your account, your seats are no longer linked to
+            you and play on as computer players; the matches themselves stay.
+        </li>
+        <li>
+            <b>Notifications</b>, if you turn them on: for each device, the address your browser's push service gave it and
+            the browser's keys. To send you notifications about your games. Kept until you turn them off there, the push
+            service forgets the device, or you delete your account.
+        </li>
+        <li>
+            <b>Bans:</b> if you're banned, the reason, when, and which admin. Kept even after your account is deleted, so a
+            ban can't be shed that way.
+        </li>
+    </ul>
+</details>
 
-<h2 class="h5">Cookies</h2>
-<p>
-    A sign-in cookie (30 days, renewed while you play), a short one while you sign in with Google, and one that protects
-    forms. No ads, no analytics, no tracking.
-</p>
+<details class="fold">
+    <summary>Cookies</summary>
+    <p>
+        A sign-in cookie (30 days, renewed while you play), a short one while you sign in with Google, and one that protects
+        forms. No ads, no analytics, no tracking.
+    </p>
+</details>
 
-<h2 class="h5">Who else sees it</h2>
-<ul>
-    <li><b>Other players</b> in your matches will see your seat's mana, land, units and points, never your email.</li>
-    <li><b>The game's admins</b> see your email and which accounts share a network.</li>
-    <li><b>Google</b> handles your sign-in, under Google's own privacy policy.</li>
-    <li><b>Your browser's push service</b> (Google's, Apple's or Mozilla's, depending on the browser) passes notifications
-        on to your device if you turn them on. They're encrypted for your browser, so the push service can't read them.</li>
-    <li><b>The hosting provider</b> runs the server: @Show(Notice.Hosting, "a rented server").</li>
-</ul>
-<p>Nothing is sold or shared with anyone else. The server doesn't log internet addresses.</p>
+<details class="fold">
+    <summary>Who else sees it</summary>
+    <ul>
+        <li><b>Other players</b> in your matches will see your seat's mana, land, units and points, never your email.</li>
+        <li><b>The game's admins</b> see your email and which accounts share a network.</li>
+        <li><b>Google</b> handles your sign-in, under Google's own privacy policy.</li>
+        <li><b>Your browser's push service</b> (Google's, Apple's or Mozilla's, depending on the browser) passes notifications
+            on to your device if you turn them on. They're encrypted for your browser, so the push service can't read them.</li>
+        <li><b>The hosting provider</b> runs the server: @Show(Notice.Hosting, "a rented server").</li>
+    </ul>
+    <p>Nothing is sold or shared with anyone else. The server doesn't log internet addresses.</p>
+</details>
 
-<h2 class="h5">Backups</h2>
-<p>
-    The database is backed up every night, and the server keeps the last @BackupsKept
-    backups@(Notice.OffsiteBackups is { Length: > 0 } offsite ? $"; copies are also kept {offsite}" : "").
-    Data you delete disappears from the backups as they're replaced.
-</p>
+<details class="fold">
+    <summary>Backups</summary>
+    <p>
+        The database is backed up every night, and the server keeps the last @BackupsKept
+        backups@(Notice.OffsiteBackups is { Length: > 0 } offsite ? $"; copies are also kept {offsite}" : "").
+        Data you delete disappears from the backups as they're replaced.
+    </p>
+</details>
 
-<h2 class="h5">Your choices</h2>
-<ul>
-    <li><b>Get a copy</b> of everything stored about you: <a href="Account/Manage">Account</a> → Download my data.</li>
-    <li><b>Delete your account</b> at once: <a href="Account/Manage">Account</a> → Delete my account.</li>
-    <li><b>Ask</b> the operator anything above, or to correct something.</li>
-    <li>If you're unhappy with the answer, you can complain to the data protection authority in your country.</li>
-</ul>
+<details class="fold">
+    <summary>Your choices</summary>
+    <ul>
+        <li><b>Get a copy</b> of everything stored about you: <a href="Account/Manage">Account</a> → Download my data.</li>
+        <li><b>Delete your account</b> at once: <a href="Account/Manage">Account</a> → Delete my account.</li>
+        <li><b>Ask</b> the operator anything above, or to correct something.</li>
+        <li>If you're unhappy with the answer, you can complain to the data protection authority in your country.</li>
+    </ul>
+</details>
 
 @code {
     private PrivacyOptions Notice => Options.Value;
