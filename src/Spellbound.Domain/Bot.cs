@@ -84,11 +84,6 @@ public static class Bot
             }
         }
 
-        if (orders.Reinforce is null && FollowFor(match, seat, orders) is { } follow)
-        {
-            orders = follow;
-        }
-
         if (Guess(match, seat, random) is { } guess)
         {
             orders = orders with { Guess = guess };
@@ -156,32 +151,6 @@ public static class Bot
         var best = possible.Max(Fit);
         var good = possible.Where(t => Fit(t) == best).ToList();
         return new TraitGuess(rival.Index, good[random.Next(good.Count)]);
-    }
-
-    /// <summary>A follow order alongside the bot's stance, if it has mana to spare: cheap land next to it, else a Shrine
-    /// from round 3, else Imps on a threatened tile. Null if none checks.</summary>
-    private static Orders? FollowFor(Match match, int seat, Orders orders)
-    {
-        var rules = match.Rules;
-        var me = match.Seats[seat];
-        var mine = me.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
-        var free = mine.SelectMany(match.Map.NeighboursOf).Distinct()
-            .Where(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded)
-            .OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).ToList();
-        var open = mine.Where(h => match.UpgradeOn(h) is null).OrderByDescending(h => match.Map[h].Yield).ToList();
-        var threatened = mine.FirstOrDefault(h => match.Map.NeighboursOf(h)
-            .Any(n => match.OwnerOf(n) is { } o && o != seat && match.UnitsOn(n).Power(rules) > match.UnitsOn(h).Power(rules)), new Hex(int.MinValue, 0));
-
-        var candidates = new List<Orders?>
-        {
-            free.Count > 0 && rules.AttunePrice(me.Tiles.Count) <= rules.AttunePrice(rules.AttuneCheapTiles) ? Orders.Attune(seat, free[0]) : null,
-            match.CurrentRound >= 3 && open.Count > 0 ? Orders.Build(seat, open[0], Upgrade.Shrine) : null,
-            match.Map.Contains(threatened) ? Orders.Summon(seat, threatened, UnitKind.Imp, 3) : null,
-        };
-        return candidates.OfType<Orders>()
-            .Where(f => f.Stance != orders.Stance || orders.Target is null)
-            .Select(f => orders.Following(f))
-            .FirstOrDefault(o => me.Mana - match.CostOf(o) >= SpareMana / 2 && match.Check(o).Succeeded);
     }
 
     /// <summary>The round from which bots guess, one rival a round.</summary>

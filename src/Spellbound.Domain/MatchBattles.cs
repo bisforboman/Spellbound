@@ -95,7 +95,8 @@ public sealed partial class Match
                 ? owner is null ? "a tie: both sides are wiped out and you take the tile" : "a tie: both sides are wiped out and the tile stays theirs"
                 : "you lose everything you sent";
         lines.Add($"Attack {DescribePlain(target)} ({DefenceText(target)}, power {defence}{afterSpell.Note}) with {sent} (power {attack}{(rally > 0 ? $", with your Rally" : "")}). "
-                  + $"As things stand, {outcome}. Units that attack don't defend their own tiles this round.");
+                  + $"As things stand, {outcome}. But rivals give orders in secret too: a summon, Ward or Scorch this round can change "
+                  + "that. Units that attack don't defend their own tiles this round.");
         return null;
     }
 

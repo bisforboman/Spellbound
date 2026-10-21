@@ -72,7 +72,15 @@ measurement would make it hard to tell which helped.
 - Measure reinforcements first, in the fifth AI-taste session.
 - Build follow orders after that, knowing what reinforcements did.
 
-## Follow orders in detail (built 21 Oct 2026, the owner's choice after the fifth AI-taste session)
+## Removed (21 Oct 2026)
+
+Follow orders were built (#91) and taken out again the same day, the owner's choice after the sixth AI-taste session
+(`../playtests/ai-feedback.md`). The AI players committed 13 follow orders and 4 happened. After round 2 nearly
+everyone attacks, so there was little to follow except the scripted bot, and the extra form section confused the
+Casual player. Follow orders need rivals to choose varied stances, which this game doesn't produce after its opening.
+The design below stays for a future version that does (for example, one where Attune and Build are chosen often).
+
+## Follow orders in detail (built 21 Oct 2026, then removed)
 
 **The rule.** Alongside your stance you may commit one **follow order**:
 - It is an Attune, a Summon or a Build, in a stance other than your own.

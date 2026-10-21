@@ -204,3 +204,5 @@ mana to spare. Measured (`--plans`, 2,000 games):
 
 The plans that didn't build now build a little, which was the aim. A surcharge of +1 instead of +2 changes nothing
 measurable, so +2 stays.
+
+*Follow orders were removed the same day (see `shared-stances.md`); the numbers before them stand.*

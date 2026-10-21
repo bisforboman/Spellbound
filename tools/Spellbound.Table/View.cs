@@ -148,9 +148,6 @@ internal static class View
             to it. Units that attack don't defend their own tile that round.
             An attack may also bring reinforcements: up to {{r.ReinforceMaxPower}} power of units summoned on one of your tiles,
             {{r.ReinforceSurcharge}} mana more each than a summon. They guard it this round and can't join the attack.
-          follow (alongside any stance, instead of reinforcements): an Attune, Summon or Build in another stance. It
-            happens only if a rival chooses that stance this round, for {{r.FollowSurcharge}} mana more; if nobody does, nothing
-            happens and it costs nothing. If you follow a rival's Attune to the same tile, the rival gets it.
           build: an upgrade on one of your tiles, {{r.UpgradeCost}} mana, at most one per tile and {{r.UpgradeCap}} per realm.
             Shrine: the tile yields {{r.ShrineYield}} more. Tower: it defends with {{r.TowerPower}} more power, even empty.
             Sanctum: your spells aimed at it or next to it cost {{r.SanctumDiscount}} less. An upgrade passes with the
@@ -198,7 +195,6 @@ internal static class View
           {"stance": "hold"}
         Any stance can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
         An attack can add "reinforce": {"target": "0,0", "kind": "imp", "count": 3}
-        Any stance (unless reinforcing) can add one "follow": {"stance": "summon", "target": "0,0", "kind": "imp", "count": 2}
         and one "guess": {"seat": 2, "trait": "Hexer"}
         and one "spell": {"name": "scorch", "target": "1,0", "count": 2}
                      or {"name": "leyline", "target": "0,0", "to": "2,-1", "imps": 2, "golems": 0}

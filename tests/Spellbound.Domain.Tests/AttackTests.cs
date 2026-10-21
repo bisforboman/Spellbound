@@ -90,6 +90,8 @@ public class AttackTests
         var report = Play(match, orders);
 
         Assert.Contains(check.Lines, l => l.StartsWith("Reinforce", StringComparison.Ordinal) && l.Contains("for 6 mana", StringComparison.Ordinal));
+        // The preview says what it can't know: rivals' secret orders this round.
+        Assert.Contains(check.Lines, l => l.Contains("rivals give orders in secret too", StringComparison.Ordinal));
         Assert.Contains(report.Lines, l => l == $"Seat 1 reinforces {mine} with 3 Imps.");
         Assert.Equal(new Army(3, 0), match.UnitsOn(mine)); // they stayed home
         Assert.Equal(new Army(2, 0), match.UnitsOn(theirs)); // the attack went on with the 2 sent

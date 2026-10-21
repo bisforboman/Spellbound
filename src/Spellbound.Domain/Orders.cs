@@ -75,13 +75,6 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
     /// <summary>These orders (an attack) with a small summon at home alongside.</summary>
     public Orders Reinforcing(Hex tile, UnitKind kind, int count) => this with { Reinforce = new Reinforcement(tile, kind, count) };
 
-    /// <summary>A follow order: an Attune, Summon or Build in another stance, which happens only if a rival chose that
-    /// stance this round, at a surcharge (docs/discussions/shared-stances.md).</summary>
-    public Orders? Follow { get; init; }
-
-    /// <summary>These orders with a follow order alongside.</summary>
-    public Orders Following(Orders follow) => this with { Follow = follow };
-
     /// <summary>A guess at a rival's trait made alongside these orders, if any.</summary>
     public TraitGuess? Guess { get; init; }
 

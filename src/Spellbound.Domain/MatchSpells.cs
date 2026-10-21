@@ -17,11 +17,7 @@ public sealed partial class Match
 
     /// <summary>What a seat's orders cost in mana if they go through, stance and spell together (an Attune that clashes
     /// costs nothing).</summary>
-    public int CostOf(Orders orders) => StanceCostOf(orders) + SpellCostOf(orders) + FollowCostOf(orders);
-
-    /// <summary>What a follow order costs if it happens: its stance's price plus the surcharge.</summary>
-    public int FollowCostOf(Orders orders) =>
-        orders?.Follow is { } follow && follow.Target is not null ? StanceCostOf(follow with { Seat = orders.Seat }) + Rules.FollowSurcharge : 0;
+    public int CostOf(Orders orders) => StanceCostOf(orders) + SpellCostOf(orders);
 
     /// <summary>What the stance part of a seat's orders costs.</summary>
     public int StanceCostOf(Orders orders)
