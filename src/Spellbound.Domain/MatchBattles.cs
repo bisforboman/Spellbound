@@ -75,6 +75,17 @@ public sealed partial class Match
 
         var attack = sent.Power(Rules);
         var defence = DefencePower(target);
+
+        // Your own spell on the target lands before the attack: count it.
+        var afterSpell = orders.Cast switch
+        {
+            { Spell: Spell.Scorch } scorch when scorch.Target == target && owner is not null =>
+                (Power: Battle.TakeLosses(UnitsOn(target), scorch.Count, Rules).Power(Rules) + Ward(target), Note: " after your Scorch"),
+            { Spell: Spell.Lure } lure when lure.Target == target && owner is null =>
+                (Power: Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower), Note: " after your Lure"),
+            _ => (Power: defence, Note: ""),
+        };
+        defence = afterSpell.Power;
         var outcome = attack > defence
             ? owner is { } o && seats[o].Tiles.Count == 1
                 ? $"you win, but it's their last tile: the defenders die and the tile stays theirs, and your {Battle.TakeLosses(sent, defence, Rules)} go back"
@@ -82,7 +93,7 @@ public sealed partial class Match
             : attack == defence
                 ? owner is null ? "a tie: both sides are wiped out and you take the tile" : "a tie: both sides are wiped out and the tile stays theirs"
                 : "you lose everything you sent";
-        lines.Add($"Attack {Describe(target)} ({DefenceText(target)}, power {defence}) with {sent} (power {attack}). "
+        lines.Add($"Attack {Describe(target)} ({DefenceText(target)}, power {defence}{afterSpell.Note}) with {sent} (power {attack}). "
                   + $"As things stand, {outcome}. Units that attack don't defend their own tiles this round.");
         return null;
     }

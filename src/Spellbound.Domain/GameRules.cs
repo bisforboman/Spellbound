@@ -65,7 +65,9 @@ public sealed record GameRules
 
     // Spells (docs/game-design.md, Spells)
 
-    public int ScorchManaPerPower { get; init; } = 2;
+    /// <summary>Scorch's price for each power that actually burns; what doesn't burn (units that moved away, or a
+    /// Golem too strong to burn whole) costs nothing.</summary>
+    public int ScorchManaPerPower { get; init; } = 3;
     public int WardCost { get; init; } = 3;
 
     /// <summary>The defence a Ward adds to its tile in this round's battles.</summary>

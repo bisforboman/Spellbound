@@ -185,7 +185,7 @@
                         <option value="@Key(h)">@h</option>
                     }
                 </select>
-                var free = Movable(on);
+                var free = Riders(on);
                 <div class="attack-source">
                     @if (free.Imps > 0)
                     {
@@ -384,16 +384,20 @@
         (spellTarget, scorchPower, leylineTo, leylineImps, leylineGolems) = (string.Empty, 1, string.Empty, 0, 0);
     }
 
+    /// <summary>The units a Leyline can carry from a tile: those that aren't stepping, and any summoned there this round.</summary>
+    private Army Riders(Hex hex) =>
+        Movable(hex) + (stance == "Summon" && Selected == hex ? Army.Of(kind, Math.Max(0, count)) : Army.None);
+
     private void SpellTargetChosen()
     {
-        var free = Parse(spellTarget) is { } on ? Movable(on) : Army.None;
+        var free = Parse(spellTarget) is { } on ? Riders(on) : Army.None;
         (leylineImps, leylineGolems, leylineTo) = (free.Imps, free.Golems, string.Empty);
     }
 
     private IEnumerable<(Spell Spell, string Cost, string Effect)> SpellChoices()
     {
         var r = Match.Rules;
-        yield return (Spell.Scorch, $"{r.ScorchManaPerPower} mana per power", "burn units on a rival's tile next to yours");
+        yield return (Spell.Scorch, $"{r.ScorchManaPerPower} mana per power that burns", "burn units on a rival's tile next to yours");
         yield return (Spell.Ward, $"{r.WardCost} mana", $"one of your tiles defends with {r.WardPower} more power this round");
         yield return (Spell.Leyline, $"{r.LeylineManaPerUnit} mana per unit, at least {r.LeylineMinCost}", "send units between any two of your tiles");
         yield return (Spell.Blight, $"{r.BlightCost} mana", "a rival's tile next to yours yields nothing next round");
@@ -408,8 +412,10 @@
         var found = chosen switch
         {
             Spell.Scorch => rivals.Where(h => Match.UnitsOn(h).Power(Match.Rules) > 0),
-            Spell.Ward => Me.Tiles,
-            Spell.Leyline => Me.Tiles.Count > 1 ? Me.Tiles.Where(h => !Movable(h).IsEmpty) : [],
+            // Spells come after Attunes and Summons: a Ward can go on the tile being attuned, a Leyline can carry the
+            // units being summoned.
+            Spell.Ward => stance == "Attune" && Selected is { } attuned ? Me.Tiles.Append(attuned).Distinct() : Me.Tiles,
+            Spell.Leyline => Me.Tiles.Count > 1 ? Me.Tiles.Where(h => !Riders(h).IsEmpty) : [],
             Spell.Blight => rivals,
             Spell.Lure => nextToYou.Where(h => Match.OwnerOf(h) is null && Match.Map[h].IsGuarded && Match.Map[h].Guard > Match.Rules.MinGuard),
             _ => [],

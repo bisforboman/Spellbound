@@ -31,7 +31,7 @@ public sealed partial class Match
         ArgumentNullException.ThrowIfNull(orders);
         return orders.Cast is not { } cast ? 0 : cast.Spell switch
         {
-            Spell.Scorch => Rules.ScorchManaPerPower * cast.Count,
+            Spell.Scorch => Rules.ScorchManaPerPower * Burns(cast.Target, cast.Count),
             Spell.Ward => Rules.WardCost,
             Spell.Leyline => Math.Max(Rules.LeylineMinCost,
                 Rules.LeylineManaPerUnit * ((cast.Transfer?.Units.Imps ?? 0) + (cast.Transfer?.Units.Golems ?? 0))),
@@ -40,6 +40,11 @@ public sealed partial class Match
             _ => 0,
         };
     }
+
+    /// <summary>The power a Scorch of <paramref name="count"/> would burn at a tile as it stands: losses stop before a
+    /// unit that would go past the count.</summary>
+    private int Burns(Hex target, int count) =>
+        UnitsOn(target).Power(Rules) - Battle.TakeLosses(UnitsOn(target), count, Rules).Power(Rules);
 
     /// <summary>Checks the spell cast alongside the stance; a Leyline updates <paramref name="positions"/> (where the
     /// seat's units stand), so the stance's attack is checked against where they will be.</summary>
@@ -87,20 +92,27 @@ public sealed partial class Match
                     return $"Scorch costs {Rules.ScorchManaPerPower} mana per power; you have {seat.Mana}.";
                 }
 
-                cost = SpellCostOf(orders);
-                effect = $"burn {cast.Count} power of {army} at {target}, leaving {Battle.TakeLosses(army, cast.Count, Rules)}";
+                var left = Battle.TakeLosses(army, cast.Count, Rules);
+                var burns = power - left.Power(Rules);
+                cost = Rules.ScorchManaPerPower * burns;
+                effect = $"burn {army - left} at {target} (power {burns}), leaving {left}; you pay {Rules.ScorchManaPerPower} per power that burns, "
+                         + "so less if units move away first";
                 break;
             }
 
             case Spell.Ward:
-                if (owner != seat.Index)
+            {
+                // Spells come after Attunes, so a tile attuned this round can be warded (if the Attune goes through).
+                var attuning = orders is { Stance: Stance.Attune, Target: { } attuned } && attuned == target;
+                if (owner != seat.Index && !attuning)
                 {
-                    return "Ward needs one of your tiles.";
+                    return "Ward needs one of your tiles, or the tile you attune this round.";
                 }
 
                 cost = Rules.WardCost;
-                effect = $"{target} defends with {Rules.WardPower} more power this round";
+                effect = $"{target} defends with {Rules.WardPower} more power this round" + (attuning ? ", if your Attune takes it" : "");
                 break;
+            }
 
             case Spell.Leyline:
             {
@@ -110,8 +122,12 @@ public sealed partial class Match
                     return "Leyline needs two different tiles of yours.";
                 }
 
-                // Units that step this round can't also ride the leyline.
-                var free = orders.Moves.Where(m => m.From == move.From).Aggregate(UnitsOn(move.From), (a, m) => a - m.Units);
+                // Units that step this round can't also ride the leyline; units summoned there this round can (spells
+                // come after Summons).
+                var summoned = orders is { Stance: Stance.Summon, Target: { } at, Count: > 0 } && at == move.From
+                    ? Army.Of(orders.Kind, orders.Count)
+                    : Army.None;
+                var free = orders.Moves.Where(m => m.From == move.From).Aggregate(UnitsOn(move.From) + summoned, (a, m) => a - m.Units);
                 if (!move.Units.IsValid || move.Units.IsEmpty || !free.Holds(move.Units))
                 {
                     return $"There aren't {move.Units} at {move.From} to send.";
@@ -170,14 +186,18 @@ public sealed partial class Match
             var seat = seats[order.Seat];
             var cast = order.Cast!;
             var target = cast.Target;
-            seat.Mana -= SpellCostOf(order);
+            seat.Mana -= cast.Spell == Spell.Scorch ? 0 : SpellCostOf(order);
             seat.Cast(cast.Spell);
             switch (cast.Spell)
             {
                 case Spell.Scorch:
+                    // Paid for what burns: units may have moved away, or a Golem be too strong to burn whole.
                     var before = UnitsOn(target);
                     units[target] = Battle.TakeLosses(before, cast.Count, Rules);
-                    lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {before - UnitsOn(target)} burn.");
+                    var burned = before - UnitsOn(target);
+                    var paid = Rules.ScorchManaPerPower * burned.Power(Rules);
+                    seat.Mana -= paid;
+                    lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {burned} burn, for {paid} mana.");
                     break;
                 case Spell.Ward:
                     wards[target] = wards.GetValueOrDefault(target) + Rules.WardPower;
