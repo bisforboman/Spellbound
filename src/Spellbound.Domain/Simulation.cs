@@ -165,7 +165,7 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         public int Conquests { get; internal set; }
         public int MonstersCleared { get; internal set; }
         public int LastTileSaves { get; internal set; }
-        public Dictionary<string, int> Stances { get; } = new() { ["Attack"] = 0, ["Attune"] = 0, ["Summon"] = 0, ["Hold"] = 0 };
+        public Dictionary<string, int> Stances { get; } = new() { ["Attack"] = 0, ["Attune"] = 0, ["Summon"] = 0, ["Build"] = 0, ["Hold"] = 0 };
         public int Spells { get; internal set; }
     }
 
@@ -214,12 +214,12 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine();
         md.AppendLine("## The rounds (per game)");
         md.AppendLine();
-        md.AppendLine("| Round | Free tiles | Attack | Attune | Summon | Hold | Spells | Attuned | Clashes | Priced out | Conquests | Monsters cleared | Last tile saved |");
-        md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+        md.AppendLine("| Round | Free tiles | Attack | Attune | Summon | Build | Hold | Spells | Attuned | Clashes | Priced out | Conquests | Monsters cleared | Last tile saved |");
+        md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
         for (var r = 0; r < Rounds.Count; r++)
         {
             var s = Rounds[r];
-            md.AppendLine(c, $"| {r + 1} | {PerGame(s.FreeTiles)} | {PerGame(s.Stances["Attack"])} | {PerGame(s.Stances["Attune"])} | {PerGame(s.Stances["Summon"])} | {PerGame(s.Stances["Hold"])} | {PerGame(s.Spells)} | {PerGame(s.Attunes)} | {PerGame(s.AttuneClashes)} | {PerGame(s.PricedOut)} | {PerGame(s.Conquests)} | {PerGame(s.MonstersCleared)} | {PerGame(s.LastTileSaves)} |");
+            md.AppendLine(c, $"| {r + 1} | {PerGame(s.FreeTiles)} | {PerGame(s.Stances["Attack"])} | {PerGame(s.Stances["Attune"])} | {PerGame(s.Stances["Summon"])} | {PerGame(s.Stances["Build"])} | {PerGame(s.Stances["Hold"])} | {PerGame(s.Spells)} | {PerGame(s.Attunes)} | {PerGame(s.AttuneClashes)} | {PerGame(s.PricedOut)} | {PerGame(s.Conquests)} | {PerGame(s.MonstersCleared)} | {PerGame(s.LastTileSaves)} |");
         }
 
         md.AppendLine();
@@ -235,7 +235,7 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine("## Mana");
         md.AppendLine(c, $"- Left unspent at the end: average {Avg(ManaLeft)} a seat, highest {ManaLeft.DefaultIfEmpty().Max()}.");
         string PerSeatSpent(string key) => FinalScores.Count == 0 ? "0" : ((double)ManaSpent.GetValueOrDefault(key) / FinalScores.Count).ToString("0.0", c);
-        md.AppendLine(c, $"- Spent per seat over a match: Attune {PerSeatSpent("Attune")}, Summon {PerSeatSpent("Summon")}, spells {PerSeatSpent("Spell")}.");
+        md.AppendLine(c, $"- Spent per seat over a match: Attune {PerSeatSpent("Attune")}, Summon {PerSeatSpent("Summon")}, Build {PerSeatSpent("Build")}, spells {PerSeatSpent("Spell")}.");
         md.AppendLine(c, $"- Spells cast per game: {(Casts.Count == 0 ? "none" : string.Join(", ", Casts.OrderBy(k => k.Key).Select(k => $"{k.Key} {PerGame(k.Value)}")))}.");
         md.AppendLine(c, $"- Summoned per game: {PerGame(ImpsSummoned.Sum())} Imps, {PerGame(GolemsSummoned.Sum())} Golems.");
         md.AppendLine();

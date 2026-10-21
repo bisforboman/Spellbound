@@ -405,9 +405,30 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Commit:')");
                 await Expect(page, "Round 5 of 8");
             });
+            await StepAsync(merlin, "build", async page =>
+            {
+                // A Tower on one of Merlin's tiles, if he can afford it (the match isn't seeded).
+                await page.ClickAsync("label:has-text('Build:')");
+                await Expect(page, "Tap one of your tiles without an upgrade");
+                var spots = page.Locator("input[name='target']");
+                if (await spots.CountAsync() > 0)
+                {
+                    await spots.First.CheckAsync();
+                    await page.ClickAsync("label:has-text('Tower:')");
+                    await Expect(page, "Build a Tower", optional: true);
+                }
+
+                if (await page.Locator("button:has-text('Commit: Build'):not([disabled])").CountAsync() == 0)
+                {
+                    await page.ClickAsync("label:has-text('Hold:')");
+                }
+
+                await page.ClickAsync("button:has-text('Commit:')");
+                await Expect(page, "Round 6 of 8");
+            });
             await StepAsync(merlin, "to-the-end", async page =>
             {
-                for (var round = 5; round <= 8; round++)
+                for (var round = 6; round <= 8; round++)
                 {
                     await page.ClickAsync("label:has-text('Hold:')");
                     await page.ClickAsync("button:has-text('Commit: Hold')");

@@ -13,7 +13,8 @@ public sealed record MatchState(
     IReadOnlyList<Hex> OnAuction,
     IReadOnlyList<TileState> Tiles,
     IReadOnlyList<SeatState> Seats,
-    IReadOnlyList<UnitsState> Units)
+    IReadOnlyList<UnitsState> Units,
+    IReadOnlyList<UpgradeState>? Upgrades = null)
 {
     public const int CurrentVersion = 1;
 }
@@ -34,3 +35,5 @@ public sealed record SeatState(
     int RoundsCast = 0);
 
 public sealed record UnitsState(Hex Hex, int Imps, int Golems);
+
+public sealed record UpgradeState(Hex Hex, Upgrade Upgrade);

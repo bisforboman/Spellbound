@@ -38,6 +38,20 @@
         <input id="count" type="number" class="form-control form-control-lg" min="1" @bind="count" @bind:event="oninput" />
         break;
 
+    case "Build":
+        <p>Tap one of your tiles without an upgrade, or choose one (@Match.Rules.UpgradeCost mana; at most
+            @Match.Rules.UpgradeCap upgrades; each is worth @Match.Rules.PointsPerUpgrade point at the end and passes with the tile if it's taken):</p>
+        @Targets(Me.Tiles.Where(h => Match.UpgradeOn(h) is null).OrderBy(h => h.Q).ThenBy(h => h.R))
+        @foreach (var kind in Enum.GetValues<Upgrade>())
+        {
+            var k = kind;
+            <label class="choice mt-2">
+                <input type="radio" name="upgrade" checked="@(upgrade == k)" @onchange="() => upgrade = k" />
+                <span><b>@k</b>: @Match.UpgradeEffect(k)</span>
+            </label>
+        }
+        break;
+
     case "Attack":
         <p>Tap a rival's tile or a monster tile next to your units, or choose one:</p>
         @Targets(AttackTargets())
@@ -234,6 +248,7 @@
         ["Attune"] = "claim a free tile next to your land",
         ["Summon"] = "spend mana on units",
         ["Attack"] = "send units at a rival's or a monster's tile",
+        ["Build"] = "an upgrade on one of your tiles",
         ["Hold"] = "do nothing this round",
     };
 
@@ -260,6 +275,7 @@
 
     private string stance = "Summon";
     private UnitKind kind = UnitKind.Imp;
+    private Upgrade upgrade = Upgrade.Shrine;
     private int count = 1;
     private readonly Dictionary<Hex, Army> sends = [];
     private readonly List<Move> moves = [];
@@ -322,6 +338,7 @@
         ("Hold", _) => Orders.Hold(You, [.. moves]),
         (_, null) => null,
         ("Attune", { } t) => Orders.Attune(You, t, [.. moves]),
+        ("Build", { } t) => Orders.Build(You, t, upgrade, [.. moves]),
         ("Summon", { } t) => Orders.Summon(You, t, kind, count, [.. moves]),
         ("Attack", { } t) => Orders.Attack(You, t,
             [.. Sources(t).Select(f => new Move(f, t, sends.GetValueOrDefault(f, AfterMoves(f)))).Where(m => !m.Units.IsEmpty)],

@@ -29,7 +29,7 @@ public static class Seats
         {
             var seat = $"Seat {me + 1}";
             line = Regex.Replace(line, $@"\b{seat}'s\b", "your");
-            line = Regex.Replace(line, $@"\b{seat} (wins|gets|moves|summons|collects|pays|banks|attunes|takes|casts|chooses|has)\b",
+            line = Regex.Replace(line, $@"\b{seat} (wins|gets|moves|summons|collects|pays|banks|attunes|takes|casts|chooses|builds|has)\b",
                 m => "You " + (m.Groups[1].Value == "has" ? "have" : m.Groups[1].Value[..^1]));
             line = Regex.Replace(line, $@"\b{seat}\b", "you");
         }
@@ -57,6 +57,7 @@ public static class Seats
 
         var owner = match.OwnerOf(hex) is { } o ? (o == you ? "yours" : owners?[o] is null && owners is not null ? $"Bot {o + 1}'s" : $"seat {o + 1}'s") : tile.IsGuarded ? $"guarded by monsters (power {tile.Guard})" : "free";
         var units = match.UnitsOn(hex) is { IsEmpty: false } army ? $", {army}" : "";
-        return $"{tile.Type} tile at {hex}, yields {tile.Yield}, {owner}{units}";
+        var built = match.UpgradeOn(hex) is { } upgrade ? $", with a {upgrade}" : "";
+        return $"{tile.Type} tile at {hex}, yields {tile.Yield}, {owner}{built}{units}";
     }
 }

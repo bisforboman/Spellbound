@@ -103,10 +103,11 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 - Each round, every player secretly picks **one stance**. Then all stances resolve together.
 - A stance should be **one button** on a phone: the round's main decision is a single tap.
-- **Three stances**:
+- **Four stances**:
   - **Attack:** attack a rival's or a monster-guarded tile with units (see *Battles*).
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
+  - **Build:** spend mana on an upgrade for one of your tiles (see *Upgrades*).
 - Alongside the stance, players can **cast one spell** (see *Spells*).
 - Alongside the stance, players can **move units** freely (see *Units*).
 - A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon): only the moves happen. A player is never forced to spend.
@@ -120,7 +121,7 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 2. **Upkeep:** pay 1 mana per Golem; a Golem that can't be paid for dissolves.
 3. **Commit:** every player secretly commits one stance plus any moves. When all have committed, everything is revealed.
 4. **Moves** resolve. Defenders can reinforce a threatened tile in the same round; attackers can't be sure what they'll meet.
-5. **Attune and Summon** resolve, then **spells**. New tiles exist, new units can defend, and spells take effect before
+5. **Attune, Summon and Build** resolve, then **spells**. New tiles exist, new units can defend, and spells take effect before
    attacks (Blight waits for the next round's income).
 6. **Attacks** resolve.
    - Units sent to attack **have left** their tile: they don't defend it if it's attacked in the same round.
@@ -244,6 +245,30 @@ yields, prices or income. Costs are flat and small.
   (see `discussions/traits.md`): they spend about 19 mana a match on spells and end with about 13 unspent, and Ward
   is cast most (about 9 a game), then Blight (about 5).*
 
+## Upgrades
+
+Decided 21 Oct 2026 (the reasoning is in `discussions/upgrades.md`): three of six AI tastes asked, separately, for
+something built on a tile that keeps paying (`playtests/ai-feedback.md`).
+
+- **Build is a stance:** one upgrade on one of your tiles, **5 mana**, at most **one per tile**, and you can't build
+  while your tiles hold **3** upgrades (taken ones count).
+- An upgrade belongs to the tile: it **passes with the tile** when the tile is taken, like a Blight.
+- **Each upgrade you hold at the end is worth 1 point.**
+- Builds resolve with Attunes and Summons, before spells and attacks.
+
+| Upgrade | Effect, for whoever holds the tile |
+|---|---|
+| Shrine | The tile yields 1 more mana. |
+| Tower | The tile defends with 2 more power, even with no units on it; like a Ward, it takes the blows first when the defence holds. |
+| Sanctum | Its holder's spells aimed at it or a tile next to it cost 1 less. |
+
+- The Shrine changes income and the Sanctum changes costs, which the rest of this document avoids because it snowballs;
+  the cap of 3 per realm holds them in check (the owner's choice over a rising price).
+- **Measured** (1,000 bot games each; bots build from round 3 when they would keep 6 mana beyond the price, a Tower on
+  a threatened tile, a Sanctum for Hexer or Spellweaver, else a Shrine): bots spend about 10 mana a match on upgrades,
+  final scores rise from about 19 to 19.5, and trait win rates spread a little (26–45% with 3 players, 13–27% with
+  5); Beastbane wins most with bots. *To check with AI players next.*
+
 ## Scoring and winning
 
 - The game lasts **8 rounds**. After round 8, the player with the **most points wins**.
@@ -262,6 +287,7 @@ yields, prices or income. Costs are flat and small.
 | Mana produced | 1 per 12 mana your land produced (remainders carry over to the next round) |
 | Conquest | 1 per rival tile taken or monster tile cleared (kept even if the tile is lost again) |
 | Trait goals | set by each trait, scored once at the end, up to 3 (see *Traits*) |
+| Upgrades | 1 per upgrade you hold at the end |
 | Unspent mana | 1 per 10 mana left at the end, scored once (decided 21 Oct 2026: both AI sessions ended with 27–67 mana unspent, and late Scorches were dumps of mana worth nothing) |
 
 - **Tie-break:** most tiles held at the end; if still tied, most mana in hand.

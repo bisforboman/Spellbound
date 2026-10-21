@@ -21,6 +21,7 @@ public sealed partial class Match
         {
             Stance.Attune => Rules.AttunePrice(seats[orders.Seat].Tiles.Count),
             Stance.Summon => Rules.CostOf(orders.Kind) * orders.Count,
+            Stance.Build => Rules.UpgradeCost,
             _ => 0,
         };
     }
@@ -29,7 +30,7 @@ public sealed partial class Match
     public int SpellCostOf(Orders orders)
     {
         ArgumentNullException.ThrowIfNull(orders);
-        return orders.Cast is not { } cast ? 0 : cast.Spell switch
+        return orders.Cast is not { } cast ? 0 : Math.Max(0, cast.Spell switch
         {
             Spell.Scorch => Rules.ScorchManaPerPower * Burns(cast.Target, cast.Count),
             Spell.Ward => Rules.WardCost,
@@ -38,7 +39,7 @@ public sealed partial class Match
             Spell.Blight => Rules.BlightCost,
             Spell.Lure => Rules.LureCost,
             _ => 0,
-        };
+        } - SanctumDiscount(orders.Seat, cast.Target));
     }
 
     /// <summary>The power a Scorch of <paramref name="count"/> would burn at a tile as it stands: losses stop before a
@@ -176,12 +177,15 @@ public sealed partial class Match
                 return $"Unknown spell {cast.Spell}.";
         }
 
+        // A Sanctum makes spells aimed at it or next to it cheaper (Leyline's cost already counts it).
+        var sanctum = cast.Spell == Spell.Leyline ? 0 : Math.Min(cost, SanctumDiscount(orders.Seat, target));
+        cost -= sanctum;
         if (cost > seat.Mana)
         {
             return $"{cast.Spell} costs {cost} mana; you have {seat.Mana}.";
         }
 
-        lines.Add($"Cast {cast.Spell} for {cost} mana: {effect}.");
+        lines.Add($"Cast {cast.Spell} for {cost} mana{(sanctum > 0 ? $" ({sanctum} less for your Sanctum)" : "")}: {effect}.");
         return null;
     }
 
@@ -206,7 +210,7 @@ public sealed partial class Match
                     var before = UnitsOn(target);
                     units[target] = Battle.TakeLosses(before, cast.Count, Rules);
                     var burned = before - UnitsOn(target);
-                    var paid = Rules.ScorchManaPerPower * burned.Power(Rules);
+                    var paid = burned.IsEmpty ? 0 : Math.Max(0, Rules.ScorchManaPerPower * burned.Power(Rules) - SanctumDiscount(order.Seat, target));
                     seat.Mana -= paid;
                     if (!burned.IsEmpty)
                     {
@@ -239,7 +243,8 @@ public sealed partial class Match
 
     private int Ward(Hex hex) => wards.GetValueOrDefault(hex);
 
-    private int YieldFor(Hex hex) => blights.Contains(hex) ? 0 : Map[hex].Yield ?? 0;
+    private int YieldFor(Hex hex) =>
+        blights.Contains(hex) ? 0 : (Map[hex].Yield ?? 0) + (UpgradeOn(hex) == Upgrade.Shrine ? Rules.ShrineYield : 0);
 
     private void ClearRoundSpells()
     {

@@ -1,4 +1,8 @@
-# Tile upgrades (proposed 21 Oct 2026)
+# Tile upgrades (decided 21 Oct 2026)
+
+**Decided:** the owner chose a **Build stance** (not a slot alongside), a **cap of 3 upgrades per realm** at a flat
+price (5 mana), upgrades **pass with the tile**, and **1 point each** at the end. The rules are in
+[game-design.md](../game-design.md#upgrades). Below is the proposal as it was put.
 
 Why: in the AI feedback session (`../playtests/ai-feedback.md`), three of six tastes asked for this on their own:
 - the Euro-gamer: "nothing compounds";
