@@ -71,12 +71,12 @@ thousands of seeded games, before any person plays them. A trait that wins too o
 Each player now gets their own offer of 2, so 5 players need 10 traits. The owner chose to let the new ones build on
 spells and units, which didn't exist when the first six were chosen. They are still end-of-game, capped goals:
 
-| Trait | Pulls towards | Opening tell (intended; bots don't bid this way yet) | Goal at the end, cap 3 |
+| Trait | Pulls towards | Opening tell | Goal at the end, cap 3 (first guess) |
 |---|---|---|---|
 | **Golemwright** | Golems | Bids on high yields, to pay their upkeep | 1 point per 2 Golems you have |
-| **Spellweaver** | Every kind of spell | Bids on tiles next to rivals and monsters, where most spells aim | 1 point per different spell beyond the first |
+| **Spellweaver** | Every kind of spell | Bids on tiles next to rivals, where most spells aim | 1 point per different spell beyond the first |
 | **Warden** | Keeping the land you started with | Bids on tiles it can defend: next to its own | 1 point per opening tile still held, beyond the first |
-| **Hexer** | Scorch and Blight | Bids on tiles next to rivals | 1 point per 2 Scorches and Blights |
+| **Hexer** | Scorch and Blight | None (see below) | 1 point per 2 Scorches and Blights |
 
 Tried and changed on the way, in the simulator:
 
@@ -94,3 +94,15 @@ games whatever their goal scored: the simulator was measuring that plan, not the
 before attuning every other round, and traits only change what and where (tile type, Golems, where to summon, which
 spell). This plays better than attuning almost every round: conquest points per seat went from 0.8 to 2.5, mana left
 at the end from 26 to 13, and summons from 4 Golems and 12 Imps a game to 12 and 30. Scores stay around 18.
+
+### Bots bid like their trait (21 Oct 2026)
+
+Every bot now bids, and attunes, towards its trait's tell: Wildheart and Hearthkeeper their tile type, Weaver and
+Warden next to their own land, Wanderer away from it, Warbrand and Spellweaver next to rivals, Beastbane next to dark
+land or monsters, Golemwright high yields. Two numbers moved with it (the owner's choice):
+
+- **Hexer** bidding next to rivals got its land attacked: it won 22% of 3-player games and 11% of 5-player games. Its
+  bots now give nothing away, and it scores **1 point per Scorch or Blight** (was per 2): 31% and 19%.
+- **Golemwright** won most (42% and 26%): now **1 point per 3 Golems** (was per 2): 38% and 24%.
+
+Every trait now wins between 27% and 38% of 3-player games and between 17% and 24% of 5-player games.

@@ -117,7 +117,7 @@ public class TraitTests
         var hexer = SeatZero(s => s with { Trait = Trait.Hexer, SpellsCast = all, HexesCast = 3 });
 
         Assert.Equal((5, 3), spellweaver.TraitGoal(spellweaver.Seats[0])); // 4 beyond the first, capped at 3
-        Assert.Equal((3, 1), hexer.TraitGoal(hexer.Seats[0])); // 1 point per 2 Scorches and Blights
+        Assert.Equal((3, 3), hexer.TraitGoal(hexer.Seats[0])); // 1 point per Scorch or Blight
     }
 
     [Fact]

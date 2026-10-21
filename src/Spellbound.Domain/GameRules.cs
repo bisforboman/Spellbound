@@ -105,10 +105,10 @@ public sealed record GameRules
     public int GroupTilesPerTraitPoint { get; init; } = 3;
 
     /// <summary>Golemwright: one point per this many Golems at the end.</summary>
-    public int GolemsPerTraitPoint { get; init; } = 2;
+    public int GolemsPerTraitPoint { get; init; } = 3;
 
     /// <summary>Hexer: one point per this many Scorches and Blights cast.</summary>
-    public int HexesPerTraitPoint { get; init; } = 2;
+    public int HexesPerTraitPoint { get; init; } = 1;
 
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.
     // On average every type yields 2.

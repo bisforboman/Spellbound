@@ -63,15 +63,25 @@ public static class Bot
     /// <summary>How much more a tile that suits the bot's trait is worth to it, in yield.</summary>
     private const int TraitLean = 2;
 
-    /// <summary>Whether a tile suits the seat's trait: its type, or next to its land or away from it.</summary>
-    private static bool Suits(Match match, Seat me, Hex hex) => me.Trait switch
+    /// <summary>Whether a tile suits the seat's trait, which is what its bids give away (docs/discussions/traits.md,
+    /// the opening tells): its type; next to its land or away from it; next to rivals; next to the dark land where
+    /// monsters will appear; or a rich yield to pay Golems' upkeep. A Hexer gives nothing away: land next to rivals
+    /// gets it attacked, and it won least when it bid there.</summary>
+    private static bool Suits(Match match, Seat me, Hex hex)
     {
-        Trait.Wildheart => match.Map[hex].Type == TileType.Wild,
-        Trait.Hearthkeeper => match.Map[hex].Type == TileType.Steady,
-        Trait.Weaver => me.Tiles.Any(hex.IsNextTo),
-        Trait.Wanderer => me.Tiles.Count > 0 && !me.Tiles.Any(hex.IsNextTo),
-        _ => false,
-    };
+        var neighbours = match.Map.NeighboursOf(hex).ToList();
+        return me.Trait switch
+        {
+            Trait.Wildheart => match.Map[hex].Type == TileType.Wild,
+            Trait.Hearthkeeper => match.Map[hex].Type == TileType.Steady,
+            Trait.Weaver or Trait.Warden => me.Tiles.Any(hex.IsNextTo),
+            Trait.Wanderer => me.Tiles.Count > 0 && !me.Tiles.Any(hex.IsNextTo),
+            Trait.Warbrand or Trait.Spellweaver => neighbours.Any(n => match.OwnerOf(n) is { } o && o != me.Index),
+            Trait.Beastbane => neighbours.Any(n => match.Map[n].IsGuarded) || neighbours.Count(n => !match.Map[n].IsUnveiled) >= 3,
+            Trait.Golemwright => match.Map[hex].Yield >= 3,
+            _ => false,
+        };
+    }
 
     /// <summary>One of the hexes scoring within 1 of the best, at random, so bots don't all reach for the same one.</summary>
     private static Hex PickGood(IReadOnlyCollection<Hex> hexes, Func<Hex, int> score, IRandomSource random)
