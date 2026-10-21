@@ -255,7 +255,7 @@
           "Hearthkeeper",
           "Warden"
         ],
-        "Trait": null,
+        "Trait": "Warden",
         "TraitPoints": 0,
         "OpeningTiles": [],
         "MonstersCleared": 0,

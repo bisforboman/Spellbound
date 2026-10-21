@@ -1,32 +1,16 @@
 {
   "Seed": 52,
-  "Step": 2,
+  "Step": 3,
   "AiSeats": [
     0,
     1
   ],
   "Match": {
     "Version": 1,
-    "Phase": "Opening",
-    "OpeningUnveil": 3,
-    "CurrentRound": 0,
-    "OnAuction": [
-      {
-        "Q": 1,
-        "R": -2,
-        "S": 1
-      },
-      {
-        "Q": -2,
-        "R": 2,
-        "S": 0
-      },
-      {
-        "Q": 0,
-        "R": 0,
-        "S": 0
-      }
-    ],
+    "Phase": "Rounds",
+    "OpeningUnveil": 0,
+    "CurrentRound": 1,
+    "OnAuction": [],
     "Tiles": [
       {
         "Hex": {
@@ -221,12 +205,17 @@
     ],
     "Seats": [
       {
-        "Mana": 4,
+        "Mana": 8,
         "Score": 0,
-        "ProducedThisRound": 0,
+        "ProducedThisRound": 6,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
         "Tiles": [
+          {
+            "Q": 1,
+            "R": -2,
+            "S": 1
+          },
           {
             "Q": 1,
             "R": 0,
@@ -245,7 +234,23 @@
         ],
         "Trait": "Golemwright",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": 1,
+            "R": -2,
+            "S": 1
+          },
+          {
+            "Q": 1,
+            "R": 0,
+            "S": -1
+          },
+          {
+            "Q": 2,
+            "R": -1,
+            "S": -1
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
         "SpellsCast": [],
@@ -255,9 +260,9 @@
         "GuessPoints": 0
       },
       {
-        "Mana": 6,
+        "Mana": 10,
         "Score": 0,
-        "ProducedThisRound": 0,
+        "ProducedThisRound": 5,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
         "Tiles": [
@@ -265,6 +270,11 @@
             "Q": -2,
             "R": 1,
             "S": 1
+          },
+          {
+            "Q": -2,
+            "R": 2,
+            "S": 0
           },
           {
             "Q": -1,
@@ -279,7 +289,23 @@
         ],
         "Trait": "Warden",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": -2,
+            "R": 1,
+            "S": 1
+          },
+          {
+            "Q": -2,
+            "R": 2,
+            "S": 0
+          },
+          {
+            "Q": -1,
+            "R": -1,
+            "S": 2
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
         "SpellsCast": [],
@@ -289,9 +315,9 @@
         "GuessPoints": 0
       },
       {
-        "Mana": 5,
+        "Mana": 10,
         "Score": 0,
-        "ProducedThisRound": 0,
+        "ProducedThisRound": 5,
         "ProducedCarry": 0,
         "ConquestsThisRound": 0,
         "Tiles": [
@@ -299,6 +325,11 @@
             "Q": 0,
             "R": -1,
             "S": 1
+          },
+          {
+            "Q": 0,
+            "R": 0,
+            "S": 0
           },
           {
             "Q": 1,
@@ -313,7 +344,23 @@
         ],
         "Trait": "Weaver",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": 0,
+            "R": -1,
+            "S": 1
+          },
+          {
+            "Q": 0,
+            "R": 0,
+            "S": 0
+          },
+          {
+            "Q": 1,
+            "R": 1,
+            "S": -2
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
         "SpellsCast": [],
@@ -329,13 +376,34 @@
   },
   "Pending": {},
   "LastReport": [
-    "Seat 3 wins the Steady tile at (0, -1) (yields 2) for 3 mana.",
-    "Seat 1 wins the Steady tile at (2, -1) (yields 2) for 2 mana.",
-    "Seat 2 gets the Shifting tile at (-1, -1) (yields 2) for free."
+    "Seat 1 wins the Steady tile at (1, -2) (yields 2) for 2 mana.",
+    "Seat 2 wins the Shifting tile at (-2, 2) (yields 1) for 1 mana.",
+    "Seat 3 gets the Wild tile at (0, 0) (yields 2) for free.",
+    "The opening is over. The rounds begin.",
+    "Every trait stays secret until the end. Guess a rival\u0027s alongside your orders, once per rival.",
+    "Round 1 of 8 begins.",
+    "Seat 1 collects 6 mana.",
+    "Seat 2 collects 5 mana.",
+    "Seat 3 collects 5 mana."
   ],
   "LastReportTags": [
     null,
     null,
-    null
+    null,
+    null,
+    null,
+    null,
+    {
+      "Seat": 0,
+      "At": []
+    },
+    {
+      "Seat": 1,
+      "At": []
+    },
+    {
+      "Seat": 2,
+      "At": []
+    }
   ]
 }
