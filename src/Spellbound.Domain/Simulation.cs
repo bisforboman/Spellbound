@@ -16,6 +16,45 @@ public static partial class Simulation
 
     private static Regex BankedLine => BankedRegex();
 
+    [GeneratedRegex(@"^Seat (\d+) banks .*\((\d+) for land, (\d+) for mana(?:, (\d+) for conquest)?\)")]
+    private static partial Regex SeatBankedRegex();
+
+    [GeneratedRegex(@"^Seat (\d+)'s \d+ unspent mana is worth (\d+) point")]
+    private static partial Regex SavedRegex();
+
+    /// <summary>
+    /// Bots with different plans against each other (docs/discussions/strategies.md): with 5 players, the five
+    /// specialists, one each; with fewer, a draw of plans from all six (the everyday bot included). Plans are dealt to
+    /// seats from their own seeded stream, so seat order doesn't decide; traits are drafted at random as usual.
+    /// </summary>
+    public static SimulationReport RunPlans(int players, int games, int seed, GameRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(games);
+        var report = new SimulationReport(players, games, seed, rules.Rounds);
+        IRandomSource deal = new SeededRandom(unchecked(seed * 31 + 17));
+        var specialists = Enum.GetValues<Plan>().Where(p => p != Plan.Balanced).ToList();
+        var everyone = Enum.GetValues<Plan>().ToList();
+        for (var game = 0; game < games; game++)
+        {
+            var pool = (players == specialists.Count ? specialists : everyone).ToList();
+            var plans = new Plan[players];
+            for (var seat = 0; seat < players; seat++)
+            {
+                var pick = deal.Next(pool.Count);
+                plans[seat] = pool[pick];
+                if (pool.Count > 1)
+                {
+                    pool.RemoveAt(pick);
+                }
+            }
+
+            Play(Match.Start(players, rules, new SeededRandom(seed + game * 7919)), new SeededRandom(seed - game * 104729), report, plans);
+        }
+
+        return report;
+    }
+
     public static SimulationReport Run(int players, int games, int seed, GameRules rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
@@ -29,8 +68,10 @@ public static partial class Simulation
         return report;
     }
 
-    private static void Play(Match match, IRandomSource random, SimulationReport report)
+    private static void Play(Match match, IRandomSource random, SimulationReport report, Plan[]? plans = null)
     {
+        Plan PlanOf(int seat) => plans?[seat] ?? Plan.Balanced;
+        var sources = match.Seats.Select(_ => new int[4]).ToArray(); // land, mana, conquest, saved mana
         foreach (var seat in match.Seats)
         {
             if (Bot.ChooseTrait(match, seat.Index, random) is { } trait)
@@ -41,7 +82,7 @@ public static partial class Simulation
 
         while (match.Phase == MatchPhase.Opening)
         {
-            var bids = match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random)).ToList();
+            var bids = match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random, PlanOf(s.Index))).ToList();
             report.Bids.AddRange(bids.Where(b => b.Tile is not null).Select(b => b.Amount));
             report.Passes += bids.Count(b => b.Tile is null);
             var lines = Resolved(match.Auction(bids, random));
@@ -53,7 +94,7 @@ public static partial class Simulation
         {
             var round = report.Rounds[match.CurrentRound - 1];
             round.FreeTiles += match.Map.Tiles.Count(t => t.IsUnveiled && !t.IsGuarded && match.OwnerOf(t.Hex) is null);
-            var orders = match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random)).ToList();
+            var orders = match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random, PlanOf(s.Index))).ToList();
             foreach (var order in orders)
             {
                 round.Stances[order.Target is null ? "Hold" : order.Stance.ToString()]++;
@@ -119,6 +160,20 @@ public static partial class Simulation
             }
 
             round.LastTileSaves += lines.Count(l => l.Contains("last tile", StringComparison.Ordinal));
+            foreach (var line in lines)
+            {
+                if (SeatBankedRegex().Match(line) is { Success: true } b)
+                {
+                    var s = sources[int.Parse(b.Groups[1].Value, CultureInfo.InvariantCulture) - 1];
+                    s[0] += int.Parse(b.Groups[2].Value, CultureInfo.InvariantCulture);
+                    s[1] += int.Parse(b.Groups[3].Value, CultureInfo.InvariantCulture);
+                    s[2] += b.Groups[4].Success ? int.Parse(b.Groups[4].Value, CultureInfo.InvariantCulture) : 0;
+                }
+                else if (SavedRegex().Match(line) is { Success: true } m)
+                {
+                    sources[int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) - 1][3] += int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+                }
+            }
         }
 
         report.MostImpsOnATile.Add(match.Map.Tiles.Max(t => match.UnitsOn(t.Hex).Imps));
@@ -128,6 +183,25 @@ public static partial class Simulation
         foreach (var winner in match.Winners)
         {
             report.WinsBySeat[winner.Index]++;
+        }
+
+        if (plans is not null)
+        {
+            foreach (var seat in match.Seats)
+            {
+                var stats = report.Plans.TryGetValue(plans[seat.Index], out var p) ? p : report.Plans[plans[seat.Index]] = new();
+                var src = sources[seat.Index];
+                stats.Seats++;
+                stats.Wins += match.Winners.Contains(seat) ? 1 : 0;
+                stats.Score += seat.Score;
+                stats.Land += src[0];
+                stats.Mana += src[1];
+                stats.Conquest += src[2];
+                stats.Saved += src[3];
+                stats.Trait += seat.TraitPoints;
+                stats.Upgrades += match.UpgradesOf(seat) * match.Rules.PointsPerUpgrade;
+                stats.ManaLeft += seat.Mana;
+            }
         }
 
         foreach (var seat in match.Seats.Where(s => s.Trait is not null))
@@ -178,6 +252,22 @@ public sealed class SimulationReport(int players, int games, int seed, int round
     }
 
     public Dictionary<Trait, TraitStats> Traits { get; } = [];
+
+    public sealed class PlanStats
+    {
+        public int Seats { get; internal set; }
+        public int Wins { get; internal set; }
+        public int Score { get; internal set; }
+        public int Land { get; internal set; }
+        public int Mana { get; internal set; }
+        public int Conquest { get; internal set; }
+        public int Trait { get; internal set; }
+        public int Upgrades { get; internal set; }
+        public int Saved { get; internal set; }
+        public int ManaLeft { get; internal set; }
+    }
+
+    public Dictionary<Plan, PlanStats> Plans { get; } = [];
 
     public int Players => players;
     public int Games => games;
@@ -238,6 +328,22 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine(c, $"- Spent per seat over a match: Attune {PerSeatSpent("Attune")}, Summon {PerSeatSpent("Summon")}, Build {PerSeatSpent("Build")}, spells {PerSeatSpent("Spell")}.");
         md.AppendLine(c, $"- Spells cast per game: {(Casts.Count == 0 ? "none" : string.Join(", ", Casts.OrderBy(k => k.Key).Select(k => $"{k.Key} {PerGame(k.Value)}")))}.");
         md.AppendLine(c, $"- Summoned per game: {PerGame(ImpsSummoned.Sum())} Imps, {PerGame(GolemsSummoned.Sum())} Golems.");
+        if (Plans.Count > 0)
+        {
+            md.AppendLine();
+            md.AppendLine("## Plans");
+            md.AppendLine();
+            md.AppendLine(c, $"A seat wins {(100.0 / players).ToString("0", c)}% of the time on average. Points per seat, by source.");
+            md.AppendLine();
+            md.AppendLine("| Plan | Seats | Win rate | Score | Land | Mana | Conquest | Trait | Upgrades | Saved mana | Mana left |");
+            md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|");
+            foreach (var (plan, p) in Plans.OrderBy(k => k.Key))
+            {
+                string Per(int n) => ((double)n / p.Seats).ToString("0.0", c);
+                md.AppendLine(c, $"| {plan} | {p.Seats} | {(100.0 * p.Wins / p.Seats).ToString("0", c)}% | {Per(p.Score)} | {Per(p.Land)} | {Per(p.Mana)} | {Per(p.Conquest)} | {Per(p.Trait)} | {Per(p.Upgrades)} | {Per(p.Saved)} | {Per(p.ManaLeft)} |");
+            }
+        }
+
         md.AppendLine();
         md.AppendLine("## Traits");
         md.AppendLine();
