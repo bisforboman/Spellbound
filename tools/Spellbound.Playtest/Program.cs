@@ -305,9 +305,31 @@ namespace Spellbound.Playtest
                 await Expect(page, "Round 2 of 8");
                 await Expect(page, "You summon 3 Imps");
             });
+            await StepAsync(merlin, "jump-to-report", async page =>
+            {
+                // The bottom bar jumps to the report: its heading must end up on screen, not just on the page.
+                await page.ClickAsync(".match-tabs a:has-text('Report')");
+                await page.WaitForFunctionAsync(
+                    "() => { const r = document.querySelector('#report h2').getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; }",
+                    null, new PageWaitForFunctionOptions { Timeout = 5_000 });
+                await Expect(page, "What just happened");
+                // What a phone shows, bars and all (the step's own screenshot is the whole page).
+                await page.WaitForTimeoutAsync(1000);
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "jump-to-report-screen.png") });
+                await page.ClickAsync(".match-tabs a:has-text('Orders')");
+                await page.WaitForTimeoutAsync(500);
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "orders-screen.png") });
+                if (await page.Locator("button:has-text('Everything that happened')").CountAsync() > 0)
+                {
+                    await page.ClickAsync("button:has-text('Everything that happened')");
+                    await Expect(page, "Only what concerns you");
+                }
+            });
             await StepAsync(merlin, "move", async page =>
             {
                 // A move if two of Merlin's tiles touch (the match isn't seeded, so not every run can).
+                await page.ClickAsync("button:has-text('Moves (optional)')");
+                await Expect(page, "Units step to a neighbouring tile");
                 if (await page.Locator("#move-from option").CountAsync() > 1)
                 {
                     await page.SelectOptionAsync("#move-from", new SelectOptionValue { Index = 1 });
@@ -361,6 +383,7 @@ namespace Spellbound.Playtest
             await StepAsync(merlin, "spell-pick", async page =>
             {
                 await page.ClickAsync("label:has-text('Hold:')");
+                await page.ClickAsync("button:has-text('Spell (optional)')");
                 await page.ClickAsync("label:has-text('Ward')");
                 await Expect(page, "Choose where Ward goes");
                 await page.SelectOptionAsync("#spell-target", new SelectOptionValue { Index = 1 });

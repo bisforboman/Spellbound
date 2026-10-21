@@ -67,8 +67,11 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
     and each goal in the end report
 - [x] Battle report text in the art direction's tone ([theme](theme.md)): your battles end in a stamp (Conquered,
   Repelled, Thwarted, Held, Lost), and the report and tile labels say "you" and "Bot N"
-- [ ] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll *(the layout and theme exist;
-  the game's pages need the pass)*
+- [x] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll. The match page (owner's
+  choices, 21 Oct 2026): a bottom bar that jumps to Map, Orders, Report and Standings; the action (Commit, Bid and
+  Pass, Choose) and its cost fixed above it in thumb reach; the stances as a 2×2 grid; Moves and Spell folded behind
+  a header that says what's in them; and a short report (your lines, your battles, where the match is) with
+  "Everything that happened" a tap away
 - [x] PWA manifest and icons so the game can be added to the home screen *(already built)*
 - [ ] Integration test for a round (WebApplicationFactory on a real PostgreSQL, like the platform's tests)
 - [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)

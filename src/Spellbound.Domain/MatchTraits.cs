@@ -63,20 +63,23 @@ public sealed partial class Match
         var r = Rules;
         var goal = trait switch
         {
-            Trait.Wildheart => $"1 point per {r.TilesOfTypePerTraitPoint} Wild tiles held",
-            Trait.Hearthkeeper => $"1 point per {r.TilesOfTypePerTraitPoint} Steady tiles held",
-            Trait.Weaver => $"1 point per {r.GroupTilesPerTraitPoint} tiles in your largest connected group",
+            Trait.Wildheart => "1 point per " + Each(r.TilesOfTypePerTraitPoint, "Wild tile", "Wild tiles") + " held",
+            Trait.Hearthkeeper => "1 point per " + Each(r.TilesOfTypePerTraitPoint, "Steady tile", "Steady tiles") + " held",
+            Trait.Weaver => "1 point per " + Each(r.GroupTilesPerTraitPoint, "tile", "tiles") + " in your largest connected group",
             Trait.Wanderer => "1 point per separate group of tiles beyond the first",
             Trait.Beastbane => "1 point per monster tile cleared",
             Trait.Warbrand => "1 point per rival tile taken",
-            Trait.Golemwright => $"1 point per {r.GolemsPerTraitPoint} Golems you have",
+            Trait.Golemwright => "1 point per " + Each(r.GolemsPerTraitPoint, "Golem", "Golems") + " you have",
             Trait.Spellweaver => "1 point per different spell cast beyond the first",
             Trait.Warden => "1 point per tile from your opening you still hold, beyond the first",
-            Trait.Hexer => r.HexesPerTraitPoint == 1 ? "1 point per Scorch or Blight cast" : $"1 point per {r.HexesPerTraitPoint} Scorches and Blights cast",
+            Trait.Hexer => "1 point per " + Each(r.HexesPerTraitPoint, "Scorch or Blight", "Scorches and Blights") + " cast",
             _ => "nothing",
         };
         return $"at the end, {goal}, up to {r.TraitGoalCap}.";
     }
+
+    /// <summary>"Wild tile" for one, "2 Wild tiles" for more, as in "1 point per …".</summary>
+    private static string Each(int n, string one, string many) => n == 1 ? one : $"{n} {many}";
 
     /// <summary>A seat's trait goal: what it counts and the points, capped.</summary>
     public (int Count, int Points) TraitGoal(Seat seat)

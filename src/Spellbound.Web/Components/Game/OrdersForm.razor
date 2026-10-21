@@ -71,7 +71,13 @@
         break;
 }
 
-<h3 class="h5 mt-3">Moves <small class="text-muted">(any stance, optional)</small></h3>
+<button type="button" class="fold-head" aria-expanded="@showMoves" @onclick="() => showMoves = !showMoves">
+    <span class="fold-title">Moves (optional) @(showMoves ? "▾" : "▸")</span>
+    <span class="fold-sum">@(moves.Count == 0 ? "none" : $"{moves.Count} planned")</span>
+</button>
+@if (showMoves)
+{
+<div class="fold-body">
 <p class="text-muted">Units step to a neighbouring tile of yours, once a round. Moves happen first, so moved units can attack.</p>
 @foreach (var move in moves.ToList())
 {
@@ -117,8 +123,16 @@
         }
     </div>
 }
+</div>
+}
 
-<h3 class="h5 mt-3">Spell <small class="text-muted">(any stance, optional)</small></h3>
+<button type="button" class="fold-head" aria-expanded="@showSpell" @onclick="() => showSpell = !showSpell">
+    <span class="fold-title">Spell (optional) @(showSpell ? "▾" : "▸")</span>
+    <span class="fold-sum">@SpellSummary()</span>
+</button>
+@if (showSpell)
+{
+<div class="fold-body">
 <p class="text-muted">One spell a round, paid on top of the stance. Spells work after Attunes and Summons, before attacks.</p>
 <fieldset class="spells">
     <label class="choice">
@@ -186,6 +200,8 @@
         }
     </div>
 }
+</div>
+}
 
 @{
     var orders = Build();
@@ -204,8 +220,13 @@
         }
     </div>
 }
-<button type="button" class="btn btn-primary btn-lg w-100 mt-2" disabled="@(Busy || check is not { Succeeded: true })"
-        @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance@(orders?.Cast is { } cast ? $" and {cast.Spell}" : "")</button>
+<div class="action-bar">
+    <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@ActionSummary(check)</p>
+    <div class="action-row">
+        <button type="button" class="btn btn-primary btn-lg" disabled="@(Busy || check is not { Succeeded: true })"
+                @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance@(orders?.Cast is { } cast ? $" and {cast.Spell}" : "")</button>
+    </div>
+</div>
 
 @code {
     private static readonly IReadOnlyDictionary<string, string> Choices = new Dictionary<string, string>
@@ -247,6 +268,8 @@
     private int moveImps;
     private int moveGolems;
     private int round;
+    private bool showMoves;
+    private bool showSpell;
     private Spell? spell;
     private string spellTarget = string.Empty;
     private int scorchPower = 1;
@@ -338,6 +361,22 @@
         var movable = Parse(moveFrom) is { } from ? Movable(from) : Army.None;
         (moveImps, moveGolems) = (movable.Imps, movable.Golems);
     }
+
+    /// <summary>What the folded spell section holds, for its header.</summary>
+    private string SpellSummary() => (spell, Parse(spellTarget)) switch
+    {
+        (null, _) => "none",
+        ({ } s, { } on) => $"{s} on {on}",
+        ({ } s, null) => $"{s}, choose a tile",
+    };
+
+    /// <summary>The line in the action bar: the problem, or the cost all told (the check's last line).</summary>
+    private static string ActionSummary(Report? check) => check switch
+    {
+        null => "Choose what your stance aims at.",
+        { Succeeded: false } => check.Lines[0],
+        _ => check.Lines[^1],
+    };
 
     private void ChooseSpell(Spell? chosen)
     {

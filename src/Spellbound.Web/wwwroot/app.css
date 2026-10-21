@@ -897,3 +897,135 @@ tr.you td {
     .attack-source input {
         width: 5rem;
     }
+
+/* ---- The match page at 360 px: one screen at a time, the action in thumb reach ---- */
+
+/* Room under the page for the fixed action bar and the jump bar */
+.match-page {
+    padding-bottom: calc(10rem + env(safe-area-inset-bottom));
+}
+
+    .match-page section {
+        scroll-margin-top: 3.5rem; /* below the sticky top bar */
+    }
+
+/* The stances: a 2×2 grid of short plates */
+.stances {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+    .stances .choice {
+        margin-bottom: 0;
+        padding: 0.6rem;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        line-height: 1.3;
+    }
+
+/* An optional part folded behind its header, which says what's in it */
+.fold-head {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 44px;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--paper-deep);
+    border: 1px solid var(--paper-edge);
+    border-radius: 3px;
+    color: var(--ink);
+    text-align: left;
+}
+
+    .fold-head .fold-title {
+        font-family: var(--font-label);
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .fold-head .fold-sum {
+        color: var(--ink-soft);
+        font-size: 0.9rem;
+    }
+
+.fold-body {
+    padding: 0.5rem 0 0;
+}
+
+/* The action bar: the commit button and what it costs, fixed above the jump bar */
+.action-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(3.25rem + env(safe-area-inset-bottom));
+    z-index: 9;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(transparent, var(--paper) 0.75rem);
+}
+
+    .action-bar > * {
+        max-width: 38rem;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .action-bar .action-sum {
+        margin-bottom: 0.35rem;
+        font-size: 0.9rem;
+        text-align: center;
+        font-variant-numeric: lining-nums tabular-nums;
+    }
+
+    .action-bar .action-row {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+        .action-bar .action-row .btn {
+            flex: 1;
+        }
+
+/* The jump bar: Map, Orders, Report, Standings */
+.match-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    background: linear-gradient(var(--plate-top), var(--plate-bot));
+    border-top: 2px solid var(--paper-edge);
+    box-shadow: 0 -6px 16px var(--shadow);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+    .match-tabs a {
+        flex: 1;
+        min-height: 3.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--ink-soft);
+        text-decoration: none;
+        font-family: var(--font-label);
+        font-weight: 600;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+        .match-tabs a:active, .match-tabs a:focus-visible {
+            color: var(--ink);
+            box-shadow: inset 0 3px 0 var(--school);
+        }
+
+.report-toggle {
+    margin-top: 0.25rem;
+}

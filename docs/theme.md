@@ -11,7 +11,8 @@ inked in their school's colour. It is all CSS on top of Bootstrap's dark mode; n
 - `src/Spellbound.Web/Components/Layout/MainLayout.razor`: wraps every page in `<div class="school-ink">`. The old game
   set `data-school="…"` on it to the signed-in mage's school, which sets `--school`; without one, `--school` is the
   soft ink. The new game can use the same hook, or drop it.
-- `MainLayout.razor.css`: the top bar (and the old game's bottom navigation) as iron plates.
+- `MainLayout.razor.css`: the top bar (and the old game's bottom navigation) as iron plates. The match page's own
+  bottom bar (`.match-tabs`) and the action bar above it (`.action-bar`) are in `app.css`, "The match page at 360 px".
 - `GrimFilters.razor`: the SVG filters, once in the layout.
 
 The game was scrapped on 18 Oct 2026 (see the roadmap); the theme stays. The school inks and the game pieces below
