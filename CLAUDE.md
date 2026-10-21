@@ -6,6 +6,7 @@ an Archmage-style strategy game, and its Mageborn rework) was removed and is in 
 platform it ran on stays; the new game plugs into it as `SpellboundGame`, its matches started on demand.
 
 Read these before making changes:
+- `docs/design-principles.md`: what kind of game it is, its target players, and the principles rules are weighed against
 - `docs/game-design.md`: the rules and first-guess numbers (the source of truth for gameplay)
 - `docs/skirmish-paper-prototype.md`: the one-page version for a paper playtest
 - `docs/roadmap.md`: milestones and the current checklist

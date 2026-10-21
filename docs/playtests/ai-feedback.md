@@ -137,15 +137,18 @@ tile in the same round, and a failed attack is a pure loss.
 
 ## Candidate additions, by how many tastes they'd serve
 
-| Addition | Serves | Size |
+Target tastes (the game is for them, `../design-principles.md`): Wargamer, 4X fan, Bluffer, Casual player. Outside
+tastes: Euro-gamer, Combo player. "s1" and "s2" link to a review in the first and second session.
+
+| Addition | Asked for by | Size |
 |---|---|---|
-| ~~Tile upgrades (a shrine or tower: yield, defence or cheaper spells)~~ | Euro, 4X, Combo | done in #77 |
-| A gentler Attune curve, so a small realm can grow without fighting (second session) | Euro, 4X, Combo, Casual | small: one number or formula |
-| A Blight limit (not the same tile two rounds running) or a way to cleanse it (second session) | 4X, Euro, Casual | small: one rule |
-| Catch-up for the last player (second session) | Wargamer, 4X, Casual | small to medium |
-| Upgrades that combine (a Shrine next to a Sanctum, Towers side by side) (second session) | Combo, Euro | medium |
-| Public objectives or region goals (shared targets that pay a chunk) | 4X, Casual, Wargamer | medium: a small deck of goals, drawn from the seed |
-| Summon limits near enemies (armies placed before the fight) | Wargamer, Bluffer, and every earlier session's "defenders summon after the fact" | small: one rule |
-| Pacts and messages (non-binding) | Bluffer, Casual | larger: a page feature, matters only with people |
-| Hidden combat commitments (face-down reinforcements) | Bluffer, Combo | medium |
-| A research track | 4X, Combo | larger |
+| ~~Tile upgrades (a shrine or tower: yield, defence or cheaper spells)~~ | 4X fan ([s1](2026-10-21-ai-tastes/match2-seat1.md)); outside: Euro-gamer ([s1](2026-10-21-ai-tastes/match1-seat1.md)), Combo player ([s1](2026-10-21-ai-tastes/match2-seat2.md)) | done in #77 |
+| A gentler Attune curve, so a small realm can grow without fighting (done in #81) | 4X fan ([s2](2026-10-21-ai-tastes-2/match2-seat1.md)), Casual player ([s2](2026-10-21-ai-tastes-2/match3-seat2.md)); outside: Euro-gamer ([s2](2026-10-21-ai-tastes-2/match1-seat1.md)), Combo player ([s2](2026-10-21-ai-tastes-2/match2-seat2.md)) | small: one number or formula |
+| A Blight limit (not the same tile two rounds running) or a way to cleanse it (done in #81) | 4X fan ([s2](2026-10-21-ai-tastes-2/match2-seat1.md)), Casual player ([s2](2026-10-21-ai-tastes-2/match3-seat2.md)); outside: Euro-gamer ([s2](2026-10-21-ai-tastes-2/match1-seat1.md)) | small: one rule |
+| Catch-up for the last player | Wargamer ([s2](2026-10-21-ai-tastes-2/match1-seat2.md)), 4X fan ([s2](2026-10-21-ai-tastes-2/match2-seat1.md)), Casual player ([s2](2026-10-21-ai-tastes-2/match3-seat2.md)) | small to medium |
+| Upgrades that combine (a Shrine next to a Sanctum, Towers side by side) | outside: Combo player ([s2](2026-10-21-ai-tastes-2/match2-seat2.md)), Euro-gamer ([s2](2026-10-21-ai-tastes-2/match1-seat1.md)) | medium |
+| Public objectives or region goals (shared targets that pay a chunk) | 4X fan, Casual player, Wargamer ([s1](2026-10-21-ai-tastes/match2-seat1.md), [s1](2026-10-21-ai-tastes/match3-seat2.md), [s1](2026-10-21-ai-tastes/match1-seat2.md)) | medium: a small deck of goals, drawn from the seed |
+| Summon limits near enemies (armies placed before the fight) | Wargamer ([s1](2026-10-21-ai-tastes/match1-seat2.md)), Bluffer ([s1](2026-10-21-ai-tastes/match3-seat1.md)), and the earlier personality sessions | small: one rule |
+| Pacts and messages (non-binding) | Bluffer ([s1](2026-10-21-ai-tastes/match3-seat1.md), [s2](2026-10-21-ai-tastes-2/match3-seat1.md)), Casual player ([s1](2026-10-21-ai-tastes/match3-seat2.md)) | larger: a page feature, matters only with people |
+| Hidden combat commitments (face-down reinforcements) | Bluffer ([s1](2026-10-21-ai-tastes/match3-seat1.md)), Wargamer ([s2](2026-10-21-ai-tastes-2/match1-seat2.md)); outside: Combo player ([s1](2026-10-21-ai-tastes/match2-seat2.md)) | medium |
+| A research track | 4X fan ([s1](2026-10-21-ai-tastes/match2-seat1.md), [s2](2026-10-21-ai-tastes-2/match2-seat1.md)); outside: Combo player ([s1](2026-10-21-ai-tastes/match2-seat2.md)) | larger |

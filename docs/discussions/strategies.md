@@ -135,7 +135,7 @@ Still open:
 
 ## Third pass: after the second AI-taste session (21 Oct 2026)
 
-The bots and the AI players disagreed. At 1 + 3 per tile the strategy bots were even, but four of six AI players
+The bots and the AI players disagreed. Claude had recommended 1 + 3 per tile from the bots' numbers alone. At that price the strategy bots were even, but four of six AI players
 (`../playtests/ai-feedback.md`) couldn't grow after round 1: "growth came only from fighting". The bots couldn't
 show that, because most of them attuned only in round 1 anyway.
 
