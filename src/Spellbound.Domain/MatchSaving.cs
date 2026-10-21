@@ -12,7 +12,7 @@ public sealed partial class Match
         [.. onAuction],
         [.. Map.Tiles.OrderBy(t => t.Hex.Q).ThenBy(t => t.Hex.R).Select(t => new TileState(t.Hex, t.Type, t.Yield, t.Guard))],
         [.. seats.Select(s => new SeatState(
-            s.Mana, s.Score, s.ProducedThisRound, s.ProducedCarry, s.ConquestsThisRound,
+            s.Mana, s.Score, s.ProducedThisRound, s.ProducedCarry, s.ConquestPointsThisRound,
             [.. s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)], s.LandCarry,
             [.. s.Offer], s.Trait, s.TraitPoints, [.. s.OpeningTiles], s.MonstersCleared, s.RivalTilesTaken,
             [.. s.SpellsCast.Order()], s.HexesCast, s.RoundsCast,
@@ -41,7 +41,7 @@ public sealed partial class Match
                 ProducedThisRound = s.ProducedThisRound,
                 ProducedCarry = s.ProducedCarry,
                 LandCarry = s.LandCarry,
-                ConquestsThisRound = s.ConquestsThisRound,
+                ConquestPointsThisRound = s.ConquestsThisRound,
                 Offer = s.Offer ?? [],
                 Trait = s.Trait,
                 TraitPoints = s.TraitPoints,

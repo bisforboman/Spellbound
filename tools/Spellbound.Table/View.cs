@@ -173,8 +173,8 @@ internal static class View
             takes the blows first. Paid even if your attack doesn't happen.
 
         POINTS, banked every round and never lost: 1 per {{r.TilesPerPoint}} tile-rounds held (tiles held, added up each
-        round), 1 per {{r.ManaPerPoint}} mana your land produced, {{r.PointsPerConquest}} per rival tile taken or monster
-        tile cleared. Your trait's goal adds up to {{r.TraitGoalCap}} points, scored only at the end.
+        round), 1 per {{r.ManaPerPoint}} mana your land produced, {{r.PointsPerConquest}} per monster tile cleared or
+        defended rival tile taken (it had units, a Ward or a Tower), {{r.PointsPerEmptyConquest}} per undefended rival tile taken. Your trait's goal adds up to {{r.TraitGoalCap}} points, scored only at the end.
 
         FOG OF WAR: you see rivals' units only on tiles next to your land, and rivals' mana only at the end. Who holds
         each tile, yields, upgrades and scores are seen by all. The report shows only what you could see.

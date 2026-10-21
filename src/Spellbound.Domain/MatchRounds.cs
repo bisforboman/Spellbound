@@ -204,10 +204,10 @@ public sealed partial class Match
             seat.LandCarry = held % Rules.TilesPerPoint;
             var produced = seat.ProducedCarry + seat.ProducedThisRound;
             var mana = produced / Rules.ManaPerPoint;
-            var conquest = seat.ConquestsThisRound * Rules.PointsPerConquest;
+            var conquest = seat.ConquestPointsThisRound;
             seat.ProducedCarry = produced % Rules.ManaPerPoint;
             seat.ProducedThisRound = 0;
-            seat.ConquestsThisRound = 0;
+            seat.ConquestPointsThisRound = 0;
             seat.Score += land + mana + conquest;
             lines.Add($"Seat {seat.Index + 1} banks {Plural(land + mana + conquest, "point")} ({land} for land, {mana} for mana"
                       + (conquest > 0 ? $", {conquest} for conquest" : "") + $"), {seat.Score} in all.");

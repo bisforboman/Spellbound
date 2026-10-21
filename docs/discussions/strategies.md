@@ -164,3 +164,10 @@ does the same. No real player passes up a tile for a few mana, so a plan that do
   players who all grow, which the bots can't show.
 
 Still open: the march on empty tiles (the Wargamer's six captures in match 1), and catch-up for the last player.
+
+## Raids (21 Oct 2026)
+
+The third AI-taste session found that raids on empty tiles decided every match. The owner made an undefended
+capture (no units, Ward or Tower) worth 1 point; a defended one is still worth 2. The strategy bots barely change
+(Warlord 44% to 43% with 3 players, 31% to 30% with 5), because the bots mostly attack what they can see and beat.
+The rule is aimed at people's raiding, so the next AI-taste session judges it.
