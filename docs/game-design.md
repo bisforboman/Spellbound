@@ -212,8 +212,8 @@ yields, prices or income. Costs are flat and small.
 
 | Spell | Cost | Target | Effect (this round) |
 |---|---|---|---|
-| Scorch | 2 mana per power | a rival's tile next to yours | Burns that much of its units' power, weakest first (the battle loss rule). Monsters are immune. |
-| Ward | 3 mana | one of your tiles | Its defence counts 3 more power in this round's battles. |
+| Scorch | 3 mana per power that burns | a rival's tile next to yours | Burns up to that much of its units' power, weakest first (the battle loss rule). You pay only for what burns. Monsters are immune. |
+| Ward | 3 mana | one of your tiles, or the tile you attune this round | Its defence counts 3 more power in this round's battles. |
 | Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
 | Blight | 4 mana | a rival's tile next to yours | It yields nothing in the next round's income. |
 | Lure | 3 mana | a monster tile next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
@@ -224,9 +224,15 @@ yields, prices or income. Costs are flat and small.
   absorb.
 - **An attack goes with what's left:** if a rival's Scorch burns units on the tile an attack leaves from, the attack
   sends only the units still there, or doesn't happen if none are.
+- **Spells see the round as it will be** at their turn: a Ward can go on the tile you attune this round (it holds if
+  the Attune does), and a Leyline can carry units you summon this round.
 - **Leyline** can't carry units that also step this round; the units it carries can attack the same round.
 - **Scorch before your own attack:** a Scorch and an attack on the same tile in one round work together: the Scorch
-  burns first.
+  burns first, and the attack's preview counts it (as it counts a Lure on a monster tile you attack).
+- **Scorch pays for what burns** (decided 21 Oct 2026, after the first AI players' session,
+  `playtests/2026-10-21-ai-players.md`): units that moved away before it, units another seat's Scorch burned first,
+  or a Golem too strong to burn whole cost nothing. Its price went from 2 to 3 mana per power: at 2 it beat
+  summoning defenders, because it stopped an attack before it landed without guessing which tile it would hit.
 - **Blight follows the tile:** if a blighted tile changes hands in the same round, its new owner gets nothing from it.
 
 - **Measured** (1,000 bot games, 3 players): cast alongside the stance, bots spend about 20 mana a match on spells

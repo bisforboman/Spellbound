@@ -139,8 +139,11 @@ internal static class View
         A player's last tile can't be taken. Several attackers on one tile fight the defender together, then each other.
 
         SPELLS (alongside the stance, paid on top):
-          scorch ({{r.ScorchManaPerPower}} mana per power): burn power on a rival's tile next to yours, weakest first.
-          ward ({{r.WardCost}} mana): one of your tiles defends with {{r.WardPower}} more power this round.
+          scorch ({{r.ScorchManaPerPower}} mana per power that burns): burn power on a rival's tile next to yours, weakest
+            first; you pay only for what burns.
+          ward ({{r.WardCost}} mana): one of your tiles (or the one you attune this round) defends with {{r.WardPower}} more
+            power this round.
+          Spells see the round as it will be: they can use what you attune or summon this round.
           leyline ({{r.LeylineManaPerUnit}} per unit, at least {{r.LeylineMinCost}}): move units between any two of your tiles.
           blight ({{r.BlightCost}} mana): a rival's tile next to yours yields nothing in the next round's income.
           lure ({{r.LureCost}} mana): a monster tile next to yours loses {{r.LurePower}} guard power for good (never below {{r.MinGuard}}).
