@@ -37,18 +37,19 @@ public sealed partial class Match
         var lines = new List<string>();
         var positions = new Dictionary<Hex, Army>();
         if ((MovesProblem(orders, lines, positions) ?? SpellProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)
-             ?? GuessProblem(orders, lines)) is { } problem)
+             ?? ReinforceProblem(orders, lines) ?? GuessProblem(orders, lines)) is { } problem)
         {
             return Report.Fail(problem);
         }
 
         var mana = seats[orders.Seat].Mana;
-        if (orders.Cast is not null && CostOf(orders) > mana)
+        var extras = orders.Cast is not null || orders.Reinforce is not null;
+        if (extras && CostOf(orders) > mana)
         {
-            return Report.Fail($"Your stance and spell cost {CostOf(orders)} mana together; you have {mana}.");
+            return Report.Fail($"Your orders cost {CostOf(orders)} mana together; you have {mana}.");
         }
 
-        if (orders.Cast is not null)
+        if (extras)
         {
             lines.Add($"All together: {CostOf(orders)} mana, leaving {mana - CostOf(orders)}.");
         }
@@ -111,6 +112,15 @@ public sealed partial class Match
             seats[order.Seat].Mana -= Rules.CostOf(order.Kind) * order.Count;
             units[hex] = UnitsOn(hex) + army;
             lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.", order.Seat, hex);
+        }
+
+        foreach (var order in byseat.Where(o => o.Reinforce is not null))
+        {
+            var r = order.Reinforce!;
+            var army = Army.Of(r.Kind, r.Count);
+            seats[order.Seat].Mana -= Rules.ReinforceCostOf(r.Kind, r.Count);
+            units[r.Tile] = UnitsOn(r.Tile) + army;
+            lines.Add($"Seat {order.Seat + 1} reinforces {r.Tile} with {army}.", order.Seat, r.Tile);
         }
 
         ResolveBuilds(byseat, lines);
@@ -319,6 +329,43 @@ public sealed partial class Match
             default:
                 return $"Unknown stance {orders.Stance}.";
         }
+    }
+
+    /// <summary>Checks an attack's reinforcement: an attack, one of your tiles, at least one unit and no more than the
+    /// power cap. Reinforcements guard; they can't join this round's attack.</summary>
+    private string? ReinforceProblem(Orders orders, List<string> lines)
+    {
+        if (orders.Reinforce is not { } r)
+        {
+            return null;
+        }
+
+        var seat = seats[orders.Seat];
+        if (orders.Stance != Stance.Attack || orders.Target is null)
+        {
+            return "Reinforcements come with an attack: choose Attack first.";
+        }
+
+        if (!seat.Tiles.Contains(r.Tile))
+        {
+            return $"Reinforcements can only be summoned on your own tiles; {r.Tile} isn't yours.";
+        }
+
+        if (r.Count < 1 || r.Count > Rules.ReinforceMaxPower / Rules.PowerOf(r.Kind))
+        {
+            return $"An attack can bring at most {Rules.ReinforceMaxPower} power of reinforcements "
+                   + $"({Rules.ReinforceMaxPower / Rules.PowerOf(r.Kind)} {r.Kind}s).";
+        }
+
+        var cost = Rules.ReinforceCostOf(r.Kind, r.Count);
+        if (cost > seat.Mana)
+        {
+            return $"Those reinforcements cost {cost} mana; you have {seat.Mana}.";
+        }
+
+        lines.Add($"Reinforce {r.Tile} with {Army.Of(r.Kind, r.Count)} for {cost} mana ({Rules.ReinforceSurcharge} more per unit than a "
+                  + "summon): they guard it this round and can't join the attack.");
+        return null;
     }
 
     private static string Plural(int n, string word) => Plural(n, word, word + "s");

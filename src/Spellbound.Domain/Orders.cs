@@ -43,6 +43,9 @@ public enum Spell
 /// Leyline moves (its <see cref="Target"/> is where the units leave from).</summary>
 public sealed record SpellCast(Spell Spell, Hex Target, int Count = 0, Move? Transfer = null);
 
+/// <summary>Units summoned on one of a seat's own tiles alongside an attack, to guard it while the army is away.</summary>
+public sealed record Reinforcement(Hex Tile, UnitKind Kind, int Count);
+
 /// <summary>A guess at a rival's secret trait, made alongside a round's orders: once per rival, never changed, scored at
 /// the end.</summary>
 public sealed record TraitGuess(int Rival, Trait Trait);
@@ -65,6 +68,12 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
 
     /// <summary>The spell cast alongside the stance this round, if any.</summary>
     public SpellCast? Cast { get; init; }
+
+    /// <summary>For Attack: units summoned on one of the seat's tiles at the same time, if any.</summary>
+    public Reinforcement? Reinforce { get; init; }
+
+    /// <summary>These orders (an attack) with a small summon at home alongside.</summary>
+    public Orders Reinforcing(Hex tile, UnitKind kind, int count) => this with { Reinforce = new Reinforcement(tile, kind, count) };
 
     /// <summary>A guess at a rival's trait made alongside these orders, if any.</summary>
     public TraitGuess? Guess { get; init; }

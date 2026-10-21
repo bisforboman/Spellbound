@@ -106,7 +106,11 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 - Each round, every player secretly picks **one stance**. Then all stances resolve together.
 - A stance should be **one button** on a phone: the round's main decision is a single tap.
 - **Four stances**:
-  - **Attack:** attack a rival's or a monster-guarded tile with units (see *Battles*).
+  - **Attack:** attack a rival's or a monster-guarded tile with units (see *Battles*). An attack may also bring
+    **reinforcements**: up to 3 power of units summoned on one of your tiles, at 1 mana more each than a summon
+    (an Imp costs 2). They guard that tile this round and can't join the attack. (Decided 21 Oct 2026. The Wargamer
+    asked for it in the third and fourth AI-taste sessions, and the Bluffer in the first. All four target tastes said
+    one stance a round left mana piling up and home undefended.)
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
   - **Build:** spend mana on an upgrade for one of your tiles (see *Upgrades*).

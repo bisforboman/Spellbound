@@ -380,6 +380,10 @@ namespace Spellbound.Playtest
                 {
                     await targets.First.CheckAsync();
                     await Expect(page, "Send from");
+                    // Reinforcements guard home while the army is away.
+                    await page.SelectOptionAsync("#reinforce-at", new SelectOptionValue { Index = 1 });
+                    await page.WaitForSelectorAsync("#reinforce-imps");
+                    await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
                 }
             });
             await StepAsync(merlin, "attack-commit", async page =>

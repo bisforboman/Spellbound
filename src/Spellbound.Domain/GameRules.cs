@@ -97,6 +97,16 @@ public sealed record GameRules
     /// <summary>Points for taking a rival's tile that had no defence at all (no units, Ward or Tower): a raid.</summary>
     public int PointsPerEmptyConquest { get; init; } = 1;
 
+    // Reinforcing (docs/game-design.md, Rounds and stances): a small summon alongside an attack.
+
+    /// <summary>The most power an attack's reinforcement can summon.</summary>
+    public int ReinforceMaxPower { get; init; } = 3;
+
+    /// <summary>What a reinforcement costs on top of the units' price, per unit.</summary>
+    public int ReinforceSurcharge { get; init; } = 1;
+
+    public int ReinforceCostOf(UnitKind kind, int count) => (CostOf(kind) + ReinforceSurcharge) * count;
+
     /// <summary>One point for every this many tiles held, counted every round and added up: holding 4 tiles for 3 rounds
     /// is 12 tile-rounds, 4 points. The remainder carries over.</summary>
     public int TilesPerPoint { get; init; } = 3;

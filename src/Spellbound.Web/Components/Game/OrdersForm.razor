@@ -77,6 +77,24 @@
                     }
                 </div>
             }
+
+            <label class="form-label mt-2" for="reinforce-at">Guard home (optional)</label>
+            <p class="text-muted">While your army is away: up to @Match.Rules.ReinforceMaxPower power of units, @Match.Rules.ReinforceSurcharge
+                mana more each than a summon. They can't join the attack.</p>
+            <select id="reinforce-at" class="form-select" @bind="reinforceAt">
+                <option value="">No reinforcements</option>
+                @foreach (var h in Me.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R))
+                {
+                    <option value="@Key(h)">@Seats.Describe(Match, h, You, Owners)</option>
+                }
+            </select>
+            @if (Parse(reinforceAt) is not null)
+            {
+                <div class="attack-source">
+                    <label>Imps <input id="reinforce-imps" type="number" class="form-control" min="1"
+                                       max="@(Match.Rules.ReinforceMaxPower / Match.Rules.ImpPower)" @bind="reinforceImps" @bind:event="oninput" /></label>
+                </div>
+            }
         }
         break;
 
@@ -321,6 +339,8 @@
     private bool showMoves;
     private bool showSpell;
     private bool showGuess;
+    private string reinforceAt = string.Empty;
+    private int reinforceImps = 3;
     private string guessRival = string.Empty;
     private Trait? guessTrait;
     private Spell? spell;
@@ -342,12 +362,16 @@
             count = 1;
             ChooseSpell(null);
             (guessRival, guessTrait) = (string.Empty, null);
+            (reinforceAt, reinforceImps) = (string.Empty, 3);
         }
     }
 
     /// <summary>The orders as chosen so far, with the spell if one is chosen, or null if they don't aim at anything
     /// yet.</summary>
-    private Orders? Build() => BuildStance() is { } orders && WithSpell(orders) is { } all ? WithGuess(all) : null;
+    private Orders? Build() => BuildStance() is { } orders && WithSpell(orders) is { } all ? WithGuess(WithReinforcement(all)) : null;
+
+    private Orders WithReinforcement(Orders orders) =>
+        stance == "Attack" && Parse(reinforceAt) is { } at ? orders.Reinforcing(at, UnitKind.Imp, reinforceImps) : orders;
 
     private Orders WithGuess(Orders orders) =>
         GuessFor is { } rival && guessTrait is { } trait ? orders.Guessing(rival, trait) : orders;
