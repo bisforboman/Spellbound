@@ -5,6 +5,10 @@ them. They play the way that taste would, then review the game against the games
 collected in `docs/playtests/ai-feedback.md`, to find what to add. (The strategy personalities in `personalities.md`
 are for finding holes in the rules; tastes are for finding what's missing.)
 
+**Target tastes** (the game is for them, `docs/design-principles.md`): Wargamer, 4X fan, Bluffer, Casual player.
+**Outside tastes**: Euro-gamer, Combo player; their ideas are inspiration, labelled as outsiders' and weighed less.
+Every idea taken from a review names the taste (and the review) it came from.
+
 - **Euro-gamer**: loves Terraforming Mars, Agricola, Brass. Enjoys building an engine that grows, efficient choices,
   many small decisions that add up, little luck. Bored by random swings and by being attacked out of a plan.
 - **Wargamer**: loves Blood Rage, Kemet, Risk. Enjoys armies on a map, big battles, taking territory, bold moves that

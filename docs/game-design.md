@@ -44,7 +44,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Warden | keeping the land you started with | 1 point per tile from your opening still held, beyond the first (so at most 2) |
 | Hexer | Scorch and Blight | 1 point per Scorch or Blight cast (a Scorch counts only if it burns something) |
 
-- No trait changes the Attune price, income, upkeep or a cost: they would snowball (principles 12 and 13).
+- No trait changes the Attune price, income, upkeep or a cost: they would snowball (principle 7 in `design-principles.md`).
 - **Measured** (1,000 bot games each; bots draft at random, bid like their trait and lean towards their trait's
   tiles, units and spells): every trait wins between 25% and 39% of 3-player games (33% is even) and between 16% and
   24% of 5-player games (20% is even). Spellweaver and Weaver win least. Goals average 0.5 (Beastbane) to 1.9 points.
@@ -157,7 +157,7 @@ A revealed, unowned tile is taken in one of two ways, depending on whether it is
 - **Unguarded tiles, by attuning:** the **Attune** stance spends mana to tune a free, unguarded tile to your mana, making it yours. The tile must be **adjacent to any tile you own**.
   - Attuning extends where your units can go: it is how you grow your presence and join scattered groups together.
   - One Attune takes **one tile**.
-  - **Price: 1 mana + 1 mana for each of your first 3 tiles, + 3 mana for each tile beyond them.** With 3 tiles an Attune costs 4, with 4 tiles 7, with 5 tiles 10: cheap for a small realm, dear for a big one. (Decided 21 Oct 2026. It was 1 + 1 per tile, then 1 + 2 and 1 + 3 while the Expander strategy bot won too often; at 1 + 3 four of six AI players couldn't grow after round 1. See `discussions/strategies.md` and `playtests/ai-feedback.md`.) The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 13).
+  - **Price: 1 mana + 1 mana for each of your first 3 tiles, + 3 mana for each tile beyond them.** With 3 tiles an Attune costs 4, with 4 tiles 7, with 5 tiles 10: cheap for a small realm, dear for a big one. (The owner's choice, 21 Oct 2026. It was 1 + 1 per tile, then 1 + 2 and 1 + 3, each proposed by Claude from the strategy bots, while the always-attune Expander bot won too often. At 1 + 3, four of six AI tastes (Euro-gamer, 4X fan, Combo player, Casual player) couldn't grow after round 1. See `discussions/strategies.md` and `playtests/ai-feedback.md`.) The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 7).
   - **Clash:** if two players attune the same tile in the same round, nobody gets it and nobody pays.
 - **Guarded tiles:** some unowned tiles are **guarded by monsters**. They can't be attuned; you need units to defeat the guards first.
   - Guard strength is **visible**.
@@ -304,7 +304,7 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
 ## Player elimination
 
 - A player's **last tile can't be taken**: a winning attack on it kills the defenders but leaves the tile with its owner (see *Battles*). Every player always keeps a foothold to rebuild from.
-- Together with banked points, this keeps everyone in the game to the end (principle 12).
+- Together with banked points, this keeps everyone in the game to the end (principle 6 in `design-principles.md`).
 
 ## Next to shape
 
