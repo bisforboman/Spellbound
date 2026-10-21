@@ -48,13 +48,14 @@ public sealed partial class Match
             return $"You already hold {Rules.UpgradeCap} upgrades, the most a realm can have.";
         }
 
-        if (Rules.UpgradeCost > seat.Mana)
+        var cost = Favoured(Stance.Build, Rules.UpgradeCost);
+        if (cost > seat.Mana)
         {
-            return $"An upgrade costs {Rules.UpgradeCost} mana; you have {seat.Mana}.";
+            return $"An upgrade costs {cost} mana; you have {seat.Mana}.";
         }
 
-        lines.Add($"Build a {orders.Upgrade} on {Describe(target)} for {Rules.UpgradeCost} mana, leaving "
-                  + $"{seat.Mana - Rules.UpgradeCost}: {UpgradeEffect(orders.Upgrade)}. It is worth {Plural(Rules.PointsPerUpgrade, "point")} "
+        lines.Add($"Build a {orders.Upgrade} on {Describe(target)} for {cost} mana, leaving "
+                  + $"{seat.Mana - cost}: {UpgradeEffect(orders.Upgrade)}. It is worth {Plural(Rules.PointsPerUpgrade, "point")} "
                   + "at the end to whoever holds the tile.");
         return null;
     }
@@ -73,7 +74,7 @@ public sealed partial class Match
         foreach (var order in orders.Where(o => o.Stance == Stance.Build && o.Target is not null))
         {
             var hex = order.Target!.Value;
-            seats[order.Seat].Mana -= Rules.UpgradeCost;
+            seats[order.Seat].Mana -= Favoured(Stance.Build, Rules.UpgradeCost);
             upgrades[hex] = order.Upgrade;
             lines.Add($"Seat {order.Seat + 1} builds a {order.Upgrade} on {hex}.");
         }

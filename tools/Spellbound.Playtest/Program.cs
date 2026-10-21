@@ -310,6 +310,7 @@ namespace Spellbound.Playtest
                 await Expect(page, "Summon 3 Imps");
                 await page.ClickAsync("button:has-text('Commit: Summon')");
                 await Expect(page, "Round 2 of 8");
+                await Expect(page, "mana off)"); // nobody builds in round 1, so Build is cheaper now
                 await Expect(page, "You summon 3 Imps");
             });
             await StepAsync(merlin, "jump-to-report", async page =>

@@ -25,9 +25,9 @@ public sealed partial class Match
         ArgumentNullException.ThrowIfNull(orders);
         return orders.Target is null ? 0 : orders.Stance switch
         {
-            Stance.Attune => Rules.AttunePrice(seats[orders.Seat].Tiles.Count),
-            Stance.Summon => Rules.CostOf(orders.Kind) * orders.Count,
-            Stance.Build => Rules.UpgradeCost,
+            Stance.Attune => Favoured(Stance.Attune, Rules.AttunePrice(seats[orders.Seat].Tiles.Count)),
+            Stance.Summon => Favoured(Stance.Summon, Rules.CostOf(orders.Kind) * orders.Count),
+            Stance.Build => Favoured(Stance.Build, Rules.UpgradeCost),
             _ => 0,
         } + (orders.Reinforce is { } r ? Rules.ReinforceCostOf(r.Kind, r.Count) : 0);
     }

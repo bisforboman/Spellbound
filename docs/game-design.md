@@ -114,6 +114,10 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
   - **Build:** spend mana on an upgrade for one of your tiles (see *Upgrades*).
+- **Unpicked stances get cheaper** (decided 21 Oct 2026; Puerto Rico's doubloons on unpicked roles, the owner's
+  idea, `discussions/shared-stances.md`): an Attune, Summon or Build that nobody chose in a round costs **1 mana
+  less** the next round, 1 more for each round it waits, **at most 3 less**. As soon as anyone chooses it, it goes
+  back to full price. The stance picker shows the discount, and the report says when a stance gets cheaper.
 - Alongside the stance, players can **cast one spell** (see *Spells*).
 - Alongside the stance, players can **move units** freely (see *Units*).
 - A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon): only the moves happen. A player is never forced to spend.

@@ -9,7 +9,7 @@
         var s = choice;
         <label class="choice">
             <input type="radio" name="stance" checked="@(stance == s.Key)" @onchange="() => stance = s.Key" />
-            <span><b>@s.Key</b>: @s.Value</span>
+            <span><b>@s.Key</b>: @s.Value@(Favour(s.Key) is > 0 and var f ? $" ({f} mana off)" : "")</span>
         </label>
     }
 </fieldset>
@@ -351,6 +351,9 @@
     private int leylineGolems;
 
     private Seat Me => Match.Seats[You];
+
+    /// <summary>How much less a stance costs this round because nobody chose it lately.</summary>
+    private int Favour(string choice) => Enum.TryParse<Stance>(choice, out var s) ? Match.FavourOf(s) : 0;
 
     protected override void OnParametersSet()
     {

@@ -89,6 +89,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] An undefended capture scores 1 point, a defended one 2 (after the third AI-taste session: raids on empty tiles decided every match)
 - [x] Reinforcements with an attack: up to 3 power summoned at home, 1 mana more per unit (after the fourth AI-taste session)
 - [x] Follow orders (shared stances, from Puerto Rico), built and then removed after the sixth AI-taste session: 4 of 13 happened
+- [x] Unpicked stances get cheaper (Puerto Rico's doubloons): Attune, Summon or Build nobody chose costs 1 less a round, up to 3
 - [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)
 
 ## M2: Playing with friends
