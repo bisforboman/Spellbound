@@ -476,6 +476,15 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("summary:has-text('Cookies')");
                 await Expect(page, "No ads, no analytics");
             });
+            await StepAsync(morgana, "not-found", async page =>
+            {
+                // The page an unknown address shows (opened directly: an unknown address answers 404, which the browser
+                // logs as an error), and a match nobody seats this player in.
+                await GoAsync(page, "/not-found", interactive: false);
+                await Expect(page, "Not Found");
+                await GoAsync(page, "/match/999999");
+                await Expect(page, "There is no match 999999 that you sit in");
+            });
             await StepAsync(morgana, "not-an-admin", async page =>
             {
                 await page.GotoAsync($"{options.Url}/admin");
