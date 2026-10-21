@@ -217,6 +217,40 @@
 </div>
 }
 
+@if (Match.Seats.Any(s => s.Index != You && s.Trait is not null && !Me.Guesses.ContainsKey(s.Index)))
+{
+<button type="button" class="fold-head" aria-expanded="@showGuess" @onclick="() => showGuess = !showGuess">
+    <span class="fold-title">Guess a trait (optional) @(showGuess ? "▾" : "▸")</span>
+    <span class="fold-sum">@(GuessFor is { } g && guessTrait is { } gt ? $"{RivalName(g)}: {gt}" : "none")</span>
+</button>
+@if (showGuess)
+{
+<div class="fold-body">
+    <p class="text-muted">Traits stay secret until the end. Guess one rival's: @Plural(Match.Rules.PointsPerTraitGuess, "point")
+        at the end if you're right (at most @Match.Rules.TraitGuessCap). Once per rival; a guess can't be changed.</p>
+    <label class="form-label" for="guess-rival">Rival</label>
+    <select id="guess-rival" class="form-select" @bind="guessRival">
+        <option value="">No guess this round</option>
+        @foreach (var rival in Match.Seats.Where(s => s.Index != You && s.Trait is not null && !Me.Guesses.ContainsKey(s.Index)))
+        {
+            <option value="@rival.Index">@RivalName(rival.Index)</option>
+        }
+    </select>
+    @if (GuessFor is not null)
+    {
+        <label class="form-label mt-2" for="guess-trait">Their trait</label>
+        <select id="guess-trait" class="form-select" @bind="guessTrait">
+            <option value="">Choose a trait</option>
+            @foreach (var t in Enum.GetValues<Trait>().Where(t => !Me.Offer.Contains(t)))
+            {
+                <option value="@t">@t: @Match.GoalText(t)</option>
+            }
+        </select>
+    }
+</div>
+}
+}
+
 @{
     var orders = Build();
     var check = orders is null ? null : Match.Check(orders);
@@ -238,7 +272,7 @@
     <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@ActionSummary(check)</p>
     <div class="action-row">
         <button type="button" class="btn btn-primary btn-lg" disabled="@(Busy || check is not { Succeeded: true })"
-                @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance@(orders?.Cast is { } cast ? $" and {cast.Spell}" : "")</button>
+                @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance@(orders?.Cast is { } cast ? $" and {cast.Spell}" : "")@(orders?.Guess is not null ? " and guess" : "")</button>
     </div>
 </div>
 
@@ -286,6 +320,9 @@
     private int round;
     private bool showMoves;
     private bool showSpell;
+    private bool showGuess;
+    private string guessRival = string.Empty;
+    private Trait? guessTrait;
     private Spell? spell;
     private string spellTarget = string.Empty;
     private int scorchPower = 1;
@@ -304,12 +341,22 @@
             moves.Clear();
             count = 1;
             ChooseSpell(null);
+            (guessRival, guessTrait) = (string.Empty, null);
         }
     }
 
     /// <summary>The orders as chosen so far, with the spell if one is chosen, or null if they don't aim at anything
     /// yet.</summary>
-    private Orders? Build() => BuildStance() is { } orders && WithSpell(orders) is { } all ? all : null;
+    private Orders? Build() => BuildStance() is { } orders && WithSpell(orders) is { } all ? WithGuess(all) : null;
+
+    private Orders WithGuess(Orders orders) =>
+        GuessFor is { } rival && guessTrait is { } trait ? orders.Guessing(rival, trait) : orders;
+
+    private int? GuessFor => int.TryParse(guessRival, CultureInfo.InvariantCulture, out var r) ? r : null;
+
+    private string RivalName(int seat) => Owners is { } owners && seat < owners.Count && owners[seat] is not null ? $"Seat {seat + 1}" : $"Bot {seat + 1}";
+
+    private static string Plural(int n, string word) => n == 1 ? $"1 {word}" : $"{n} {word}s";
 
     private Orders? WithSpell(Orders orders)
     {

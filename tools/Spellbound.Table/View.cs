@@ -28,7 +28,8 @@ internal static class View
 
         foreach (var rival in match.Seats.Where(s => s.Index != seat))
         {
-            var shown = match.Phase != MatchPhase.Opening && rival.Trait is { } rt ? $", trait {rt}" : "";
+            var shown = match.Phase == MatchPhase.Ended && rival.Trait is { } rt ? $", trait {rt}"
+                : me.Guesses.TryGetValue(rival.Index, out var guessed) ? $", your guess: {guessed}" : "";
             text.AppendLine($"Seat {rival.Index + 1}: {rival.Mana} mana, {rival.Tiles.Count} tiles, {rival.Score} points{shown}.");
         }
 
@@ -159,8 +160,11 @@ internal static class View
 
         POINTS, banked every round and never lost: 1 per {{r.TilesPerPoint}} tile-rounds held (tiles held, added up each
         round), 1 per {{r.ManaPerPoint}} mana your land produced, {{r.PointsPerConquest}} per rival tile taken or monster
-        tile cleared. Traits are secret during the opening and revealed when the rounds begin; your trait's goal adds up
-        to {{r.TraitGoalCap}} points, scored only at the end.
+        tile cleared. Your trait's goal adds up to {{r.TraitGoalCap}} points, scored only at the end.
+
+        TRAITS ARE SECRET until the end. Alongside any round's orders you may guess one rival's trait (once per rival;
+        a guess can't be changed): {{r.PointsPerTraitGuess}} point at the end for each right guess, at most {{r.TraitGuessCap}}. No trait
+        is offered to two players, so a rival never has one you were offered.
 
         HOW TO ACT (one JSON object; tiles as "q,r"):
           {"trait": "Weaver"}
@@ -171,6 +175,7 @@ internal static class View
           {"stance": "build", "target": "0,1", "upgrade": "tower"}
           {"stance": "hold"}
         Any stance can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
+        and one "guess": {"seat": 2, "trait": "Hexer"}
         and one "spell": {"name": "scorch", "target": "1,0", "count": 2}
                      or {"name": "leyline", "target": "0,0", "to": "2,-1", "imps": 2, "golems": 0}
         `check` shows what an action would cost and do, changing nothing. `act` commits it and waits for the others.

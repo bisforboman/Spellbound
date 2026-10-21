@@ -74,6 +74,10 @@ public static class Bot
         }
 
         var orders = candidates.FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+        if (Guess(match, seat, random) is { } guess)
+        {
+            orders = orders with { Guess = guess };
+        }
 
         // With mana to spare after the stance, a spell alongside it; sooner for a trait that scores spells; in the last
         // round, with whatever is left.
@@ -115,6 +119,33 @@ public static class Bot
         return casts.Select(cast => orders with { Cast = cast }).FirstOrDefault(o => match.Check(o).Succeeded) ?? orders;
     }
 
+    /// <summary>From <see cref="GuessRound"/> on, a guess at one rival's trait a round, from the tiles that rival
+    /// held after the opening: the trait those tiles suit best (one of the best at random), leaving out the traits
+    /// it was offered itself and those it already pinned on another rival.</summary>
+    private static TraitGuess? Guess(Match match, int seat, IRandomSource random)
+    {
+        var me = match.Seats[seat];
+        if (me.Trait is null || match.CurrentRound < GuessRound)
+        {
+            return null;
+        }
+
+        var rival = match.Seats.FirstOrDefault(s => s.Index != seat && !me.Guesses.ContainsKey(s.Index));
+        if (rival is null)
+        {
+            return null;
+        }
+
+        var possible = Enum.GetValues<Trait>().Where(t => !me.Offer.Contains(t) && !me.Guesses.Values.Contains(t)).ToList();
+        int Fit(Trait t) => rival.OpeningTiles.Count(h => Suits(match, rival, t, h));
+        var best = possible.Max(Fit);
+        var good = possible.Where(t => Fit(t) == best).ToList();
+        return new TraitGuess(rival.Index, good[random.Next(good.Count)]);
+    }
+
+    /// <summary>The round from which bots guess, one rival a round.</summary>
+    private const int GuessRound = 4;
+
     /// <summary>An upgrade on its best-yielding open tile, if it has room for one; null if not.</summary>
     private static Orders? LastUpgrade(Match match, int seat)
     {
@@ -131,10 +162,12 @@ public static class Bot
     /// the opening tells): its type; next to its land or away from it; next to rivals; next to the dark land where
     /// monsters will appear; or a rich yield to pay Golems' upkeep. A Hexer gives nothing away: land next to rivals
     /// gets it attacked, and it won least when it bid there.</summary>
-    private static bool Suits(Match match, Seat me, Hex hex)
+    private static bool Suits(Match match, Seat me, Hex hex) => Suits(match, me, me.Trait, hex);
+
+    private static bool Suits(Match match, Seat me, Trait? trait, Hex hex)
     {
         var neighbours = match.Map.NeighboursOf(hex).ToList();
-        return me.Trait switch
+        return trait switch
         {
             Trait.Wildheart => match.Map[hex].Type == TileType.Wild,
             Trait.Hearthkeeper => match.Map[hex].Type == TileType.Steady,

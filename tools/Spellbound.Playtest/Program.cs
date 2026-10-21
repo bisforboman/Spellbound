@@ -292,7 +292,7 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Pass')");
                 await Expect(page, "Round 1 of 8");
                 await Expect(page, "The rounds begin");
-                await Expect(page, "Rivals' traits:");
+                await Expect(page, "Rivals' traits are secret until the end");
             });
             await StepAsync(merlin, "summon", async page =>
             {
@@ -395,6 +395,10 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("label:has-text('Ward')");
                 await Expect(page, "Choose where Ward goes");
                 await page.SelectOptionAsync("#spell-target", new SelectOptionValue { Index = 1 });
+                // A guess at a rival's secret trait rides along with the orders.
+                await page.ClickAsync("button:has-text('Guess a trait')");
+                await page.SelectOptionAsync("#guess-rival", new SelectOptionValue { Index = 1 });
+                await page.SelectOptionAsync("#guess-trait", new SelectOptionValue { Index = 1 });
                 await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
             });
             await StepAsync(merlin, "spell-commit", async page =>
@@ -406,6 +410,7 @@ namespace Spellbound.Playtest
 
                 await page.ClickAsync("button:has-text('Commit:')");
                 await Expect(page, "Round 5 of 8");
+                await Expect(page, "Your guesses:");
             });
             await StepAsync(merlin, "build", async page =>
             {

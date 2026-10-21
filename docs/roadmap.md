@@ -84,7 +84,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   per conquest, mana produced 1 per 10, no points for unspent mana (`discussions/strategies.md`)
 - [ ] Reading rivals (`discussions/reading-rivals.md`), one at a time, asking the owner after each:
   - [x] Rally, the attacker's Ward (+2 power for 3 mana)
-  - [ ] traits secret until the end, with a guess at each rival's
+  - [x] traits secret until the end, with a guess at each rival's (bots guess from the tiles a rival took in the opening)
   - [ ] fog of war: rivals' far-off units and their mana hidden
 - [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)
 
