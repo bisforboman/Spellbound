@@ -56,7 +56,9 @@ public static class Seats
         }
 
         var owner = match.OwnerOf(hex) is { } o ? (o == you ? "yours" : owners?[o] is null && owners is not null ? $"Bot {o + 1}'s" : $"seat {o + 1}'s") : tile.IsGuarded ? $"guarded by monsters (power {tile.Guard})" : "free";
-        var units = match.UnitsOn(hex) is { IsEmpty: false } army ? $", {army}" : "";
+        // The fog of war: a rival's units far from your land are unseen.
+        var seen = you is { } viewer ? match.UnitsSeenBy(viewer, hex) : match.UnitsOn(hex);
+        var units = seen is { IsEmpty: false } army ? $", {army}" : seen is null && match.OwnerOf(hex) is not null ? ", units unseen" : "";
         var built = match.UpgradeOn(hex) is { } upgrade ? $", with a {upgrade}" : "";
         return $"{tile.Type} tile at {hex}, yields {tile.Yield}, {owner}{built}{units}";
     }

@@ -212,7 +212,7 @@ public sealed partial class Match
     }
 
     /// <summary>Every seat's spell, in seat order: they pay, and the spell takes effect.</summary>
-    private void ResolveCasts(IEnumerable<Orders> orders, List<string> lines)
+    private void ResolveCasts(IEnumerable<Orders> orders, ReportLines lines)
     {
         foreach (var order in orders.Where(o => o.Cast is not null))
         {
@@ -239,29 +239,29 @@ public sealed partial class Match
                         seat.Cast(Spell.Scorch); // only a Scorch that burns counts for Hexer and Spellweaver
                     }
 
-                    lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {burned} burn, for {paid} mana.");
+                    lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {burned} burn, for {paid} mana.", seat.Index, target);
                     break;
                 case Spell.Ward:
                     wards[target] = wards.GetValueOrDefault(target) + Rules.WardPower;
-                    lines.Add($"Seat {seat.Index + 1} casts Ward on {target}: it defends with {Rules.WardPower} more power this round.");
+                    lines.Add($"Seat {seat.Index + 1} casts Ward on {target}: it defends with {Rules.WardPower} more power this round.", seat.Index, target);
                     break;
                 case Spell.Leyline:
                     var move = cast.Transfer!;
                     units[move.From] = UnitsOn(move.From) - move.Units;
                     units[move.To] = UnitsOn(move.To) + move.Units;
-                    lines.Add($"Seat {seat.Index + 1} casts Leyline: {move.Units} travel from {move.From} to {move.To}.");
+                    lines.Add($"Seat {seat.Index + 1} casts Leyline: {move.Units} travel from {move.From} to {move.To}.", seat.Index, move.From, move.To);
                     break;
                 case Spell.Blight:
                     blights.Add(target);
-                    lines.Add($"Seat {seat.Index + 1} casts Blight on {Describe(target)}: it yields nothing next round.");
+                    lines.Add($"Seat {seat.Index + 1} casts Blight on {Describe(target)}: it yields nothing next round.", seat.Index, target);
                     break;
                 case Spell.Rally:
                     rallies[seat.Index] = rallies.GetValueOrDefault(seat.Index) + Rules.RallyPower;
-                    lines.Add($"Seat {seat.Index + 1} casts Rally: its attack on {target} strikes with {Rules.RallyPower} more power.");
+                    lines.Add($"Seat {seat.Index + 1} casts Rally: its attack on {target} strikes with {Rules.RallyPower} more power.", seat.Index, target);
                     break;
                 case Spell.Lure:
                     Map.SetGuard(target, Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower));
-                    lines.Add($"Seat {seat.Index + 1} casts Lure on {target}: its guards drop to power {Map[target].Guard}.");
+                    lines.Add($"Seat {seat.Index + 1} casts Lure on {target}: its guards drop to power {Map[target].Guard}.", seat.Index, target);
                     break;
             }
         }

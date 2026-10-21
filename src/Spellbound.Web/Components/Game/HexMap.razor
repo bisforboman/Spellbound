@@ -8,7 +8,7 @@
         var hex = tile.Hex;
         var (x, y) = Center(hex);
         var owner = Match.OwnerOf(hex);
-        var units = Match.UnitsOn(hex);
+        var units = You is { } viewer ? Match.UnitsSeenBy(viewer, hex) : Match.UnitsOn(hex); // null: hidden by the fog
         var classes = "hex" + (tile.IsUnveiled ? "" : " dark") + (Highlight?.Contains(hex) == true ? " marked" : "")
                       + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "");
         <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners)"
@@ -21,9 +21,13 @@
                 {
                     @Label(x, y + 16, "hex-note", $"☠{tile.Guard}")
                 }
-                else if (!units.IsEmpty)
+                else if (units is null && owner is not null)
                 {
-                    @Label(x, y + 16, "hex-note", UnitText(units))
+                    @Label(x, y + 16, "hex-note fog", "?")
+                }
+                else if (units is { IsEmpty: false } seen)
+                {
+                    @Label(x, y + 16, "hex-note", UnitText(seen))
                 }
             }
         </g>

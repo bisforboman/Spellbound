@@ -75,7 +75,7 @@ public sealed partial class Match
             return Report.Fail(problem);
         }
 
-        var lines = new List<string>();
+        var lines = new ReportLines();
         var winners = new Dictionary<int, Hex>();
         foreach (var tile in onAuction)
         {
@@ -113,10 +113,10 @@ public sealed partial class Match
             Phase = MatchPhase.Rounds;
             lines.Add("The opening is over. The rounds begin.");
             SettleTraits(lines);
-            lines.AddRange(StartRound(random));
+            lines.Append(StartRound(random));
         }
 
-        return new Report(true, lines);
+        return lines.ToReport();
     }
 
     private string? BidProblem(IReadOnlyCollection<Bid> bids)

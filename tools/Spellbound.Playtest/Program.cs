@@ -293,6 +293,13 @@ namespace Spellbound.Playtest
                 await Expect(page, "Round 1 of 8");
                 await Expect(page, "The rounds begin");
                 await Expect(page, "Rivals' traits are secret until the end");
+                // The fog of war: a rival's income is its mana, so nobody else reads it.
+                await page.ClickAsync("button.report-toggle:has-text('Everything that happened')");
+                await Expect(page, "Only what concerns you");
+                if (await page.Locator("text=/Bot \\d collects/").CountAsync() > 0)
+                {
+                    throw new InvalidOperationException("A rival's income shows through the fog.");
+                }
             });
             await StepAsync(merlin, "summon", async page =>
             {

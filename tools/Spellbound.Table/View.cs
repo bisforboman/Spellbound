@@ -30,7 +30,8 @@ internal static class View
         {
             var shown = match.Phase == MatchPhase.Ended && rival.Trait is { } rt ? $", trait {rt}"
                 : me.Guesses.TryGetValue(rival.Index, out var guessed) ? $", your guess: {guessed}" : "";
-            text.AppendLine($"Seat {rival.Index + 1}: {rival.Mana} mana, {rival.Tiles.Count} tiles, {rival.Score} points{shown}.");
+            var mana = match.ManaSeenBy(seat, rival.Index) is { } m ? $"{m} mana" : "mana unseen";
+            text.AppendLine($"Seat {rival.Index + 1}: {mana}, {rival.Tiles.Count} tiles, {rival.Score} points{shown}.");
         }
 
         text.AppendLine();
@@ -45,11 +46,11 @@ internal static class View
             text.AppendLine($"Up for auction now: {string.Join(", ", match.OnAuction.Select(Key))}.");
         }
 
-        if (table.LastReport.Length > 0)
+        if (table.LastReportFor(match, seat) is { Count: > 0 } seen)
         {
             text.AppendLine();
-            text.AppendLine("What just happened:");
-            foreach (var line in table.LastReport)
+            text.AppendLine("What just happened (that you could see):");
+            foreach (var line in seen)
             {
                 text.AppendLine("  " + line);
             }
@@ -103,7 +104,9 @@ internal static class View
         var owner = match.OwnerOf(tile.Hex) is { } o
             ? o == seat ? "yours" : $"Seat {o + 1}'s"
             : tile.IsGuarded ? $"guarded by monsters, power {tile.Guard}" : "free";
-        var units = match.UnitsOn(tile.Hex) is { IsEmpty: false } army ? $", {army}" : "";
+        var units = match.UnitsSeenBy(seat, tile.Hex) is not { } seen
+            ? match.OwnerOf(tile.Hex) is not null ? ", units unseen" : ""
+            : seen.IsEmpty ? "" : $", {seen}";
         var built = match.UpgradeOn(tile.Hex) is { } upgrade ? $", with a {upgrade}" : "";
         return $"{tile.Type}, yields {tile.Yield}, {owner}{built}{units}";
     }
@@ -161,6 +164,9 @@ internal static class View
         POINTS, banked every round and never lost: 1 per {{r.TilesPerPoint}} tile-rounds held (tiles held, added up each
         round), 1 per {{r.ManaPerPoint}} mana your land produced, {{r.PointsPerConquest}} per rival tile taken or monster
         tile cleared. Your trait's goal adds up to {{r.TraitGoalCap}} points, scored only at the end.
+
+        FOG OF WAR: you see rivals' units only on tiles next to your land, and rivals' mana only at the end. Who holds
+        each tile, yields, upgrades and scores are seen by all. The report shows only what you could see.
 
         TRAITS ARE SECRET until the end. Alongside any round's orders you may guess one rival's trait (once per rival;
         a guess can't be changed): {{r.PointsPerTraitGuess}} point at the end for each right guess, at most {{r.TraitGuessCap}}. No trait

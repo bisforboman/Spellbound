@@ -111,7 +111,7 @@ int Act(int seat, string json)
     }
 
     Console.WriteLine("Committed. The step resolved:");
-    foreach (var line in table.LastReport)
+    foreach (var line in table.LastReportFor(table.Load(), seat))
     {
         Console.WriteLine("  " + line);
     }
@@ -190,8 +190,8 @@ TableState Resolve(TableState table)
 
     TableFile.Log(file, new { step = table.Step, resolved = report.Succeeded, lines = report.Lines });
     return report.Succeeded
-        ? table with { Step = table.Step + 1, Match = match.Save(), Pending = [], LastReport = [.. report.Lines] }
-        : table with { Pending = [], LastReport = [.. report.Lines] };
+        ? table with { Step = table.Step + 1, Match = match.Save(), Pending = [], LastReport = [.. report.Lines], LastReportTags = [.. report.Tags ?? []] }
+        : table with { Pending = [], LastReport = [.. report.Lines], LastReportTags = null };
 }
 
 void Log(TableState table, int seat, string json, bool ok, IEnumerable<string> lines) =>

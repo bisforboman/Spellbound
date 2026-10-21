@@ -12,7 +12,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 1. **Setup.** The map lies dark. Each player starts with **9 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening auctions put them.
 2. **The opening Unveils.** Traits are still hidden, so nobody knows for sure why a rival bids hard on a tile. Before the first round, three Unveils reveal **3 tiles per player plus 3 extra**, one tile at a time. In each one, as many tiles as there are players go up for a secret mana auction: winners take the tile they bid on, and everyone else gets a random tile nobody wanted. The rest of the revealed tiles stay unowned, for later. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
-3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end; alongside any round's orders a player may guess a rival's (once per rival), for points at the end. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. Nobody starts with units, so the first rounds are about summoning and attuning.
+3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end; alongside any round's orders a player may guess a rival's (once per rival), for points at the end. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
 5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no auction). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
 6. **The second half.** Rounds 5–8: with the map fully revealed and free land running out, growth turns into competition. Attuning gets more expensive as realms grow, so attacking rivals becomes the cheaper way to gain land. A player's last tile can never be taken.
@@ -284,7 +284,7 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
   - **Mana produced:** points for the mana your land produces.
   - **Conquest:** points for rival tiles taken and monster tiles cleared.
   - **Trait goals:** each trait can add its own way to score.
-- **Visibility:** the main score is **visible** to everyone during the game; **traits, trait-goal points and guesses are hidden** until the end.
+- **Visibility:** the main score is **visible** to everyone during the game; **traits, trait-goal points and guesses are hidden** until the end, and so is rivals' mana (see *Fog of war*).
 - **Point values**, banked at the end of every round:
 
 | Source | Points |
@@ -304,6 +304,22 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
   for conquest, and about 1 from trait goals: still about 18 in all. Since the strategy retune (21 Oct 2026: Attune
   1 + 1 per tile to 3 tiles then + 3, 2 points per conquest, mana 1 per 10) a seat ends around 21: about 10 for land, 5 for mana, 4 for
   conquest, 1 from its trait and 1–2 from upgrades.*
+
+## Fog of war
+
+Decided 21 Oct 2026 for reading rivals (`discussions/reading-rivals.md`; Claude's proposal, chosen by the owner).
+
+- **You see a rival's units only on tiles next to your own land.** Units only ever stand on their owner's tiles, so
+  that is the whole rule. A rival's tile further away shows that it is theirs, its yield and its upgrade, but its
+  units are unseen ("?" on the map).
+- **Rivals' mana is hidden** until the end, and so is their income.
+- **Public:** who holds every tile, yields, upgrades, scores, Unveils, Attunes and builds.
+- **The round's report shows you only what you could see:** your own actions, everything public, and anything on a
+  tile you can see *as the board stands after the round*. A summon, a spell or a battle far from your land is
+  hidden.
+- **When the match ends, everything is revealed.**
+- Bots play by the same rule: they read units only next to their own land and never a rival's mana (a bot assumes a
+  rival can always afford a Rally).
 
 ## Player elimination
 
