@@ -128,3 +128,23 @@ Medium.
 **Numbers to measure first** (with `--set`):
 - the surcharge: +2, or +1;
 - whether Build is followable.
+
+## Puerto Rico in turn, one pick at a time? (21 Oct 2026)
+
+After follow orders were removed, the owner asked whether Puerto Rico's own way (players pick roles one at a time,
+in turn) would be better. It would fix the real problem: roles that are exclusive and rotate force players to vary,
+and after round 2 everyone here attacks. But:
+- **It gives up secret simultaneous orders** (principle 2), which every AI taste in every session called the best
+  part. A draft in turn makes stances public; full Puerto Rico makes targets public too.
+- **It adds a turn order.** On a phone, async play would wait on each player in turn, every round, instead of one
+  commit (principle 1).
+- **An exclusive Attack in a war game** can leave a player unable to strike or defend that round.
+
+The owner chose **Puerto Rico's other half** instead: unpicked roles gather a doubloon. Here, an Attune, Summon or
+Build nobody chose gets cheaper, up to 3 less, and resets when chosen. It keeps secrecy and one commit, pulls players
+towards the stances nobody is using, and works as a light catch-up. A turn-order draft stays an idea for a paper
+playtest with people (`../skirmish-paper-prototype.md`), not for the app.
+
+**Measured** (`--plans`, 2,000 games): the bots barely change (Warlord 45% to 43%, Balanced 21% to 23%), because they
+don't choose stances by price. Bots spend a little less and end with about 2 mana more. People choosing by price is
+what this is for, so the next AI-taste session or the first people judge it.

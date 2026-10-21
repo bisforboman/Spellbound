@@ -84,7 +84,9 @@ internal static class View
 
         return match.Phase == MatchPhase.Opening
             ? "Your move: bid on one tile up for auction, e.g. {\"bid\": \"q,r\", \"amount\": 2}, or {\"pass\": true}."
-            : "Your move: this round's orders (see `rules` for the format).";
+            : "Your move: this round's orders (see `rules` for the format)."
+              + string.Concat(Match.FavouredStances.Where(s => match.FavourOf(s) > 0)
+                  .Select(s => $" {s} costs {match.FavourOf(s)} mana less this round (nobody chose it lately)."));
     }
 
     private static string Phase(Match match) => match.Phase switch
@@ -180,6 +182,9 @@ internal static class View
 
         FOG OF WAR: you see rivals' units only on tiles next to your land, and rivals' mana only at the end. Who holds
         each tile, yields, upgrades and scores are seen by all. The report shows only what you could see.
+
+        UNPICKED STANCES GET CHEAPER: attune, summon or build that nobody chose in a round costs {{r.FavourPerRound}} mana less
+        the next round, more each round it waits (at most {{r.FavourCap}} less). Choosing it resets it.
 
         TRAITS ARE SECRET until the end. Alongside any round's orders you may guess one rival's trait (once per rival;
         a guess can't be changed): {{r.PointsPerTraitGuess}} point at the end for each right guess, at most {{r.TraitGuessCap}}. No trait
