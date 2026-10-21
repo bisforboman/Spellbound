@@ -93,7 +93,7 @@ public sealed partial class Match
             : attack == defence
                 ? owner is null ? "a tie: both sides are wiped out and you take the tile" : "a tie: both sides are wiped out and the tile stays theirs"
                 : "you lose everything you sent";
-        lines.Add($"Attack {Describe(target)} ({DefenceText(target)}, power {defence}{afterSpell.Note}) with {sent} (power {attack}). "
+        lines.Add($"Attack {DescribePlain(target)} ({DefenceText(target)}, power {defence}{afterSpell.Note}) with {sent} (power {attack}). "
                   + $"As things stand, {outcome}. Units that attack don't defend their own tiles this round.");
         return null;
     }
@@ -101,7 +101,7 @@ public sealed partial class Match
     private int DefencePower(Hex target) => OwnerOf(target) is null ? Map[target].Guard : UnitsOn(target).Power(Rules) + Ward(target);
 
     private string DefenceText(Hex target) =>
-        OwnerOf(target) is { } owner ? $"Seat {owner + 1}'s, held by {UnitsOn(target)}" : "guarded by monsters";
+        OwnerOf(target) is { } owner ? $"Seat {owner + 1}'s, held by {UnitsOn(target)}" : $"guarded by monsters, power {Map[target].Guard}";
 
     /// <summary>
     /// Every attacking unit leaves its tile first, so it doesn't defend it. Then each attacked tile has one battle, in
@@ -146,7 +146,7 @@ public sealed partial class Match
         var attack = side.Sum(s => s.Army.Power(Rules));
         var defence = DefencePower(target);
         var who = string.Join(" and ", side.Select(s => $"Seat {s.Seat + 1} ({s.Army})"));
-        lines.Add($"{who} attack {Describe(target)}, {DefenceText(target)}: power {attack} against {defence}.");
+        lines.Add($"{who} attack {DescribePlain(target)}, {DefenceText(target)}: power {attack} against {defence}.");
 
         if (attack < defence)
         {

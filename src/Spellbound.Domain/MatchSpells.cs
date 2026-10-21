@@ -87,6 +87,13 @@ public sealed partial class Match
                     return $"Scorch can burn from 1 to {power} power at {target}.";
                 }
 
+                if (Burns(target, cast.Count) == 0)
+                {
+                    // Losses stop before a unit that would go past the count: 1 can't burn a Golem.
+                    return $"Scorch {cast.Count} would burn nothing at {target}: its weakest unit has power "
+                           + $"{(army.Imps > 0 ? Rules.ImpPower : Rules.GolemPower)}.";
+                }
+
                 if (cast.Count > seat.Mana / Rules.ScorchManaPerPower)
                 {
                     return $"Scorch costs {Rules.ScorchManaPerPower} mana per power; you have {seat.Mana}.";
@@ -130,7 +137,7 @@ public sealed partial class Match
                 var free = orders.Moves.Where(m => m.From == move.From).Aggregate(UnitsOn(move.From) + summoned, (a, m) => a - m.Units);
                 if (!move.Units.IsValid || move.Units.IsEmpty || !free.Holds(move.Units))
                 {
-                    return $"There aren't {move.Units} at {move.From} to send.";
+                    return $"There aren't {move.Units} at {move.From} to send (units that step this round, in or out, can't ride a Leyline too).";
                 }
 
                 cost = SpellCostOf(orders);
@@ -187,7 +194,11 @@ public sealed partial class Match
             var cast = order.Cast!;
             var target = cast.Target;
             seat.Mana -= cast.Spell == Spell.Scorch ? 0 : SpellCostOf(order);
-            seat.Cast(cast.Spell);
+            if (cast.Spell != Spell.Scorch)
+            {
+                seat.Cast(cast.Spell);
+            }
+
             switch (cast.Spell)
             {
                 case Spell.Scorch:
@@ -197,6 +208,11 @@ public sealed partial class Match
                     var burned = before - UnitsOn(target);
                     var paid = Rules.ScorchManaPerPower * burned.Power(Rules);
                     seat.Mana -= paid;
+                    if (!burned.IsEmpty)
+                    {
+                        seat.Cast(Spell.Scorch); // only a Scorch that burns counts for Hexer and Spellweaver
+                    }
+
                     lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {burned} burn, for {paid} mana.");
                     break;
                 case Spell.Ward:

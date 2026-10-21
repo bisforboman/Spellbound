@@ -135,7 +135,8 @@ internal static class View
         Order: moves, attunes, summons, spells, attacks, then points.
 
         BATTLES: total power against total power. Higher wins; both sides lose power equal to the smaller total (weakest
-        units first); the loser is wiped out. A tie wipes out both and the tile stays (against monsters a tie takes it).
+        units first, stopping before a unit that would go past it: losing 2 power can't kill a Golem of power 3); the
+        loser is wiped out. Scorch burns the same way. A tie wipes out both and the tile stays (against monsters a tie takes it).
         A player's last tile can't be taken. Several attackers on one tile fight the defender together, then each other.
 
         SPELLS (alongside the stance, paid on top):
