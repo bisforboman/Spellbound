@@ -72,7 +72,7 @@ public sealed partial class Match
             Trait.Golemwright => $"1 point per {r.GolemsPerTraitPoint} Golems you have",
             Trait.Spellweaver => "1 point per different spell cast beyond the first",
             Trait.Warden => "1 point per tile from your opening you still hold, beyond the first",
-            Trait.Hexer => $"1 point per {r.HexesPerTraitPoint} Scorches and Blights cast",
+            Trait.Hexer => r.HexesPerTraitPoint == 1 ? "1 point per Scorch or Blight cast" : $"1 point per {r.HexesPerTraitPoint} Scorches and Blights cast",
             _ => "nothing",
         };
         return $"at the end, {goal}, up to {r.TraitGoalCap}.";

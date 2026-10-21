@@ -39,16 +39,18 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Wanderer | many separate footholds | 1 point per separate group of tiles beyond the first |
 | Beastbane | clearing monsters | 1 point per monster tile cleared (on top of the conquest point) |
 | Warbrand | taking rivals' land | 1 point per rival tile taken (on top of the conquest point) |
-| Golemwright | Golems | 1 point per 2 Golems you have at the end |
+| Golemwright | Golems | 1 point per 3 Golems you have at the end |
 | Spellweaver | casting every kind of spell | 1 point per different spell cast beyond the first |
 | Warden | keeping the land you started with | 1 point per tile from your opening still held, beyond the first (so at most 2) |
-| Hexer | Scorch and Blight | 1 point per 2 Scorches and Blights cast |
+| Hexer | Scorch and Blight | 1 point per Scorch or Blight cast |
 
 - No trait changes the Attune price, income, upkeep or a cost: they would snowball (principles 12 and 13).
-- **Measured** (1,000 bot games each; bots draft at random and lean towards their trait's tiles, units and spells):
-  every trait wins between 28% and 39% of 3-player games (33% is even) and between 16% and 26% of 5-player games
-  (20% is even). Golemwright wins most, partly because bots that summon Golems simply fight better; Hexer and Wanderer
-  least. Goals average 0.4 (Beastbane) to 1.9 points (Hearthkeeper, Warbrand).
+- **Measured** (1,000 bot games each; bots draft at random, bid like their trait and lean towards their trait's
+  tiles, units and spells): every trait wins between 27% and 38% of 3-player games (33% is even) and between 17% and
+  24% of 5-player games (20% is even). Wanderer and Spellweaver win least, Golemwright and Beastbane most. Goals average
+  0.5 (Beastbane) to 1.9 points (Hearthkeeper, Warbrand). *(21 Oct 2026: Golemwright went from 1 point per 2 Golems to
+  per 3, and Hexer from per 2 Scorches and Blights to per 1, once bots bid like their trait; see
+  `discussions/traits.md`.)*
 
 ## Map
 
