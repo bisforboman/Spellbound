@@ -1,6 +1,6 @@
 {
   "Seed": 43,
-  "Step": 3,
+  "Step": 8,
   "AiSeats": [
     0,
     1
@@ -9,7 +9,7 @@
     "Version": 1,
     "Phase": "Rounds",
     "OpeningUnveil": 0,
-    "CurrentRound": 1,
+    "CurrentRound": 6,
     "OnAuction": [],
     "Tiles": [
       {
@@ -39,7 +39,7 @@
           "S": 0
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 3,
         "Guard": 0
       },
       {
@@ -49,7 +49,7 @@
           "S": 2
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -69,7 +69,7 @@
           "S": 0
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -99,7 +99,7 @@
           "S": 1
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 1,
         "Guard": 0
       },
       {
@@ -119,8 +119,8 @@
           "S": -1
         },
         "Type": "Wild",
-        "Yield": null,
-        "Guard": 0
+        "Yield": 0,
+        "Guard": 3
       },
       {
         "Hex": {
@@ -129,7 +129,7 @@
           "S": -2
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -179,7 +179,7 @@
           "S": 0
         },
         "Type": "Wild",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -205,10 +205,10 @@
     ],
     "Seats": [
       {
-        "Mana": 9,
-        "Score": 0,
-        "ProducedThisRound": 6,
-        "ProducedCarry": 0,
+        "Mana": 20,
+        "Score": 15,
+        "ProducedThisRound": 8,
+        "ProducedCarry": 4,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
@@ -218,13 +218,18 @@
           },
           {
             "Q": 1,
+            "R": -2,
+            "S": 1
+          },
+          {
+            "Q": 1,
             "R": -1,
             "S": 0
           },
           {
-            "Q": 1,
+            "Q": 2,
             "R": 0,
-            "S": -1
+            "S": -2
           }
         ],
         "LandCarry": 0,
@@ -252,27 +257,25 @@
           }
         ],
         "MonstersCleared": 0,
-        "RivalTilesTaken": 0,
-        "SpellsCast": [],
-        "HexesCast": 0,
-        "RoundsCast": 0
+        "RivalTilesTaken": 3,
+        "SpellsCast": [
+          "Ward",
+          "Blight"
+        ],
+        "HexesCast": 3,
+        "RoundsCast": 5
       },
       {
-        "Mana": 11,
-        "Score": 0,
-        "ProducedThisRound": 7,
-        "ProducedCarry": 0,
+        "Mana": 0,
+        "Score": 10,
+        "ProducedThisRound": 2,
+        "ProducedCarry": 7,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
-            "Q": -2,
+            "Q": 1,
             "R": 0,
-            "S": 2
-          },
-          {
-            "Q": -2,
-            "R": 1,
-            "S": 1
+            "S": -1
           },
           {
             "Q": 1,
@@ -280,7 +283,7 @@
             "S": -2
           }
         ],
-        "LandCarry": 0,
+        "LandCarry": 1,
         "Offer": [
           "Beastbane",
           "Golemwright"
@@ -305,18 +308,28 @@
           }
         ],
         "MonstersCleared": 0,
-        "RivalTilesTaken": 0,
+        "RivalTilesTaken": 2,
         "SpellsCast": [],
         "HexesCast": 0,
         "RoundsCast": 0
       },
       {
-        "Mana": 11,
-        "Score": 0,
-        "ProducedThisRound": 8,
-        "ProducedCarry": 0,
+        "Mana": 50,
+        "Score": 17,
+        "ProducedThisRound": 13,
+        "ProducedCarry": 4,
         "ConquestsThisRound": 0,
         "Tiles": [
+          {
+            "Q": -2,
+            "R": 0,
+            "S": 2
+          },
+          {
+            "Q": -2,
+            "R": 1,
+            "S": 1
+          },
           {
             "Q": -1,
             "R": 0,
@@ -358,27 +371,79 @@
           }
         ],
         "MonstersCleared": 0,
-        "RivalTilesTaken": 0,
+        "RivalTilesTaken": 2,
         "SpellsCast": [],
         "HexesCast": 0,
         "RoundsCast": 0
       }
     ],
-    "Units": [],
-    "Upgrades": []
+    "Units": [
+      {
+        "Hex": {
+          "Q": -2,
+          "R": 1,
+          "S": 1
+        },
+        "Imps": 5,
+        "Golems": 0
+      },
+      {
+        "Hex": {
+          "Q": 1,
+          "R": -2,
+          "S": 1
+        },
+        "Imps": 3,
+        "Golems": 0
+      },
+      {
+        "Hex": {
+          "Q": 1,
+          "R": 0,
+          "S": -1
+        },
+        "Imps": 0,
+        "Golems": 2
+      },
+      {
+        "Hex": {
+          "Q": 2,
+          "R": 0,
+          "S": -2
+        },
+        "Imps": 1,
+        "Golems": 0
+      }
+    ],
+    "Upgrades": [
+      {
+        "Hex": {
+          "Q": -1,
+          "R": 2,
+          "S": -1
+        },
+        "Upgrade": "Shrine"
+      }
+    ]
   },
   "Pending": {},
   "LastReport": [
-    "Seat 1 wins the Steady tile at (1, -1) (yields 2) for 2 mana.",
-    "Seat 2 wins the Steady tile at (-2, 0) (yields 2) for 2 mana.",
-    "Seat 3 wins the Wild tile at (0, -2) (yields 4) for 3 mana.",
-    "The opening is over. The rounds begin.",
-    "Seat 1\u0027s trait is Hexer.",
-    "Seat 2\u0027s trait is Golemwright.",
-    "Seat 3\u0027s trait is Wildheart.",
-    "Round 1 of 8 begins.",
-    "Seat 1 collects 6 mana.",
-    "Seat 2 collects 7 mana.",
-    "Seat 3 collects 8 mana."
+    "Round 5.",
+    "Seat 1 moves 1 group of units.",
+    "Seat 3 builds a Shrine on (-1, 2).",
+    "Seat 1 casts Blight on the Shifting tile at (1, 1) (yields 3): it yields nothing next round.",
+    "Seat 1 (3 Imps) attack the Steady tile at (1, -2) (yields 2), Seat 3\u0027s, held by no units: power 3 against 0.",
+    "Seat 1 takes (1, -2) with 3 Imps.",
+    "Seat 2 (4 Golems) attack the Shifting tile at (1, 0) (yields 2), Seat 1\u0027s, held by no units: power 12 against 0.",
+    "Seat 2 takes (1, 0) with 4 Golems.",
+    "Seat 1 banks 5 points (2 for land, 1 for mana, 2 for conquest), 15 in all.",
+    "Seat 2 banks 3 points (1 for land, 0 for mana, 2 for conquest), 10 in all.",
+    "Seat 3 banks 3 points (2 for land, 1 for mana), 17 in all.",
+    "Round 6 of 8 begins.",
+    "Seat 1 collects 8 mana.",
+    "Seat 2 collects 2 mana.",
+    "Seat 2 pays 2 mana upkeep.",
+    "Seat 2 can\u0027t pay for 2 Golems: they dissolve.",
+    "Seat 3 collects 13 mana."
   ]
 }

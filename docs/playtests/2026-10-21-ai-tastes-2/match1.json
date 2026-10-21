@@ -1,6 +1,6 @@
 {
   "Seed": 41,
-  "Step": 4,
+  "Step": 10,
   "AiSeats": [
     0,
     1
@@ -9,7 +9,7 @@
     "Version": 1,
     "Phase": "Rounds",
     "OpeningUnveil": 0,
-    "CurrentRound": 2,
+    "CurrentRound": 8,
     "OnAuction": [],
     "Tiles": [
       {
@@ -69,7 +69,7 @@
           "S": 0
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 1,
         "Guard": 0
       },
       {
@@ -119,7 +119,7 @@
           "S": -1
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -149,7 +149,7 @@
           "S": 0
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -180,7 +180,7 @@
         },
         "Type": "Shifting",
         "Yield": 2,
-        "Guard": 3
+        "Guard": 0
       },
       {
         "Hex": {
@@ -205,10 +205,10 @@
     ],
     "Seats": [
       {
-        "Mana": 10,
-        "Score": 1,
-        "ProducedThisRound": 8,
-        "ProducedCarry": 6,
+        "Mana": 13,
+        "Score": 11,
+        "ProducedThisRound": 10,
+        "ProducedCarry": 5,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
@@ -222,17 +222,17 @@
             "S": 2
           },
           {
-            "Q": 1,
-            "R": 0,
-            "S": -1
+            "Q": 0,
+            "R": -2,
+            "S": 2
           },
           {
             "Q": 1,
-            "R": 1,
-            "S": -2
+            "R": -2,
+            "S": 1
           }
         ],
-        "LandCarry": 1,
+        "LandCarry": 2,
         "Offer": [
           "Hearthkeeper",
           "Wildheart"
@@ -258,20 +258,52 @@
         ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
-        "SpellsCast": [],
+        "SpellsCast": [
+          "Ward"
+        ],
         "HexesCast": 0,
-        "RoundsCast": 0
+        "RoundsCast": 2
       },
       {
-        "Mana": 6,
-        "Score": 1,
-        "ProducedThisRound": 6,
+        "Mana": 61,
+        "Score": 33,
+        "ProducedThisRound": 24,
         "ProducedCarry": 6,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
+            "Q": -2,
+            "R": 1,
+            "S": 1
+          },
+          {
+            "Q": -1,
+            "R": 0,
+            "S": 1
+          },
+          {
+            "Q": 0,
+            "R": -1,
+            "S": 1
+          },
+          {
             "Q": 0,
             "R": 0,
+            "S": 0
+          },
+          {
+            "Q": 1,
+            "R": 0,
+            "S": -1
+          },
+          {
+            "Q": 1,
+            "R": 1,
+            "S": -2
+          },
+          {
+            "Q": 2,
+            "R": -2,
             "S": 0
           },
           {
@@ -309,38 +341,26 @@
             "S": -2
           }
         ],
-        "MonstersCleared": 0,
-        "RivalTilesTaken": 0,
-        "SpellsCast": [],
+        "MonstersCleared": 1,
+        "RivalTilesTaken": 5,
+        "SpellsCast": [
+          "Ward",
+          "Leyline"
+        ],
         "HexesCast": 0,
-        "RoundsCast": 0
+        "RoundsCast": 6
       },
       {
-        "Mana": 15,
-        "Score": 1,
-        "ProducedThisRound": 11,
-        "ProducedCarry": 7,
+        "Mana": 16,
+        "Score": 13,
+        "ProducedThisRound": 2,
+        "ProducedCarry": 4,
         "ConquestsThisRound": 0,
         "Tiles": [
-          {
-            "Q": -2,
-            "R": 1,
-            "S": 1
-          },
-          {
-            "Q": -1,
-            "R": 0,
-            "S": 1
-          },
           {
             "Q": -1,
             "R": 2,
             "S": -1
-          },
-          {
-            "Q": 0,
-            "R": -1,
-            "S": 1
           }
         ],
         "LandCarry": 1,
@@ -369,38 +389,97 @@
         ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
-        "SpellsCast": [],
-        "HexesCast": 0,
-        "RoundsCast": 0
+        "SpellsCast": [
+          "Ward",
+          "Blight"
+        ],
+        "HexesCast": 3,
+        "RoundsCast": 6
       }
     ],
     "Units": [
       {
         "Hex": {
-          "Q": 0,
+          "Q": -2,
           "R": 0,
-          "S": 0
+          "S": 2
         },
         "Imps": 0,
-        "Golems": 4
+        "Golems": 2
+      },
+      {
+        "Hex": {
+          "Q": -2,
+          "R": 1,
+          "S": 1
+        },
+        "Imps": 0,
+        "Golems": 1
       }
     ],
-    "Upgrades": []
+    "Upgrades": [
+      {
+        "Hex": {
+          "Q": -2,
+          "R": 0,
+          "S": 2
+        },
+        "Upgrade": "Shrine"
+      },
+      {
+        "Hex": {
+          "Q": -2,
+          "R": 1,
+          "S": 1
+        },
+        "Upgrade": "Shrine"
+      },
+      {
+        "Hex": {
+          "Q": -1,
+          "R": 0,
+          "S": 1
+        },
+        "Upgrade": "Shrine"
+      },
+      {
+        "Hex": {
+          "Q": -1,
+          "R": 2,
+          "S": -1
+        },
+        "Upgrade": "Shrine"
+      },
+      {
+        "Hex": {
+          "Q": 0,
+          "R": -1,
+          "S": 1
+        },
+        "Upgrade": "Shrine"
+      }
+    ]
   },
-  "Pending": {},
+  "Pending": {
+    "1": "{\u0022stance\u0022:\u0022attack\u0022,\u0022target\u0022:\u0022-1,-1\u0022,\u0022send\u0022:[{\u0022from\u0022:\u0022-1,0\u0022,\u0022imps\u0022:0,\u0022golems\u0022:1}],\u0022moves\u0022:[{\u0022from\u0022:\u0022-2,1\u0022,\u0022to\u0022:\u0022-1,0\u0022,\u0022imps\u0022:0,\u0022golems\u0022:1}]}"
+  },
   "LastReport": [
-    "Round 1.",
-    "Seat 1 attunes the Steady tile at (1, 1) (yields 2) for 10 mana.",
-    "Seat 3 attunes the Wild tile at (0, -1) (yields 4) for 10 mana.",
-    "Seat 2 summons 4 Golems at (0, 0).",
-    "Seat 1 banks 1 point (1 for land, 0 for mana), 1 in all.",
-    "Seat 2 banks 1 point (1 for land, 0 for mana), 1 in all.",
-    "Seat 3 banks 1 point (1 for land, 0 for mana), 1 in all.",
-    "Round 2 of 8 begins.",
-    "An Unveil reveals the Shifting tile at (0, -2) (yields 2); the Shifting tile at (2, -2) (yields 2, guarded by power 3); the Steady tile at (0, 2) (yields 2); the Wild tile at (-2, 2) (yields 1).",
-    "Seat 1 collects 8 mana.",
-    "Seat 2 collects 6 mana.",
-    "Seat 2 pays 4 mana upkeep.",
-    "Seat 3 collects 11 mana."
+    "Round 7.",
+    "Seat 1 summons 2 Golems at (-2, 0).",
+    "Seat 3 builds a Shrine on (-1, 2).",
+    "Seat 1 casts Ward on (-2, 0): it defends with 3 more power this round.",
+    "Seat 2 casts Ward on (-1, 0): it defends with 3 more power this round.",
+    "Seat 3 casts Ward on (-2, 1): it defends with 3 more power this round.",
+    "Seat 2 (2 Golems) attack the Steady tile at (-2, 1) (yields 2), Seat 3\u0027s, held by no units: power 6 against 3.",
+    "Seat 2 takes (-2, 1) with 1 Golem.",
+    "Seat 1 banks 2 points (1 for land, 1 for mana), 11 in all.",
+    "Seat 2 banks 7 points (3 for land, 2 for mana, 2 for conquest), 33 in all.",
+    "Seat 3 banks 0 points (0 for land, 0 for mana), 13 in all.",
+    "Round 8 of 8 begins.",
+    "Seat 1 collects 10 mana.",
+    "Seat 1 pays 2 mana upkeep.",
+    "Seat 2 collects 24 mana.",
+    "Seat 2 pays 1 mana upkeep.",
+    "Seat 3 collects 2 mana."
   ]
 }

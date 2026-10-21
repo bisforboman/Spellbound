@@ -1,15 +1,15 @@
 {
   "Seed": 42,
-  "Step": 4,
+  "Step": 11,
   "AiSeats": [
     0,
     1
   ],
   "Match": {
     "Version": 1,
-    "Phase": "Rounds",
+    "Phase": "Ended",
     "OpeningUnveil": 0,
-    "CurrentRound": 2,
+    "CurrentRound": 8,
     "OnAuction": [],
     "Tiles": [
       {
@@ -119,7 +119,7 @@
           "S": -1
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -139,7 +139,7 @@
           "S": 1
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 3,
         "Guard": 0
       },
       {
@@ -189,7 +189,7 @@
           "S": -1
         },
         "Type": "Steady",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -205,10 +205,10 @@
     ],
     "Seats": [
       {
-        "Mana": 6,
-        "Score": 1,
-        "ProducedThisRound": 4,
-        "ProducedCarry": 4,
+        "Mana": 1,
+        "Score": 8,
+        "ProducedThisRound": 0,
+        "ProducedCarry": 8,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
@@ -217,23 +217,18 @@
             "S": 0
           },
           {
-            "Q": -1,
-            "R": 2,
-            "S": -1
-          },
-          {
             "Q": 0,
             "R": -2,
             "S": 2
           }
         ],
-        "LandCarry": 0,
+        "LandCarry": 2,
         "Offer": [
           "Wildheart",
           "Spellweaver"
         ],
         "Trait": "Wildheart",
-        "TraitPoints": 0,
+        "TraitPoints": 1,
         "OpeningTiles": [
           {
             "Q": -1,
@@ -253,15 +248,17 @@
         ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
-        "SpellsCast": [],
+        "SpellsCast": [
+          "Ward"
+        ],
         "HexesCast": 0,
-        "RoundsCast": 0
+        "RoundsCast": 2
       },
       {
-        "Mana": 9,
-        "Score": 1,
-        "ProducedThisRound": 6,
-        "ProducedCarry": 6,
+        "Mana": 8,
+        "Score": 27,
+        "ProducedThisRound": 0,
+        "ProducedCarry": 1,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
@@ -278,15 +275,25 @@
             "Q": -1,
             "R": 0,
             "S": 1
+          },
+          {
+            "Q": 0,
+            "R": 0,
+            "S": 0
+          },
+          {
+            "Q": 1,
+            "R": -1,
+            "S": 0
           }
         ],
-        "LandCarry": 0,
+        "LandCarry": 2,
         "Offer": [
           "Weaver",
           "Hexer"
         ],
         "Trait": "Hexer",
-        "TraitPoints": 0,
+        "TraitPoints": 3,
         "OpeningTiles": [
           {
             "Q": -2,
@@ -305,34 +312,31 @@
           }
         ],
         "MonstersCleared": 0,
-        "RivalTilesTaken": 0,
+        "RivalTilesTaken": 2,
         "SpellsCast": [
+          "Scorch",
+          "Ward",
           "Blight"
         ],
-        "HexesCast": 1,
-        "RoundsCast": 1
+        "HexesCast": 5,
+        "RoundsCast": 7
       },
       {
-        "Mana": 10,
-        "Score": 1,
-        "ProducedThisRound": 7,
-        "ProducedCarry": 6,
+        "Mana": 15,
+        "Score": 18,
+        "ProducedThisRound": 0,
+        "ProducedCarry": 4,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
-            "Q": 0,
-            "R": 0,
-            "S": 0
+            "Q": -1,
+            "R": 2,
+            "S": -1
           },
           {
             "Q": 0,
             "R": 2,
             "S": -2
-          },
-          {
-            "Q": 1,
-            "R": -1,
-            "S": 0
           },
           {
             "Q": 1,
@@ -365,14 +369,35 @@
           }
         ],
         "MonstersCleared": 0,
-        "RivalTilesTaken": 0,
-        "SpellsCast": [],
-        "HexesCast": 0,
-        "RoundsCast": 0
+        "RivalTilesTaken": 1,
+        "SpellsCast": [
+          "Ward",
+          "Blight"
+        ],
+        "HexesCast": 2,
+        "RoundsCast": 4
       }
     ],
-    "Units": [],
+    "Units": [
+      {
+        "Hex": {
+          "Q": 1,
+          "R": -1,
+          "S": 0
+        },
+        "Imps": 1,
+        "Golems": 0
+      }
+    ],
     "Upgrades": [
+      {
+        "Hex": {
+          "Q": -2,
+          "R": 1,
+          "S": 1
+        },
+        "Upgrade": "Tower"
+      },
       {
         "Hex": {
           "Q": -1,
@@ -388,23 +413,49 @@
           "S": -1
         },
         "Upgrade": "Shrine"
+      },
+      {
+        "Hex": {
+          "Q": 0,
+          "R": 0,
+          "S": 0
+        },
+        "Upgrade": "Tower"
+      },
+      {
+        "Hex": {
+          "Q": 0,
+          "R": 2,
+          "S": -2
+        },
+        "Upgrade": "Shrine"
+      },
+      {
+        "Hex": {
+          "Q": 1,
+          "R": 1,
+          "S": -2
+        },
+        "Upgrade": "Shrine"
       }
     ]
   },
   "Pending": {},
   "LastReport": [
-    "Round 1.",
-    "Seat 3 attunes the Shifting tile at (0, 0) (yields 1) for 10 mana.",
-    "Seat 1 builds a Shrine on (-1, 2).",
-    "Seat 2 builds a Sanctum on (-1, 0).",
-    "Seat 2 casts Blight on the Shifting tile at (-1, 1) (yields 1): it yields nothing next round.",
-    "Seat 1 banks 1 point (1 for land, 0 for mana), 1 in all.",
-    "Seat 2 banks 1 point (1 for land, 0 for mana), 1 in all.",
-    "Seat 3 banks 1 point (1 for land, 0 for mana), 1 in all.",
-    "Round 2 of 8 begins.",
-    "An Unveil reveals the Wild tile at (0, -1) (yields 2); the Shifting tile at (2, 0) (yields 3); the Wild tile at (1, 0) (yields 2); the Shifting tile at (-2, 2) (yields 3).",
-    "Seat 1 collects 4 mana.",
-    "Seat 2 collects 6 mana.",
-    "Seat 3 collects 7 mana."
+    "Round 8.",
+    "Seat 2 builds a Tower on (-2, 1).",
+    "Seat 3 builds a Shrine on (1, 1).",
+    "Seat 2 casts Scorch on (-1, 1): 4 Imps burn, for 11 mana.",
+    "Seat 3 casts Ward on (-1, 2): it defends with 3 more power this round.",
+    "Seat 1\u0027s attack on (-1, 2) has no units left to send.",
+    "Seat 1 banks 0 points (0 for land, 0 for mana), 7 in all.",
+    "Seat 2 banks 2 points (1 for land, 1 for mana), 21 in all.",
+    "Seat 3 banks 2 points (1 for land, 1 for mana), 15 in all.",
+    "Seat 2\u0027s upgrades (3) are worth 3 points, 24 in all.",
+    "Seat 3\u0027s upgrades (3) are worth 3 points, 18 in all.",
+    "Seat 1\u0027s trait, Wildheart: 1 Wild tile, 1 point, 8 in all.",
+    "Seat 2\u0027s trait, Hexer: 5 Scorches and Blights, 3 points, 27 in all.",
+    "Seat 3\u0027s trait, Golemwright: 0 Golems, 0 points, 18 in all.",
+    "The match is over. Seat 2 wins."
   ]
 }
