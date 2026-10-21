@@ -13,9 +13,46 @@ player. Add each new session's reviews below and update the themes.
 | 21 Oct 2026 | after #75 (unspent mana scores, Blight 3, traits retuned) | Euro-gamer 3, Wargamer 3, 4X fan 3, Combo player 3, Bluffer 3, Casual player 3 | [2026-10-21-ai-tastes/](2026-10-21-ai-tastes/) |
 | 21 Oct 2026 | after #79 (upgrades; Attune 1 + 3 per tile; 2 points per conquest; mana 1 per 10; no points for unspent mana) | Euro-gamer 2, Wargamer 3, 4X fan 2, Combo player 3, Bluffer 3, Casual player 2 | [2026-10-21-ai-tastes-2/](2026-10-21-ai-tastes-2/) |
 | 21 Oct 2026 | after #85 (Attune 1 + 1 per tile to 3 then + 3; Blight limit; Rally; secret traits with guessing; fog of war) | **Target:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 2. **Outside:** Euro-gamer 3, Combo player 3 | [2026-10-21-ai-tastes-3/](2026-10-21-ai-tastes-3/) |
+| 21 Oct 2026 | after #87 (an undefended capture scores 1; the Table lists the traits) | **Target only:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 3 | [2026-10-21-ai-tastes-4/](2026-10-21-ai-tastes-4/) |
 
 First session: every taste gave the game 3 out of 5: "quick, clean, readable, with real tension in the secret simultaneous orders",
 but each one found it missing the thing its favourite games are about.
+
+## Fourth session: the raid rule, and trait guessing with the names listed
+
+Only the four target tastes played (two matches). They average **3.25**: 3.0, then 2.5, then 3.0, now 3.25. The
+Casual player rose from 2 to 3.
+
+**Defended fights happen now.**
+- The Wargamer: round 2 "was a real battle", 11 against 12, "painful and great, like guessing wrong in a Kemet
+  combat" ([review](2026-10-21-ai-tastes-4/match1-seat1.md)).
+- The Casual player's best moments were defending on a hunch: "power 11 against 12" and "8 against 15", "Catan-
+  robber-dodging satisfying" ([review](2026-10-21-ai-tastes-4/match1-seat2.md)).
+- The Bluffer: a 3-against-3 tie when a rival leylined in exactly enough, "being read that well hurt, and it was
+  great" ([review](2026-10-21-ai-tastes-4/match2-seat1.md)).
+- Raids on empty tiles still happen, mostly late (Wargamer, Casual player), but no taste called them the whole
+  game.
+
+**Trait guessing works as deduction, but rarely pays.**
+- The Bluffer liked it: "every build and spell is a clue", and "I had considered both right answers and then talked
+  myself out of them. That is the kind of mistake I like to make".
+- The others found it "a coin flip worth one point" (Casual player).
+- The AI players got 1 of 8 guesses right. In match 2 the bot got both of its guesses right.
+
+**Mana piles up: one stance a round is the ceiling** (all four target tastes).
+- The Wargamer: "I can never summon and attack in the same turn … 17-20 mana I could not spend".
+- The Casual player: 19 unspent; a bot 38.
+- The 4X fan: "22 to 38 unspent mana in several rounds with nothing to put it into".
+- Growth also stops early: Attune at 10–13 mana from about round 4 (4X fan, Bluffer).
+
+**A big hidden Scorch feels like being deleted.** A 27-mana Scorch burned all 3 of the Bluffer's Golems before they
+attacked: "with enemy mana hidden there was no way to see it coming. It felt like being deleted rather than
+outguessed" ([review](2026-10-21-ai-tastes-4/match2-seat1.md)). The 4X fan, who cast it, loved it.
+
+**Also:**
+- the coordinate map is homework (Casual player; the AI tool's text view);
+- talk and pacts (Bluffer, a fourth time);
+- the map feels small (4X fan, Wargamer).
 
 ## Third session: after the reading-rivals elements
 
