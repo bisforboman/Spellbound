@@ -75,7 +75,7 @@ public sealed record GameRules
 
     public int LeylineManaPerUnit { get; init; } = 1;
     public int LeylineMinCost { get; init; } = 2;
-    public int BlightCost { get; init; } = 4;
+    public int BlightCost { get; init; } = 3;
     public int LureCost { get; init; } = 3;
 
     /// <summary>How much a Lure weakens a monster guard, for good; a guard never drops below <see cref="MinGuard"/>.</summary>
@@ -104,7 +104,23 @@ public sealed record GameRules
     public int TilesOfTypePerTraitPoint { get; init; } = 1;
 
     /// <summary>Weaver: one point per this many tiles in the largest connected group.</summary>
-    public int GroupTilesPerTraitPoint { get; init; } = 3;
+    public int GroupTilesPerTraitPoint { get; init; } = 2;
+
+    /// <summary>Weaver: the tiles of the largest group that score nothing; one point per
+    /// <see cref="GroupTilesPerTraitPoint"/> beyond them (4 tiles = 1 point, 6 = 2, 8 = 3).</summary>
+    public int WeaverFreeTiles { get; init; } = 2;
+
+    /// <summary>Wanderer: the smallest group that counts (a lone tile doesn't).</summary>
+    public int WandererGroupSize { get; init; } = 2;
+
+    /// <summary>Spellweaver: one point per this many different spells cast...</summary>
+    public int SpellsPerTraitPoint { get; init; } = 2;
+
+    /// <summary>...and one more for casting a spell in this many rounds.</summary>
+    public int SpellRoundsForTraitPoint { get; init; } = 6;
+
+    /// <summary>At the end, one point per this much unspent mana: saving is a plan, not a waste.</summary>
+    public int ManaPerEndPoint { get; init; } = 10;
 
     /// <summary>Golemwright: one point per this many Golems at the end.</summary>
     public int GolemsPerTraitPoint { get; init; } = 3;

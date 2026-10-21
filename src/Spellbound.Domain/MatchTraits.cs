@@ -65,12 +65,14 @@ public sealed partial class Match
         {
             Trait.Wildheart => "1 point per " + Each(r.TilesOfTypePerTraitPoint, "Wild tile", "Wild tiles") + " held",
             Trait.Hearthkeeper => "1 point per " + Each(r.TilesOfTypePerTraitPoint, "Steady tile", "Steady tiles") + " held",
-            Trait.Weaver => "1 point per " + Each(r.GroupTilesPerTraitPoint, "tile", "tiles") + " in your largest connected group",
-            Trait.Wanderer => "1 point per separate group of tiles beyond the first",
+            Trait.Weaver => "1 point per " + Each(r.GroupTilesPerTraitPoint, "tile", "tiles")
+                            + $" in your largest connected group beyond the first {r.WeaverFreeTiles}",
+            Trait.Wanderer => $"1 point per separate group of {r.WandererGroupSize} or more tiles",
             Trait.Beastbane => "1 point per monster tile cleared",
             Trait.Warbrand => "1 point per rival tile taken",
             Trait.Golemwright => "1 point per " + Each(r.GolemsPerTraitPoint, "Golem", "Golems") + " you have",
-            Trait.Spellweaver => "1 point per different spell cast beyond the first",
+            Trait.Spellweaver => "1 point per " + Each(r.SpellsPerTraitPoint, "different spell", "different spells")
+                                 + $" cast, and 1 for casting spells in {r.SpellRoundsForTraitPoint} rounds",
             Trait.Warden => "1 point per tile from your opening you still hold, beyond the first",
             Trait.Hexer => "1 point per " + Each(r.HexesPerTraitPoint, "Scorch or Blight", "Scorches and Blights") + " cast",
             _ => "nothing",
@@ -93,12 +95,14 @@ public sealed partial class Match
         {
             Trait.Wildheart => Per(tiles.Count(h => Map[h].Type == TileType.Wild), r.TilesOfTypePerTraitPoint),
             Trait.Hearthkeeper => Per(tiles.Count(h => Map[h].Type == TileType.Steady), r.TilesOfTypePerTraitPoint),
-            Trait.Weaver => Per(groups.Count == 0 ? 0 : groups.Max(g => g.Count), r.GroupTilesPerTraitPoint),
-            Trait.Wanderer => (groups.Count, Math.Max(0, groups.Count - 1)),
+            Trait.Weaver => groups.Count == 0 ? (0, 0)
+                : (groups.Max(g => g.Count), Math.Max(0, groups.Max(g => g.Count) - r.WeaverFreeTiles) / r.GroupTilesPerTraitPoint),
+            Trait.Wanderer => Per(groups.Count(g => g.Count >= r.WandererGroupSize), 1),
             Trait.Beastbane => Per(seat.MonstersCleared, 1),
             Trait.Warbrand => Per(seat.RivalTilesTaken, 1),
             Trait.Golemwright => Per(golems, r.GolemsPerTraitPoint),
-            Trait.Spellweaver => (seat.SpellsCast.Count, Math.Max(0, seat.SpellsCast.Count - 1)),
+            Trait.Spellweaver => (seat.SpellsCast.Count,
+                seat.SpellsCast.Count / r.SpellsPerTraitPoint + (seat.RoundsCast >= r.SpellRoundsForTraitPoint ? 1 : 0)),
             Trait.Warden => (seat.OpeningTiles.Count(tiles.Contains), Math.Max(0, seat.OpeningTiles.Count(tiles.Contains) - 1)),
             Trait.Hexer => Per(seat.HexesCast, r.HexesPerTraitPoint),
             _ => (0, 0),
@@ -108,9 +112,17 @@ public sealed partial class Match
         static (int, int) Per(int count, int per) => (count, count / per);
     }
 
-    /// <summary>At the end: every seat's trait is revealed with its goal, and the goal's points are added.</summary>
+    /// <summary>At the end: unspent mana scores (one point per <see cref="GameRules.ManaPerEndPoint"/>), then every
+    /// seat's trait is revealed with its goal, and the goal's points are added.</summary>
     private void ScoreTraits(List<string> lines)
     {
+        foreach (var seat in seats.Where(s => s.Mana >= Rules.ManaPerEndPoint))
+        {
+            var saved = seat.Mana / Rules.ManaPerEndPoint;
+            seat.Score += saved;
+            lines.Add($"Seat {seat.Index + 1}'s {seat.Mana} unspent mana is worth {Plural(saved, "point")}, {seat.Score} in all.");
+        }
+
         foreach (var seat in seats.Where(s => s.Trait is not null))
         {
             var (count, points) = TraitGoal(seat);
@@ -126,7 +138,7 @@ public sealed partial class Match
         Trait.Wildheart => Plural(count, "Wild tile"),
         Trait.Hearthkeeper => Plural(count, "Steady tile"),
         Trait.Weaver => $"a group of {Plural(count, "tile")}",
-        Trait.Wanderer => Plural(count, "separate group"),
+        Trait.Wanderer => Plural(count, "separate group") + " of 2 or more",
         Trait.Beastbane => Plural(count, "monster tile") + " cleared",
         Trait.Warbrand => Plural(count, "rival tile") + " taken",
         Trait.Golemwright => Plural(count, "Golem"),

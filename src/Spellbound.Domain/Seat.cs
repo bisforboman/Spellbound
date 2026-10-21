@@ -54,6 +54,9 @@ public sealed class Seat
     /// <summary>The different spells cast.</summary>
     public IReadOnlySet<Spell> SpellsCast => spellsCast;
 
+    /// <summary>Rounds in which a spell was cast (and, for Scorch, burned something).</summary>
+    public int RoundsCast { get; internal set; }
+
     /// <summary>Scorches and Blights cast.</summary>
     public int HexesCast { get; internal set; }
 
@@ -61,6 +64,7 @@ public sealed class Seat
 
     internal void Cast(Spell spell)
     {
+        RoundsCast++;
         spellsCast.Add(spell);
         if (spell is Spell.Scorch or Spell.Blight)
         {
