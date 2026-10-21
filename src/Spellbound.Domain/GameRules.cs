@@ -92,6 +92,21 @@ public sealed record GameRules
     /// <summary>One point for every this much mana a player's land produced; the remainder carries over.</summary>
     public int ManaPerPoint { get; init; } = 12;
 
+    // Upgrades (docs/game-design.md, Upgrades)
+
+    /// <summary>What an upgrade costs to build (the Build stance).</summary>
+    public int UpgradeCost { get; init; } = 5;
+
+    /// <summary>The most upgrades a realm can hold when it builds another; taken ones count.</summary>
+    public int UpgradeCap { get; init; } = 3;
+
+    public int ShrineYield { get; init; } = 1;
+    public int TowerPower { get; init; } = 2;
+    public int SanctumDiscount { get; init; } = 1;
+
+    /// <summary>Points at the end for each upgrade a seat holds.</summary>
+    public int PointsPerUpgrade { get; init; } = 1;
+
     // Traits (docs/game-design.md, Traits)
 
     /// <summary>The traits each seat is offered to draft one from; no trait is offered to two seats.</summary>

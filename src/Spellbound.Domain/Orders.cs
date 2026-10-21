@@ -11,6 +11,9 @@ public enum Stance
 
     /// <summary>Spend mana to summon units of one kind on one of your tiles.</summary>
     Summon,
+
+    /// <summary>Spend mana to build an upgrade on one of your tiles.</summary>
+    Build,
 }
 
 /// <summary>The spells (docs/game-design.md, Spells). Each lasts this round, except Lure, which weakens monsters for
@@ -50,6 +53,9 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
 {
     public IReadOnlyList<Move> Attackers { get; init; } = [];
 
+    /// <summary>For Build: what to build.</summary>
+    public Upgrade Upgrade { get; init; }
+
     /// <summary>The spell cast alongside the stance this round, if any.</summary>
     public SpellCast? Cast { get; init; }
 
@@ -67,6 +73,9 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
 
     public static Orders Summon(int seat, Hex tile, UnitKind kind, int count, params IReadOnlyList<Move> moves) =>
         new(seat, Stance.Summon, tile, moves, kind, count);
+
+    public static Orders Build(int seat, Hex tile, Upgrade upgrade, params IReadOnlyList<Move> moves) =>
+        new(seat, Stance.Build, tile, moves) { Upgrade = upgrade };
 
     /// <summary>Picks a stance but aims it at nothing: only the moves happen.</summary>
     public static Orders Hold(int seat, params IReadOnlyList<Move> moves) => new(seat, Stance.Summon, null, moves);

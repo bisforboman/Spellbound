@@ -80,7 +80,7 @@ public sealed partial class Match
         var afterSpell = orders.Cast switch
         {
             { Spell: Spell.Scorch } scorch when scorch.Target == target && owner is not null =>
-                (Power: Battle.TakeLosses(UnitsOn(target), scorch.Count, Rules).Power(Rules) + Ward(target), Note: " after your Scorch"),
+                (Power: Battle.TakeLosses(UnitsOn(target), scorch.Count, Rules).Power(Rules) + Ward(target) + Tower(target), Note: " after your Scorch"),
             { Spell: Spell.Lure } lure when lure.Target == target && owner is null =>
                 (Power: Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower), Note: " after your Lure"),
             _ => (Power: defence, Note: ""),
@@ -98,7 +98,8 @@ public sealed partial class Match
         return null;
     }
 
-    private int DefencePower(Hex target) => OwnerOf(target) is null ? Map[target].Guard : UnitsOn(target).Power(Rules) + Ward(target);
+    private int DefencePower(Hex target) =>
+        OwnerOf(target) is null ? Map[target].Guard : UnitsOn(target).Power(Rules) + Ward(target) + Tower(target);
 
     private string DefenceText(Hex target) =>
         OwnerOf(target) is { } owner ? $"Seat {owner + 1}'s, held by {UnitsOn(target)}" : $"guarded by monsters, power {Map[target].Guard}";
@@ -153,7 +154,8 @@ public sealed partial class Match
             if (owner is not null)
             {
                 // A Ward takes the blows first: the defenders lose only what gets past it.
-                units[target] = Battle.TakeLosses(UnitsOn(target), Math.Max(0, attack - Ward(target)), Rules);
+                // A Ward and a Tower take the blows first: the defenders lose only what gets past them.
+                units[target] = Battle.TakeLosses(UnitsOn(target), Math.Max(0, attack - Ward(target) - Tower(target)), Rules);
             }
 
             lines.Add($"The attack fails: the attackers are wiped out. The defenders keep {(owner is null ? "the tile" : UnitsOn(target).ToString())}.");

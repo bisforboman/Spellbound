@@ -103,7 +103,8 @@ internal static class View
             ? o == seat ? "yours" : $"Seat {o + 1}'s"
             : tile.IsGuarded ? $"guarded by monsters, power {tile.Guard}" : "free";
         var units = match.UnitsOn(tile.Hex) is { IsEmpty: false } army ? $", {army}" : "";
-        return $"{tile.Type}, yields {tile.Yield}, {owner}{units}";
+        var built = match.UpgradeOn(tile.Hex) is { } upgrade ? $", with a {upgrade}" : "";
+        return $"{tile.Type}, yields {tile.Yield}, {owner}{built}{units}";
     }
 
     public static string Key(Hex hex) => $"({hex.Q},{hex.R})";
@@ -130,9 +131,13 @@ internal static class View
             {{r.GolemPower}}, {{r.GolemCost}} mana, upkeep {{r.GolemUpkeep}}.
           attack: a rival's tile or a monster tile next to your units; say how many units go from each of your tiles next
             to it. Units that attack don't defend their own tile that round.
+          build: an upgrade on one of your tiles, {{r.UpgradeCost}} mana, at most one per tile and {{r.UpgradeCap}} per realm.
+            Shrine: the tile yields {{r.ShrineYield}} more. Tower: it defends with {{r.TowerPower}} more power, even empty.
+            Sanctum: your spells aimed at it or next to it cost {{r.SanctumDiscount}} less. An upgrade passes with the
+            tile when it's taken, and is worth {{r.PointsPerUpgrade}} point at the end to whoever holds it.
           hold: none of the above.
           moves: units step once a round to a neighbouring tile of yours. Moves happen first, so moved units can attack.
-        Order: moves, attunes, summons, spells, attacks, then points.
+        Order: moves, attunes, summons and builds, spells, attacks, then points.
 
         BATTLES: total power against total power. Higher wins; both sides lose power equal to the smaller total (weakest
         units first, stopping before a unit that would go past it: losing 2 power can't kill a Golem of power 3); the
@@ -160,6 +165,7 @@ internal static class View
           {"stance": "attune", "target": "0,1"}
           {"stance": "summon", "target": "0,1", "kind": "golem", "count": 2}
           {"stance": "attack", "target": "1,0", "send": [{"from": "0,0", "imps": 3, "golems": 1}]}
+          {"stance": "build", "target": "0,1", "upgrade": "tower"}
           {"stance": "hold"}
         Any stance can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
         and one "spell": {"name": "scorch", "target": "1,0", "count": 2}

@@ -17,7 +17,8 @@ public sealed partial class Match
             [.. s.Offer], s.Trait, s.TraitPoints, [.. s.OpeningTiles], s.MonstersCleared, s.RivalTilesTaken,
             [.. s.SpellsCast.Order()], s.HexesCast, s.RoundsCast))],
         [.. units.Where(u => !u.Value.IsEmpty).OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R)
-            .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))]);
+            .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))],
+        [.. upgrades.OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R).Select(u => new UpgradeState(u.Key, u.Value))]);
 
     /// <summary>A saved match, to play on under the rules it was saved with.</summary>
     public static Match Load(MatchState state, GameRules rules)
@@ -70,6 +71,11 @@ public sealed partial class Match
         foreach (var u in state.Units)
         {
             match.units[u.Hex] = new Army(u.Imps, u.Golems);
+        }
+
+        foreach (var u in state.Upgrades ?? [])
+        {
+            match.upgrades[u.Hex] = u.Upgrade;
         }
 
         return match;

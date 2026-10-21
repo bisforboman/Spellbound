@@ -91,6 +91,9 @@ public static class Bot
         return good[random.Next(good.Count)];
     }
 
+    /// <summary>The mana a bot keeps beyond an upgrade's price before it builds one.</summary>
+    private const int BuildSpare = 6;
+
     /// <summary>The mana a bot keeps after its stance before it also casts a spell.</summary>
     private const int SpareMana = 6;
 
@@ -175,6 +178,25 @@ public static class Bot
             Orders.Summon(seat, at, kind, Math.Max(1, me.Mana / 2 / rules.CostOf(kind))),
             Orders.Summon(seat, at, UnitKind.Imp, Math.Max(1, me.Mana / 2)),
         };
+
+        // From round 3, with mana to spare and room for one, an upgrade: a Tower on a threatened border tile, a Sanctum
+        // for a seat whose trait scores spells, else a Shrine on its best-yielding tile. It builds before attuning or
+        // summoning. (Building from round 1 starved its land.)
+        if (match.CurrentRound >= 3 && me.Mana >= rules.UpgradeCost + BuildSpare && match.UpgradesOf(me) < rules.UpgradeCap)
+        {
+            var open = mine.Where(h => match.UpgradeOn(h) is null).ToList();
+            var threatened = open.FirstOrDefault(h => match.Map.NeighboursOf(h)
+                .Any(n => match.OwnerOf(n) is { } o && o != seat && !match.UnitsOn(n).IsEmpty), new Hex(int.MinValue, 0));
+            if (match.Map.Contains(threatened))
+            {
+                yield return Orders.Build(seat, threatened, Upgrade.Tower);
+            }
+            else if (open.Count > 0)
+            {
+                var best = open.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First();
+                yield return Orders.Build(seat, best, me.Trait is Trait.Spellweaver or Trait.Hexer ? Upgrade.Sanctum : Upgrade.Shrine);
+            }
+        }
 
         // Every other round it summons before it attunes, so it has units to fight with.
         var unitsFirst = match.CurrentRound % 2 == 0;

@@ -71,10 +71,12 @@ internal abstract record Action
             "attune" => Orders.Attune(seat, HexOf(Need(root, "target")), moves),
             "summon" => Orders.Summon(seat, HexOf(Need(root, "target")),
                 Enum.Parse<UnitKind>(Need(root, "kind").GetString()!, ignoreCase: true), Int(root, "count"), moves),
+            "build" => Orders.Build(seat, HexOf(Need(root, "target")),
+                Enum.Parse<Upgrade>(Need(root, "upgrade").GetString()!, ignoreCase: true), moves),
             "attack" => Orders.Attack(seat, HexOf(Need(root, "target")),
                 [.. Need(root, "send").EnumerateArray().Select(s => new Move(HexOf(Need(s, "from")), HexOf(Need(root, "target")), ArmyOf(s)))],
                 moves),
-            _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon or hold."),
+            _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build or hold."),
         };
 
         if (Get(root, "spell") is not { ValueKind: JsonValueKind.Object } spell)
