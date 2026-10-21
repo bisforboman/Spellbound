@@ -76,6 +76,45 @@ public class SpellTests
     }
 
     [Fact]
+    public void Rally_adds_power_to_your_attack_and_takes_the_blows_first()
+    {
+        var match = Bordering();
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        Play(match, Orders.Summon(0, mine, UnitKind.Imp, 2), Orders.Summon(1, theirs, UnitKind.Golem, 1));
+        var orders = Orders.Attack(0, theirs, [new Move(mine, theirs, new Army(2, 0))]).Casting(Spell.Rally, theirs);
+        var mana = match.Seats[0].Mana;
+
+        var check = match.Check(orders);
+        var report = Play(match, orders);
+
+        // 2 Imps (power 2) and the Rally (2) beat a Golem (3); the Rally takes 2 of the 3 blows, so one Imp survives.
+        Assert.Contains(check.Lines, l => l.Contains("power 4, with your Rally", StringComparison.Ordinal));
+        Assert.Contains(report.Lines, l => l.Contains("power 4 against 3", StringComparison.Ordinal));
+        Assert.Equal(0, match.OwnerOf(theirs));
+        Assert.Equal(new Army(1, 0), match.UnitsOn(theirs));
+        Assert.Equal(mana - 3 + match.Seats[0].Tiles.Where(h => h != theirs).Sum(h => match.Map[h].Yield!.Value)
+            + match.Map[theirs].Yield!.Value, match.Seats[0].Mana);
+    }
+
+    [Fact]
+    public void A_rally_is_paid_even_when_scorch_leaves_nothing_to_send()
+    {
+        var match = Bordering();
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        Play(match, Orders.Summon(0, mine, UnitKind.Imp, 1), Orders.Summon(1, theirs, UnitKind.Imp, 3));
+        var mana = match.Seats[0].Mana;
+        var income = match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value);
+
+        var report = Play(match,
+            Orders.Attack(0, theirs, [new Move(mine, theirs, new Army(1, 0))]).Casting(Spell.Rally, theirs),
+            Orders.Hold(1).Casting(Spell.Scorch, mine, 1));
+
+        Assert.Contains(report.Lines, l => l.Contains("has no units left to send", StringComparison.Ordinal));
+        Assert.Equal(1, match.OwnerOf(theirs));
+        Assert.Equal(mana - 3 + income, match.Seats[0].Mana);
+    }
+
+    [Fact]
     public void A_tile_cant_be_blighted_two_rounds_running_even_after_a_save()
     {
         var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Map[b.Theirs].Yield > 0);
@@ -271,6 +310,7 @@ public class SpellTests
         { "blight your own tile", "rival's tile next to yours" },
         { "lure a tile without monsters", "monster tile next to yours" },
         { "leyline to the same tile", "two different tiles" },
+        { "rally without attacking", "the tile you attack this round" },
         { "too dear", "Ward costs 1000 mana; you have" },
     };
 
@@ -292,6 +332,7 @@ public class SpellTests
             "blight your own tile" => Orders.Hold(0).Casting(Spell.Blight, mine),
             "lure a tile without monsters" => Orders.Hold(0).Casting(Spell.Lure, theirs),
             "leyline to the same tile" => Orders.Hold(0).CastingLeyline(new Move(mine, mine, new Army(1, 0))),
+            "rally without attacking" => Orders.Hold(0).Casting(Spell.Rally, theirs),
             _ => Orders.Hold(0).Casting(Spell.Ward, mine),
         };
         var before = Snapshot(match);

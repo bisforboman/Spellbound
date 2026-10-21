@@ -51,6 +51,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   *(21 Oct 2026, after the AI players' sessions: Spellweaver no longer hits its cap by round 4 (1 per 2 spells plus 1
   for casting in 6 rounds); Wanderer counts groups of 2 or more instead of groups beyond the first; Weaver scores
   from 4 tiles (bots' groups are often 3, so its bot average fell from 0.9 to 0.7); see `playtests/`.)*
+  *With Rally there are six spells, so a Spellweaver who casts all six reaches its cap without the 6-round point.*
 
 ## Map
 
@@ -217,6 +218,7 @@ yields, prices or income. Costs are flat and small.
 | Ward | 3 mana | one of your tiles, or the tile you attune this round | Its defence counts 3 more power in this round's battles. |
 | Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
 | Blight | 3 mana | a rival's tile next to yours | It yields nothing in the next round's income. A tile blighted last round can't be blighted again this round. |
+| Rally | 3 mana | the tile you attack this round | Your attack strikes with 2 more power, and that power takes the blows first. Paid even if the attack doesn't happen (a Scorch may leave nothing to send). The attacker's Ward: decided 21 Oct 2026 for reading rivals (`discussions/reading-rivals.md`; asked for by the Wargamer and the Bluffer). It was designed at +3; the Warlord strategy bot then won 48% of 3-player games, so +2 (44%). |
 | Lure | 3 mana | a monster tile next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
 
 - **How spells resolve:** in seat order, after Attunes and Summons and before attacks. Two Wards on one tile add up, and

@@ -9,6 +9,9 @@ public sealed partial class Match
     private readonly Dictionary<Hex, int> wards = [];
     private readonly HashSet<Hex> blights = [];
 
+    // This round's Rallies: extra attack power by seat.
+    private readonly Dictionary<int, int> rallies = [];
+
     // The tiles blighted last round (they yielded nothing this round's income), which can't be blighted again now.
     private readonly HashSet<Hex> blightedLastRound = [];
 
@@ -41,6 +44,7 @@ public sealed partial class Match
                 Rules.LeylineManaPerUnit * ((cast.Transfer?.Units.Imps ?? 0) + (cast.Transfer?.Units.Golems ?? 0))),
             Spell.Blight => Rules.BlightCost,
             Spell.Lure => Rules.LureCost,
+            Spell.Rally => Rules.RallyCost,
             _ => 0,
         } - SanctumDiscount(orders.Seat, cast.Target));
     }
@@ -181,6 +185,16 @@ public sealed partial class Match
                 effect = $"the guards at {target} drop to power {Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower)}, for good";
                 break;
 
+            case Spell.Rally:
+                if (orders is not { Stance: Stance.Attack, Target: { } attacked } || attacked != target)
+                {
+                    return "Rally needs the tile you attack this round.";
+                }
+
+                cost = Rules.RallyCost;
+                effect = $"your attack on {target} strikes with {Rules.RallyPower} more power, and that power takes the blows first";
+                break;
+
             default:
                 return $"Unknown spell {cast.Spell}.";
         }
@@ -241,6 +255,10 @@ public sealed partial class Match
                     blights.Add(target);
                     lines.Add($"Seat {seat.Index + 1} casts Blight on {Describe(target)}: it yields nothing next round.");
                     break;
+                case Spell.Rally:
+                    rallies[seat.Index] = rallies.GetValueOrDefault(seat.Index) + Rules.RallyPower;
+                    lines.Add($"Seat {seat.Index + 1} casts Rally: its attack on {target} strikes with {Rules.RallyPower} more power.");
+                    break;
                 case Spell.Lure:
                     Map.SetGuard(target, Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower));
                     lines.Add($"Seat {seat.Index + 1} casts Lure on {target}: its guards drop to power {Map[target].Guard}.");
@@ -259,6 +277,7 @@ public sealed partial class Match
         blightedLastRound.Clear();
         blightedLastRound.UnionWith(blights);
         wards.Clear();
+        rallies.Clear();
         blights.Clear();
     }
 }

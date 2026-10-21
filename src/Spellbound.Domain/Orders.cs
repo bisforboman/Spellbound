@@ -34,6 +34,9 @@ public enum Spell
 
     /// <summary>A monster guard next to your land loses power for good.</summary>
     Lure,
+
+    /// <summary>Your attack this round strikes with more power: the attacker's Ward.</summary>
+    Rally,
 }
 
 /// <summary>A spell cast alongside a round's stance: which spell, at which tile, how much power Scorch burns, and what
