@@ -65,11 +65,19 @@ public static class Bot
     {
         ArgumentNullException.ThrowIfNull(match);
         ArgumentNullException.ThrowIfNull(random);
-        var orders = (plan == Plan.Balanced ? Candidates(match, seat, random) : PlanCandidates(match, seat, random, plan))
-            .FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+        var candidates = plan == Plan.Balanced ? Candidates(match, seat, random) : PlanCandidates(match, seat, random, plan);
+        var lastRound = match.CurrentRound == match.Rules.Rounds;
+        if (lastRound)
+        {
+            // Mana left at the end scores nothing: take a tile if it can, else buy an upgrade (a point) before the rest.
+            candidates = new[] { BestAttack(match, seat, match.Seats[seat]), LastUpgrade(match, seat) }.OfType<Orders>().Concat(candidates);
+        }
 
-        // With mana to spare after the stance, a spell alongside it; sooner for a trait that scores spells.
-        var spare = plan switch
+        var orders = candidates.FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+
+        // With mana to spare after the stance, a spell alongside it; sooner for a trait that scores spells; in the last
+        // round, with whatever is left.
+        var spare = lastRound ? 0 : plan switch
         {
             Plan.Spellcaster => 0,
             Plan.Warlord => SpareMana / 2,
@@ -99,6 +107,15 @@ public static class Bot
         }
 
         return casts.Select(cast => orders with { Cast = cast }).FirstOrDefault(o => match.Check(o).Succeeded) ?? orders;
+    }
+
+    /// <summary>An upgrade on its best-yielding open tile, if it has room for one; null if not.</summary>
+    private static Orders? LastUpgrade(Match match, int seat)
+    {
+        var me = match.Seats[seat];
+        var open = me.Tiles.Where(h => match.UpgradeOn(h) is null).OrderByDescending(h => match.Map[h].Yield)
+            .ThenBy(h => h.Q).ThenBy(h => h.R).ToList();
+        return open.Count == 0 || match.UpgradesOf(me) >= match.Rules.UpgradeCap ? null : Orders.Build(seat, open[0], Upgrade.Shrine);
     }
 
     /// <summary>How much more a tile that suits the bot's trait is worth to it, in yield.</summary>
@@ -224,10 +241,10 @@ public static class Bot
             // A Warlord grows its army until it has a stack worth sending (8 power), then takes land as well.
             Plan.Warlord => mine.Max(Power) >= WarlordStack ? [attack, defend, attune, army] : [attack, defend, army, attune],
             Plan.Builder => [defend, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, attune, monsterAttack, some],
-            Plan.Spellcaster => [attack, defend, Build(Upgrade.Sanctum), attune, some],
+            Plan.Spellcaster => [attack, defend, match.CurrentRound >= 2 ? Build(Upgrade.Sanctum) : null, attune, some],
             Plan.Expander => [defend, attune, attack, some],
-            // An Economist grows income: a Shrine on its best tile (from round 2), rich land only, monsters it can beat.
-            Plan.Economist => [defend, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, some],
+            // An Economist grows income: a Shrine on its best tile (from round 2), rich land first, monsters it can beat.
+            Plan.Economist => [defend, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, attune, some],
             _ => [],
         };
         return order.OfType<Orders>();

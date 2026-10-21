@@ -122,7 +122,7 @@ public class SpellTests
         Play(match, orders);
 
         Assert.Contains(check.Lines, l => l.StartsWith("Cast Ward for 3 mana", StringComparison.Ordinal));
-        Assert.Contains(check.Lines, l => l.StartsWith("All together: 10 mana", StringComparison.Ordinal)); // Attune 7 + Ward 3
+        Assert.Contains(check.Lines, l => l.StartsWith("All together: 13 mana", StringComparison.Ordinal)); // Attune 10 + Ward 3
         Assert.Equal(0, match.OwnerOf(free));
     }
 

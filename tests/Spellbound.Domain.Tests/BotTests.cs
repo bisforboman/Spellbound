@@ -42,6 +42,38 @@ public class BotTests
         Assert.Equal(Orders.Hold(0).Target, Bot.ChooseOrders(match, 0, random).Target);
     }
 
+    [Theory]
+    [InlineData(Plan.Balanced)]
+    [InlineData(Plan.Expander)]
+    [InlineData(Plan.Economist)]
+    public void In_the_last_round_a_bot_with_nothing_to_attack_buys_an_upgrade(Plan plan)
+    {
+        // Mana left at the end scores nothing; an upgrade is a point.
+        var random = new SeededRandom(3);
+        var match = Match.Start(3, GameRules.Default with { Rounds = 1, UpgradeCost = 1 }, random);
+        while (match.Phase == MatchPhase.Opening)
+        {
+            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+        }
+
+        Assert.Equal(Stance.Build, Bot.ChooseOrders(match, 0, random, plan).Stance);
+    }
+
+    [Fact]
+    public void In_the_last_round_a_bot_at_its_upgrade_cap_does_something_else()
+    {
+        var random = new SeededRandom(3);
+        var match = Match.Start(3, GameRules.Default with { Rounds = 1, UpgradeCost = 1, UpgradeCap = 0 }, random);
+        while (match.Phase == MatchPhase.Opening)
+        {
+            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+        }
+
+        var orders = Bot.ChooseOrders(match, 0, random);
+        Assert.NotEqual(Stance.Build, orders.Stance);
+        Assert.True(match.Check(orders).Succeeded);
+    }
+
     [Fact]
     public void The_same_arguments_give_the_same_report()
     {

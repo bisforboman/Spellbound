@@ -157,7 +157,7 @@ A revealed, unowned tile is taken in one of two ways, depending on whether it is
 - **Unguarded tiles, by attuning:** the **Attune** stance spends mana to tune a free, unguarded tile to your mana, making it yours. The tile must be **adjacent to any tile you own**.
   - Attuning extends where your units can go: it is how you grow your presence and join scattered groups together.
   - One Attune takes **one tile**.
-  - **Price: 1 mana + 2 mana for every tile you already control.** With 3 tiles, an Attune costs 7 (it was 1 per tile until 21 Oct 2026, when the Expander strategy bot won 70% of 3-player games; see `discussions/strategies.md`). The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 13).
+  - **Price: 1 mana + 3 mana for every tile you already control.** With 3 tiles, an Attune costs 10 (it was 1 per tile until 21 Oct 2026, then 2, while the Expander strategy bot won 70%, then 55%, of 3-player games; see `discussions/strategies.md`). The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 13).
   - **Clash:** if two players attune the same tile in the same round, nobody gets it and nobody pays.
 - **Guarded tiles:** some unowned tiles are **guarded by monsters**. They can't be attuned; you need units to defeat the guards first.
   - Guard strength is **visible**.
@@ -187,7 +187,7 @@ Kept simple for now, to be extended later.
 - **A won attack:** the attacker's surviving units **move into** the captured tile.
 - Battles against monsters use the same rules, with the guards as the defender.
 - **No defender bonus** for now: ties already go to the defender, so an attacker needs strictly more power. A bonus (from a stance, terrain or units that stay put) can be added later.
-- **A rival's last tile:** if an attack on it wins, the defending units die, but the tile **stays with the defender** (empty). The attacker's units stay where they were, and **no conquest point** is scored. The surviving attackers go back to the tile they attacked from (the first in board order, if they came from several); if that tile was lost in the same round, they dissolve.
+- **A rival's last tile:** if an attack on it wins, the defending units die, but the tile **stays with the defender** (empty). The attacker's units stay where they were, and **no conquest points** are scored. The surviving attackers go back to the tile they attacked from (the first in board order, if they came from several); if that tile was lost in the same round, they dissolve.
 - **Several attackers** (decided 19 Oct 2026):
   - Together they lose power to the defender **weakest units first, across all of them**, seat order deciding between equal units.
   - If they win, the **strongest survivor takes the tile** and loses power equal to the next strongest's total (weakest first, as always); the other survivors are wiped out.
@@ -296,7 +296,7 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
   simulated games. A conquest point now weighs more (about 5% of a score instead of 2%), on purpose: it rewards attacks.
   *Since 21 Oct 2026 bots summon and fight more (see `discussions/traits.md`): about 10 for land, 4 for mana and 2.5
   for conquest, and about 1 from trait goals: still about 18 in all. Since the strategy retune (21 Oct 2026: Attune
-  1 + 2 per tile, 2 points per conquest, mana 1 per 10) a seat ends around 21: about 10 for land, 5 for mana, 4 for
+  1 + 3 per tile, 2 points per conquest, mana 1 per 10) a seat ends around 21: about 10 for land, 5 for mana, 4 for
   conquest, 1 from its trait and 1–2 from upgrades.*
 
 ## Player elimination
