@@ -114,7 +114,18 @@ internal static class View
     public static string Key(Hex hex) => $"({hex.Q},{hex.R})";
 
     /// <summary>The rules a player needs, with this match's numbers, and how to write an action.</summary>
-    public static string Rules(GameRules r) => $$"""
+    public static string Rules(GameRules r) => RulesText(r) + Environment.NewLine + Environment.NewLine + TraitList(r);
+
+    /// <summary>Every trait in the game with its goal: each player is offered their own few, so these are what a
+    /// rival might have.</summary>
+    private static string TraitList(GameRules r)
+    {
+        var match = Match.Start(2, r, new SeededRandom(1));
+        return "THE TRAITS (each player is offered their own, drafts one, and keeps it secret):" + Environment.NewLine
+            + string.Join(Environment.NewLine, Enum.GetValues<Trait>().Select(t => $"  {t}: {match.GoalText(t)}"));
+    }
+
+    private static string RulesText(GameRules r) => $$"""
         SPELLBOUND IN BRIEF
         A hex map starts dark. Up to {{r.Rounds}} rounds after an opening; the most points at the end wins (ties: most
         tiles, then most mana). Everyone acts in secret at the same time; then everything resolves together.
