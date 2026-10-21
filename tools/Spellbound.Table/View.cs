@@ -146,6 +146,8 @@ internal static class View
             {{r.GolemPower}}, {{r.GolemCost}} mana, upkeep {{r.GolemUpkeep}}.
           attack: a rival's tile or a monster tile next to your units; say how many units go from each of your tiles next
             to it. Units that attack don't defend their own tile that round.
+            An attack may also bring reinforcements: up to {{r.ReinforceMaxPower}} power of units summoned on one of your tiles,
+            {{r.ReinforceSurcharge}} mana more each than a summon. They guard it this round and can't join the attack.
           build: an upgrade on one of your tiles, {{r.UpgradeCost}} mana, at most one per tile and {{r.UpgradeCap}} per realm.
             Shrine: the tile yields {{r.ShrineYield}} more. Tower: it defends with {{r.TowerPower}} more power, even empty.
             Sanctum: your spells aimed at it or next to it cost {{r.SanctumDiscount}} less. An upgrade passes with the
@@ -192,6 +194,7 @@ internal static class View
           {"stance": "build", "target": "0,1", "upgrade": "tower"}
           {"stance": "hold"}
         Any stance can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
+        An attack can add "reinforce": {"target": "0,0", "kind": "imp", "count": 3}
         and one "guess": {"seat": 2, "trait": "Hexer"}
         and one "spell": {"name": "scorch", "target": "1,0", "count": 2}
                      or {"name": "leyline", "target": "0,0", "to": "2,-1", "imps": 2, "golems": 0}

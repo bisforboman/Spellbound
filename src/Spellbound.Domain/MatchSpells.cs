@@ -29,7 +29,7 @@ public sealed partial class Match
             Stance.Summon => Rules.CostOf(orders.Kind) * orders.Count,
             Stance.Build => Rules.UpgradeCost,
             _ => 0,
-        };
+        } + (orders.Reinforce is { } r ? Rules.ReinforceCostOf(r.Kind, r.Count) : 0);
     }
 
     /// <summary>What the spell cast alongside the stance costs, if any.</summary>

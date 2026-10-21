@@ -87,6 +87,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   - [x] traits secret until the end, with a guess at each rival's (bots guess from the tiles a rival took in the opening)
   - [x] fog of war: rivals' far-off units and their mana hidden, and each player's report shows only what they could see
 - [x] An undefended capture scores 1 point, a defended one 2 (after the third AI-taste session: raids on empty tiles decided every match)
+- [x] Reinforcements with an attack: up to 3 power summoned at home, 1 mana more per unit (after the fourth AI-taste session)
 - [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)
 
 ## M2: Playing with friends

@@ -74,6 +74,16 @@ public static class Bot
         }
 
         var orders = candidates.FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+        if (orders is { Stance: Stance.Attack, Attackers: [var first, ..] })
+        {
+            // The army leaves its tile empty: with mana to spare, a few Imps guard it.
+            var guarded = orders.Reinforcing(first.From, UnitKind.Imp, match.Rules.ReinforceMaxPower / match.Rules.ImpPower);
+            if (match.Seats[seat].Mana - match.CostOf(guarded) >= SpareMana && match.Check(guarded).Succeeded)
+            {
+                orders = guarded;
+            }
+        }
+
         if (Guess(match, seat, random) is { } guess)
         {
             orders = orders with { Guess = guess };

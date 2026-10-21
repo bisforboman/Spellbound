@@ -171,3 +171,20 @@ The third AI-taste session found that raids on empty tiles decided every match. 
 capture (no units, Ward or Tower) worth 1 point; a defended one is still worth 2. The strategy bots barely change
 (Warlord 44% to 43% with 3 players, 31% to 30% with 5), because the bots mostly attack what they can see and beat.
 The rule is aimed at people's raiding, so the next AI-taste session judges it.
+
+## Reinforcements (21 Oct 2026)
+
+All four target tastes in the fourth AI-taste session said one stance a round left mana piling up. The owner chose
+reinforcements with an attack: up to 3 power of units at home, 1 mana more per unit than a summon. Bots use them when
+they attack with mana to spare. Measured (`--plans`, 2,000 games):
+
+| Plan | 3 players: before → after | 5 players: before → after |
+|---|---|---|
+| Warlord | 43% → 45% | 30% → 33% |
+| Expander | 53% → 49% | 25% → 22% |
+| Spellcaster | 29% → 31% | 21% → 23% |
+| Balanced | 17% → 21% | – |
+| Builder | 28% → 25% | 13% → 11% |
+| Economist | 30% → 28% | 12% → 11% |
+
+Mana left at the end falls from about 14 to 12 a seat in the everyday simulator.

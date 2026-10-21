@@ -78,6 +78,52 @@ public class AttackTests
     }
 
     [Fact]
+    public void An_attack_can_bring_reinforcements_that_guard_home_but_dont_attack()
+    {
+        var match = FirstWhere(m => Border(m, 0, 1) is not null && m.Seats[1].Tiles.Count > 1);
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        Play(match, Orders.Summon(0, mine, UnitKind.Imp, 2));
+        var mana = match.Seats[0].Mana;
+        var orders = Attack(0, mine, theirs, new Army(2, 0)).Reinforcing(mine, UnitKind.Imp, 3);
+
+        var check = match.Check(orders);
+        var report = Play(match, orders);
+
+        Assert.Contains(check.Lines, l => l.StartsWith("Reinforce", StringComparison.Ordinal) && l.Contains("for 6 mana", StringComparison.Ordinal));
+        Assert.Contains(report.Lines, l => l == $"Seat 1 reinforces {mine} with 3 Imps.");
+        Assert.Equal(new Army(3, 0), match.UnitsOn(mine)); // they stayed home
+        Assert.Equal(new Army(2, 0), match.UnitsOn(theirs)); // the attack went on with the 2 sent
+        Assert.Equal(mana - 6 + match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value), match.Seats[0].Mana);
+    }
+
+    [Theory]
+    [InlineData("without an attack", "come with an attack")]
+    [InlineData("too many", "at most 3 power")]
+    [InlineData("on a rival's tile", "only be summoned on your own tiles")]
+    public void Reinforcements_that_dont_check_change_nothing(string problem, string reason)
+    {
+        var match = FirstWhere(m => Border(m, 0, 1) is not null);
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        Play(match, Orders.Summon(0, mine, UnitKind.Imp, 2));
+        var attack = Attack(0, mine, theirs, new Army(2, 0));
+        var orders = problem switch
+        {
+            "without an attack" => Orders.Hold(0).Reinforcing(mine, UnitKind.Imp, 1),
+            "too many" => attack.Reinforcing(mine, UnitKind.Imp, 4),
+            _ => attack.Reinforcing(theirs, UnitKind.Imp, 1),
+        };
+        var before = Snapshot(match);
+
+        var check = match.Check(orders);
+        var report = match.Resolve([orders, Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+
+        Assert.False(check.Succeeded);
+        Assert.Contains(reason, check.Lines[0], StringComparison.Ordinal);
+        Assert.False(report.Succeeded);
+        Assert.Equal(before, Snapshot(match));
+    }
+
+    [Fact]
     public void Units_that_attack_dont_defend_their_own_tile()
     {
         var match = FirstWhere(m => Border(m, 0, 1) is not null);
