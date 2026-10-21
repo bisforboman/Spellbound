@@ -31,7 +31,7 @@ Each player now holds 3 tiles, scattered or connected.
    - **Attack:** pick a rival's tile or a monster tile next to one of yours, and the units that attack (from your adjacent tiles).
    - **Moves:** any number of units, each one step between your own adjacent tiles, within a connected group.
 4. **Resolve:** moves, then Attunes and Summons, then attacks. Units sent to attack don't defend their own tile that round. If several players attack the same tile, they all fight the defender in one battle; if the attackers win, the survivors fight each other for it.
-5. **Score:** keep two running counts. Add the **tiles you hold** to one: every **3** there is **1 point**. Add the **mana you produced** to the other: every **10** is **1 point**. Remainders carry over. Plus **2 points per tile taken or cleared this round**.
+5. **Score:** keep two running counts. Add the **tiles you hold** to one: every **3** there is **1 point**. Add the **mana you produced** to the other: every **10** is **1 point**. Remainders carry over. Plus **2 points per tile cleared of monsters or taken from defenders this round**, and **1 per rival tile taken that had no defenders**.
 
 **Later Unveils:** at the start of rounds 2 and 4, turn over the remaining face-down tiles, split evenly (round 2: 4 tiles, round 4: the last 3). Roll a d6 for each: **1–2 = guarded** by monsters with **power 3**.
 

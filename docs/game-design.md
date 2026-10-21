@@ -291,7 +291,7 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
 |---|---|
 | Land held | 1 per 3 tiles held, counted every round and added up (holding 4 tiles for 3 rounds is 12, so 4 points; remainders carry over) |
 | Mana produced | 1 per 10 mana your land produced (remainders carry over to the next round) |
-| Conquest | 2 per rival tile taken or monster tile cleared (kept even if the tile is lost again; 1 until 21 Oct 2026, when fighting didn't pay) |
+| Conquest | 2 per monster tile cleared or **defended** rival tile taken (it had units, a Ward or a Tower when the battle began); **1 per undefended** rival tile taken. Kept even if the tile is lost again. (It was 1 for any, then 2 for any from 21 Oct 2026, when fighting didn't pay. The same day the third AI-taste session found raids on empty tiles decided every match, and the owner made an undefended capture worth 1.) |
 | Trait goals | set by each trait, scored once at the end, up to 3 (see *Traits*) |
 | Upgrades | 1 per upgrade you hold at the end |
 | Guesses | 1 per rival's trait guessed right, scored once at the end, up to 3 (see *Traits*) |

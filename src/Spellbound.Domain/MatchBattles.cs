@@ -175,7 +175,7 @@ public sealed partial class Match
                 var top = side.GroupBy(s => s.Army.Power(Rules)).MaxBy(g => g.Key)!.ToList();
                 if (top is [var taker])
                 {
-                    Conquer(target, taker.Seat, Army.None, lines);
+                    Conquer(target, taker.Seat, Army.None, defence > 0, lines);
                 }
                 else
                 {
@@ -217,7 +217,7 @@ public sealed partial class Match
             return;
         }
 
-        Conquer(target, seat, army, lines);
+        Conquer(target, seat, army, defence > 0, lines);
     }
 
     private void ClearDefenders(Hex target, int? owner)
@@ -232,7 +232,9 @@ public sealed partial class Match
         }
     }
 
-    private void Conquer(Hex target, int seat, Army army, ReportLines lines)
+    /// <summary>A seat takes a tile; it banks <see cref="GameRules.PointsPerConquest"/> if the tile was defended (units,
+    /// a Ward, a Tower or monster guards), else <see cref="GameRules.PointsPerEmptyConquest"/>.</summary>
+    private void Conquer(Hex target, int seat, Army army, bool defended, ReportLines lines)
     {
         if (OwnerOf(target) is { } loser)
         {
@@ -245,8 +247,8 @@ public sealed partial class Match
         }
 
         seats[seat].Take(target);
-        seats[seat].ConquestsThisRound++;
+        seats[seat].ConquestPointsThisRound += defended ? Rules.PointsPerConquest : Rules.PointsPerEmptyConquest;
         units[target] = army;
-        lines.Add($"Seat {seat + 1} takes {target}" + (army.IsEmpty ? "." : $" with {army}."), seat, target);
+        lines.Add($"Seat {seat + 1} takes {target}" + (army.IsEmpty ? "" : $" with {army}") + (defended ? "." : ", undefended."), seat, target);
     }
 }

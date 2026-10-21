@@ -63,6 +63,21 @@ public class AttackTests
     }
 
     [Fact]
+    public void Taking_an_undefended_rival_tile_scores_less_than_a_defended_one()
+    {
+        // A rival with at least two tiles, so the one taken isn't its last.
+        var match = FirstWhere(m => Border(m, 0, 1) is not null && m.Seats[1].Tiles.Count > 1);
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        Play(match, Orders.Summon(0, mine, UnitKind.Imp, 2));
+
+        var report = Play(match, Attack(0, mine, theirs, new Army(2, 0)));
+
+        Assert.Equal(0, match.OwnerOf(theirs));
+        Assert.Contains(report.Lines, l => l == $"Seat 1 takes {theirs} with 2 Imps, undefended.");
+        Assert.Contains(report.Lines, l => l.StartsWith("Seat 1 banks", StringComparison.Ordinal) && l.Contains("1 for conquest", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Units_that_attack_dont_defend_their_own_tile()
     {
         var match = FirstWhere(m => Border(m, 0, 1) is not null);

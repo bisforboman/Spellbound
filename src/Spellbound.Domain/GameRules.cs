@@ -91,8 +91,11 @@ public sealed record GameRules
     public int LurePower { get; init; } = 1;
     public int MinGuard { get; init; } = 1;
 
-    /// <summary>Points banked for each rival tile taken or monster tile cleared.</summary>
+    /// <summary>Points banked for each monster tile cleared or defended rival tile taken.</summary>
     public int PointsPerConquest { get; init; } = 2;
+
+    /// <summary>Points for taking a rival's tile that had no defence at all (no units, Ward or Tower): a raid.</summary>
+    public int PointsPerEmptyConquest { get; init; } = 1;
 
     /// <summary>One point for every this many tiles held, counted every round and added up: holding 4 tiles for 3 rounds
     /// is 12 tile-rounds, 4 points. The remainder carries over.</summary>
