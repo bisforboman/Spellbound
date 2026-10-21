@@ -257,7 +257,7 @@ yields, prices or income. Costs are flat and small.
   1 for conquest) instead of 55. Land and mana keep their balance; the winner is the same as before in about 94 of 100
   simulated games. A conquest point now weighs more (about 5% of a score instead of 2%), on purpose: it rewards attacks.
   *Since 21 Oct 2026 bots summon and fight more (see `discussions/traits.md`): about 10 for land, 4 for mana and 2.5
-  for conquest, still about 18 in all, before trait goals (about 1 more).*
+  for conquest, and about 1 from trait goals: still about 18 in all.*
 
 ## Player elimination
 
