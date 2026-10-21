@@ -203,6 +203,8 @@ public static partial class Simulation
             stats.Wins += match.Winners.Contains(seat) ? 1 : 0;
             stats.GoalPoints += seat.TraitPoints;
             stats.MaxedOut += seat.TraitPoints == match.Rules.TraitGoalCap ? 1 : 0;
+            report.Guesses += seat.Guesses.Count;
+            report.RightGuesses += seat.Guesses.Count(g => match.Seats[g.Key].Trait == g.Value);
         }
     }
 
@@ -244,6 +246,10 @@ public sealed class SimulationReport(int players, int games, int seed, int round
     }
 
     public Dictionary<Trait, TraitStats> Traits { get; } = [];
+
+    /// <summary>Guesses at rivals' traits made, and how many were right.</summary>
+    public int Guesses { get; internal set; }
+    public int RightGuesses { get; internal set; }
 
     public sealed class PlanStats
     {
@@ -346,6 +352,12 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         {
             string Share(int n) => (100.0 * n / t.Seats).ToString("0", c) + "%";
             md.AppendLine(c, $"| {trait} | {t.Seats} | {Share(t.Wins)} | {((double)t.GoalPoints / t.Seats).ToString("0.0", c)} | {Share(t.MaxedOut)} |");
+        }
+
+        if (Guesses > 0)
+        {
+            md.AppendLine();
+            md.AppendLine(c, $"Guesses at rivals' traits: {Guesses}, {(100.0 * RightGuesses / Guesses).ToString("0", c)}% right.");
         }
 
         return md.ToString();

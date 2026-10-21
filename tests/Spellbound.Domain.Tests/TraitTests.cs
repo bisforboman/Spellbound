@@ -84,8 +84,81 @@ public class TraitTests
 
         Assert.Equal(match.Seats[0].Offer[0], match.Seats[0].Trait);
         Assert.Equal(match.Seats[1].Offer[1], match.Seats[1].Trait);
-        Assert.Contains(report.Lines, l => l == $"Seat 1's trait is {match.Seats[0].Trait}.");
+        Assert.Contains(report.Lines, l => l == "Seat 1 didn't choose a trait, so it takes the first one it was offered.");
+        Assert.DoesNotContain(report.Lines, l => Enum.GetNames<Trait>().Any(t => l.Contains(t, StringComparison.Ordinal))); // secret
         Assert.All(match.Seats, s => Assert.Equal(3, s.OpeningTiles.Count));
+    }
+
+    private static Match InRounds()
+    {
+        var match = Fresh();
+        var random = new SeededRandom(1);
+        while (match.Phase == MatchPhase.Opening)
+        {
+            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+        }
+
+        return match;
+    }
+
+    private static Report Hold(Match match, Orders? first = null) =>
+        match.Resolve([first ?? Orders.Hold(0), .. match.Seats.Skip(1).Select(s => Orders.Hold(s.Index))], new SeededRandom(match.CurrentRound));
+
+    [Fact]
+    public void A_right_guess_at_a_rivals_trait_scores_at_the_end_and_stays_secret_until_then()
+    {
+        var match = InRounds();
+        var right = match.Seats[1].Trait!.Value;
+        var wrong = Enum.GetValues<Trait>().First(t => t != right && !match.Seats[0].Offer.Contains(t));
+
+        var check = match.Check(Orders.Hold(0).Guessing(1, right));
+        var report = Hold(match, Orders.Hold(0).Guessing(1, right));
+        Hold(match, Orders.Hold(0).Guessing(2, wrong));
+        Assert.DoesNotContain(report.Lines, l => l.Contains(right.ToString(), StringComparison.Ordinal));
+        match = Match.Load(match.Save(), match.Rules); // guesses are saved with the match
+        while (match.Phase != MatchPhase.Ended)
+        {
+            report = Hold(match);
+        }
+
+        Assert.Contains(check.Lines, l => l.Contains("1 point at the end if you're right", StringComparison.Ordinal));
+        Assert.Equal(1, match.Seats[0].GuessPoints);
+        Assert.Contains(report.Lines, l => l.StartsWith($"Seat 1's guesses: Seat 2 {right} (right), Seat 3 {wrong} (wrong): 1 point", StringComparison.Ordinal));
+    }
+
+    public static TheoryData<string, string> BadGuesses => new()
+    {
+        { "yourself", "no rival Seat 1" },
+        { "twice", "can't be changed" },
+        { "your own offer", "was offered to you" },
+    };
+
+    [Theory]
+    [MemberData(nameof(BadGuesses))]
+    public void A_guess_that_doesnt_check_changes_nothing(string problem, string reason)
+    {
+        var match = InRounds();
+        var other = Enum.GetValues<Trait>().Where(t => !match.Seats[0].Offer.Contains(t)).ToList();
+        if (problem == "twice")
+        {
+            Hold(match, Orders.Hold(0).Guessing(1, other[0]));
+        }
+
+        var orders = problem switch
+        {
+            "yourself" => Orders.Hold(0).Guessing(0, other[0]),
+            "twice" => Orders.Hold(0).Guessing(1, other[1]),
+            _ => Orders.Hold(0).Guessing(1, match.Seats[0].Offer[0]),
+        };
+        var before = System.Text.Json.JsonSerializer.Serialize(match.Save());
+
+        var check = match.Check(orders);
+        var report = Hold(match, orders);
+
+        Assert.False(check.Succeeded);
+        Assert.Contains(reason, check.Lines[0], StringComparison.Ordinal);
+        Assert.False(report.Succeeded);
+        Assert.Equal(before, System.Text.Json.JsonSerializer.Serialize(match.Save()));
     }
 
     [Fact]

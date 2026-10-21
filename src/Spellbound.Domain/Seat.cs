@@ -62,6 +62,16 @@ public sealed class Seat
 
     private readonly HashSet<Spell> spellsCast = [];
 
+    private readonly Dictionary<int, Trait> guesses = [];
+
+    /// <summary>The seat's guesses at its rivals' traits, by rival seat index. Secret until the end.</summary>
+    public IReadOnlyDictionary<int, Trait> Guesses => guesses;
+
+    /// <summary>The points its right guesses earned, once scored at the end.</summary>
+    public int GuessPoints { get; internal set; }
+
+    internal void Guess(int rival, Trait trait) => guesses[rival] = trait;
+
     internal void Cast(Spell spell)
     {
         RoundsCast++;

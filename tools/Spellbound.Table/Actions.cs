@@ -79,6 +79,11 @@ internal abstract record Action
             _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build or hold."),
         };
 
+        if (Get(root, "guess") is { ValueKind: JsonValueKind.Object } guess)
+        {
+            orders = orders.Guessing(Int(guess, "seat") - 1, Enum.Parse<Trait>(Need(guess, "trait").GetString()!, ignoreCase: true));
+        }
+
         if (Get(root, "spell") is not { ValueKind: JsonValueKind.Object } spell)
         {
             return orders;

@@ -36,7 +36,8 @@ public sealed partial class Match
 
         var lines = new List<string>();
         var positions = new Dictionary<Hex, Army>();
-        if ((MovesProblem(orders, lines, positions) ?? SpellProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)) is { } problem)
+        if ((MovesProblem(orders, lines, positions) ?? SpellProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)
+             ?? GuessProblem(orders, lines)) is { } problem)
         {
             return Report.Fail(problem);
         }
@@ -85,6 +86,12 @@ public sealed partial class Match
 
         var lines = new List<string> { $"Round {CurrentRound}." };
         var byseat = orders.OrderBy(o => o.Seat).ToList();
+        foreach (var order in byseat.Where(o => o.Guess is not null))
+        {
+            // Secret: nobody learns of a guess until the end.
+            seats[order.Seat].Guess(order.Guess!.Rival, order.Guess.Trait);
+        }
+
         foreach (var move in byseat.SelectMany(o => o.Moves))
         {
             units[move.From] = UnitsOn(move.From) - move.Units;
@@ -119,6 +126,7 @@ public sealed partial class Match
             Phase = MatchPhase.Ended;
             ScoreUpgrades(lines);
             ScoreTraits(lines);
+            ScoreGuesses(lines);
             lines.Add($"The match is over. {string.Join(" and ", Winners.Select(s => $"Seat {s.Index + 1}"))} "
                       + (Winners.Count == 1 ? "wins." : "share the win."));
         }

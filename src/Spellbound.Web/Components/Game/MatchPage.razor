@@ -160,10 +160,16 @@ else
             }
         </tbody>
     </table>
-    @if (match.Phase != MatchPhase.Opening && match.Seats.Any(s => s.Index != you && s.Trait is not null))
+    @if (match.Phase == MatchPhase.Ended && match.Seats.Any(s => s.Index != you && s.Trait is not null))
     {
         <p class="trait-line">Rivals' traits: @string.Join(", ", match.Seats.Where(s => s.Index != you && s.Trait is not null)
-            .Select(s => $"{Seats.Name(view, s.Index, you)} has {s.Trait}")).</p>
+            .Select(s => $"{Seats.Name(view, s.Index, you)} had {s.Trait}")).</p>
+    }
+    else if (match.Phase == MatchPhase.Rounds && match.Seats.Any(s => s.Index != you && s.Trait is not null))
+    {
+        <p class="trait-line">Rivals' traits are secret until the end.
+            @(me.Guesses.Count == 0 ? "You haven't guessed any yet."
+                : "Your guesses: " + string.Join(", ", me.Guesses.OrderBy(g => g.Key).Select(g => $"{Seats.Name(view, g.Key, you)}: {g.Value}")) + ".")</p>
     }
     @if (match.Phase == MatchPhase.Ended && match.Winners.Count > 0)
     {

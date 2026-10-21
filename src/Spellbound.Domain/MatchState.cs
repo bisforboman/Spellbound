@@ -33,7 +33,11 @@ public sealed record SeatState(
     int RivalTilesTaken = 0,
     IReadOnlyList<Spell>? SpellsCast = null,
     int HexesCast = 0,
-    int RoundsCast = 0);
+    int RoundsCast = 0,
+    IReadOnlyList<GuessState>? Guesses = null,
+    int GuessPoints = 0);
+
+public sealed record GuessState(int Rival, Trait Trait);
 
 public sealed record UnitsState(Hex Hex, int Imps, int Golems);
 
