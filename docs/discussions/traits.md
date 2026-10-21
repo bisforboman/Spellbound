@@ -71,7 +71,7 @@ thousands of seeded games, before any person plays them. A trait that wins too o
 Each player now gets their own offer of 2, so 5 players need 10 traits. The owner chose to let the new ones build on
 spells and units, which didn't exist when the first six were chosen. They are still end-of-game, capped goals:
 
-| Trait | Pulls towards | Opening tell | Goal at the end, cap 3 |
+| Trait | Pulls towards | Opening tell (intended; bots don't bid this way yet) | Goal at the end, cap 3 |
 |---|---|---|---|
 | **Golemwright** | Golems | Bids on high yields, to pay their upkeep | 1 point per 2 Golems you have |
 | **Spellweaver** | Every kind of spell | Bids on tiles next to rivals and monsters, where most spells aim | 1 point per different spell beyond the first |
