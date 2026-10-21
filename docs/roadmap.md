@@ -73,7 +73,9 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   a header that says what's in them; and a short report (your lines, your battles, where the match is) with
   "Everything that happened" a tap away
 - [x] PWA manifest and icons so the game can be added to the home screen *(already built)*
-- [ ] Integration test for a round (WebApplicationFactory on a real PostgreSQL, like the platform's tests)
+- [x] Integration test for a round (WebApplicationFactory on a real PostgreSQL, like the platform's tests):
+  `RoundFlowTests` commits a round and reads the match page back over HTTP, checks that failed orders change nothing
+  and that a double tap waits on the row lock, ends a whole match for the host, and keeps the page to its player
 - [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)
 
 ## M2: Playing with friends
