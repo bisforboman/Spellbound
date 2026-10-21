@@ -1,0 +1,2 @@
+{"step":0,"seat":1,"action":"{\u0022trait\u0022: \u0022Beastbane\u0022}","ok":true,"lines":["Seat 1 chooses Beastbane: at the end, 1 point per monster tile cleared, up to 3."]}
+{"step":0,"seat":1,"action":"{\u0022bid\u0022: \u0022-2,2\u0022, \u0022amount\u0022: 3}","ok":true,"lines":["Bid 3 mana on the Shifting tile at (-2, 2) (yields 3).","If yours is the only highest bid, you pay 3 and keep 6 mana.","If you\u0027re outbid or tied, you pay nothing and get one of the tiles nobody wins, at random."]}
