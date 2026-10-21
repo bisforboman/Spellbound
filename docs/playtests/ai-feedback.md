@@ -12,9 +12,63 @@ player. Add each new session's reviews below and update the themes.
 |---|---|---|---|
 | 21 Oct 2026 | after #75 (unspent mana scores, Blight 3, traits retuned) | Euro-gamer 3, Wargamer 3, 4X fan 3, Combo player 3, Bluffer 3, Casual player 3 | [2026-10-21-ai-tastes/](2026-10-21-ai-tastes/) |
 | 21 Oct 2026 | after #79 (upgrades; Attune 1 + 3 per tile; 2 points per conquest; mana 1 per 10; no points for unspent mana) | Euro-gamer 2, Wargamer 3, 4X fan 2, Combo player 3, Bluffer 3, Casual player 2 | [2026-10-21-ai-tastes-2/](2026-10-21-ai-tastes-2/) |
+| 21 Oct 2026 | after #85 (Attune 1 + 1 per tile to 3 then + 3; Blight limit; Rally; secret traits with guessing; fog of war) | **Target:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 2. **Outside:** Euro-gamer 3, Combo player 3 | [2026-10-21-ai-tastes-3/](2026-10-21-ai-tastes-3/) |
 
 First session: every taste gave the game 3 out of 5: "quick, clean, readable, with real tension in the secret simultaneous orders",
 but each one found it missing the thing its favourite games are about.
+
+## Third session: after the reading-rivals elements
+
+The first session weighted by the owner's identity (`../design-principles.md`). The target tastes played matches 1
+and 2; the outside tastes played match 3. The target tastes average 3.0 (the second session: 2.5 across all six).
+The new question was "did reading your rivals matter?"
+
+**A defect in the AI tool, not the game:** the Table's rules never listed the trait names, so every guess was blind
+([Bluffer](2026-10-21-ai-tastes-3/match1-seat2.md), [4X fan](2026-10-21-ai-tastes-3/match2-seat1.md),
+[Casual player](2026-10-21-ai-tastes-3/match2-seat2.md), and both outside tastes). An unknown name crashed the tool.
+The web form lists them. Fixed with this session's write-up: the Table's `rules` now lists all ten traits with their
+goals. **So this session can't judge trait guessing.**
+
+**Reading rivals: it works in battle, for the target tastes.**
+- The Bluffer: "Yes, more than I expected, but only through military moves". Round 6 was "a proper read", and its
+  rival's warded empty tile "showed me exactly what it had been afraid of"
+  ([review](2026-10-21-ai-tastes-3/match1-seat2.md)).
+- The Wargamer: "Outguessing mostly meant guessing which tile a rival had left empty, and that decided a lot of
+  points. It never decided a big battle" ([review](2026-10-21-ai-tastes-3/match1-seat1.md)).
+- The Casual player: "Yes, too much". It guessed the target right and still lost to "a hidden +2" Rally, then to a
+  surprise Ward. "Outguessing never decided anything for me. Out-spending did"
+  ([review](2026-10-21-ai-tastes-3/match2-seat2.md)).
+- The 4X fan: "Barely": an empty tile next door is the only read needed
+  ([review](2026-10-21-ai-tastes-3/match2-seat1.md)).
+
+**Raids on empty tiles decide the game** (all four target tastes, and both outside ones).
+- "Nearly every attack hit an empty tile … three armies passing each other" (Wargamer).
+- "Whack-a-mole where I always lose" (Casual player).
+- "By round 5 the right move was always the same: find an empty enemy tile … walk in, take 2 points" (Combo
+  player, outside).
+- Units that attack leave home undefended, a capture banks 2 points, and a defender can summon on only one tile. So
+  defending loses to raiding.
+- Rally on every attack "felt like a tax, not a choice" (Wargamer).
+
+**One stance a round caps a growing realm** (4X fan; and outside, Euro-gamer and Combo player).
+- The 4X fan: "37 mana and could still only do one thing … 30 mana unspent".
+- The Combo player (outside): "42 mana unspent … my turn stayed the same size".
+- The Wargamer, too, wants "a small summon alongside an attack".
+
+**Building still loses to raiding.** Upgrades pass with the tile, so "a capture … takes the tile's upgrade with it"
+(Euro-gamer, outside). The 4X fan and the Bluffer built nothing.
+
+**Liked:** the Wargamer's tile won, lost and won back ("the best moment"); the Bluffer's reads; the Lure-then-Rally
+and Leyline-then-attack combos (Combo player, 4X fan, Euro-gamer); `check`; banked points.
+
+**Wishes, new this session (target tastes first):**
+- a point or glory for losing a battle, so defended clashes pay (Wargamer, as in session 2);
+- summon a little alongside an attack (Wargamer; also the Bluffer in session 1);
+- a contested central tile or region worth points every round, to pull the stacks together (Wargamer);
+- more actions as the realm grows, such as a second stance at 6+ tiles (4X fan; outside: Euro-gamer, Combo player);
+- a catch-up for the last player (Casual player, as in session 2);
+- a drawn map (Casual player; that is the AI tool's text view, and the game's page draws one);
+- talk and pacts, and a decoy order (Bluffer).
 
 ## Second session: after upgrades and the strategy retune
 
@@ -151,4 +205,7 @@ tastes: Euro-gamer, Combo player. "s1" and "s2" link to a review in the first an
 | Summon limits near enemies (armies placed before the fight) | Wargamer ([s1](2026-10-21-ai-tastes/match1-seat2.md)), Bluffer ([s1](2026-10-21-ai-tastes/match3-seat1.md)), and the earlier personality sessions | small: one rule |
 | Pacts and messages (non-binding) | Bluffer ([s1](2026-10-21-ai-tastes/match3-seat1.md), [s2](2026-10-21-ai-tastes-2/match3-seat1.md)), Casual player ([s1](2026-10-21-ai-tastes/match3-seat2.md)) | larger: a page feature, matters only with people |
 | Hidden combat commitments (face-down reinforcements) | Bluffer ([s1](2026-10-21-ai-tastes/match3-seat1.md)), Wargamer ([s2](2026-10-21-ai-tastes-2/match1-seat2.md)); outside: Combo player ([s1](2026-10-21-ai-tastes/match2-seat2.md)) | medium |
+| Defended fights that pay: points for losing a battle, or a capture of an empty tile worth less (third session) | Wargamer ([s3](2026-10-21-ai-tastes-3/match1-seat1.md), [s2](2026-10-21-ai-tastes-2/match1-seat2.md)), Casual player ([s3](2026-10-21-ai-tastes-3/match2-seat2.md)) | small: one rule |
+| More actions as a realm grows, such as a second stance at 6+ tiles (third session) | 4X fan ([s3](2026-10-21-ai-tastes-3/match2-seat1.md)); outside: Euro-gamer ([s3](2026-10-21-ai-tastes-3/match3-seat1.md)), Combo player ([s3](2026-10-21-ai-tastes-3/match3-seat2.md)) | medium |
+| A contested centre worth points every round (third session) | Wargamer ([s3](2026-10-21-ai-tastes-3/match1-seat1.md)) | small to medium |
 | A research track | 4X fan ([s1](2026-10-21-ai-tastes/match2-seat1.md), [s2](2026-10-21-ai-tastes-2/match2-seat1.md)); outside: Combo player ([s1](2026-10-21-ai-tastes/match2-seat2.md)) | larger |

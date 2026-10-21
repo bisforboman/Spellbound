@@ -56,7 +56,7 @@ internal abstract record Action
 
             return (null, "Send {\"trait\": …}, {\"bid\": \"q,r\", \"amount\": n}, {\"pass\": true} or {\"stance\": …}.");
         }
-        catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException or KeyNotFoundException)
+        catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException or KeyNotFoundException or ArgumentException)
         {
             return (null, ex.Message);
         }
