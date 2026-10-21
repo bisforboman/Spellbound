@@ -313,6 +313,12 @@ namespace Spellbound.Playtest
                     "() => { const r = document.querySelector('#report h2').getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; }",
                     null, new PageWaitForFunctionOptions { Timeout = 5_000 });
                 await Expect(page, "What just happened");
+                var barTop = await page.EvaluateAsync<double>("() => document.querySelector('.top-bar').getBoundingClientRect().top");
+                if (Math.Abs(barTop) > 1)
+                {
+                    throw new PlaytestException($"The top bar scrolled away (its top is at {barTop} px).");
+                }
+
                 // What a phone shows, bars and all (the step's own screenshot is the whole page).
                 await page.WaitForTimeoutAsync(1000);
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "jump-to-report-screen.png") });

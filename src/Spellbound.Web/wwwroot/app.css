@@ -42,8 +42,10 @@ h1:focus {
 }
 /* ---- Spellbound ---- */
 
+/* No sideways scroll. "clip", not "hidden": hidden makes html and body scroll containers, and the sticky top bar
+   would then stick to a box that never scrolls. */
 html, body {
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 
 .btn, .form-control, .form-select {
