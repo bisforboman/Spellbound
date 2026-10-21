@@ -90,7 +90,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Reinforcements with an attack: up to 3 power summoned at home, 1 mana more per unit (after the fourth AI-taste session)
 - [x] Follow orders (shared stances, from Puerto Rico), built and then removed after the sixth AI-taste session: 4 of 13 happened
 - [x] Unpicked stances get cheaper (Puerto Rico's doubloons): Attune, Summon or Build nobody chose costs 1 less a round, up to 3
-- [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)
+- [x] Playtest steps for the new pages (`tools/Spellbound.Playtest`): every page has one, the not-found ones included
 
 ## M2: Playing with friends
 - [ ] Invites and a lobby (2–5 seats, bots fill empty seats)
