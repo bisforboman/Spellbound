@@ -1,0 +1,343 @@
+{
+  "Seed": 61,
+  "Step": 2,
+  "AiSeats": [
+    0,
+    1
+  ],
+  "Match": {
+    "Version": 1,
+    "Phase": "Opening",
+    "OpeningUnveil": 3,
+    "CurrentRound": 0,
+    "OnAuction": [
+      {
+        "Q": -1,
+        "R": -1,
+        "S": 2
+      },
+      {
+        "Q": 0,
+        "R": 2,
+        "S": -2
+      },
+      {
+        "Q": 0,
+        "R": 0,
+        "S": 0
+      }
+    ],
+    "Tiles": [
+      {
+        "Hex": {
+          "Q": -2,
+          "R": 0,
+          "S": 2
+        },
+        "Type": "Steady",
+        "Yield": 2,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": -2,
+          "R": 1,
+          "S": 1
+        },
+        "Type": "Shifting",
+        "Yield": null,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": -2,
+          "R": 2,
+          "S": 0
+        },
+        "Type": "Shifting",
+        "Yield": null,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": -1,
+          "R": -1,
+          "S": 2
+        },
+        "Type": "Wild",
+        "Yield": 3,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": -1,
+          "R": 0,
+          "S": 1
+        },
+        "Type": "Wild",
+        "Yield": null,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": -1,
+          "R": 1,
+          "S": 0
+        },
+        "Type": "Steady",
+        "Yield": 2,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": -1,
+          "R": 2,
+          "S": -1
+        },
+        "Type": "Wild",
+        "Yield": 4,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 0,
+          "R": -2,
+          "S": 2
+        },
+        "Type": "Wild",
+        "Yield": 1,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 0,
+          "R": -1,
+          "S": 1
+        },
+        "Type": "Steady",
+        "Yield": null,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 0,
+          "R": 0,
+          "S": 0
+        },
+        "Type": "Shifting",
+        "Yield": 2,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 0,
+          "R": 1,
+          "S": -1
+        },
+        "Type": "Steady",
+        "Yield": null,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 0,
+          "R": 2,
+          "S": -2
+        },
+        "Type": "Steady",
+        "Yield": 2,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 1,
+          "R": -2,
+          "S": 1
+        },
+        "Type": "Steady",
+        "Yield": 2,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 1,
+          "R": -1,
+          "S": 0
+        },
+        "Type": "Wild",
+        "Yield": 0,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 1,
+          "R": 0,
+          "S": -1
+        },
+        "Type": "Wild",
+        "Yield": null,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 1,
+          "R": 1,
+          "S": -2
+        },
+        "Type": "Shifting",
+        "Yield": 1,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 2,
+          "R": -2,
+          "S": 0
+        },
+        "Type": "Steady",
+        "Yield": 2,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 2,
+          "R": -1,
+          "S": -1
+        },
+        "Type": "Shifting",
+        "Yield": 3,
+        "Guard": 0
+      },
+      {
+        "Hex": {
+          "Q": 2,
+          "R": 0,
+          "S": -2
+        },
+        "Type": "Shifting",
+        "Yield": null,
+        "Guard": 0
+      }
+    ],
+    "Seats": [
+      {
+        "Mana": 5,
+        "Score": 0,
+        "ProducedThisRound": 0,
+        "ProducedCarry": 0,
+        "ConquestsThisRound": 0,
+        "Tiles": [
+          {
+            "Q": -1,
+            "R": 2,
+            "S": -1
+          },
+          {
+            "Q": 0,
+            "R": -2,
+            "S": 2
+          }
+        ],
+        "LandCarry": 0,
+        "Offer": [
+          "Wanderer",
+          "Warbrand"
+        ],
+        "Trait": "Warbrand",
+        "TraitPoints": 0,
+        "OpeningTiles": [],
+        "MonstersCleared": 0,
+        "RivalTilesTaken": 0,
+        "SpellsCast": [],
+        "HexesCast": 0,
+        "RoundsCast": 0,
+        "Guesses": [],
+        "GuessPoints": 0
+      },
+      {
+        "Mana": 6,
+        "Score": 0,
+        "ProducedThisRound": 0,
+        "ProducedCarry": 0,
+        "ConquestsThisRound": 0,
+        "Tiles": [
+          {
+            "Q": -1,
+            "R": 1,
+            "S": 0
+          },
+          {
+            "Q": 1,
+            "R": 1,
+            "S": -2
+          }
+        ],
+        "LandCarry": 0,
+        "Offer": [
+          "Beastbane",
+          "Hearthkeeper"
+        ],
+        "Trait": "Hearthkeeper",
+        "TraitPoints": 0,
+        "OpeningTiles": [],
+        "MonstersCleared": 0,
+        "RivalTilesTaken": 0,
+        "SpellsCast": [],
+        "HexesCast": 0,
+        "RoundsCast": 0,
+        "Guesses": [],
+        "GuessPoints": 0
+      },
+      {
+        "Mana": 6,
+        "Score": 0,
+        "ProducedThisRound": 0,
+        "ProducedCarry": 0,
+        "ConquestsThisRound": 0,
+        "Tiles": [
+          {
+            "Q": -2,
+            "R": 0,
+            "S": 2
+          },
+          {
+            "Q": 2,
+            "R": -1,
+            "S": -1
+          }
+        ],
+        "LandCarry": 0,
+        "Offer": [
+          "Warden",
+          "Golemwright"
+        ],
+        "Trait": "Warden",
+        "TraitPoints": 0,
+        "OpeningTiles": [],
+        "MonstersCleared": 0,
+        "RivalTilesTaken": 0,
+        "SpellsCast": [],
+        "HexesCast": 0,
+        "RoundsCast": 0,
+        "Guesses": [],
+        "GuessPoints": 0
+      }
+    ],
+    "Units": [],
+    "Upgrades": [],
+    "Blighted": []
+  },
+  "Pending": {},
+  "LastReport": [
+    "A tie for the Steady tile at (-2, 0) (yields 2) at 2 mana: nobody gets it.",
+    "Seat 1 gets the Wild tile at (0, -2) (yields 1) for free.",
+    "Seat 2 gets the Shifting tile at (1, 1) (yields 1) for free.",
+    "Seat 3 gets the Steady tile at (-2, 0) (yields 2) for free."
+  ],
+  "LastReportTags": [
+    null,
+    null,
+    null,
+    null
+  ]
+}
