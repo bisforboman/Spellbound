@@ -37,8 +37,8 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Hearthkeeper | Steady land | 1 point per Steady tile held |
 | Weaver | one connected realm | 1 point per 2 tiles in your largest connected group beyond the first 2 (4 tiles = 1, 6 = 2, 8 = 3) |
 | Wanderer | many separate footholds | 1 point per separate group of 2 or more tiles (a lone tile doesn't count) |
-| Beastbane | clearing monsters | 1 point per monster tile cleared (on top of the conquest point) |
-| Warbrand | taking rivals' land | 1 point per rival tile taken (on top of the conquest point) |
+| Beastbane | clearing monsters | 1 point per monster tile cleared (on top of the conquest points) |
+| Warbrand | taking rivals' land | 1 point per rival tile taken (on top of the conquest points) |
 | Golemwright | Golems | 1 point per 3 Golems you have at the end |
 | Spellweaver | casting every kind of spell | 1 point per 2 different spells cast, and 1 for casting spells in 6 rounds |
 | Warden | keeping the land you started with | 1 point per tile from your opening still held, beyond the first (so at most 2) |
@@ -157,7 +157,7 @@ A revealed, unowned tile is taken in one of two ways, depending on whether it is
 - **Unguarded tiles, by attuning:** the **Attune** stance spends mana to tune a free, unguarded tile to your mana, making it yours. The tile must be **adjacent to any tile you own**.
   - Attuning extends where your units can go: it is how you grow your presence and join scattered groups together.
   - One Attune takes **one tile**.
-  - **Price: 1 mana + 1 mana for every tile you already control.** With 3 tiles, an Attune costs 4. The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 13).
+  - **Price: 1 mana + 2 mana for every tile you already control.** With 3 tiles, an Attune costs 7 (it was 1 per tile until 21 Oct 2026, when the Expander strategy bot won 70% of 3-player games; see `discussions/strategies.md`). The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 13).
   - **Clash:** if two players attune the same tile in the same round, nobody gets it and nobody pays.
 - **Guarded tiles:** some unowned tiles are **guarded by monsters**. They can't be attuned; you need units to defeat the guards first.
   - Guard strength is **visible**.
@@ -243,7 +243,8 @@ yields, prices or income. Costs are flat and small.
   and end with about 26 unspent (52 when spells were a stance), while attuning as often as before. Bots reach for
   Blight most (about 12 a game), then Ward (about 3); Scorch almost never. *Since 21 Oct 2026 bots also summon every other round
   (see `discussions/traits.md`): they spend about 19 mana a match on spells and end with about 13 unspent, and Ward
-  is cast most (about 9 a game), then Blight (about 5).*
+  is cast most (about 9 a game), then Blight (about 5).* *Unspent mana briefly scored 1 per 10 at the end (21 Oct
+  2026); it was dropped the same day in favour of scoring mana produced at 1 per 10, so income pays, not hoarding.*
 
 ## Upgrades
 
@@ -284,18 +285,19 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
 | Source | Points |
 |---|---|
 | Land held | 1 per 3 tiles held, counted every round and added up (holding 4 tiles for 3 rounds is 12, so 4 points; remainders carry over) |
-| Mana produced | 1 per 12 mana your land produced (remainders carry over to the next round) |
-| Conquest | 1 per rival tile taken or monster tile cleared (kept even if the tile is lost again) |
+| Mana produced | 1 per 10 mana your land produced (remainders carry over to the next round) |
+| Conquest | 2 per rival tile taken or monster tile cleared (kept even if the tile is lost again; 1 until 21 Oct 2026, when fighting didn't pay) |
 | Trait goals | set by each trait, scored once at the end, up to 3 (see *Traits*) |
 | Upgrades | 1 per upgrade you hold at the end |
-| Unspent mana | 1 per 10 mana left at the end, scored once (decided 21 Oct 2026: both AI sessions ended with 27–67 mana unspent, and late Scorches were dumps of mana worth nothing) |
 
 - **Tie-break:** most tiles held at the end; if still tied, most mana in hand.
 - **Scale** (changed 20 Oct 2026): a 3-player game ends around **18 points** a seat (about 12 for land, 5 for mana,
   1 for conquest) instead of 55. Land and mana keep their balance; the winner is the same as before in about 94 of 100
   simulated games. A conquest point now weighs more (about 5% of a score instead of 2%), on purpose: it rewards attacks.
   *Since 21 Oct 2026 bots summon and fight more (see `discussions/traits.md`): about 10 for land, 4 for mana and 2.5
-  for conquest, and about 1 from trait goals: still about 18 in all.*
+  for conquest, and about 1 from trait goals: still about 18 in all. Since the strategy retune (21 Oct 2026: Attune
+  1 + 2 per tile, 2 points per conquest, mana 1 per 10) a seat ends around 21: about 10 for land, 5 for mana, 4 for
+  conquest, 1 from its trait and 1–2 from upgrades.*
 
 ## Player elimination
 

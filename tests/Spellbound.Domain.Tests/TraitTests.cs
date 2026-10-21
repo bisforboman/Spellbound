@@ -144,26 +144,6 @@ public class TraitTests
     }
 
     [Fact]
-    public void Unspent_mana_scores_at_the_end()
-    {
-        var match = Opened(1);
-        Report report = null!;
-        while (match.Phase == MatchPhase.Rounds)
-        {
-            report = Play(match);
-        }
-
-        // Everyone held all match, so everyone has mana left: 1 point per 10.
-        foreach (var seat in match.Seats.Where(s => s.Mana >= 10))
-        {
-            Assert.Contains(report.Lines, l => l.StartsWith(
-                $"Seat {seat.Index + 1}'s {seat.Mana} unspent mana is worth {seat.Mana / 10} point", StringComparison.Ordinal));
-        }
-
-        Assert.Contains(match.Seats, s => s.Mana >= 10);
-    }
-
-    [Fact]
     public void Traits_and_their_counts_survive_saving()
     {
         var state = Opened(3).Save();

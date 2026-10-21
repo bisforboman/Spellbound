@@ -70,7 +70,7 @@ public class RoundPlayTests
     }
 
     [Fact]
-    public void Attuning_claims_a_free_tile_next_to_yours_for_one_plus_tiles_held()
+    public void Attuning_claims_a_free_tile_next_to_yours_for_one_plus_two_per_tile_held()
     {
         var match = FirstWhere(m => FreeNeighbours(m, 0).Any());
         var target = FreeNeighbours(match, 0).First();
@@ -79,12 +79,12 @@ public class RoundPlayTests
         var check = match.Check(Orders.Attune(0, target));
         var report = match.Resolve(HoldAll(match, Orders.Attune(0, target)), new SeededRandom(7));
 
-        Assert.Contains(check.Lines, l => l.Contains("for 4 mana", StringComparison.Ordinal));
+        Assert.Contains(check.Lines, l => l.Contains("for 7 mana", StringComparison.Ordinal));
         Assert.True(report.Succeeded);
         Assert.Equal(0, match.OwnerOf(target));
         Assert.Equal(4, match.Seats[0].Tiles.Count);
         var income = match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value);
-        Assert.Equal(mana - 4 + income, match.Seats[0].Mana);
+        Assert.Equal(mana - 7 + income, match.Seats[0].Mana);
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public class RoundPlayTests
         { "summon too many", "cost 2 mana each" },
         { "attune an owned tile", "Only a free, unveiled tile" },
         { "attune far away", "isn't next to any of your tiles" },
-        { "attune too dear", "Attuning costs 103 mana" },
+        { "attune too dear", "Attuning costs 106 mana" },
         { "move off your land", "only move between your own tiles" },
         { "move units you don't have", "There aren't 1 Imp" },
         { "move two steps", "aren't next to each other" },

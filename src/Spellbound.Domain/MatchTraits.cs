@@ -112,17 +112,9 @@ public sealed partial class Match
         static (int, int) Per(int count, int per) => (count, count / per);
     }
 
-    /// <summary>At the end: unspent mana scores (one point per <see cref="GameRules.ManaPerEndPoint"/>), then every
-    /// seat's trait is revealed with its goal, and the goal's points are added.</summary>
+    /// <summary>At the end: every seat's trait is revealed with its goal, and the goal's points are added.</summary>
     private void ScoreTraits(List<string> lines)
     {
-        foreach (var seat in seats.Where(s => s.Mana >= Rules.ManaPerEndPoint))
-        {
-            var saved = seat.Mana / Rules.ManaPerEndPoint;
-            seat.Score += saved;
-            lines.Add($"Seat {seat.Index + 1}'s {seat.Mana} unspent mana is worth {Plural(saved, "point")}, {seat.Score} in all.");
-        }
-
         foreach (var seat in seats.Where(s => s.Trait is not null))
         {
             var (count, points) = TraitGoal(seat);

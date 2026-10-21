@@ -53,4 +53,44 @@ public class BotTests
         Assert.Contains("| 8 |", report, StringComparison.Ordinal);
         Assert.Contains("Wins by seat", report, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData(Plan.Warlord)]
+    [InlineData(Plan.Builder)]
+    [InlineData(Plan.Spellcaster)]
+    [InlineData(Plan.Expander)]
+    [InlineData(Plan.Economist)]
+    public void Every_plan_plays_a_whole_match_with_orders_that_check_and_replays_the_same(Plan plan)
+    {
+        static string PlayOut(Plan plan)
+        {
+            var random = new SeededRandom(5);
+            var match = Match.Start(3, GameRules.Default, random);
+            var lines = new List<string>();
+            while (match.Phase != MatchPhase.Ended)
+            {
+                var report = match.Phase == MatchPhase.Opening
+                    ? match.Auction([.. match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random, plan))], random)
+                    : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random, plan))], random);
+                Assert.True(report.Succeeded, string.Join('\n', report.Lines));
+                lines.AddRange(report.Lines);
+            }
+
+            return string.Join('\n', lines);
+        }
+
+        Assert.Equal(PlayOut(plan), PlayOut(plan));
+    }
+
+    [Fact]
+    public void Plans_against_each_other_report_every_plan_and_replay_the_same()
+    {
+        var first = Simulation.RunPlans(5, 20, 3, GameRules.Default);
+        var again = Simulation.RunPlans(5, 20, 3, GameRules.Default);
+
+        Assert.Equal(first.ToMarkdown(), again.ToMarkdown());
+        Assert.Equal(5, first.Plans.Count);
+        Assert.All(first.Plans.Values, p => Assert.Equal(20, p.Seats)); // with 5 players, each specialist in every game
+        Assert.Contains("## Plans", first.ToMarkdown(), StringComparison.Ordinal);
+    }
 }
