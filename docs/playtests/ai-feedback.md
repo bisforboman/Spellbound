@@ -14,9 +14,52 @@ player. Add each new session's reviews below and update the themes.
 | 21 Oct 2026 | after #79 (upgrades; Attune 1 + 3 per tile; 2 points per conquest; mana 1 per 10; no points for unspent mana) | Euro-gamer 2, Wargamer 3, 4X fan 2, Combo player 3, Bluffer 3, Casual player 2 | [2026-10-21-ai-tastes-2/](2026-10-21-ai-tastes-2/) |
 | 21 Oct 2026 | after #85 (Attune 1 + 1 per tile to 3 then + 3; Blight limit; Rally; secret traits with guessing; fog of war) | **Target:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 2. **Outside:** Euro-gamer 3, Combo player 3 | [2026-10-21-ai-tastes-3/](2026-10-21-ai-tastes-3/) |
 | 21 Oct 2026 | after #87 (an undefended capture scores 1; the Table lists the traits) | **Target only:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 3 | [2026-10-21-ai-tastes-4/](2026-10-21-ai-tastes-4/) |
+| 21 Oct 2026 | after #89 (reinforcements with an attack) | **Target only:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 3 | [2026-10-21-ai-tastes-5/](2026-10-21-ai-tastes-5/) |
 
 First session: every taste gave the game 3 out of 5: "quick, clean, readable, with real tension in the secret simultaneous orders",
 but each one found it missing the thing its favourite games are about.
+
+## Fifth session: reinforcements
+
+The four target tastes, two matches. The average stays at **3.25**. The new question: "did I have enough to do each
+round, and did my mana have a use?"
+
+**Reinforcements gave mana a use.** Players ended with 7–22 mana unspent; in the fourth session it was 17–38.
+- The Wargamer: "Yes. The usual 6 mana went on Rally plus one reinforcing Golem … Rally plus a reinforcement on the
+  tile I left behind is a neat attack-and-hold package" ([review](2026-10-21-ai-tastes-5/match1-seat1.md)).
+- The Casual player: "Yes, there was always an attack or a summon … 8 unspent"
+  ([review](2026-10-21-ai-tastes-5/match2-seat2.md)).
+- The Bluffer: "Mostly yes" ([review](2026-10-21-ai-tastes-5/match2-seat1.md)).
+- The 4X fan still ended with 22 unspent: "One stance per round is the bottleneck. Mana was rarely what limited me"
+  ([review](2026-10-21-ai-tastes-5/match1-seat2.md)).
+
+**Nobody built anything** (all four).
+- "Building never looked worth 5 mana in an 8-round game" (Wargamer).
+- "There is a hard choice of one stance per round, and land and defence always beat a Shrine" (4X fan, who wants
+  building "as a free side action, the way Civilization cities build").
+- Upgrades are now the one thing the stance limit still crowds out.
+
+**Still raids, now a carousel** (Wargamer, 4X fan).
+- "Everyone … hit whichever neighbour tile was empty, so tiles changed hands round after round while armies rarely
+  met" (Wargamer).
+- "Trench warfare, not empire-building" (4X fan).
+- The Wargamer asks again for a reward for a held defence.
+
+**Reading rivals worked between people.** The Bluffer: "Rounds 2 to 4 were pure outguessing, and the read in round 3
+was worth a whole army." The scripted bot "never bluffed and never reacted to threats" (Bluffer), and its traits
+gave no tells, so guessing it was a coin flip.
+
+**`check` said "you win", and then a hidden summon won.** "`check` said 'you win', and I lost my whole army. It felt
+like a coin flip, not a decision" (Casual player; the Wargamer met the same trap). The preview reads "As things
+stand", but that wasn't enough.
+
+**Also:**
+- Attune stalls after round 4 (4X fan).
+- A clash over the same tile wastes the round for both players. The Casual player wants a tiebreak, which the
+  follow-order design's "the chooser wins a clash" partly answers.
+- Rally is the one spell everyone casts (Bluffer, Casual player).
+- The long spell list (Casual player).
+- The coordinate map (the AI tool's text view).
 
 ## Fourth session: the raid rule, and trait guessing with the names listed
 
