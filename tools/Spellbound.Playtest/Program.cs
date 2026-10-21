@@ -390,6 +390,8 @@ namespace Spellbound.Playtest
             {
                 await page.ClickAsync("label:has-text('Hold:')");
                 await page.ClickAsync("button:has-text('Spell (optional)')");
+                await page.ClickAsync("label:has-text('Rally')"); // goes only with an attack, and says so
+                await Expect(page, "Rally goes with an attack");
                 await page.ClickAsync("label:has-text('Ward')");
                 await Expect(page, "Choose where Ward goes");
                 await page.SelectOptionAsync("#spell-target", new SelectOptionValue { Index = 1 });

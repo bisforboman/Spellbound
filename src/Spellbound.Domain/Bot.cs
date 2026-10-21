@@ -91,12 +91,18 @@ public static class Bot
         }
 
         var casts = Casts(match, seat);
+        if (orders is { Stance: Stance.Attack, Target: { } attacked })
+        {
+            // A Rally first: it saves units (it takes the blows first) and covers defenders summoned this round.
+            casts = casts.Prepend(new SpellCast(Spell.Rally, attacked));
+        }
+
         casts = plan switch
         {
             // A Warlord scorches first; an Economist wards and blights (income, its own and its rivals'); a Spellcaster
             // tries spells it hasn't cast.
             Plan.Warlord => casts.OrderBy(c => c.Spell != Spell.Scorch),
-            Plan.Economist => casts.Where(c => c.Spell is Spell.Ward or Spell.Blight),
+            Plan.Economist => casts.Where(c => c.Spell is Spell.Ward or Spell.Blight or Spell.Rally),
             Plan.Spellcaster => casts.OrderBy(c => match.Seats[seat].SpellsCast.Contains(c.Spell)),
             _ => casts,
         };
@@ -166,7 +172,8 @@ public static class Bot
         var rivals = mine.SelectMany(match.Map.NeighboursOf).Distinct()
             .Where(h => match.OwnerOf(h) is { } o && o != seat).OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
 
-        foreach (var threatened in mine.Where(h => match.Map.NeighboursOf(h).Any(n => rivals.Contains(n) && Power(n) > Power(h))))
+        foreach (var threatened in mine.Where(h => match.Map.NeighboursOf(h).Any(n => rivals.Contains(n) && Power(n) > 0
+                     && Power(n) + Rally(match, n) > Power(h))))
         {
             yield return new SpellCast(Spell.Ward, threatened);
         }
@@ -202,9 +209,10 @@ public static class Bot
         var attack = BestAttack(match, seat, me);
         var monsterAttack = attack is { Target: { } t } && match.OwnerOf(t) is null ? attack : null;
 
-        // Defend: enough Imps on its most threatened tile to beat the rival stack next to it.
+        // Defend: enough Imps on its most threatened tile to beat the rival stack next to it, and the Rally it may bring.
         var threats = mine.Select(h => (Tile: h, Gap: match.Map.NeighboursOf(h)
-                .Where(n => match.OwnerOf(n) is { } o && o != seat).Select(Power).DefaultIfEmpty(0).Max() - Power(h)))
+                .Where(n => match.OwnerOf(n) is { } o && o != seat && Power(n) > 0)
+                .Select(n => Power(n) + Rally(match, n)).DefaultIfEmpty(0).Max() - Power(h)))
             .Where(x => x.Gap >= 0).OrderByDescending(x => x.Gap).ThenBy(x => x.Tile.Q).ThenBy(x => x.Tile.R).ToList();
         var defend = threats.Count > 0 && threats[0].Gap > 0
             ? Orders.Summon(seat, threats[0].Tile, UnitKind.Imp, threats[0].Gap + 1)
@@ -252,6 +260,10 @@ public static class Bot
         };
         return order.OfType<Orders>();
     }
+
+    /// <summary>The Rally a rival's stack at <paramref name="hex"/> could bring, if its owner can afford one.</summary>
+    private static int Rally(Match match, Hex hex) =>
+        match.OwnerOf(hex) is { } owner && match.Seats[owner].Mana >= match.Rules.RallyCost ? match.Rules.RallyPower : 0;
 
     /// <summary>The stack a Warlord builds before it also attunes.</summary>
     private const int WarlordStack = 8;

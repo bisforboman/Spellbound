@@ -112,7 +112,7 @@ public class TraitTests
     [Fact]
     public void Goals_count_what_the_match_tracks_and_stop_at_the_cap()
     {
-        var all = Enum.GetValues<Spell>();
+        Spell[] all = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure];
         var spellweaver = SeatZero(s => s with { Trait = Trait.Spellweaver, SpellsCast = all, HexesCast = 2, RoundsCast = 5 });
         var steady = SeatZero(s => s with { Trait = Trait.Spellweaver, SpellsCast = all, HexesCast = 2, RoundsCast = 6 });
         var hexer = SeatZero(s => s with { Trait = Trait.Hexer, SpellsCast = all, HexesCast = 3 });

@@ -125,7 +125,9 @@ The third AI-taste session comes after all three, with the target tastes weighte
 ## Decided (21 Oct 2026, the owner)
 
 1. **Rally**, the attacker's Ward: +3 power to your own attack this round for 3 mana, paid even if the attack never
-   happens. Ward stays as it is.
+   happens. Ward stays as it is. *Built at +2 power (owner's choice): at +3 the Warlord strategy bot won 48% of
+   3-player games and 38% of 5-player games (34% and 23% without Rally); at +2, 44% and 32%. Bots defend worse than
+   people, who can Ward on a hunch, so the next AI session judges it.*
 2. **Traits stay secret until the end.** Each player may guess each rival's trait once, alongside any round's orders.
    A correct guess is worth 1 point at the end; guesses are capped at 3 points.
 3. **Fog of war:** rivals' units are seen only on tiles next to your land. Rivals' mana is hidden until the end.

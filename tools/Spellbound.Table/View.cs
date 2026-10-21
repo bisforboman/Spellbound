@@ -154,6 +154,8 @@ internal static class View
           blight ({{r.BlightCost}} mana): a rival's tile next to yours yields nothing in the next round's income; not the
             same tile two rounds running.
           lure ({{r.LureCost}} mana): a monster tile next to yours loses {{r.LurePower}} guard power for good (never below {{r.MinGuard}}).
+          rally ({{r.RallyCost}} mana): the tile you attack this round; your attack strikes with {{r.RallyPower}} more power, which
+            takes the blows first. Paid even if your attack doesn't happen.
 
         POINTS, banked every round and never lost: 1 per {{r.TilesPerPoint}} tile-rounds held (tiles held, added up each
         round), 1 per {{r.ManaPerPoint}} mana your land produced, {{r.PointsPerConquest}} per rival tile taken or monster

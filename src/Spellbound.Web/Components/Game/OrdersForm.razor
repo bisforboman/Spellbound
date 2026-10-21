@@ -168,7 +168,7 @@
     <div class="move-form">
         @if (targets.Count == 0)
         {
-            <p class="text-muted">No tile for @chosen this round.</p>
+            <p class="text-muted">@(chosen == Spell.Rally ? "Rally goes with an attack: choose Attack and the tile you attack first." : $"No tile for {chosen} this round.")</p>
         }
         else
         {
@@ -419,6 +419,7 @@
         yield return (Spell.Leyline, $"{r.LeylineManaPerUnit} mana per unit, at least {r.LeylineMinCost}", "send units between any two of your tiles");
         yield return (Spell.Blight, $"{r.BlightCost} mana", "a rival's tile next to yours yields nothing next round");
         yield return (Spell.Lure, $"{r.LureCost} mana", $"a monster tile next to yours loses {r.LurePower} guard power for good");
+        yield return (Spell.Rally, $"{r.RallyCost} mana", $"your attack this round strikes with {r.RallyPower} more power");
     }
 
     /// <summary>The tiles a spell can aim at (for a Leyline, where the units leave from).</summary>
@@ -435,6 +436,7 @@
             Spell.Leyline => Me.Tiles.Count > 1 ? Me.Tiles.Where(h => !Riders(h).IsEmpty) : [],
             Spell.Blight => rivals,
             Spell.Lure => nextToYou.Where(h => Match.OwnerOf(h) is null && Match.Map[h].IsGuarded && Match.Map[h].Guard > Match.Rules.MinGuard),
+            Spell.Rally => stance == "Attack" && Selected is { } attacked ? [attacked] : [],
             _ => [],
         };
         return found.OrderBy(h => h.Q).ThenBy(h => h.R);

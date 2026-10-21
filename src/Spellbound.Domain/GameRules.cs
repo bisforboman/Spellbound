@@ -77,6 +77,11 @@ public sealed record GameRules
     /// <summary>The defence a Ward adds to its tile in this round's battles.</summary>
     public int WardPower { get; init; } = 3;
 
+    /// <summary>A Rally's price, and the power it adds to the seat's attack this round (paid even if the attack doesn't
+    /// happen, as a Ward is).</summary>
+    public int RallyCost { get; init; } = 3;
+    public int RallyPower { get; init; } = 2;
+
     public int LeylineManaPerUnit { get; init; } = 1;
     public int LeylineMinCost { get; init; } = 2;
     public int BlightCost { get; init; } = 3;
