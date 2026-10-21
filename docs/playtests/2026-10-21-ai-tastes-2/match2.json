@@ -1,32 +1,16 @@
 {
   "Seed": 42,
-  "Step": 2,
+  "Step": 4,
   "AiSeats": [
     0,
     1
   ],
   "Match": {
     "Version": 1,
-    "Phase": "Opening",
-    "OpeningUnveil": 3,
-    "CurrentRound": 0,
-    "OnAuction": [
-      {
-        "Q": -1,
-        "R": -1,
-        "S": 2
-      },
-      {
-        "Q": 1,
-        "R": -1,
-        "S": 0
-      },
-      {
-        "Q": -1,
-        "R": 2,
-        "S": -1
-      }
-    ],
+    "Phase": "Rounds",
+    "OpeningUnveil": 0,
+    "CurrentRound": 2,
+    "OnAuction": [],
     "Tiles": [
       {
         "Hex": {
@@ -55,7 +39,7 @@
           "S": 0
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 3,
         "Guard": 0
       },
       {
@@ -115,7 +99,7 @@
           "S": 1
         },
         "Type": "Wild",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -175,7 +159,7 @@
           "S": -1
         },
         "Type": "Wild",
-        "Yield": null,
+        "Yield": 2,
         "Guard": 0
       },
       {
@@ -215,22 +199,27 @@
           "S": -2
         },
         "Type": "Shifting",
-        "Yield": null,
+        "Yield": 3,
         "Guard": 0
       }
     ],
     "Seats": [
       {
-        "Mana": 7,
-        "Score": 0,
-        "ProducedThisRound": 0,
-        "ProducedCarry": 0,
+        "Mana": 6,
+        "Score": 1,
+        "ProducedThisRound": 4,
+        "ProducedCarry": 4,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
             "Q": -1,
             "R": 1,
             "S": 0
+          },
+          {
+            "Q": -1,
+            "R": 2,
+            "S": -1
           },
           {
             "Q": 0,
@@ -245,7 +234,23 @@
         ],
         "Trait": "Wildheart",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": -1,
+            "R": 1,
+            "S": 0
+          },
+          {
+            "Q": -1,
+            "R": 2,
+            "S": -1
+          },
+          {
+            "Q": 0,
+            "R": -2,
+            "S": 2
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
         "SpellsCast": [],
@@ -253,16 +258,21 @@
         "RoundsCast": 0
       },
       {
-        "Mana": 6,
-        "Score": 0,
-        "ProducedThisRound": 0,
-        "ProducedCarry": 0,
+        "Mana": 9,
+        "Score": 1,
+        "ProducedThisRound": 6,
+        "ProducedCarry": 6,
         "ConquestsThisRound": 0,
         "Tiles": [
           {
             "Q": -2,
             "R": 1,
             "S": 1
+          },
+          {
+            "Q": -1,
+            "R": -1,
+            "S": 2
           },
           {
             "Q": -1,
@@ -277,20 +287,43 @@
         ],
         "Trait": "Hexer",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": -2,
+            "R": 1,
+            "S": 1
+          },
+          {
+            "Q": -1,
+            "R": -1,
+            "S": 2
+          },
+          {
+            "Q": -1,
+            "R": 0,
+            "S": 1
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
-        "SpellsCast": [],
-        "HexesCast": 0,
-        "RoundsCast": 0
+        "SpellsCast": [
+          "Blight"
+        ],
+        "HexesCast": 1,
+        "RoundsCast": 1
       },
       {
-        "Mana": 7,
-        "Score": 0,
-        "ProducedThisRound": 0,
-        "ProducedCarry": 0,
+        "Mana": 10,
+        "Score": 1,
+        "ProducedThisRound": 7,
+        "ProducedCarry": 6,
         "ConquestsThisRound": 0,
         "Tiles": [
+          {
+            "Q": 0,
+            "R": 0,
+            "S": 0
+          },
           {
             "Q": 0,
             "R": 2,
@@ -298,18 +331,39 @@
           },
           {
             "Q": 1,
+            "R": -1,
+            "S": 0
+          },
+          {
+            "Q": 1,
             "R": 1,
             "S": -2
           }
         ],
-        "LandCarry": 0,
+        "LandCarry": 1,
         "Offer": [
           "Golemwright",
           "Beastbane"
         ],
         "Trait": "Golemwright",
         "TraitPoints": 0,
-        "OpeningTiles": [],
+        "OpeningTiles": [
+          {
+            "Q": 0,
+            "R": 2,
+            "S": -2
+          },
+          {
+            "Q": 1,
+            "R": -1,
+            "S": 0
+          },
+          {
+            "Q": 1,
+            "R": 1,
+            "S": -2
+          }
+        ],
         "MonstersCleared": 0,
         "RivalTilesTaken": 0,
         "SpellsCast": [],
@@ -318,13 +372,39 @@
       }
     ],
     "Units": [],
-    "Upgrades": []
+    "Upgrades": [
+      {
+        "Hex": {
+          "Q": -1,
+          "R": 0,
+          "S": 1
+        },
+        "Upgrade": "Sanctum"
+      },
+      {
+        "Hex": {
+          "Q": -1,
+          "R": 2,
+          "S": -1
+        },
+        "Upgrade": "Shrine"
+      }
+    ]
   },
   "Pending": {},
   "LastReport": [
-    "A tie for the Steady tile at (-1, 0) (yields 2) at 3 mana: nobody gets it.",
-    "Seat 1 gets the Shifting tile at (-1, 1) (yields 1) for free.",
-    "Seat 2 gets the Steady tile at (-1, 0) (yields 2) for free.",
-    "Seat 3 gets the Steady tile at (0, 2) (yields 2) for free."
+    "Round 1.",
+    "Seat 3 attunes the Shifting tile at (0, 0) (yields 1) for 10 mana.",
+    "Seat 1 builds a Shrine on (-1, 2).",
+    "Seat 2 builds a Sanctum on (-1, 0).",
+    "Seat 2 casts Blight on the Shifting tile at (-1, 1) (yields 1): it yields nothing next round.",
+    "Seat 1 banks 1 point (1 for land, 0 for mana), 1 in all.",
+    "Seat 2 banks 1 point (1 for land, 0 for mana), 1 in all.",
+    "Seat 3 banks 1 point (1 for land, 0 for mana), 1 in all.",
+    "Round 2 of 8 begins.",
+    "An Unveil reveals the Wild tile at (0, -1) (yields 2); the Shifting tile at (2, 0) (yields 3); the Wild tile at (1, 0) (yields 2); the Shifting tile at (-2, 2) (yields 3).",
+    "Seat 1 collects 4 mana.",
+    "Seat 2 collects 6 mana.",
+    "Seat 3 collects 7 mana."
   ]
 }
