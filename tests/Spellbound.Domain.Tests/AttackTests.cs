@@ -59,7 +59,7 @@ public class AttackTests
         Assert.Equal(ownerAfter, match.OwnerOf(theirs));
         Assert.Equal(Army.None, match.UnitsOn(mine));
         Assert.Equal(ownerAfter == 0 ? new Army(impsLeft, 0) : result == "fails" ? new Army(0, 1) : Army.None, match.UnitsOn(theirs));
-        Assert.Equal(ownerAfter == 0, report.Lines.Any(l => l.Contains("1 for conquest", StringComparison.Ordinal)));
+        Assert.Equal(ownerAfter == 0, report.Lines.Any(l => l.Contains("2 for conquest", StringComparison.Ordinal)));
     }
 
     [Fact]

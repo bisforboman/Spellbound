@@ -19,8 +19,8 @@ public enum Plan
     /// <summary>Land first: attunes every round it can.</summary>
     Expander,
 
-    /// <summary>Spends only when it clearly pays, and banks the rest (unspent mana scores at the end).</summary>
-    Hoarder,
+    /// <summary>Income first: rich land, Shrines, and guarding what yields most.</summary>
+    Economist,
 }
 
 /// <summary>
@@ -48,8 +48,7 @@ public static class Bot
         ArgumentNullException.ThrowIfNull(random);
         var mana = match.Seats[seat].Mana;
 
-        // A Hoarder keeps its mana: the leftovers are free.
-        if (match.OnAuction.Count == 0 || mana < match.Rules.MinBid || plan == Plan.Hoarder)
+        if (match.OnAuction.Count == 0 || mana < match.Rules.MinBid)
         {
             return Bid.Pass(seat);
         }
@@ -75,7 +74,7 @@ public static class Bot
             Plan.Spellcaster => 0,
             Plan.Warlord => SpareMana / 2,
             Plan.Builder or Plan.Expander => SpareMana + 4,
-            Plan.Hoarder => SpareMana * 2,
+            Plan.Economist => SpareMana + 4,
             _ => match.Seats[seat].Trait is Trait.Spellweaver or Trait.Hexer ? SpareMana / 2 : SpareMana,
         };
         if (match.Seats[seat].Mana - match.CostOf(orders) < spare)
@@ -86,9 +85,10 @@ public static class Bot
         var casts = Casts(match, seat);
         casts = plan switch
         {
-            // A Warlord scorches first; a Hoarder only wards a threatened tile; a Spellcaster tries spells it hasn't cast.
+            // A Warlord scorches first; an Economist wards and blights (income, its own and its rivals'); a Spellcaster
+            // tries spells it hasn't cast.
             Plan.Warlord => casts.OrderBy(c => c.Spell != Spell.Scorch),
-            Plan.Hoarder => casts.Where(c => c.Spell == Spell.Ward),
+            Plan.Economist => casts.Where(c => c.Spell is Spell.Ward or Spell.Blight),
             Plan.Spellcaster => casts.OrderBy(c => match.Seats[seat].SpellsCast.Contains(c.Spell)),
             _ => casts,
         };
@@ -196,7 +196,9 @@ public static class Bot
         var free = mine.SelectMany(match.Map.NeighboursOf).Distinct()
             .Where(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded).ToList();
         var attune = free.Count == 0 ? null : Orders.Attune(seat, PickGood(free, h => match.Map[h].Yield!.Value, random));
-        var cheapAttune = attune is not null && rules.AttunePrice(me.Tiles.Count) <= 4 ? attune : null;
+        var richFree = free.Where(h => match.Map[h].Yield >= 2).ToList();
+        var richAttune = richFree.Count == 0 ? null
+            : Orders.Attune(seat, richFree.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First());
 
         var border = mine.Where(h => match.Map.NeighboursOf(h).Any(n => match.OwnerOf(n) != seat)).ToList();
         var at = border.FirstOrDefault(mine[0]);
@@ -224,7 +226,8 @@ public static class Bot
             Plan.Builder => [defend, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, attune, monsterAttack, some],
             Plan.Spellcaster => [attack, defend, Build(Upgrade.Sanctum), attune, some],
             Plan.Expander => [defend, attune, attack, some],
-            Plan.Hoarder => [defend, cheapAttune, monsterAttack],
+            // An Economist grows income: a Shrine on its best tile (from round 2), rich land only, monsters it can beat.
+            Plan.Economist => [defend, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, some],
             _ => [],
         };
         return order.OfType<Orders>();

@@ -49,7 +49,7 @@ public sealed record GameRules
 
     /// <summary>An Attune costs this plus <see cref="AttunePricePerTile"/> for every tile the player already holds.</summary>
     public int AttuneBasePrice { get; init; } = 1;
-    public int AttunePricePerTile { get; init; } = 1;
+    public int AttunePricePerTile { get; init; } = 2;
 
     /// <summary>The rounds that start with a later Unveil, which reveals the tiles still dark, split evenly (an odd one
     /// goes to the earlier round). After the last of them the whole map is revealed.</summary>
@@ -83,14 +83,14 @@ public sealed record GameRules
     public int MinGuard { get; init; } = 1;
 
     /// <summary>Points banked for each rival tile taken or monster tile cleared.</summary>
-    public int PointsPerConquest { get; init; } = 1;
+    public int PointsPerConquest { get; init; } = 2;
 
     /// <summary>One point for every this many tiles held, counted every round and added up: holding 4 tiles for 3 rounds
     /// is 12 tile-rounds, 4 points. The remainder carries over.</summary>
     public int TilesPerPoint { get; init; } = 3;
 
     /// <summary>One point for every this much mana a player's land produced; the remainder carries over.</summary>
-    public int ManaPerPoint { get; init; } = 12;
+    public int ManaPerPoint { get; init; } = 10;
 
     // Upgrades (docs/game-design.md, Upgrades)
 
@@ -134,8 +134,6 @@ public sealed record GameRules
     /// <summary>...and one more for casting a spell in this many rounds.</summary>
     public int SpellRoundsForTraitPoint { get; init; } = 6;
 
-    /// <summary>At the end, one point per this much unspent mana: saving is a plan, not a waste.</summary>
-    public int ManaPerEndPoint { get; init; } = 10;
 
     /// <summary>Golemwright: one point per this many Golems at the end.</summary>
     public int GolemsPerTraitPoint { get; init; } = 3;

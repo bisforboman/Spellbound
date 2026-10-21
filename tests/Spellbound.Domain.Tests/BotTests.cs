@@ -59,7 +59,7 @@ public class BotTests
     [InlineData(Plan.Builder)]
     [InlineData(Plan.Spellcaster)]
     [InlineData(Plan.Expander)]
-    [InlineData(Plan.Hoarder)]
+    [InlineData(Plan.Economist)]
     public void Every_plan_plays_a_whole_match_with_orders_that_check_and_replays_the_same(Plan plan)
     {
         static string PlayOut(Plan plan)

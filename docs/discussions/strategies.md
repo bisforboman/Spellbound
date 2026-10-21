@@ -20,6 +20,7 @@ dotnet run --project tools/Spellbound.Simulator -- --players 3 --games 2000 --pl
 | Spellcaster | attack what it can beat, then a Sanctum, then attune | a spell every round it can afford |
 | Expander | attune every round it can | spells only with 10 to spare |
 | Hoarder | passes every auction; attunes only while it's cheap (4 or less); clears monsters it can beat; otherwise holds | Ward only, with 12 to spare |
+| Economist (replaced the Hoarder) | a Shrine on its best open tile from round 2, then attunes only rich land (yield 2 or more), clears monsters it can beat | Ward or Blight only, with 10 to spare |
 
 Every plan defends first when a rival's stack next to it outweighs its own: it summons just enough Imps there. Every
 plan gives only orders that check.
@@ -66,3 +67,35 @@ The points by source are from the 3-player run.
 3. **Hoarder too weak:** 1 point per 5 unspent mana; or accept that pure saving is a weak plan.
 
 Each option gets re-measured with `--plans` before it's kept.
+
+## Decided (21 Oct 2026)
+
+The owner chose:
+- **Expander:** a dearer Attune, 1 mana + 2 per tile held (with 3 tiles, 7 instead of 4).
+- **Warlord:** 2 points per conquest (a rival tile taken or a monster tile cleared).
+- **Hoarder:** "Maybe hoarder is a bad idea. Better to focus on how much mana you produce per turn instead?" So the
+  end-of-match points for unspent mana are gone. Mana produced scores 1 per 10 (was 12). The Hoarder plan is replaced
+  by an **Economist** that goes for income.
+
+## Re-measured after the decisions (2,000 games each)
+
+| Plan | 3 players: win rate | 5 players: win rate | Score | Land | Mana | Conquest | Upgrades | Mana left |
+|---|---|---|---|---|---|---|---|---|
+| Balanced | 33% | – | 19.5 | 9.8 | 5.3 | 1.1 | 2.2 | 9 |
+| Warlord | 34% | 26% | 18.7 | 9.6 | 5.0 | 2.7 | 0.4 | 15 |
+| Builder | 31% | **14%** | 19.3 | 9.8 | 6.0 | 0.0 | 2.6 | 17 |
+| Spellcaster | **18%** | 21% | 17.5 | 8.6 | 4.4 | 1.0 | 2.4 | 11 |
+| Expander | **56%** | 28% | 21.2 | 13.1 | 6.7 | 0.3 | 0.0 | 17 |
+| Economist | 27% | **11%** | 19.0 | 9.5 | 6.0 | 0.0 | 2.6 | 18 |
+
+Against the band (27–40% with 3 players, 16–24% with 5):
+- **The Warlord now pays.** It earns about 2.7 conquest points a match and is in the band or above it with 5 players.
+- **The Expander is still the strongest, but far less so.** It won 70% and 42% before; now it wins 56% and 28%.
+- **The Economist pays with 3 players but not with 5.** It plays much like the Builder; both end with 17–18 mana
+  unspent. That is partly the bots: they leave mana they could spend.
+- **The Spellcaster slipped with 3 players** (23% to 18%). Spells cost the same, but everything else got dearer or
+  worth more.
+
+With 3 players, four of six plans are now in the band (three were before), and none is below 0.7× except the
+Spellcaster. With 5 players the spread is narrower (11–28% instead of 5–42%), but only the Spellcaster is inside the
+band: the Warlord and the Expander sit just above it, the Builder and the Economist below.

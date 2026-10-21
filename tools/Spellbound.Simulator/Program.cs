@@ -5,7 +5,7 @@ using Spellbound.Domain;
 //
 //   dotnet run --project tools/Spellbound.Simulator [-- --players 3] [--games 1000] [--seed 1] [--plans]
 //
-// --plans: bots with different plans (Warlord, Builder, Spellcaster, Expander, Hoarder, and the everyday Balanced)
+// --plans: bots with different plans (Warlord, Builder, Spellcaster, Expander, Economist, and the everyday Balanced)
 // play each other, and the report adds each plan's win rate and where its points come from.
 var players = 3;
 var games = 1000;

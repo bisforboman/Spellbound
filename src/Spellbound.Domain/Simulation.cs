@@ -19,9 +19,6 @@ public static partial class Simulation
     [GeneratedRegex(@"^Seat (\d+) banks .*\((\d+) for land, (\d+) for mana(?:, (\d+) for conquest)?\)")]
     private static partial Regex SeatBankedRegex();
 
-    [GeneratedRegex(@"^Seat (\d+)'s \d+ unspent mana is worth (\d+) point")]
-    private static partial Regex SavedRegex();
-
     /// <summary>
     /// Bots with different plans against each other (docs/discussions/strategies.md): with 5 players, the five
     /// specialists, one each; with fewer, a draw of plans from all six (the everyday bot included). Plans are dealt to
@@ -71,7 +68,7 @@ public static partial class Simulation
     private static void Play(Match match, IRandomSource random, SimulationReport report, Plan[]? plans = null)
     {
         Plan PlanOf(int seat) => plans?[seat] ?? Plan.Balanced;
-        var sources = match.Seats.Select(_ => new int[4]).ToArray(); // land, mana, conquest, saved mana
+        var sources = match.Seats.Select(_ => new int[3]).ToArray(); // land, mana, conquest
         foreach (var seat in match.Seats)
         {
             if (Bot.ChooseTrait(match, seat.Index, random) is { } trait)
@@ -169,10 +166,6 @@ public static partial class Simulation
                     s[1] += int.Parse(b.Groups[3].Value, CultureInfo.InvariantCulture);
                     s[2] += b.Groups[4].Success ? int.Parse(b.Groups[4].Value, CultureInfo.InvariantCulture) : 0;
                 }
-                else if (SavedRegex().Match(line) is { Success: true } m)
-                {
-                    sources[int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) - 1][3] += int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
-                }
             }
         }
 
@@ -197,7 +190,6 @@ public static partial class Simulation
                 stats.Land += src[0];
                 stats.Mana += src[1];
                 stats.Conquest += src[2];
-                stats.Saved += src[3];
                 stats.Trait += seat.TraitPoints;
                 stats.Upgrades += match.UpgradesOf(seat) * match.Rules.PointsPerUpgrade;
                 stats.ManaLeft += seat.Mana;
@@ -263,7 +255,6 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         public int Conquest { get; internal set; }
         public int Trait { get; internal set; }
         public int Upgrades { get; internal set; }
-        public int Saved { get; internal set; }
         public int ManaLeft { get; internal set; }
     }
 
@@ -335,12 +326,12 @@ public sealed class SimulationReport(int players, int games, int seed, int round
             md.AppendLine();
             md.AppendLine(c, $"A seat wins {(100.0 / players).ToString("0", c)}% of the time on average. Points per seat, by source.");
             md.AppendLine();
-            md.AppendLine("| Plan | Seats | Win rate | Score | Land | Mana | Conquest | Trait | Upgrades | Saved mana | Mana left |");
-            md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|");
+            md.AppendLine("| Plan | Seats | Win rate | Score | Land | Mana | Conquest | Trait | Upgrades | Mana left |");
+            md.AppendLine("|---|---|---|---|---|---|---|---|---|---|");
             foreach (var (plan, p) in Plans.OrderBy(k => k.Key))
             {
                 string Per(int n) => ((double)n / p.Seats).ToString("0.0", c);
-                md.AppendLine(c, $"| {plan} | {p.Seats} | {(100.0 * p.Wins / p.Seats).ToString("0", c)}% | {Per(p.Score)} | {Per(p.Land)} | {Per(p.Mana)} | {Per(p.Conquest)} | {Per(p.Trait)} | {Per(p.Upgrades)} | {Per(p.Saved)} | {Per(p.ManaLeft)} |");
+                md.AppendLine(c, $"| {plan} | {p.Seats} | {(100.0 * p.Wins / p.Seats).ToString("0", c)}% | {Per(p.Score)} | {Per(p.Land)} | {Per(p.Mana)} | {Per(p.Conquest)} | {Per(p.Trait)} | {Per(p.Upgrades)} | {Per(p.ManaLeft)} |");
             }
         }
 
