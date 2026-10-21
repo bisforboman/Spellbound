@@ -13,7 +13,9 @@ public sealed partial class Match
         [.. Map.Tiles.OrderBy(t => t.Hex.Q).ThenBy(t => t.Hex.R).Select(t => new TileState(t.Hex, t.Type, t.Yield, t.Guard))],
         [.. seats.Select(s => new SeatState(
             s.Mana, s.Score, s.ProducedThisRound, s.ProducedCarry, s.ConquestsThisRound,
-            [.. s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)], s.LandCarry))],
+            [.. s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)], s.LandCarry,
+            [.. s.Offer], s.Trait, s.TraitPoints, [.. s.OpeningTiles], s.MonstersCleared, s.RivalTilesTaken,
+            [.. s.SpellsCast.Order()], s.HexesCast))],
         [.. units.Where(u => !u.Value.IsEmpty).OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R)
             .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))]);
 
@@ -37,7 +39,19 @@ public sealed partial class Match
                 ProducedCarry = s.ProducedCarry,
                 LandCarry = s.LandCarry,
                 ConquestsThisRound = s.ConquestsThisRound,
+                Offer = s.Offer ?? [],
+                Trait = s.Trait,
+                TraitPoints = s.TraitPoints,
+                OpeningTiles = s.OpeningTiles ?? [],
+                MonstersCleared = s.MonstersCleared,
+                RivalTilesTaken = s.RivalTilesTaken,
             };
+            foreach (var spell in s.SpellsCast ?? [])
+            {
+                seat.Cast(spell);
+            }
+
+            seat.HexesCast = s.HexesCast;
             foreach (var hex in s.Tiles)
             {
                 seat.Take(hex);

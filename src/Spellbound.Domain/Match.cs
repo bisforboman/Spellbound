@@ -51,6 +51,7 @@ public sealed partial class Match
         var map = GameMap.Create(players, rules, random);
         var match = new Match(rules, map, [.. Enumerable.Range(0, players).Select(i => new Seat(i, rules.StartingMana))]);
         match.NextOpeningUnveil(random);
+        match.DealTraits(random);
         return match;
     }
 
@@ -111,6 +112,7 @@ public sealed partial class Match
             OpeningUnveil = 0;
             Phase = MatchPhase.Rounds;
             lines.Add("The opening is over. The rounds begin.");
+            SettleTraits(lines);
             lines.AddRange(StartRound(random));
         }
 

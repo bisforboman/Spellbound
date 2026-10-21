@@ -241,9 +241,9 @@ public class AttackTests
     [Fact]
     public void A_bot_game_with_attacks_always_plays_out_the_same()
     {
-        var first = PlayAggressively(11);
+        var first = PlayAggressively(12);
 
-        Assert.Equal(first, PlayAggressively(11));
+        Assert.Equal(first, PlayAggressively(12));
         Assert.Contains("attack", first, StringComparison.Ordinal);
         Assert.Contains("The match is over", first, StringComparison.Ordinal);
     }
