@@ -113,21 +113,22 @@ else
     }
     </section>
 
-    @if (view.LastReport.Count > 0)
+    @{ var lastReport = view.LastReportFor(you); }
+    @if (lastReport.Count > 0)
     {
         <section id="report">
         <h2 class="h4 mt-4">What just happened</h2>
         <div class="match-report">
             @{
-                var verdicts = Verdicts.Find(view.LastReport, you);
-                var yours = Verdicts.Yours(view.LastReport, you);
-                var hidden = view.LastReport.Count - yours.Count;
+                var verdicts = Verdicts.Find(lastReport, you);
+                var yours = Verdicts.Yours(lastReport, you);
+                var hidden = lastReport.Count - yours.Count;
             }
-            @for (var i = 0; i < view.LastReport.Count; i++)
+            @for (var i = 0; i < lastReport.Count; i++)
             {
                 @if (fullReport || yours.Contains(i))
                 {
-                    <p>@Seats.Phrase(view.LastReport[i], view.Owners, you)</p>
+                    <p>@Seats.Phrase(lastReport[i], view.Owners, you)</p>
                     @if (verdicts.TryGetValue(i, out var verdict))
                     {
                         <p class="stamp-line"><span class="stamp @(verdict.Won ? "stamp-victory" : "stamp-defeat")">@verdict.Text</span></p>
@@ -155,7 +156,7 @@ else
                     <td><span class="seat-ink" style="--seat: @Seats.Ink(seat.Index)">@Seats.Name(view, seat.Index, you)</span></td>
                     <td>@seat.Score</td>
                     <td>@seat.Tiles.Count</td>
-                    <td>@seat.Mana</td>
+                    <td>@(match.ManaSeenBy(you, seat.Index)?.ToString() ?? "?")</td>
                 </tr>
             }
         </tbody>

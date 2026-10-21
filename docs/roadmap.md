@@ -82,10 +82,10 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   the orders form and its playtest step
 - [x] Strategy bots (`--plans` in the simulator) and a retune so more plans pay off: Attune 1 + 1 per tile to 3 tiles then + 3 (after the second AI-taste session), Blight not on the same tile two rounds running, 2 points
   per conquest, mana produced 1 per 10, no points for unspent mana (`discussions/strategies.md`)
-- [ ] Reading rivals (`discussions/reading-rivals.md`), one at a time, asking the owner after each:
+- [x] Reading rivals (`discussions/reading-rivals.md`), one at a time, asking the owner after each:
   - [x] Rally, the attacker's Ward (+2 power for 3 mana)
   - [x] traits secret until the end, with a guess at each rival's (bots guess from the tiles a rival took in the opening)
-  - [ ] fog of war: rivals' far-off units and their mana hidden
+  - [x] fog of war: rivals' far-off units and their mana hidden, and each player's report shows only what they could see
 - [ ] Playtest steps for the new pages (`tools/Spellbound.Playtest`)
 
 ## M2: Playing with friends

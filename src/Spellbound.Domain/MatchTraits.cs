@@ -54,7 +54,7 @@ public sealed partial class Match
         }
 
         who.Trait = trait;
-        return new Report(true, [$"Seat {seat + 1} chooses {trait}: {GoalText(trait)}"]);
+        return new Report(true, [$"Seat {seat + 1} chooses {trait}: {GoalText(trait)}"], [new LineTag(seat, [])]); // secret
     }
 
     /// <summary>What a trait's goal pays, in words, with this match's numbers.</summary>
@@ -113,7 +113,7 @@ public sealed partial class Match
     }
 
     /// <summary>At the end: every seat's trait is revealed with its goal, and the goal's points are added.</summary>
-    private void ScoreTraits(List<string> lines)
+    private void ScoreTraits(ReportLines lines)
     {
         foreach (var seat in seats.Where(s => s.Trait is not null))
         {
@@ -160,7 +160,7 @@ public sealed partial class Match
     }
 
     /// <summary>At the end, after the traits are revealed: each seat's right guesses are worth points, up to the cap.</summary>
-    private void ScoreGuesses(List<string> lines)
+    private void ScoreGuesses(ReportLines lines)
     {
         foreach (var seat in seats.Where(s => s.Guesses.Count > 0))
         {
@@ -190,7 +190,7 @@ public sealed partial class Match
     };
 
     /// <summary>At the end of the opening: a seat that hasn't chosen gets the first trait of its offer.</summary>
-    private void SettleTraits(List<string> lines)
+    private void SettleTraits(ReportLines lines)
     {
         foreach (var seat in seats)
         {

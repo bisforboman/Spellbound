@@ -6,7 +6,7 @@ public sealed partial class Match
 {
     /// <summary>Reveals the tiles still dark, split evenly over the later Unveil rounds that are left (an odd one goes
     /// to the earlier round). Each revealed tile is guarded by monsters on a roll of the guard die.</summary>
-    private void LaterUnveil(IRandomSource random, List<string> lines)
+    private void LaterUnveil(IRandomSource random, ReportLines lines)
     {
         var left = Rules.LaterUnveilRounds.Count(r => r >= CurrentRound);
         if (!Rules.LaterUnveilRounds.Contains(CurrentRound) || left == 0)
@@ -112,7 +112,7 @@ public sealed partial class Match
     /// wiped out, and a tie at the top leaves the tile with the defender. A rival's last tile can't be taken: its
     /// defenders die and the winner's units go back where they came from (or dissolve if that tile was lost).
     /// </summary>
-    private void ResolveAttacks(List<Orders> attacks, List<string> lines)
+    private void ResolveAttacks(List<Orders> attacks, ReportLines lines)
     {
         // An attack goes with the units still there: a rival's Scorch may have burned some since the orders were given.
         attacks = [.. attacks.Select(o => o with
@@ -126,7 +126,7 @@ public sealed partial class Match
         })];
         foreach (var empty in attacks.Where(o => o.Attackers.Count == 0))
         {
-            lines.Add($"Seat {empty.Seat + 1}'s attack on {empty.Target} has no units left to send.");
+            lines.Add($"Seat {empty.Seat + 1}'s attack on {empty.Target} has no units left to send.", empty.Seat, empty.Target!.Value);
         }
 
         attacks = [.. attacks.Where(o => o.Attackers.Count > 0)];
@@ -141,7 +141,7 @@ public sealed partial class Match
         }
     }
 
-    private void Fight(Hex target, List<Orders> attacks, List<string> lines)
+    private void Fight(Hex target, List<Orders> attacks, ReportLines lines)
     {
         var owner = OwnerOf(target);
         var side = attacks.Select(o => (o.Seat, Army: o.Attackers.Aggregate(Army.None, (a, m) => a + m.Units))).ToList();
@@ -149,7 +149,7 @@ public sealed partial class Match
         var attack = side.Sum(s => s.Army.Power(Rules)) + rally;
         var defence = DefencePower(target);
         var who = string.Join(" and ", side.Select(s => $"Seat {s.Seat + 1} ({s.Army}{(rallies.ContainsKey(s.Seat) ? ", rallied" : "")})"));
-        lines.Add($"{who} attack {DescribePlain(target)}, {DefenceText(target)}: power {attack} against {defence}.");
+        lines.Add($"{who} attack {DescribePlain(target)}, {DefenceText(target)}: power {attack} against {defence}.", null, target);
 
         if (attack < defence)
         {
@@ -160,7 +160,7 @@ public sealed partial class Match
                 units[target] = Battle.TakeLosses(UnitsOn(target), Math.Max(0, attack - Ward(target) - Tower(target)), Rules);
             }
 
-            lines.Add($"The attack fails: the attackers are wiped out. The defenders keep {(owner is null ? "the tile" : UnitsOn(target).ToString())}.");
+            lines.Add($"The attack fails: the attackers are wiped out. The defenders keep {(owner is null ? "the tile" : UnitsOn(target).ToString())}.", null, target);
             return;
         }
 
@@ -168,7 +168,7 @@ public sealed partial class Match
         ClearDefenders(target, owner);
         if (attack == defence)
         {
-            lines.Add("A tie: both sides are wiped out.");
+            lines.Add("A tie: both sides are wiped out.", null, target);
             if (owner is null)
             {
                 // A tie against monsters gives the attacker the tile; among several, the one who sent the most.
@@ -179,7 +179,7 @@ public sealed partial class Match
                 }
                 else
                 {
-                    lines.Add("The attackers sent the same power, so nobody takes the tile.");
+                    lines.Add("The attackers sent the same power, so nobody takes the tile.", null, target);
                 }
             }
 
@@ -190,12 +190,12 @@ public sealed partial class Match
         var survivors = Battle.TakeLosses(side, Math.Max(0, defence - rally), Rules).Where(s => !s.Army.IsEmpty).ToList();
         if (survivors.Count > 1)
         {
-            lines.Add($"The attackers fight each other for it: {string.Join(", ", survivors.Select(s => $"Seat {s.Seat + 1} with {s.Army}"))}.");
+            lines.Add($"The attackers fight each other for it: {string.Join(", ", survivors.Select(s => $"Seat {s.Seat + 1} with {s.Army}"))}.", null, target);
             var ranked = survivors.OrderByDescending(s => s.Army.Power(Rules)).ToList();
             var (best, next) = (ranked[0].Army.Power(Rules), ranked[1].Army.Power(Rules));
             if (best == next)
             {
-                lines.Add("The strongest are evenly matched and wipe each other out, with the rest: nobody takes the tile.");
+                lines.Add("The strongest are evenly matched and wipe each other out, with the rest: nobody takes the tile.", null, target);
                 return;
             }
 
@@ -213,7 +213,7 @@ public sealed partial class Match
             }
 
             lines.Add($"It's Seat {defender + 1}'s last tile: the defenders die but the tile stays theirs. Seat {seat + 1}'s {army} "
-                      + (home is null ? "have nowhere to go back to and dissolve." : $"go back to {home}."));
+                      + (home is null ? "have nowhere to go back to and dissolve." : $"go back to {home}."), null, target);
             return;
         }
 
@@ -232,7 +232,7 @@ public sealed partial class Match
         }
     }
 
-    private void Conquer(Hex target, int seat, Army army, List<string> lines)
+    private void Conquer(Hex target, int seat, Army army, ReportLines lines)
     {
         if (OwnerOf(target) is { } loser)
         {
@@ -247,6 +247,6 @@ public sealed partial class Match
         seats[seat].Take(target);
         seats[seat].ConquestsThisRound++;
         units[target] = army;
-        lines.Add($"Seat {seat + 1} takes {target}" + (army.IsEmpty ? "." : $" with {army}."));
+        lines.Add($"Seat {seat + 1} takes {target}" + (army.IsEmpty ? "." : $" with {army}."), seat, target);
     }
 }

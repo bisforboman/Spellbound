@@ -130,5 +130,5 @@ The third AI-taste session comes after all three, with the target tastes weighte
    people, who can Ward on a hunch, so the next AI session judges it.*
 2. **Traits stay secret until the end** (built). Each player may guess each rival's trait once, alongside any round's orders.
    A correct guess is worth 1 point at the end; guesses are capped at 3 points.
-3. **Fog of war:** rivals' units are seen only on tiles next to your land. Rivals' mana is hidden until the end.
+3. **Fog of war** (built): rivals' units are seen only on tiles next to your land. Rivals' mana is hidden until the end.
 4. Build them in that order, one PR each, and ask the owner after each one whether to go on.

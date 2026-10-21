@@ -68,7 +68,7 @@ public sealed partial class Match
         _ => "nothing",
     };
 
-    private void ResolveBuilds(IEnumerable<Orders> orders, List<string> lines)
+    private void ResolveBuilds(IEnumerable<Orders> orders, ReportLines lines)
     {
         foreach (var order in orders.Where(o => o.Stance == Stance.Build && o.Target is not null))
         {
@@ -87,7 +87,7 @@ public sealed partial class Match
         seats[seat].Tiles.Any(h => UpgradeOn(h) == Upgrade.Sanctum && (h == target || h.IsNextTo(target))) ? Rules.SanctumDiscount : 0;
 
     /// <summary>At the end, every upgrade a seat holds is worth points.</summary>
-    private void ScoreUpgrades(List<string> lines)
+    private void ScoreUpgrades(ReportLines lines)
     {
         foreach (var seat in seats.Where(s => UpgradesOf(s) > 0))
         {

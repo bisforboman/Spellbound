@@ -53,7 +53,7 @@ weighed less (owner, 21 Oct 2026).
 
 The owner said the game is missing elements for reading rivals (21 Oct 2026). These are the ideas so far, with
 where each came from. The owner chose three of them to build, in this order: a Rally spell (the commitment; built), secret traits
-with guessing (built), and fog of war (`discussions/reading-rivals.md`).
+with guessing (built), and fog of war (built) (`discussions/reading-rivals.md`).
 
 | Idea | Who asked | Inspired by |
 |---|---|---|

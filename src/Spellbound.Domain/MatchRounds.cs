@@ -84,7 +84,7 @@ public sealed partial class Match
             }
         }
 
-        var lines = new List<string> { $"Round {CurrentRound}." };
+        var lines = new ReportLines($"Round {CurrentRound}.");
         var byseat = orders.OrderBy(o => o.Seat).ToList();
         foreach (var order in byseat.Where(o => o.Guess is not null))
         {
@@ -100,7 +100,7 @@ public sealed partial class Match
 
         foreach (var order in byseat.Where(o => o.Moves.Count > 0))
         {
-            lines.Add($"Seat {order.Seat + 1} moves {Plural(order.Moves.Count, "group")} of units.");
+            lines.Add($"Seat {order.Seat + 1} moves {Plural(order.Moves.Count, "group")} of units.", order.Seat, [.. order.Moves.Select(m => m.To)]);
         }
 
         ResolveAttunes(byseat.Where(o => o.Stance == Stance.Attune && o.Target is not null).ToList(), lines);
@@ -110,7 +110,7 @@ public sealed partial class Match
             var army = Army.Of(order.Kind, order.Count);
             seats[order.Seat].Mana -= Rules.CostOf(order.Kind) * order.Count;
             units[hex] = UnitsOn(hex) + army;
-            lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.");
+            lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.", order.Seat, hex);
         }
 
         ResolveBuilds(byseat, lines);
@@ -119,7 +119,7 @@ public sealed partial class Match
         BankPoints(lines);
         if (CurrentRound < Rules.Rounds)
         {
-            lines.AddRange(StartRound(random));
+            lines.Append(StartRound(random));
         }
         else
         {
@@ -132,35 +132,35 @@ public sealed partial class Match
         }
 
         ClearRoundSpells();
-        return new Report(true, lines);
+        return lines.ToReport();
     }
 
     /// <summary>Starts the next round: a later Unveil if it's one of their rounds, then every seat collects its
     /// land's mana and pays its Golems' upkeep. A Golem that can't be paid for dissolves, on the seat's tiles in board
     /// order.</summary>
-    private List<string> StartRound(IRandomSource random)
+    private ReportLines StartRound(IRandomSource random)
     {
         CurrentRound++;
-        var lines = new List<string> { $"Round {CurrentRound} of {Rules.Rounds} begins." };
+        var lines = new ReportLines($"Round {CurrentRound} of {Rules.Rounds} begins.");
         LaterUnveil(random, lines);
         foreach (var seat in seats)
         {
             var income = seat.Tiles.Sum(YieldFor);
             seat.Mana += income;
             seat.ProducedThisRound = income;
-            lines.Add($"Seat {seat.Index + 1} collects {income} mana.");
+            lines.Add($"Seat {seat.Index + 1} collects {income} mana.", seat.Index);
 
             var golems = seat.Tiles.Sum(h => UnitsOn(h).Golems);
             var unpaid = golems - (Rules.GolemUpkeep == 0 ? golems : Math.Min(golems, seat.Mana / Rules.GolemUpkeep));
             seat.Mana -= (golems - unpaid) * Rules.GolemUpkeep;
             if (golems - unpaid > 0)
             {
-                lines.Add($"Seat {seat.Index + 1} pays {(golems - unpaid) * Rules.GolemUpkeep} mana upkeep.");
+                lines.Add($"Seat {seat.Index + 1} pays {(golems - unpaid) * Rules.GolemUpkeep} mana upkeep.", seat.Index);
             }
 
             if (unpaid > 0)
             {
-                lines.Add($"Seat {seat.Index + 1} can't pay for {Plural(unpaid, "Golem")}: they dissolve.");
+                lines.Add($"Seat {seat.Index + 1} can't pay for {Plural(unpaid, "Golem")}: they dissolve.", seat.Index);
             }
 
             foreach (var hex in seat.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).Where(h => UnitsOn(h).Golems > 0))
@@ -176,7 +176,7 @@ public sealed partial class Match
 
     /// <summary>Each seat claims the free tile it attuned and pays for it, unless another seat attuned the same tile:
     /// then nobody gets it and nobody pays.</summary>
-    private void ResolveAttunes(List<Orders> attunes, List<string> lines)
+    private void ResolveAttunes(List<Orders> attunes, ReportLines lines)
     {
         var prices = attunes.ToDictionary(o => o.Seat, o => Rules.AttunePrice(seats[o.Seat].Tiles.Count));
         foreach (var claim in attunes.GroupBy(o => o.Target!.Value))
@@ -195,7 +195,7 @@ public sealed partial class Match
     }
 
     /// <summary>Banks the round's points: for land held and for mana produced (the remainder carries over).</summary>
-    private void BankPoints(List<string> lines)
+    private void BankPoints(ReportLines lines)
     {
         foreach (var seat in seats)
         {

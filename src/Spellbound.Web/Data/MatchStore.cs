@@ -9,6 +9,12 @@ public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match M
     /// <summary>What the last action said, or empty before the first.</summary>
     public IReadOnlyList<string> LastReport { get; init; } = [];
 
+    /// <summary>Whom each line of <see cref="LastReport"/> concerns, for the fog of war (none: everyone).</summary>
+    public IReadOnlyList<LineTag?>? LastReportTags { get; init; }
+
+    /// <summary>The lines of the last report that a seat may read (docs/game-design.md, Fog of war).</summary>
+    public IReadOnlyList<string> LastReportFor(int seat) => Match.ReportFor(new Report(true, LastReport, LastReportTags), seat).Lines;
+
     /// <summary>False once the match is over or an admin ended it.</summary>
     public bool IsRunning { get; init; } = true;
 
@@ -97,7 +103,7 @@ public sealed class MatchStore(HostDatabase database)
         var report = action(loaded.Match, StepRandom(loaded.Seed, loaded.Match.Match));
         if (report.Succeeded)
         {
-            await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), report.Lines)));
+            await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), report.Lines, report.Tags)));
             if (loaded.Match.Match.Phase == MatchPhase.Ended)
             {
                 await db.EndGameAsync(id, now);
@@ -165,6 +171,6 @@ public sealed class MatchStore(HostDatabase database)
         }
 
         var match = Match.Load(stored.Match, MatchJson.Deserialize<GameRules>(game.RulesJson));
-        return (stored.Seed, new LoadedMatch(id, owners, match) { LastReport = stored.LastReport ?? [] }, game.IsRunning);
+        return (stored.Seed, new LoadedMatch(id, owners, match) { LastReport = stored.LastReport ?? [], LastReportTags = stored.LastReportTags }, game.IsRunning);
     }
 }

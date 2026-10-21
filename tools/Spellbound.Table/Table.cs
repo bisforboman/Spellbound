@@ -10,11 +10,16 @@ namespace Spellbound.Table;
 /// resolves once every AI seat has acted; its randomness comes from the seed and the step, so a match replays.
 /// </summary>
 internal sealed record TableState(
-    int Seed, int Step, int[] AiSeats, MatchState Match, Dictionary<int, string> Pending, string[] LastReport)
+    int Seed, int Step, int[] AiSeats, MatchState Match, Dictionary<int, string> Pending, string[] LastReport,
+    LineTag?[]? LastReportTags = null)
 {
     public static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
 
     public Match Load() => Domain.Match.Load(Match, GameRules.Default);
+
+    /// <summary>The lines of the last step's report that a seat may read: the fog of war hides the rest.</summary>
+    public IReadOnlyList<string> LastReportFor(Match match, int seat) =>
+        match.ReportFor(new Report(true, LastReport, LastReportTags), seat).Lines;
 
     public IRandomSource StepRandom() => new SeededRandom(unchecked((Seed * 1000) + Step));
 }

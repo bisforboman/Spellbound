@@ -294,9 +294,9 @@ public static class Bot
         return order.OfType<Orders>();
     }
 
-    /// <summary>The Rally a rival's stack at <paramref name="hex"/> could bring, if its owner can afford one.</summary>
-    private static int Rally(Match match, Hex hex) =>
-        match.OwnerOf(hex) is { } owner && match.Seats[owner].Mana >= match.Rules.RallyCost ? match.Rules.RallyPower : 0;
+    /// <summary>The Rally a rival's stack at <paramref name="hex"/> could bring. Its owner's mana is hidden by the fog,
+    /// so a bot assumes it can afford one.</summary>
+    private static int Rally(Match match, Hex hex) => match.OwnerOf(hex) is not null ? match.Rules.RallyPower : 0;
 
     /// <summary>The stack a Warlord builds before it also attunes.</summary>
     private const int WarlordStack = 8;
