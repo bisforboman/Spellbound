@@ -15,9 +15,52 @@ player. Add each new session's reviews below and update the themes.
 | 21 Oct 2026 | after #85 (Attune 1 + 1 per tile to 3 then + 3; Blight limit; Rally; secret traits with guessing; fog of war) | **Target:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 2. **Outside:** Euro-gamer 3, Combo player 3 | [2026-10-21-ai-tastes-3/](2026-10-21-ai-tastes-3/) |
 | 21 Oct 2026 | after #87 (an undefended capture scores 1; the Table lists the traits) | **Target only:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 3 | [2026-10-21-ai-tastes-4/](2026-10-21-ai-tastes-4/) |
 | 21 Oct 2026 | after #89 (reinforcements with an attack) | **Target only:** Wargamer 4, Bluffer 3, 4X fan 3, Casual player 3 | [2026-10-21-ai-tastes-5/](2026-10-21-ai-tastes-5/) |
+| 21 Oct 2026 | after #91 (follow orders) | **Target only:** Wargamer 3, Bluffer 3, 4X fan 3, Casual player 2 | [2026-10-21-ai-tastes-6/](2026-10-21-ai-tastes-6/) |
 
 First session: every taste gave the game 3 out of 5: "quick, clean, readable, with real tension in the secret simultaneous orders",
 but each one found it missing the thing its favourite games are about.
+
+## Sixth session: follow orders
+
+The four target tastes, two matches. The average **fell to 2.75**: 3.0, 2.5, 3.0, 3.25, 3.25, now 2.75. The Wargamer
+went from 4 to 3 and the Casual player from 3 to 2.
+
+**Follow orders rarely happened.** The AI players committed 13 follow orders and **4 happened** (counted in the logs).
+- The 4X fan put one on "almost every round"; none fired, "because nobody else attuned after round 2"
+  ([review](2026-10-21-ai-tastes-6/match1-seat2.md)).
+- The Casual player: three, none fired. "Guessing stances felt like a coin flip, not a decision I could read from
+  the board". Not being able to follow Attune while attuning confused them ([review](2026-10-21-ai-tastes-6/match2-seat2.md)).
+- The Wargamer: one fired, "a cheap hedge but felt like bookkeeping, not strategy" ([review](2026-10-21-ai-tastes-6/match1-seat1.md)).
+- The Bluffer used them best: two of three fired (an Attune and a Build), both following the bot, which still
+  attunes and builds. "It shaped how I spent mana, but it never changed my main stance"
+  ([review](2026-10-21-ai-tastes-6/match2-seat1.md)).
+- **Why:** follow orders need rivals to choose varied stances. After round 2 the players mostly attack (Attune is
+  dear), so there is little to follow except the bot.
+
+**Most of the drop isn't follow orders.** The two ratings that fell name things that came before them:
+- **The Wargamer:**
+  - Golem upkeep starved its army;
+  - a rival hoarding 56 mana still won;
+  - it lost by one trait-guess point, "random for a war game".
+- **The Casual player:**
+  - two ties that won nobody the tile;
+  - a leader who snowballed (41 to 16);
+  - a 27-mana Scorch that erased a warded defence. A big hidden Scorch is now the second session running (the
+    Bluffer in session 4), and "`check` says you win, then a hidden summon or Scorch wins" the third.
+
+Follow orders' own share is one more fold on the form, which confused the Casual player.
+
+**Also:**
+- **No brake on a runaway leader** (Bluffer, Casual player). The two players behind can't team up.
+- **The bot's play doesn't match its trait** (a Golemwright with no Golems, a "spellcaster" that isn't a
+  Spellweaver), so reading a bot is meaningless (Bluffer, 4X fan). This is a bot artefact.
+- **Mana still piles up for a peaceful player:** the 4X fan had 56 unspent and wants "a mana sink with lasting
+  tiers".
+- **Talk, again** (Bluffer).
+
+**The noise floor:** six sessions of two or three matches each. The rating has moved within ±0.5 since the raid rule.
+Two matches can't resolve changes this small, and the asks that remain (talk, pacts, a brake on the leader, settling
+ties) are social. Only people can test those.
 
 ## Fifth session: reinforcements
 
