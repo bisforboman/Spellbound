@@ -13,7 +13,7 @@ player. Add each new session's reviews below and update the themes.
 | 21 Oct 2026 | after #75 (unspent mana scores, Blight 3, traits retuned) | Euro-gamer 3, Wargamer 3, 4X fan 3, Combo player 3, Bluffer 3, Casual player 3 | [2026-10-21-ai-tastes/](2026-10-21-ai-tastes/) |
 | 21 Oct 2026 | after #79 (upgrades; Attune 1 + 3 per tile; 2 points per conquest; mana 1 per 10; no points for unspent mana) | Euro-gamer 2, Wargamer 3, 4X fan 2, Combo player 3, Bluffer 3, Casual player 2 | [2026-10-21-ai-tastes-2/](2026-10-21-ai-tastes-2/) |
 
-Every taste gave the game 3 out of 5: "quick, clean, readable, with real tension in the secret simultaneous orders",
+First session: every taste gave the game 3 out of 5: "quick, clean, readable, with real tension in the secret simultaneous orders",
 but each one found it missing the thing its favourite games are about.
 
 ## Second session: after upgrades and the strategy retune
@@ -68,7 +68,7 @@ worth it? They didn't know what had changed.
 - traits kept secret until the end (Bluffer);
 - non-binding pacts (Bluffer).
 
-## What they liked (most tastes)
+## First session: what they liked (most tastes)
 
 - **Secret, simultaneous orders.** Everyone liked guessing which tile a rival would hit, and every taste had a
   "gotcha" moment. The Bluffer, Casual player and Wargamer called it the best part.
@@ -78,7 +78,7 @@ worth it? They didn't know what had changed.
   Scorch, then attack (Combo, Wargamer).
 - **Unveils as exploration** (4X, Casual).
 
-## What they missed
+## First session: what they missed
 
 Each theme lists who asked for it and the mechanics they borrowed.
 
@@ -139,7 +139,11 @@ tile in the same round, and a failed attack is a pure loss.
 
 | Addition | Serves | Size |
 |---|---|---|
-| Tile upgrades (a shrine or tower: yield, defence or cheaper spells) | Euro, 4X, Combo (and gives late mana a use) | medium: one new action or spell, three upgrade kinds |
+| ~~Tile upgrades (a shrine or tower: yield, defence or cheaper spells)~~ | Euro, 4X, Combo | done in #77 |
+| A gentler Attune curve, so a small realm can grow without fighting (second session) | Euro, 4X, Combo, Casual | small: one number or formula |
+| A Blight limit (not the same tile two rounds running) or a way to cleanse it (second session) | 4X, Euro, Casual | small: one rule |
+| Catch-up for the last player (second session) | Wargamer, 4X, Casual | small to medium |
+| Upgrades that combine (a Shrine next to a Sanctum, Towers side by side) (second session) | Combo, Euro | medium |
 | Public objectives or region goals (shared targets that pay a chunk) | 4X, Casual, Wargamer | medium: a small deck of goals, drawn from the seed |
 | Summon limits near enemies (armies placed before the fight) | Wargamer, Bluffer, and every earlier session's "defenders summon after the fact" | small: one rule |
 | Pacts and messages (non-binding) | Bluffer, Casual | larger: a page feature, matters only with people |
