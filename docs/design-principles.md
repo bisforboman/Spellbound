@@ -63,4 +63,4 @@ with guessing (built), and fog of war (built) (`discussions/reading-rivals.md`).
 | A third player can back a side in a battle | Bluffer, session 2 ([review](playtests/2026-10-21-ai-tastes-2/match3-seat1.md)) | Cosmic Encounter's allies |
 | A reaction that fires only if a tile is attacked (a trap) | Combo player (outside), sessions 1 and 2 ([s2](playtests/2026-10-21-ai-tastes-2/match2-seat2.md)) | Magic's instants |
 | Rivals' units seen only next to your own land (fog), so threats have to be guessed | Claude | Diplomacy's and wargames' fog of war |
-| Shared stances: a stance one player picks is open to all, and its picker gets a little more (`discussions/shared-stances.md`) | owner | Puerto Rico's role selection |
+| Shared stances: a stance one player picks is open to all, and its picker gets a little more (`discussions/shared-stances.md`; built as follow orders) | owner | Puerto Rico's role selection |

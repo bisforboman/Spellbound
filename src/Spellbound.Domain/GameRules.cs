@@ -107,6 +107,9 @@ public sealed record GameRules
 
     public int ReinforceCostOf(UnitKind kind, int count) => (CostOf(kind) + ReinforceSurcharge) * count;
 
+    /// <summary>What a follow order costs on top of its stance's price, if it happens (a rival chose the stance).</summary>
+    public int FollowSurcharge { get; init; } = 2;
+
     /// <summary>One point for every this many tiles held, counted every round and added up: holding 4 tiles for 3 rounds
     /// is 12 tile-rounds, 4 points. The remainder carries over.</summary>
     public int TilesPerPoint { get; init; } = 3;
