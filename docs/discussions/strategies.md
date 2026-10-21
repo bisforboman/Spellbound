@@ -188,3 +188,19 @@ they attack with mana to spare. Measured (`--plans`, 2,000 games):
 | Economist | 30% → 28% | 12% → 11% |
 
 Mana left at the end falls from about 14 to 12 a seat in the everyday simulator.
+
+## Follow orders (21 Oct 2026)
+
+Bots follow Attune when cheap land is next to them, else a Shrine from round 3, else Imps on a threatened tile, with
+mana to spare. Measured (`--plans`, 2,000 games):
+
+| Plan | 3 players: before → after | 5 players: before → after | Upgrades held (3 players) |
+|---|---|---|---|
+| Warlord | 45% → 45% | 33% → 33% | 0.8 → 1.3 |
+| Expander | 49% → 50% | 22% → 25% | 0.4 → 1.2 |
+| Balanced | 21% → 24% | – | 2.0 → 2.0 |
+| Builder | 25% → 23% | 11% → 9% | 2.5 → 2.4 |
+| Economist | 28% → 27% | 11% → 9% | 2.5 → 2.5 |
+
+The plans that didn't build now build a little, which was the aim. A surcharge of +1 instead of +2 changes nothing
+measurable, so +2 stays.

@@ -114,6 +114,12 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
   - **Build:** spend mana on an upgrade for one of your tiles (see *Upgrades*).
+- **Follow orders** (decided 21 Oct 2026; the owner's idea, from Puerto Rico's role selection,
+  `discussions/shared-stances.md`): alongside the stance, a player may commit one Attune, Summon or Build in another
+  stance. It **happens only if a rival chooses that stance this round**, for 2 mana more than usual. If nobody does,
+  nothing happens and it costs nothing. The player who chose the stance has the privilege: they pay the normal price,
+  and if they and a follower attune the same tile, **they get it** (between followers, or between choosers, nobody
+  does). A follow order shares the "alongside" slot with an attack's reinforcements: one or the other.
 - Alongside the stance, players can **cast one spell** (see *Spells*).
 - Alongside the stance, players can **move units** freely (see *Units*).
 - A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon): only the moves happen. A player is never forced to spend.

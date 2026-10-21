@@ -72,7 +72,7 @@ measurement would make it hard to tell which helped.
 - Measure reinforcements first, in the fifth AI-taste session.
 - Build follow orders after that, knowing what reinforcements did.
 
-## Follow orders in detail (a proposal, not yet built)
+## Follow orders in detail (built 21 Oct 2026, the owner's choice after the fifth AI-taste session)
 
 **The rule.** Alongside your stance you may commit one **follow order**:
 - It is an Attune, a Summon or a Build, in a stance other than your own.

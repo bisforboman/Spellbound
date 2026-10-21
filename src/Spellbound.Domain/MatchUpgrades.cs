@@ -68,14 +68,15 @@ public sealed partial class Match
         _ => "nothing",
     };
 
-    private void ResolveBuilds(IEnumerable<Orders> orders, ReportLines lines)
+    private void ResolveBuilds(IEnumerable<Orders> orders, HashSet<Orders> follows, ReportLines lines)
     {
         foreach (var order in orders.Where(o => o.Stance == Stance.Build && o.Target is not null))
         {
             var hex = order.Target!.Value;
-            seats[order.Seat].Mana -= Rules.UpgradeCost;
+            var followed = follows.Contains(order);
+            seats[order.Seat].Mana -= Rules.UpgradeCost + (followed ? Rules.FollowSurcharge : 0);
             upgrades[hex] = order.Upgrade;
-            lines.Add($"Seat {order.Seat + 1} builds a {order.Upgrade} on {hex}.");
+            lines.Add($"Seat {order.Seat + 1} {(followed ? "follows Build: builds" : "builds")} a {order.Upgrade} on {hex}.");
         }
     }
 

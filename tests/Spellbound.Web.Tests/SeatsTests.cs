@@ -9,6 +9,8 @@ public class SeatsTests
     [Theory]
     [InlineData("Seat 1 wins the Steady tile at (0, 1) (yields 2) for 2 mana.", "You win the Steady tile at (0, 1) (yields 2) for 2 mana.")]
     [InlineData("Seat 1 collects 4 mana.", "You collect 4 mana.")]
+    [InlineData("Seat 1 reinforces (0, 1) with 3 Imps.", "You reinforce (0, 1) with 3 Imps.")]
+    [InlineData("Seat 1 follows Summon: summons 2 Imps at (0, 1).", "You follow Summon: summons 2 Imps at (0, 1).")]
     [InlineData("Seat 1 attunes the Wild tile at (1, 0) (yields 3) for 4 mana.", "You attune the Wild tile at (1, 0) (yields 3) for 4 mana.")]
     [InlineData("Seat 2 summons 3 Imps at (1, 1).", "Bot 2 summons 3 Imps at (1, 1).")]
     [InlineData("Seat 1 and Seat 3 both attune the tile: nobody gets it.", "You and Bot 3 both attune the tile: nobody gets it.")]

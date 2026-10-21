@@ -37,13 +37,13 @@ public sealed partial class Match
         var lines = new List<string>();
         var positions = new Dictionary<Hex, Army>();
         if ((MovesProblem(orders, lines, positions) ?? SpellProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)
-             ?? ReinforceProblem(orders, lines) ?? GuessProblem(orders, lines)) is { } problem)
+             ?? FollowProblem(orders, lines) ?? ReinforceProblem(orders, lines) ?? GuessProblem(orders, lines)) is { } problem)
         {
             return Report.Fail(problem);
         }
 
         var mana = seats[orders.Seat].Mana;
-        var extras = orders.Cast is not null || orders.Reinforce is not null;
+        var extras = orders.Cast is not null || orders.Reinforce is not null || orders.Follow is not null;
         if (extras && CostOf(orders) > mana)
         {
             return Report.Fail($"Your orders cost {CostOf(orders)} mana together; you have {mana}.");
@@ -104,14 +104,19 @@ public sealed partial class Match
             lines.Add($"Seat {order.Seat + 1} moves {Plural(order.Moves.Count, "group")} of units.", order.Seat, [.. order.Moves.Select(m => m.To)]);
         }
 
-        ResolveAttunes(byseat.Where(o => o.Stance == Stance.Attune && o.Target is not null).ToList(), lines);
-        foreach (var order in byseat.Where(o => o.Stance == Stance.Summon && o.Target is not null && o.Count > 0))
+        // Follow orders happen only where a rival chose the stance; they pay the surcharge on top.
+        var follows = Follows(byseat, lines);
+        ResolveAttunes([.. byseat.Where(o => o.Stance == Stance.Attune && o.Target is not null)
+            .Concat(follows.Where(f => f.Stance == Stance.Attune))], follows, lines);
+        foreach (var order in byseat.Where(o => o.Stance == Stance.Summon && o.Target is not null && o.Count > 0)
+                     .Concat(follows.Where(f => f.Stance == Stance.Summon && f.Count > 0)))
         {
             var hex = order.Target!.Value;
             var army = Army.Of(order.Kind, order.Count);
-            seats[order.Seat].Mana -= Rules.CostOf(order.Kind) * order.Count;
+            var followed = follows.Contains(order);
+            seats[order.Seat].Mana -= Rules.CostOf(order.Kind) * order.Count + (followed ? Rules.FollowSurcharge : 0);
             units[hex] = UnitsOn(hex) + army;
-            lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.", order.Seat, hex);
+            lines.Add($"Seat {order.Seat + 1} {(followed ? "follows Summon: summons" : "summons")} {army} at {hex}.", order.Seat, hex);
         }
 
         foreach (var order in byseat.Where(o => o.Reinforce is not null))
@@ -123,7 +128,7 @@ public sealed partial class Match
             lines.Add($"Seat {order.Seat + 1} reinforces {r.Tile} with {army}.", order.Seat, r.Tile);
         }
 
-        ResolveBuilds(byseat, lines);
+        ResolveBuilds([.. byseat, .. follows], follows, lines);
         ResolveCasts(byseat, lines);
         ResolveAttacks(byseat.Where(o => o.Stance == Stance.Attack && o.Target is not null).ToList(), lines);
         BankPoints(lines);
@@ -186,21 +191,53 @@ public sealed partial class Match
 
     /// <summary>Each seat claims the free tile it attuned and pays for it, unless another seat attuned the same tile:
     /// then nobody gets it and nobody pays.</summary>
-    private void ResolveAttunes(List<Orders> attunes, ReportLines lines)
+    /// <summary>The follow orders that happen this round (a rival chose the stance, aimed at something). A follow order
+    /// that doesn't happen is reported to its seat alone.</summary>
+    private HashSet<Orders> Follows(List<Orders> byseat, ReportLines lines)
     {
-        var prices = attunes.ToDictionary(o => o.Seat, o => Rules.AttunePrice(seats[o.Seat].Tiles.Count));
+        var happen = new HashSet<Orders>(ReferenceEqualityComparer.Instance);
+        foreach (var order in byseat.Where(o => o.Follow is { Target: not null }))
+        {
+            var follow = order.Follow! with { Seat = order.Seat };
+            if (byseat.Any(o => o.Seat != order.Seat && o.Stance == follow.Stance && o.Target is not null))
+            {
+                happen.Add(follow);
+            }
+            else
+            {
+                lines.Add($"Nobody else chose {follow.Stance}: Seat {order.Seat + 1}'s follow order does nothing.", order.Seat);
+            }
+        }
+
+        return happen;
+    }
+
+    /// <summary>Attunes, chosen and followed. Two or more on one tile clash and nobody gets it, unless exactly one of
+    /// them chose Attune as their stance: the one who chose it wins against followers.</summary>
+    private void ResolveAttunes(List<Orders> attunes, HashSet<Orders> follows, ReportLines lines)
+    {
+        var prices = attunes.ToDictionary(o => o, o => Rules.AttunePrice(seats[o.Seat].Tiles.Count) + (follows.Contains(o) ? Rules.FollowSurcharge : 0),
+            ReferenceEqualityComparer.Instance);
         foreach (var claim in attunes.GroupBy(o => o.Target!.Value))
         {
-            if (claim.Count() > 1)
+            var choosers = claim.Where(o => !follows.Contains(o)).ToList();
+            var winner = claim.Count() == 1 ? claim.Single() : choosers is [var only] ? only : null;
+            if (winner is null)
             {
                 lines.Add($"{string.Join(" and ", claim.Select(o => $"Seat {o.Seat + 1}"))} {(claim.Count() == 2 ? "both" : "all")} attune {Describe(claim.Key)}: nobody gets it.");
                 continue;
             }
 
-            var seat = seats[claim.Single().Seat];
-            seat.Mana -= prices[seat.Index];
+            if (claim.Count() > 1)
+            {
+                lines.Add($"{string.Join(" and ", claim.Where(o => o != winner).Select(o => $"Seat {o.Seat + 1}"))} followed Seat {winner.Seat + 1} "
+                          + $"to {Describe(claim.Key)}, but Seat {winner.Seat + 1} chose Attune and gets it.");
+            }
+
+            var seat = seats[winner.Seat];
+            seat.Mana -= prices[winner];
             seat.Take(claim.Key);
-            lines.Add($"Seat {seat.Index + 1} attunes {Describe(claim.Key)} for {prices[seat.Index]} mana.");
+            lines.Add($"Seat {seat.Index + 1} {(follows.Contains(winner) ? "follows Attune: attunes" : "attunes")} {Describe(claim.Key)} for {prices[winner]} mana.");
         }
     }
 
@@ -365,6 +402,42 @@ public sealed partial class Match
 
         lines.Add($"Reinforce {r.Tile} with {Army.Of(r.Kind, r.Count)} for {cost} mana ({Rules.ReinforceSurcharge} more per unit than a "
                   + "summon): they guard it this round and can't join the attack.");
+        return null;
+    }
+
+    /// <summary>Checks a follow order: an Attune, Summon or Build in a stance other than the seat's own, checked as if
+    /// it will happen. It shares the "alongside" slot with reinforcements, so not both.</summary>
+    private string? FollowProblem(Orders orders, List<string> lines)
+    {
+        if (orders.Follow is not { } follow)
+        {
+            return null;
+        }
+
+        if (follow.Stance is not (Stance.Attune or Stance.Summon or Stance.Build) || follow.Target is null)
+        {
+            return "A follow order is an Attune, a Summon or a Build, aimed at a tile.";
+        }
+
+        if (follow.Stance == orders.Stance && orders.Target is not null)
+        {
+            return $"You already chose {follow.Stance}: a follow order is for a stance a rival might choose.";
+        }
+
+        if (orders.Reinforce is not null)
+        {
+            return "One thing alongside your stance: reinforcements or a follow order, not both.";
+        }
+
+        var own = new List<string>();
+        if (StanceProblem(follow with { Seat = orders.Seat, Moves = [] }, own, []) is { } problem)
+        {
+            return "Follow order: " + problem;
+        }
+
+        lines.Add($"Follow {follow.Stance}, if a rival chooses it this round ({Rules.FollowSurcharge} mana more): "
+                  + string.Join(" ", own.Select(l => System.Text.RegularExpressions.Regex.Replace(l, @", leaving \d+", "")))
+                  + " If nobody does, nothing happens and it costs nothing.");
         return null;
     }
 

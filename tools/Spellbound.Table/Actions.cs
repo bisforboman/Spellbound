@@ -79,6 +79,11 @@ internal abstract record Action
             _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build or hold."),
         };
 
+        if (Get(root, "follow") is { ValueKind: JsonValueKind.Object } follow)
+        {
+            orders = orders.Following(OrdersOf(follow, Need(follow, "stance").GetString()!, seat));
+        }
+
         if (Get(root, "reinforce") is { ValueKind: JsonValueKind.Object } reinforce)
         {
             orders = orders.Reinforcing(HexOf(Need(reinforce, "target")),
