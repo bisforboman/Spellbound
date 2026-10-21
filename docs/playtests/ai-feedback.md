@@ -11,11 +11,64 @@ player. Add each new session's reviews below and update the themes.
 | Date | Version | Tastes (rating out of 5) | Reviews |
 |---|---|---|---|
 | 21 Oct 2026 | after #75 (unspent mana scores, Blight 3, traits retuned) | Euro-gamer 3, Wargamer 3, 4X fan 3, Combo player 3, Bluffer 3, Casual player 3 | [2026-10-21-ai-tastes/](2026-10-21-ai-tastes/) |
+| 21 Oct 2026 | after #79 (upgrades; Attune 1 + 3 per tile; 2 points per conquest; mana 1 per 10; no points for unspent mana) | Euro-gamer 2, Wargamer 3, 4X fan 2, Combo player 3, Bluffer 3, Casual player 2 | [2026-10-21-ai-tastes-2/](2026-10-21-ai-tastes-2/) |
 
-Every taste gave the game 3 out of 5: "quick, clean, readable, with real tension in the secret simultaneous orders",
+First session: every taste gave the game 3 out of 5: "quick, clean, readable, with real tension in the secret simultaneous orders",
 but each one found it missing the thing its favourite games are about.
 
-## What they liked (most tastes)
+## Second session: after upgrades and the strategy retune
+
+The average rating fell from 3.0 to 2.5. The reviewers were asked one new question: did building and fighting feel
+worth it? They didn't know what had changed.
+
+**Fighting now pays, too much.**
+- In match 1 the Wargamer summoned 4 Golems in round 1, made six attacks and took a tile with every one. It won 46
+  to 21 to 14 and still ended with 61 mana unspent.
+- Nearly every attack hit an empty tile. "It was a march rather than a war" (Wargamer). "The most efficient action
+  was to take someone else's engine" (Euro).
+- Every taste that fought said each capture (2 points, plus the tile and its upgrade) was its best source of points.
+
+**Attune at 1 + 3 per tile closed peaceful growth (4 of 6: Euro, 4X, Combo, Casual).**
+- "Attune cost 10, then 13, so I could only grow once" (Casual).
+- "Seat 1 never attuned once. Free tiles sat unclaimed all game" (4X).
+- "Growth came only from fighting" (Combo).
+- The bot measurement picked 1 + 3 because it evened out the strategy bots. But the bots attune only in round 1 too,
+  so the measurement couldn't show what the price does to a player who wants to grow.
+
+**Blight on the same tile, round after round (victims in 3 of 3 matches).**
+- The 4X fan's Shrine tile, the Euro-gamer's Wild tile and the Casual player's best tile were each blighted in three
+  rounds. "I had no way to stop it" (Casual).
+- In match 3 the Blights also cost the Casual player's Golems their upkeep.
+- The Bluffer, who cast them, called it "a win from hexing rather than fighting".
+
+**No catch-up; the leader runs away (Wargamer, 4X, Bluffer, Casual).**
+- Losers fall further behind: less land, less income, Blighted, Scorched.
+- In match 3 a passive bot won by sitting on 64 mana and building three upgrades, while the two AI seats fought
+  each other. "Too often a player who ignores everyone still wins" (Bluffer).
+
+**Upgrades: worth their mana as points, not as an engine.**
+- Every taste called them "a safe 1 point" for 5 mana. Most were bought late, to spend spare mana.
+- The Combo player's round-1 Sanctum powered its whole Hexer plan, which it liked best.
+- The asks of last session (something that compounds, a long arc from small to mighty) are only half met. Upgrades
+  don't combine, and they pass to whoever takes the tile.
+
+**Also:**
+- Scorch can burn a whole army before it attacks ("has no units left to send"). The caster loved it; the victims
+  didn't (4X, Casual).
+- Trait goals fill early. Hexer was full by round 3 or 5 (Combo, Bluffer).
+- Golem upkeep punishes Golemwright (Casual).
+- Summoning and attacking in one round was asked for again (Wargamer, Bluffer).
+
+**Wishes, new this session:**
+- a gentler or flat Attune (4X, Euro, Casual);
+- a limit on Blighting the same tile or player again, or a way to cleanse it (4X, Casual);
+- a catch-up for the last player (Wargamer, Casual, 4X);
+- upgrades that combine with each other (Combo, Euro);
+- a reward for the loser of a battle (Wargamer);
+- traits kept secret until the end (Bluffer);
+- non-binding pacts (Bluffer).
+
+## First session: what they liked (most tastes)
 
 - **Secret, simultaneous orders.** Everyone liked guessing which tile a rival would hit, and every taste had a
   "gotcha" moment. The Bluffer, Casual player and Wargamer called it the best part.
@@ -25,7 +78,7 @@ but each one found it missing the thing its favourite games are about.
   Scorch, then attack (Combo, Wargamer).
 - **Unveils as exploration** (4X, Casual).
 
-## What they missed
+## First session: what they missed
 
 Each theme lists who asked for it and the mechanics they borrowed.
 
@@ -86,7 +139,11 @@ tile in the same round, and a failed attack is a pure loss.
 
 | Addition | Serves | Size |
 |---|---|---|
-| Tile upgrades (a shrine or tower: yield, defence or cheaper spells) | Euro, 4X, Combo (and gives late mana a use) | medium: one new action or spell, three upgrade kinds |
+| ~~Tile upgrades (a shrine or tower: yield, defence or cheaper spells)~~ | Euro, 4X, Combo | done in #77 |
+| A gentler Attune curve, so a small realm can grow without fighting (second session) | Euro, 4X, Combo, Casual | small: one number or formula |
+| A Blight limit (not the same tile two rounds running) or a way to cleanse it (second session) | 4X, Euro, Casual | small: one rule |
+| Catch-up for the last player (second session) | Wargamer, 4X, Casual | small to medium |
+| Upgrades that combine (a Shrine next to a Sanctum, Towers side by side) (second session) | Combo, Euro | medium |
 | Public objectives or region goals (shared targets that pay a chunk) | 4X, Casual, Wargamer | medium: a small deck of goals, drawn from the seed |
 | Summon limits near enemies (armies placed before the fight) | Wargamer, Bluffer, and every earlier session's "defenders summon after the fact" | small: one rule |
 | Pacts and messages (non-binding) | Bluffer, Casual | larger: a page feature, matters only with people |
