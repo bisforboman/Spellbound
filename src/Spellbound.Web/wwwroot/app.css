@@ -1031,3 +1031,39 @@ tr.you td {
 .report-toggle {
     margin-top: 0.25rem;
 }
+
+/* A long page in folds (the privacy notice): native <details>, so it works without a live connection */
+details.fold {
+    border-bottom: 1px dashed var(--paper-edge);
+}
+
+    details.fold > summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 44px;
+        padding: 0.5rem 0;
+        cursor: pointer;
+        list-style: none;
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        color: var(--ink);
+    }
+
+        details.fold > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details.fold > summary::after {
+            content: "▸";
+            color: var(--ink-soft);
+            font-size: 0.9rem;
+        }
+
+    details.fold[open] > summary::after {
+        content: "▾";
+    }
+
+    details.fold > :not(summary) {
+        margin-bottom: 0.75rem;
+    }

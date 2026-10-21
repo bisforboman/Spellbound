@@ -429,7 +429,13 @@ namespace Spellbound.Playtest
                 await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                 await Expect(page, "up for auction");
             });
-            await StepAsync(morgana, "privacy", page => GoAsync(page, "/privacy", interactive: false));
+            await StepAsync(morgana, "privacy", async page =>
+            {
+                // The notice is in folds: one tap opens a section.
+                await GoAsync(page, "/privacy", interactive: false);
+                await page.ClickAsync("summary:has-text('Cookies')");
+                await Expect(page, "No ads, no analytics");
+            });
             await StepAsync(morgana, "not-an-admin", async page =>
             {
                 await page.GotoAsync($"{options.Url}/admin");
