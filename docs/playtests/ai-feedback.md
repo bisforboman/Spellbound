@@ -19,7 +19,7 @@ but each one found it missing the thing its favourite games are about.
 
 ## Third session: after the reading-rivals elements
 
-The first session weighted by the owner's identity (`../design-principles.md`). The target tastes played matches 1
+This is the first session weighted by the owner's identity (`../design-principles.md`). The target tastes played matches 1
 and 2; the outside tastes played match 3. The target tastes average 3.0 (the second session: 2.5 across all six).
 The new question was "did reading your rivals matter?"
 
