@@ -24,47 +24,27 @@ public sealed class MatchPlay(MatchStore store, TimeProvider time)
     /// <summary>The player drafts one of the traits they were offered. A pick doesn't wait for anyone, and it is the
     /// player's alone: it isn't the match's last report.</summary>
     public async Task<Report> TraitAsync(long id, string ownerId, Trait trait) =>
-        await store.ApplyAsync(id, time.GetUtcNow(), (loaded, _) => loaded.SeatOf(ownerId) is { } seat
+        await store.ApplyAsync(id, time.GetUtcNow(), (loaded, _) => loaded.SeatOf(ownerId) is { } seat && !loaded.Away.Contains(seat)
             ? loaded.Match.ChooseTrait(seat, trait)
             : Report.Fail("You don't sit in this match."), isStep: false) ?? Report.Fail("There is no such match.");
 
     /// <summary>The player commits a bid (no tile: a pass) for the current opening auction. When every person in the
-    /// match has, the auction settles with the bots' bids; bots that haven't drafted a trait draft one first, in
-    /// secret.</summary>
+    /// match has, the auction settles with the bots' bids (<see cref="MatchSteps"/>).</summary>
     public Task<Report> BidAsync(long id, string ownerId, Hex? tile, int amount) =>
-        CommitAsync(id, ownerId, new Bid(0, tile, tile is null ? 0 : amount),
-            (match, seat, bid) => match.CheckBid(bid with { Seat = seat }),
-            (match, mine, random) =>
-            {
-                foreach (var bot in match.Seats.Where(s => !mine.ContainsKey(s.Index) && s.Trait is null))
-                {
-                    if (Bot.ChooseTrait(match, bot.Index, random) is { } trait)
-                    {
-                        match.ChooseTrait(bot.Index, trait);
-                    }
-                }
-
-                return match.Auction(
-                    [.. match.Seats.Select(s => mine.TryGetValue(s.Index, out var bid) ? bid with { Seat = s.Index } : Bot.ChooseBid(match, s.Index, random))],
-                    random);
-            });
+        CommitAsync(id, ownerId, new Bid(0, tile, tile is null ? 0 : amount), (match, seat, bid) => match.CheckBid(bid with { Seat = seat }));
 
     /// <summary>The player commits their orders for the round. When every person in the match has, the round resolves
     /// with the bots' orders.</summary>
     public Task<Report> OrdersAsync(long id, string ownerId, Orders orders) =>
-        CommitAsync(id, ownerId, orders,
-            (match, seat, mine) => match.Check(mine with { Seat = seat }),
-            (match, mine, random) => match.Resolve(
-                [.. match.Seats.Select(s => mine.TryGetValue(s.Index, out var o) ? o with { Seat = s.Index } : Bot.ChooseOrders(match, s.Index, random))],
-                random));
+        CommitAsync(id, ownerId, orders, (match, seat, mine) => match.Check(mine with { Seat = seat }));
 
     /// <summary>The player takes back what they committed this step, if it hasn't resolved yet.</summary>
     public Task<bool> WithdrawAsync(long id, string ownerId) => store.WithdrawAsync(id, ownerId);
 
-    private async Task<Report> CommitAsync<T>(long id, string ownerId, T mine, Func<Match, int, T, Report> check,
-        Func<Match, IReadOnlyDictionary<int, T>, IRandomSource, Report> resolve) =>
-        await store.CommitAsync(id, ownerId, time.GetUtcNow(), MatchJson.Serialize(mine),
-            (loaded, seat) => check(loaded.Match, seat, mine),
-            (loaded, all, random) => resolve(loaded.Match, all.ToDictionary(p => p.Key, p => MatchJson.Deserialize<T>(p.Value)), random))
+    /// <summary>The match's host hands another person's seat to a bot.</summary>
+    public Task<Report> HandToBotAsync(long id, string ownerId, int seat) => store.HandToBotAsync(id, ownerId, seat, time.GetUtcNow());
+
+    private async Task<Report> CommitAsync<T>(long id, string ownerId, T mine, Func<Match, int, T, Report> check) =>
+        await store.CommitAsync(id, ownerId, time.GetUtcNow(), MatchJson.Serialize(mine), (loaded, seat) => check(loaded.Match, seat, mine))
         is { } done ? done.Report : Report.Fail("There is no such match.");
 }

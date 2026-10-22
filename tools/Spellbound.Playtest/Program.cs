@@ -457,6 +457,7 @@ namespace Spellbound.Playtest
                 await Expect(page, "Over after 8 rounds");
             });
             var invite = string.Empty;
+            var friendMatch = string.Empty;
             await StepAsync(merlin, "invite", async page =>
             {
                 await GoAsync(page, "/match/new");
@@ -481,6 +482,7 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Start the match')");
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
                 await Expect(page, "Choose your trait");
+                friendMatch = new Uri(page.Url).AbsolutePath;
             });
             await StepAsync(merlin, "commit-and-wait", async page =>
             {
@@ -502,6 +504,29 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await page.ClickAsync("button:has-text('Pass')");
                 await Expect(page, "Opening auction 2 of 3");
+            });
+            await StepAsync(merlin, "host", async page =>
+            {
+                await GoAsync(page, friendMatch);
+                await Expect(page, "Due in 23 h");
+                await page.ClickAsync("button:has-text('Seat 2'):has-text('hand to a bot')");
+                await Expect(page, "can't take it back");
+            });
+            await StepAsync(merlin, "hand-off", async page =>
+            {
+                await page.ClickAsync("button:has-text('Hand seat 2 to a bot')");
+                await Expect(page, "A bot plays seat 2 from now on");
+                await page.ClickAsync("button:has-text('Pass')");
+                await Expect(page, "Opening auction 3 of 3"); // nobody left to wait for
+            });
+            await StepAsync(morgana, "watching", async page =>
+            {
+                await GoAsync(page, friendMatch);
+                await Expect(page, "A bot plays your seat now");
+                if (await page.Locator("button:has-text('Pass')").CountAsync() > 0)
+                {
+                    throw new PlaytestException("A player whose seat a bot plays can still give orders.");
+                }
             });
             await StepAsync(morgana, "big-map", async page =>
             {

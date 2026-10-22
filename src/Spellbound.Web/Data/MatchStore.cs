@@ -21,8 +21,22 @@ public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match M
     /// <summary>The seats whose person has committed this step and is waiting for the others (never what they chose).</summary>
     public IReadOnlySet<int> Committed { get; init; } = new HashSet<int>();
 
-    /// <summary>The seats played by people (the rest are bots).</summary>
-    public IEnumerable<int> People => Owners.Select((owner, seat) => (owner, seat)).Where(s => s.owner is not null).Select(s => s.seat);
+    /// <summary>The seats whose person missed two deadlines in a row, or the host handed to a bot: a bot plays them
+    /// now, and the person can still watch.</summary>
+    public IReadOnlySet<int> Away { get; init; } = new HashSet<int>();
+
+    /// <summary>How many deadlines in a row each person's seat has missed (seats with none are left out).</summary>
+    public IReadOnlyDictionary<int, int> Missed { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>When the current step resolves without whoever hasn't committed; null when nobody waits on anyone.</summary>
+    public DateTimeOffset? DueAt { get; init; }
+
+    /// <summary>The account that opened the match's invite and may hand a seat to a bot; null for a match against bots.</summary>
+    public string? HostId { get; init; }
+
+    /// <summary>The seats played by people (the rest are bots, including the seats of people who are away).</summary>
+    public IEnumerable<int> People => Owners.Select((owner, seat) => (owner, seat))
+        .Where(s => s.owner is not null && !Away.Contains(s.seat)).Select(s => s.seat);
 
     /// <summary>The seat this account sits in, or null.</summary>
     public int? SeatOf(string ownerId)
@@ -53,9 +67,15 @@ public sealed class MatchStore(HostDatabase database)
     /// <summary>The host's mode for a match.</summary>
     public const string Mode = "match";
 
-    /// <summary>The host keeps a clock for every game; a match has no deadline yet (M1 plays its rounds at once), so
-    /// this is only how long it may stay open.</summary>
+    /// <summary>The host keeps a clock for every game. A match's own deadlines are per step (<see cref="StepDeadline"/>),
+    /// so this is only how long it may stay open: 11 steps of a day each fit well inside it.</summary>
     public static readonly TimeSpan OpenFor = TimeSpan.FromDays(28);
+
+    /// <summary>How long people have to commit to a step before it resolves without them.</summary>
+    public static readonly TimeSpan StepDeadline = TimeSpan.FromHours(24);
+
+    /// <summary>Deadlines missed in a row after which a bot takes the seat.</summary>
+    public const int MissesBeforeBot = 2;
 
     /// <summary>Starts a match with a seat for each owner (null for a bot) and returns its id.</summary>
     public async Task<long> CreateAsync(IReadOnlyList<string?> owners, GameRules rules, DateTimeOffset now, int? seed = null)
@@ -85,6 +105,7 @@ public sealed class MatchStore(HostDatabase database)
             }
         }
 
+        await SetDeadlineAsync(db, game.Id, now);
         return game.Id;
     }
 
@@ -136,15 +157,13 @@ public sealed class MatchStore(HostDatabase database)
     /// <summary>
     /// A person commits their part of the current step (a bid, or a round's orders) and waits for the others. With the
     /// match locked: <paramref name="check"/> says whether the commitment is valid, and if so it is stored on the
-    /// person's seat. When every person has committed, <paramref name="resolve"/> gets all their commitments (by seat)
-    /// and the step's randomness, and the step resolves and is saved as the last report. Returns what happened and
-    /// whether the step resolved; null if there is no such match.
+    /// person's seat. When every person has committed, the step resolves (<see cref="MatchSteps"/>) and is saved as the
+    /// last report. Returns what happened and whether the step resolved; null if there is no such match.
     /// </summary>
     public async Task<(Report Report, bool Resolved)?> CommitAsync(long id, string ownerId, DateTimeOffset now, string pending,
-        Func<LoadedMatch, int, Report> check, Func<LoadedMatch, IReadOnlyDictionary<int, string>, IRandomSource, Report> resolve)
+        Func<LoadedMatch, int, Report> check)
     {
         ArgumentNullException.ThrowIfNull(check);
-        ArgumentNullException.ThrowIfNull(resolve);
         await using var db = await database.BeginAsync();
         if (await LoadAsync(db, id, forUpdate: true) is not { } loaded)
         {
@@ -161,20 +180,20 @@ public sealed class MatchStore(HostDatabase database)
             return (Report.Fail("You don't sit in this match."), false);
         }
 
+        if (loaded.Match.Away.Contains(seat))
+        {
+            return (Report.Fail("A bot plays your seat now."), false);
+        }
+
         var checkedReport = check(loaded.Match, seat);
         if (!checkedReport.Succeeded)
         {
             return (checkedReport, false);
         }
 
-        var step = StepKey(loaded.Match.Match);
         await db.ExecuteAsync("UPDATE match_players SET pending = $3::jsonb, pending_for = $4 WHERE game_id = $1 AND seat = $2",
-            id, seat, pending, step);
-        var all = (await db.QueryAsync(
-                "SELECT seat, pending::text FROM match_players WHERE game_id = $1 AND pending_for = $2",
-                r => (Seat: r.GetInt32(0), Pending: r.GetString(1)), id, step))
-            .ToDictionary(p => p.Seat, p => p.Pending);
-        var waiting = loaded.Match.People.Where(s => !all.ContainsKey(s)).ToList();
+            id, seat, pending, StepKey(loaded.Match.Match));
+        var waiting = loaded.Match.People.Where(s => s != seat && !loaded.Match.Committed.Contains(s)).ToList();
         if (waiting.Count > 0)
         {
             await db.CommitAsync();
@@ -182,21 +201,168 @@ public sealed class MatchStore(HostDatabase database)
                 $"Committed. Waiting for {string.Join(" and ", waiting.Select(s => $"Seat {s + 1}"))}; you can take it back until then."]), false);
         }
 
-        var report = resolve(loaded.Match, all, StepRandom(loaded.Seed, loaded.Match.Match));
+        var report = await ResolveAsync(db, id, loaded.Seed, loaded.Match, new HashSet<int>(), now);
         if (!report.Succeeded)
         {
             return (report, false); // nothing is saved
         }
 
-        await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), report.Lines, report.Tags)));
-        await db.ExecuteAsync("UPDATE match_players SET pending = NULL, pending_for = NULL WHERE game_id = $1", id);
-        if (loaded.Match.Match.Phase == MatchPhase.Ended)
+        await db.CommitAsync();
+        return (report, true);
+    }
+
+    /// <summary>
+    /// Resolves every match whose deadline has passed (the host's GameKeeper calls this every minute, through
+    /// <see cref="SpellboundGame.OnTickAsync"/>): whoever hasn't committed holds. Each match in its own transaction, its
+    /// row locked, so a commit landing at the same moment waits or wins. Returns the ids of the matches it resolved.
+    /// </summary>
+    public async Task<IReadOnlyList<long>> HoldOverdueAsync(DateTimeOffset now)
+    {
+        List<long> due;
+        await using (var db = await database.BeginAsync())
         {
-            await db.EndGameAsync(id, now);
+            due = await db.QueryAsync("SELECT game_id FROM match_deadlines WHERE due_at <= $1 ORDER BY due_at", r => r.GetInt64(0), now);
+        }
+
+        var resolved = new List<long>();
+        foreach (var id in due)
+        {
+            await using var db = await database.BeginAsync();
+            if (await LoadAsync(db, id, forUpdate: true) is not { } loaded || loaded.Match.DueAt is not { } dueAt || dueAt > now)
+            {
+                continue; // resolved by a commit meanwhile, or gone
+            }
+
+            if (!loaded.IsRunning)
+            {
+                await db.ExecuteAsync("DELETE FROM match_deadlines WHERE game_id = $1", id);
+                await db.CommitAsync();
+                continue;
+            }
+
+            var holding = loaded.Match.People.Where(s => !loaded.Match.Committed.Contains(s)).ToHashSet();
+            if ((await ResolveAsync(db, id, loaded.Seed, loaded.Match, holding, now)).Succeeded)
+            {
+                await db.CommitAsync();
+                resolved.Add(id);
+            }
+        }
+
+        return resolved;
+    }
+
+    /// <summary>
+    /// The host hands another person's seat to a bot (the same as missing two deadlines): the person can still watch.
+    /// Only a seat that hasn't committed this step: someone who has is still playing.
+    /// If everyone else has committed, the step resolves now. Changes nothing for anyone but the host.
+    /// </summary>
+    public async Task<Report> HandToBotAsync(long id, string ownerId, int seat, DateTimeOffset now)
+    {
+        await using var db = await database.BeginAsync();
+        if (await LoadAsync(db, id, forUpdate: true) is not { IsRunning: true } loaded)
+        {
+            return Report.Fail("This match isn't running.");
+        }
+
+        var match = loaded.Match;
+        if (match.HostId != ownerId || match.SeatOf(ownerId) is not { } host || match.Away.Contains(host))
+        {
+            return Report.Fail("Only the match's host can hand a seat to a bot.");
+        }
+
+        if (seat == host || !match.People.Contains(seat))
+        {
+            return Report.Fail($"Seat {seat + 1} isn't a person's seat to hand over.");
+        }
+
+        if (match.Committed.Contains(seat))
+        {
+            return Report.Fail($"Seat {seat + 1} has committed this step: they are still playing.");
+        }
+
+        await db.ExecuteAsync(
+            "UPDATE match_players SET bot_since = $3, pending = NULL, pending_for = NULL WHERE game_id = $1 AND seat = $2",
+            id, seat, now);
+        var lines = new List<string> { $"A bot plays seat {seat + 1} from now on." };
+        if (match.People.Where(s => s != seat).All(match.Committed.Contains))
+        {
+            var report = await ResolveAsync(db, id, loaded.Seed, match, new HashSet<int>(), now);
+            if (!report.Succeeded)
+            {
+                return report;
+            }
+
+            lines.AddRange(report.Lines);
+        }
+        else
+        {
+            await SetDeadlineAsync(db, id, now, keepDue: true);
         }
 
         await db.CommitAsync();
-        return (report, true);
+        return new Report(true, lines);
+    }
+
+    /// <summary>
+    /// Resolves the current step in the caller's transaction (the match locked): the people's commitments, holds for
+    /// <paramref name="holding"/>, bots for the rest. If it succeeds it is saved as the last report, the commitments
+    /// are cleared, misses are counted (a bot takes a seat at <see cref="MissesBeforeBot"/>), and the next step gets its
+    /// deadline. Nothing is written if it fails.
+    /// </summary>
+    private static async Task<Report> ResolveAsync(DbSession db, long id, int seed, LoadedMatch loaded, IReadOnlySet<int> holding, DateTimeOffset now)
+    {
+        var committed = (await db.QueryAsync(
+                "SELECT seat, pending::text FROM match_players WHERE game_id = $1 AND pending_for = $2 AND bot_since IS NULL",
+                r => (Seat: r.GetInt32(0), Pending: r.GetString(1)), id, StepKey(loaded.Match)))
+            .ToDictionary(p => p.Seat, p => p.Pending);
+        var random = StepRandom(seed, loaded.Match);
+        var report = MatchSteps.Resolve(loaded.Match, committed, holding, random);
+        if (!report.Succeeded)
+        {
+            return report;
+        }
+
+        await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(seed, loaded.Match.Save(), report.Lines, report.Tags)));
+        await db.ExecuteAsync(
+            """
+            UPDATE match_players SET pending = NULL, pending_for = NULL,
+                missed = CASE WHEN seat = ANY($2) THEN missed + 1 ELSE 0 END
+            WHERE game_id = $1 AND bot_since IS NULL
+            """,
+            id, holding.ToArray());
+        await db.ExecuteAsync(
+            "UPDATE match_players SET bot_since = $2 WHERE game_id = $1 AND bot_since IS NULL AND missed >= $3",
+            id, now, MissesBeforeBot);
+        if (loaded.Match.Phase == MatchPhase.Ended)
+        {
+            await db.EndGameAsync(id, now);
+            await db.ExecuteAsync("DELETE FROM match_deadlines WHERE game_id = $1", id);
+        }
+        else
+        {
+            await SetDeadlineAsync(db, id, now);
+        }
+
+        return report;
+    }
+
+    /// <summary>
+    /// Gives the current step a deadline <see cref="StepDeadline"/> from now when two or more people play the match
+    /// (with one, nobody waits on anyone), or removes it. <paramref name="keepDue"/> keeps a deadline already set.
+    /// </summary>
+    private static async Task SetDeadlineAsync(DbSession db, long id, DateTimeOffset now, bool keepDue = false)
+    {
+        var people = await db.ScalarAsync<long>("SELECT count(*) FROM match_players WHERE game_id = $1 AND bot_since IS NULL", id);
+        if (people < 2)
+        {
+            await db.ExecuteAsync("DELETE FROM match_deadlines WHERE game_id = $1", id);
+        }
+        else if (!keepDue)
+        {
+            await db.ExecuteAsync(
+                "INSERT INTO match_deadlines (game_id, due_at) VALUES ($1, $2) ON CONFLICT (game_id) DO UPDATE SET due_at = $2",
+                id, now + StepDeadline);
+        }
     }
 
     /// <summary>A person takes back what they committed this step, if it hasn't resolved. Changes nothing otherwise.</summary>
@@ -209,7 +375,7 @@ public sealed class MatchStore(HostDatabase database)
         }
 
         var changed = await db.ExecuteAsync(
-            "UPDATE match_players SET pending = NULL, pending_for = NULL WHERE game_id = $1 AND seat = $2 AND pending_for = $3",
+            "UPDATE match_players SET pending = NULL, pending_for = NULL WHERE game_id = $1 AND seat = $2 AND pending_for = $3 AND bot_since IS NULL",
             id, seat, StepKey(loaded.Match.Match));
         await db.CommitAsync();
         return changed > 0;
@@ -271,20 +437,34 @@ public sealed class MatchStore(HostDatabase database)
         var match = Match.Load(stored.Match, MatchJson.Deserialize<GameRules>(game.RulesJson));
         var step = StepKey(match);
         var committed = new HashSet<int>();
-        foreach (var (seat, owner, pendingFor) in await db.QueryAsync(
-                     "SELECT seat, owner_id, pending_for FROM match_players WHERE game_id = $1",
-                     r => (r.GetInt32(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2)), id))
+        var away = new HashSet<int>();
+        var missed = new Dictionary<int, int>();
+        foreach (var (seat, owner, pendingFor, misses, isAway) in await db.QueryAsync(
+                     "SELECT seat, owner_id, pending_for, missed, bot_since IS NOT NULL FROM match_players WHERE game_id = $1",
+                     r => (r.GetInt32(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2), r.GetInt32(3), r.GetBoolean(4)), id))
         {
             owners[seat] = owner;
-            if (pendingFor == step)
+            if (isAway)
+            {
+                away.Add(seat);
+            }
+            else if (pendingFor == step)
             {
                 committed.Add(seat);
             }
+
+            if (misses > 0)
+            {
+                missed[seat] = misses;
+            }
         }
 
+        var dueAt = await db.QueryAsync("SELECT due_at FROM match_deadlines WHERE game_id = $1", r => r.GetFieldValue<DateTimeOffset>(0), id);
+        var hostId = await db.QueryAsync("SELECT host_id FROM match_lobbies WHERE game_id = $1", r => r.GetString(0), id);
         return (stored.Seed, new LoadedMatch(id, owners, match)
         {
             LastReport = stored.LastReport ?? [], LastReportTags = stored.LastReportTags, Committed = committed,
+            Away = away, Missed = missed, DueAt = dueAt.Count > 0 ? dueAt[0] : null, HostId = hostId.FirstOrDefault(),
         }, game.IsRunning);
     }
 }

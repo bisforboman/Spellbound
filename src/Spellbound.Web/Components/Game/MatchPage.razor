@@ -1,6 +1,7 @@
 @page "/match/{Id:long}"
 @attribute [Authorize]
 @inject MatchPlay Play
+@inject TimeProvider Time
 
 <PageTitle>Match @Id</PageTitle>
 
@@ -17,6 +18,7 @@ else
 {
     var match = view.Match;
     var me = match.Seats[you];
+    var playing = view.IsRunning && !view.Away.Contains(you);
     <div class="match-page">
     <h1>Match @Id</h1>
     <p class="match-status">
@@ -45,16 +47,26 @@ else
         <p class="alert alert-warning" role="alert">@status</p>
     }
 
-    @if (view.IsRunning && view.People.Count() > 1 && match.Phase != MatchPhase.Ended)
+    @if (view.IsRunning && view.Away.Contains(you))
+    {
+        <p class="commit-line">A bot plays your seat now: @(view.Missed.GetValueOrDefault(you) >= MatchStore.MissesBeforeBot
+            ? "you missed two deadlines in a row" : "the host handed it over"). You can still watch the match to its end.</p>
+    }
+    else if (view.IsRunning && view.People.Count() > 1 && match.Phase != MatchPhase.Ended)
     {
         <p class="commit-line">@(view.Committed.Contains(you)
             ? "Everyone gives orders in secret; the step resolves when all players have committed. Until then you can take yours back."
             : view.Committed.Count > 0
                 ? $"{string.Join(" and ", view.Committed.Order().Select(p => $"Seat {p + 1}"))} committed and {(view.Committed.Count == 1 ? "waits" : "wait")} on you."
                 : "Everyone gives orders in secret; the step resolves when all players have committed.")</p>
+        @if (view.DueAt is { } due)
+        {
+            <p class="commit-line">Due in <b>@Until(due)</b>: whoever hasn't committed by then holds (in the opening, passes).
+                @(view.Missed.GetValueOrDefault(you) > 0 ? "You missed the last deadline: miss this one too and a bot takes your seat." : "")</p>
+        }
     }
 
-    @if (view.IsRunning && view.Committed.Contains(you))
+    @if (playing && view.Committed.Contains(you))
     {
         <div class="action-bar">
             <p class="action-sum">You have committed. Waiting for @string.Join(" and ", view.People.Where(p => !view.Committed.Contains(p)).Select(p => $"Seat {p + 1}")).</p>
@@ -64,7 +76,7 @@ else
             </div>
         </div>
     }
-    else if (view.IsRunning && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null)
+    else if (playing && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null)
     {
         <h2 class="h4">Choose your trait</h2>
         <p>Your trait gives you a goal, scored at the end. Nobody else was offered these, and rivals only learn which
@@ -86,7 +98,7 @@ else
             </div>
         </div>
     }
-    else if (view.IsRunning && match.Phase == MatchPhase.Opening)
+    else if (playing && match.Phase == MatchPhase.Opening)
     {
         <h2 class="h4">Opening auction @match.OpeningUnveil of @match.Rules.OpeningUnveils</h2>
         <p>Bid mana on one tile, or pass. Tap a marked tile on the map, or choose here:</p>
@@ -121,7 +133,7 @@ else
             </div>
         </div>
     }
-    else if (view.IsRunning && match.Phase == MatchPhase.Rounds)
+    else if (playing && match.Phase == MatchPhase.Rounds)
     {
         <OrdersForm Match="match" You="you" Owners="view.Owners" Selected="selected" OnSelect="Select" OnCommit="CommitAsync" Busy="busy" />
     }
@@ -160,6 +172,34 @@ else
             <button type="button" class="btn btn-link report-toggle" @onclick="() => fullReport = !fullReport">
                 @(fullReport ? "Only what concerns you" : $"Everything that happened ({hidden} more {(hidden == 1 ? "line" : "lines")})")
             </button>
+        }
+        </section>
+    }
+
+    @if (playing && view.HostId == ownerId && view.People.Any(p => p != you && !view.Committed.Contains(p)))
+    {
+        <section id="host">
+        <h2 class="h4">You are the host</h2>
+        @if (handOff is { } seat)
+        {
+            <p class="ledger-line">A bot plays seat @(seat + 1) for the rest of the match; its player can still watch, but
+                can't take it back. If everyone else has committed, the step resolves now.</p>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="() => handOff = null">Keep them</button>
+                <button type="button" class="btn btn-primary btn-lg" disabled="@busy" @onclick="HandToBotAsync">Hand seat @(seat + 1) to a bot</button>
+            </div>
+        }
+        else
+        {
+            <p>If a player has gone quiet, you can hand their seat to a bot instead of waiting for the deadline. Only
+                players who haven't committed this step are listed.</p>
+            @foreach (var person in view.People.Where(p => p != you && !view.Committed.Contains(p)))
+            {
+                var p = person;
+                <button type="button" class="btn btn-outline-primary btn-lg w-100 mb-2" disabled="@busy" @onclick="() => handOff = p">
+                    Seat @(p + 1)@(view.Missed.GetValueOrDefault(p) > 0 ? ", missed the last deadline" : ""): hand to a bot…
+                </button>
+            }
         }
         </section>
     }
@@ -225,6 +265,7 @@ else
     private string? status;
     private bool loading = true;
     private bool busy;
+    private int? handOff;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -255,6 +296,25 @@ else
     private static string Capitalised(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
     private Task ChooseTraitAsync() => trait is { } t ? ActAsync(() => Play.TraitAsync(Id, ownerId, t)) : Task.CompletedTask;
+
+    private async Task HandToBotAsync()
+    {
+        if (handOff is { } seat)
+        {
+            await ActAsync(() => Play.HandToBotAsync(Id, ownerId, seat));
+            handOff = null;
+            status ??= $"A bot plays seat {seat + 1} from now on.";
+        }
+    }
+
+    /// <summary>How long until a deadline, in hours and minutes.</summary>
+    private string Until(DateTimeOffset due)
+    {
+        var left = due - Time.GetUtcNow();
+        return left <= TimeSpan.Zero ? "a moment"
+            : left.TotalHours >= 1 ? $"{(int)left.TotalHours} h {left.Minutes} min"
+            : $"{Math.Max(1, left.Minutes)} min";
+    }
 
     private Task WithdrawAsync() => ActAsync(async () => await Play.WithdrawAsync(Id, ownerId)
         ? new Report(true, ["Taken back."])
