@@ -94,7 +94,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 
 ## M2: Playing with friends
 - [ ] Invites and a lobby (2–5 seats, bots fill empty seats)
-- [ ] Commit-and-wait rounds: commit, take back, see who has committed
+- [x] Commit-and-wait rounds: commit, take back, see who has committed ([decisions](discussions/playing-with-friends.md))
+  *(its playtest step comes with the lobby, the first page that makes a match with two people)*
 - [ ] Optional round timeout and hold rounds for players who time out
 - [ ] Nudges and notifications (round resolved, your turn to commit, you were attacked); web push is already built
   (`Hosting/Push.cs`), so this is wiring it to the game's events

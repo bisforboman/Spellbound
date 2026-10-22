@@ -18,6 +18,12 @@ public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match M
     /// <summary>False once the match is over or an admin ended it.</summary>
     public bool IsRunning { get; init; } = true;
 
+    /// <summary>The seats whose person has committed this step and is waiting for the others (never what they chose).</summary>
+    public IReadOnlySet<int> Committed { get; init; } = new HashSet<int>();
+
+    /// <summary>The seats played by people (the rest are bots).</summary>
+    public IEnumerable<int> People => Owners.Select((owner, seat) => (owner, seat)).Where(s => s.owner is not null).Select(s => s.seat);
+
     /// <summary>The seat this account sits in, or null.</summary>
     public int? SeatOf(string ownerId)
     {
@@ -86,7 +92,7 @@ public sealed class MatchStore(HostDatabase database)
     /// randomness for this step, and the match is saved only if the action succeeds. When the match is over, its game
     /// ends with it. Null if there is no such match; a failed report if it has ended (or an admin ended it).
     /// </summary>
-    public async Task<Report?> ApplyAsync(long id, DateTimeOffset now, Func<LoadedMatch, IRandomSource, Report> action)
+    public async Task<Report?> ApplyAsync(long id, DateTimeOffset now, Func<LoadedMatch, IRandomSource, Report> action, bool isStep = true)
     {
         ArgumentNullException.ThrowIfNull(action);
         await using var db = await database.BeginAsync();
@@ -103,7 +109,11 @@ public sealed class MatchStore(HostDatabase database)
         var report = action(loaded.Match, StepRandom(loaded.Seed, loaded.Match.Match));
         if (report.Succeeded)
         {
-            await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), report.Lines, report.Tags)));
+            // Only a step that resolves (an auction or a round) becomes the match's last report; a trait pick is the
+            // picker's alone.
+            await db.SaveGameStateAsync(id, MatchJson.Serialize(isStep
+                ? new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), report.Lines, report.Tags)
+                : new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), loaded.Match.LastReport, loaded.Match.LastReportTags)));
             if (loaded.Match.Match.Phase == MatchPhase.Ended)
             {
                 await db.EndGameAsync(id, now);
@@ -114,6 +124,92 @@ public sealed class MatchStore(HostDatabase database)
 
         return report;
     }
+
+    /// <summary>
+    /// A person commits their part of the current step (a bid, or a round's orders) and waits for the others. With the
+    /// match locked: <paramref name="check"/> says whether the commitment is valid, and if so it is stored on the
+    /// person's seat. When every person has committed, <paramref name="resolve"/> gets all their commitments (by seat)
+    /// and the step's randomness, and the step resolves and is saved as the last report. Returns what happened and
+    /// whether the step resolved; null if there is no such match.
+    /// </summary>
+    public async Task<(Report Report, bool Resolved)?> CommitAsync(long id, string ownerId, DateTimeOffset now, string pending,
+        Func<LoadedMatch, int, Report> check, Func<LoadedMatch, IReadOnlyDictionary<int, string>, IRandomSource, Report> resolve)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        ArgumentNullException.ThrowIfNull(resolve);
+        await using var db = await database.BeginAsync();
+        if (await LoadAsync(db, id, forUpdate: true) is not { } loaded)
+        {
+            return null;
+        }
+
+        if (!loaded.IsRunning)
+        {
+            return (Report.Fail("This match has ended."), false);
+        }
+
+        if (loaded.Match.SeatOf(ownerId) is not { } seat)
+        {
+            return (Report.Fail("You don't sit in this match."), false);
+        }
+
+        var checkedReport = check(loaded.Match, seat);
+        if (!checkedReport.Succeeded)
+        {
+            return (checkedReport, false);
+        }
+
+        var step = StepKey(loaded.Match.Match);
+        await db.ExecuteAsync("UPDATE match_players SET pending = $3::jsonb, pending_for = $4 WHERE game_id = $1 AND seat = $2",
+            id, seat, pending, step);
+        var all = (await db.QueryAsync(
+                "SELECT seat, pending::text FROM match_players WHERE game_id = $1 AND pending_for = $2",
+                r => (Seat: r.GetInt32(0), Pending: r.GetString(1)), id, step))
+            .ToDictionary(p => p.Seat, p => p.Pending);
+        var waiting = loaded.Match.People.Where(s => !all.ContainsKey(s)).ToList();
+        if (waiting.Count > 0)
+        {
+            await db.CommitAsync();
+            return (new Report(true, [.. checkedReport.Lines,
+                $"Committed. Waiting for {string.Join(" and ", waiting.Select(s => $"Seat {s + 1}"))}; you can take it back until then."]), false);
+        }
+
+        var report = resolve(loaded.Match, all, StepRandom(loaded.Seed, loaded.Match.Match));
+        if (!report.Succeeded)
+        {
+            return (report, false); // nothing is saved
+        }
+
+        await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), report.Lines, report.Tags)));
+        await db.ExecuteAsync("UPDATE match_players SET pending = NULL, pending_for = NULL WHERE game_id = $1", id);
+        if (loaded.Match.Match.Phase == MatchPhase.Ended)
+        {
+            await db.EndGameAsync(id, now);
+        }
+
+        await db.CommitAsync();
+        return (report, true);
+    }
+
+    /// <summary>A person takes back what they committed this step, if it hasn't resolved. Changes nothing otherwise.</summary>
+    public async Task<bool> WithdrawAsync(long id, string ownerId)
+    {
+        await using var db = await database.BeginAsync();
+        if (await LoadAsync(db, id, forUpdate: true) is not { IsRunning: true } loaded || loaded.Match.SeatOf(ownerId) is not { } seat)
+        {
+            return false;
+        }
+
+        var changed = await db.ExecuteAsync(
+            "UPDATE match_players SET pending = NULL, pending_for = NULL WHERE game_id = $1 AND seat = $2 AND pending_for = $3",
+            id, seat, StepKey(loaded.Match.Match));
+        await db.CommitAsync();
+        return changed > 0;
+    }
+
+    /// <summary>Which step of a match a commitment is for: an opening auction or a round.</summary>
+    public static string StepKey(Match match) =>
+        match.Phase == MatchPhase.Opening ? $"opening-{match.OpeningUnveil}" : $"round-{match.CurrentRound}";
 
     /// <summary>The matches a player sits in, newest first.</summary>
     public async Task<IReadOnlyList<PlayerMatch>> ListForAsync(string ownerId)
@@ -164,13 +260,23 @@ public sealed class MatchStore(HostDatabase database)
 
         var stored = MatchJson.Deserialize<StoredMatch>(json);
         var owners = new string?[stored.Match.Seats.Count];
-        foreach (var (seat, owner) in await db.QueryAsync(
-                     "SELECT seat, owner_id FROM match_players WHERE game_id = $1", r => (r.GetInt32(0), r.GetString(1)), id))
+        var match = Match.Load(stored.Match, MatchJson.Deserialize<GameRules>(game.RulesJson));
+        var step = StepKey(match);
+        var committed = new HashSet<int>();
+        foreach (var (seat, owner, pendingFor) in await db.QueryAsync(
+                     "SELECT seat, owner_id, pending_for FROM match_players WHERE game_id = $1",
+                     r => (r.GetInt32(0), r.GetString(1), r.IsDBNull(2) ? null : r.GetString(2)), id))
         {
             owners[seat] = owner;
+            if (pendingFor == step)
+            {
+                committed.Add(seat);
+            }
         }
 
-        var match = Match.Load(stored.Match, MatchJson.Deserialize<GameRules>(game.RulesJson));
-        return (stored.Seed, new LoadedMatch(id, owners, match) { LastReport = stored.LastReport ?? [], LastReportTags = stored.LastReportTags }, game.IsRunning);
+        return (stored.Seed, new LoadedMatch(id, owners, match)
+        {
+            LastReport = stored.LastReport ?? [], LastReportTags = stored.LastReportTags, Committed = committed,
+        }, game.IsRunning);
     }
 }

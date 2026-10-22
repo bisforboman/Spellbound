@@ -114,14 +114,55 @@ public sealed class MatchPlayTests : TestDatabase
     }
 
     [Fact]
-    public async Task A_match_with_two_people_isnt_played_at_once()
+    public async Task With_two_people_a_step_waits_until_both_have_committed()
+    {
+        var id = await store.CreateAsync(["alice", "bob", null], GameRules.Default, DateTimeOffset.UtcNow);
+        var before = (await play.ViewAsync(id, "alice"))!.LastReport;
+
+        var first = await play.BidAsync(id, "alice", null, 0);
+        var waiting = (await play.ViewAsync(id, "bob"))!;
+
+        Assert.True(first.Succeeded);
+        Assert.Contains("Waiting for Seat 2", first.Lines[^1], StringComparison.Ordinal);
+        Assert.Equal(1, waiting.Match.OpeningUnveil); // nothing resolved
+        Assert.Equal([0], waiting.Committed); // bob sees that alice committed, never what
+        Assert.Equal(before, waiting.LastReport);
+
+        var second = await play.BidAsync(id, "bob", null, 0);
+        var after = (await play.ViewAsync(id, "alice"))!;
+
+        Assert.True(second.Succeeded);
+        Assert.Equal(2, after.Match.OpeningUnveil); // the auction settled
+        Assert.Empty(after.Committed);
+        Assert.Equal(second.Lines, after.LastReport);
+    }
+
+    [Fact]
+    public async Task A_commitment_can_be_taken_back_until_the_step_resolves()
     {
         var id = await store.CreateAsync(["alice", "bob"], GameRules.Default, DateTimeOffset.UtcNow);
+        await play.BidAsync(id, "alice", null, 0);
 
-        var report = await play.BidAsync(id, "alice", null, 0);
+        Assert.True(await play.WithdrawAsync(id, "alice"));
+        Assert.Empty((await play.ViewAsync(id, "bob"))!.Committed);
+        Assert.False(await play.WithdrawAsync(id, "alice")); // nothing left to take back
 
-        Assert.False(report.Succeeded);
-        Assert.Contains("other players", report.Lines[0], StringComparison.Ordinal);
+        var tile = (await play.ViewAsync(id, "alice"))!.Match.OnAuction[0];
+        await play.BidAsync(id, "alice", tile, 2); // a new bid replaces nothing that's still there
+        await play.BidAsync(id, "bob", null, 0);
+
+        Assert.Contains(tile, (await play.ViewAsync(id, "alice"))!.Match.Seats[0].Tiles);
+    }
+
+    [Fact]
+    public async Task A_trait_pick_is_not_the_matchs_last_report()
+    {
+        var id = await store.CreateAsync(["alice", "bob"], GameRules.Default, DateTimeOffset.UtcNow);
+        var offer = (await play.ViewAsync(id, "alice"))!.Match.Seats[0].Offer;
+
+        Assert.True((await play.TraitAsync(id, "alice", offer[0])).Succeeded);
+
+        Assert.Empty((await play.ViewAsync(id, "bob"))!.LastReport); // bob never sees alice's pick
     }
 
     private async Task<long> InRoundsAsync(int players = 3)

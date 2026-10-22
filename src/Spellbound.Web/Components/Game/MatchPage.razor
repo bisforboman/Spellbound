@@ -45,7 +45,27 @@ else
         <p class="alert alert-warning" role="alert">@status</p>
     }
 
-    @if (view.IsRunning && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null)
+    @if (view.IsRunning && view.People.Count() > 1 && match.Phase != MatchPhase.Ended)
+    {
+        var waitingOn = view.People.Where(p => !view.Committed.Contains(p)).Select(p => $"Seat {p + 1}").ToList();
+        <p class="commit-line">@(view.Committed.Contains(you)
+            ? $"You have committed. Waiting for {string.Join(" and ", waitingOn)}; the step resolves when everyone has."
+            : view.Committed.Count > 0
+                ? $"{string.Join(" and ", view.Committed.Order().Select(p => $"Seat {p + 1}"))} committed and {(view.Committed.Count == 1 ? "waits" : "wait")} on you."
+                : "Everyone gives orders in secret; the step resolves when all players have committed.")</p>
+    }
+
+    @if (view.IsRunning && view.Committed.Contains(you))
+    {
+        <div class="action-bar">
+            <p class="action-sum">Changed your mind? Take your orders back while others are still choosing.</p>
+            <div class="action-row">
+                <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="LoadAsync">Refresh</button>
+                <button type="button" class="btn btn-primary btn-lg" disabled="@busy" @onclick="WithdrawAsync">Take back</button>
+            </div>
+        </div>
+    }
+    else if (view.IsRunning && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null)
     {
         <h2 class="h4">Choose your trait</h2>
         <p>Your trait gives you a goal, scored at the end. Nobody else was offered these, and rivals only learn which
@@ -236,6 +256,10 @@ else
     private static string Capitalised(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
     private Task ChooseTraitAsync() => trait is { } t ? ActAsync(() => Play.TraitAsync(Id, ownerId, t)) : Task.CompletedTask;
+
+    private Task WithdrawAsync() => ActAsync(async () => await Play.WithdrawAsync(Id, ownerId)
+        ? new Report(true, ["Taken back."])
+        : Report.Fail("The step has already resolved."));
 
     private Task PassAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, null, 0));
 
