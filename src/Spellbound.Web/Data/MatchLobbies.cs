@@ -21,7 +21,7 @@ public sealed record PlayerLobby(string Code, int Seats, int Joined, bool IsHost
 /// it, and the host starts the match, with bots in the seats nobody took. Each change locks the lobby's row, so two
 /// people can't take the last seat and a start can't race a join.
 /// </summary>
-public sealed class MatchLobbies(HostDatabase database)
+public sealed class MatchLobbies(HostDatabase database, PushSink? push = null)
 {
     /// <summary>How many invites a host may have open (not started) at once.</summary>
     public const int OpenPerHost = 3;
@@ -61,7 +61,7 @@ public sealed class MatchLobbies(HostDatabase database)
     }
 
     /// <summary>Takes a free seat in an open invite. Changes nothing if it has started, is full, or the player is in.</summary>
-    public Task<Report> JoinAsync(string code, string ownerId, DateTimeOffset now) => ChangeAsync(code, async (db, lobby) =>
+    public Task<Report> JoinAsync(string code, string ownerId, DateTimeOffset now) => ChangeAsync(code, async (db, lobby, notices) =>
     {
         if (lobby.Members.Contains(ownerId))
         {
@@ -79,11 +79,12 @@ public sealed class MatchLobbies(HostDatabase database)
         }
 
         await db.ExecuteAsync("INSERT INTO match_lobby_members (code, owner_id, joined_at) VALUES ($1, $2, $3)", code, ownerId, now);
+        notices.Add(MatchNotices.Joined(lobby with { Members = [.. lobby.Members, ownerId] }));
         return new Report(true, [$"You took seat {lobby.Members.Count + 1}."]);
     });
 
     /// <summary>Gives up a seat in an invite that hasn't started. The host can't leave; they cancel instead.</summary>
-    public Task<Report> LeaveAsync(string code, string ownerId) => ChangeAsync(code, async (db, lobby) =>
+    public Task<Report> LeaveAsync(string code, string ownerId) => ChangeAsync(code, async (db, lobby, notices) =>
     {
         if (lobby.IsStarted || !lobby.Members.Contains(ownerId))
         {
@@ -100,7 +101,7 @@ public sealed class MatchLobbies(HostDatabase database)
     });
 
     /// <summary>The host cancels an invite that hasn't started.</summary>
-    public Task<Report> CancelAsync(string code, string ownerId) => ChangeAsync(code, async (db, lobby) =>
+    public Task<Report> CancelAsync(string code, string ownerId) => ChangeAsync(code, async (db, lobby, notices) =>
     {
         if (lobby.HostId != ownerId || lobby.IsStarted)
         {
@@ -118,7 +119,7 @@ public sealed class MatchLobbies(HostDatabase database)
     public async Task<(Report Report, long? GameId)> StartAsync(string code, string ownerId, GameRules rules, DateTimeOffset now)
     {
         long? started = null;
-        var report = await ChangeAsync(code, async (db, lobby) =>
+        var report = await ChangeAsync(code, async (db, lobby, notices) =>
         {
             if (lobby.HostId != ownerId)
             {
@@ -134,6 +135,7 @@ public sealed class MatchLobbies(HostDatabase database)
             var owners = lobby.Members.Cast<string?>().Concat(Enumerable.Repeat<string?>(null, lobby.Free)).ToList();
             started = await MatchStore.CreateAsync(db, owners, rules, now);
             await db.ExecuteAsync("UPDATE match_lobbies SET game_id = $2 WHERE code = $1", code, started.Value);
+            notices.AddRange(lobby.Members.Where(m => m != ownerId).Select(m => MatchNotices.Started(started.Value, m)));
             return new Report(true, [$"The match starts with {lobby.Members.Count} {(lobby.Members.Count == 1 ? "person" : "people")} and {lobby.Free} {(lobby.Free == 1 ? "bot" : "bots")}."]);
         });
 
@@ -155,8 +157,8 @@ public sealed class MatchLobbies(HostDatabase database)
             ownerId);
     }
 
-    /// <summary>A change to an invite with its row locked: saved only if it succeeds.</summary>
-    private async Task<Report> ChangeAsync(string code, Func<DbSession, Lobby, Task<Report>> change)
+    /// <summary>A change to an invite with its row locked: saved only if it succeeds, and its notifications sent after.</summary>
+    private async Task<Report> ChangeAsync(string code, Func<DbSession, Lobby, List<PushMessage>, Task<Report>> change)
     {
         await using var db = await database.BeginAsync();
         if (await LoadAsync(db, code, forUpdate: true) is not { } lobby)
@@ -164,10 +166,15 @@ public sealed class MatchLobbies(HostDatabase database)
             return Report.Fail("There is no such invite.");
         }
 
-        var report = await change(db, lobby);
+        var notices = new List<PushMessage>();
+        var report = await change(db, lobby, notices);
         if (report.Succeeded)
         {
             await db.CommitAsync();
+            foreach (var notice in notices)
+            {
+                push?.Send(notice);
+            }
         }
 
         return report;

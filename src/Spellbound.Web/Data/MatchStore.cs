@@ -60,9 +60,10 @@ public sealed record PlayerMatch(long Id, int Seat, string Description, bool IsR
 /// Matches in the database (docs/architecture.md): each is a row in the host's games table, its rules in the row's
 /// rules and its state (<see cref="StoredMatch"/>) in the row's state, plus a match_players row per human seat. Every
 /// change loads the match with its row locked, calls one domain method and saves, in one transaction, so two actions
-/// on the same match take turns.
+/// on the same match take turns. Notifications (<see cref="MatchNotices"/>) go to <c>push</c> once a change has
+/// committed.
 /// </summary>
-public sealed class MatchStore(HostDatabase database)
+public sealed class MatchStore(HostDatabase database, PushSink? push = null)
 {
     /// <summary>The host's mode for a match.</summary>
     public const string Mode = "match";
@@ -197,17 +198,24 @@ public sealed class MatchStore(HostDatabase database)
         if (waiting.Count > 0)
         {
             await db.CommitAsync();
+            // Only on a first commitment: changing your mind doesn't ping the last one again.
+            if (waiting.Count == 1 && !loaded.Match.Committed.Contains(seat) && loaded.Match.Owners[waiting[0]] is { } last)
+            {
+                Send([MatchNotices.WaitingOnYou(id, last, MatchNotices.StepName(loaded.Match.Match))]);
+            }
+
             return (new Report(true, [.. checkedReport.Lines,
                 $"Committed. Waiting for {string.Join(" and ", waiting.Select(s => $"Seat {s + 1}"))}; you can take it back until then."]), false);
         }
 
-        var report = await ResolveAsync(db, id, loaded.Seed, loaded.Match, new HashSet<int>(), now);
+        var (report, notices) = await ResolveAsync(db, id, loaded.Seed, loaded.Match, new HashSet<int>(), now, actor: seat);
         if (!report.Succeeded)
         {
             return (report, false); // nothing is saved
         }
 
         await db.CommitAsync();
+        Send(notices);
         return (report, true);
     }
 
@@ -241,9 +249,11 @@ public sealed class MatchStore(HostDatabase database)
             }
 
             var holding = loaded.Match.People.Where(s => !loaded.Match.Committed.Contains(s)).ToHashSet();
-            if ((await ResolveAsync(db, id, loaded.Seed, loaded.Match, holding, now)).Succeeded)
+            var (report, notices) = await ResolveAsync(db, id, loaded.Seed, loaded.Match, holding, now, actor: null);
+            if (report.Succeeded)
             {
                 await db.CommitAsync();
+                Send(notices);
                 resolved.Add(id);
             }
         }
@@ -284,15 +294,18 @@ public sealed class MatchStore(HostDatabase database)
             "UPDATE match_players SET bot_since = $3, pending = NULL, pending_for = NULL WHERE game_id = $1 AND seat = $2",
             id, seat, now);
         var lines = new List<string> { $"A bot plays seat {seat + 1} from now on." };
+        List<PushMessage> notices = [MatchNotices.HandedOver(id, match.Owners[seat]!)];
         if (match.People.Where(s => s != seat).All(match.Committed.Contains))
         {
-            var report = await ResolveAsync(db, id, loaded.Seed, match, new HashSet<int>(), now);
+            var (report, resolvedNotices) = await ResolveAsync(db, id, loaded.Seed, match with { Away = new HashSet<int>(match.Away) { seat } },
+                new HashSet<int>(), now, actor: host);
             if (!report.Succeeded)
             {
                 return report;
             }
 
             lines.AddRange(report.Lines);
+            notices.AddRange(resolvedNotices);
         }
         else
         {
@@ -300,6 +313,7 @@ public sealed class MatchStore(HostDatabase database)
         }
 
         await db.CommitAsync();
+        Send(notices);
         return new Report(true, lines);
     }
 
@@ -307,19 +321,22 @@ public sealed class MatchStore(HostDatabase database)
     /// Resolves the current step in the caller's transaction (the match locked): the people's commitments, holds for
     /// <paramref name="holding"/>, bots for the rest. If it succeeds it is saved as the last report, the commitments
     /// are cleared, misses are counted (a bot takes a seat at <see cref="MissesBeforeBot"/>), and the next step gets its
-    /// deadline. Nothing is written if it fails.
+    /// deadline. Nothing is written if it fails. Returns the notifications to send once the caller has committed.
     /// </summary>
-    private static async Task<Report> ResolveAsync(DbSession db, long id, int seed, LoadedMatch loaded, IReadOnlySet<int> holding, DateTimeOffset now)
+    private static async Task<(Report Report, IReadOnlyList<PushMessage> Notices)> ResolveAsync(DbSession db, long id, int seed,
+        LoadedMatch loaded, IReadOnlySet<int> holding, DateTimeOffset now, int? actor)
     {
+        var step = MatchNotices.StepName(loaded.Match);
+        var nowAway = holding.Where(s => loaded.Missed.GetValueOrDefault(s) + 1 >= MissesBeforeBot).ToHashSet();
         var committed = (await db.QueryAsync(
                 "SELECT seat, pending::text FROM match_players WHERE game_id = $1 AND pending_for = $2 AND bot_since IS NULL",
                 r => (Seat: r.GetInt32(0), Pending: r.GetString(1)), id, StepKey(loaded.Match)))
             .ToDictionary(p => p.Seat, p => p.Pending);
         var random = StepRandom(seed, loaded.Match);
-        var report = MatchSteps.Resolve(loaded.Match, committed, holding, random);
+        var (report, attacked) = MatchSteps.Resolve(loaded.Match, committed, holding, random);
         if (!report.Succeeded)
         {
-            return report;
+            return (report, []);
         }
 
         await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(seed, loaded.Match.Save(), report.Lines, report.Tags)));
@@ -343,7 +360,15 @@ public sealed class MatchStore(HostDatabase database)
             await SetDeadlineAsync(db, id, now);
         }
 
-        return report;
+        return (report, [.. MatchNotices.Resolved(loaded, step, attacked, nowAway, actor)]);
+    }
+
+    private void Send(IEnumerable<PushMessage> notices)
+    {
+        foreach (var notice in notices)
+        {
+            push?.Send(notice);
+        }
     }
 
     /// <summary>

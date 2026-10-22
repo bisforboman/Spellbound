@@ -40,7 +40,18 @@ several people share a match. The owner made these choices; each one was Claude'
   easy to widen). It isn't a miss. If everyone else has committed, the step resolves at once. If the host deletes
   their account, the invite goes with it and nobody can hand a seat over; the deadlines still apply.
 
-## Still to build
+- Notifications (22 Oct 2026, `Data/MatchNotices.cs`), sent once a change has committed and never to whoever caused
+  it:
+  - a step resolved: everyone else in the match, "Round 3 resolved", and what's next;
+  - you were attacked: instead of the above, for a person whose land a rival attacked that round;
+  - the others are waiting on you: when everyone but one person has committed, that person;
+  - someone joined your invite: the host.
 
-1. The 24-hour deadline, holds, and a bot taking a dropped seat (and the host's hand-off).
-2. The four notifications, over the web push already built (`Hosting/Push.cs`).
+  Two more that the flow needed, Claude's addition, kept by the owner (22 Oct 2026): "your match has started", to the people who joined when the
+  host starts it, and "a bot plays your seat now", to a person replaced after two misses or by the host. A person
+  replaced by a bot hears nothing more until the match ends, which everyone with a seat hears.
+
+  No reminder before the deadline for now (the owner, 22 Oct 2026): "waiting on you" reaches only the last one left;
+  revisit after real play with friends.
+
+M2 is built.
