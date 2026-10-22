@@ -155,6 +155,46 @@ public sealed class MatchPlayTests : TestDatabase
     }
 
     [Fact]
+    public async Task A_bad_bid_after_committing_keeps_the_first_commitment()
+    {
+        var id = await store.CreateAsync(["alice", "bob"], GameRules.Default, DateTimeOffset.UtcNow);
+        var tile = (await play.ViewAsync(id, "alice"))!.Match.OnAuction[0];
+        await play.BidAsync(id, "alice", tile, 2);
+
+        Assert.False((await play.BidAsync(id, "alice", tile, 100)).Succeeded);
+        Assert.Equal([0], (await play.ViewAsync(id, "bob"))!.Committed);
+
+        await play.BidAsync(id, "bob", null, 0);
+        Assert.Contains(tile, (await play.ViewAsync(id, "alice"))!.Match.Seats[0].Tiles); // the 2-mana bid stood
+    }
+
+    [Fact]
+    public async Task With_two_people_a_round_resolves_both_players_orders()
+    {
+        var id = await store.CreateAsync(["alice", "bob"], GameRules.Default, DateTimeOffset.UtcNow);
+        for (var i = 0; i < 3; i++)
+        {
+            await play.BidAsync(id, "alice", null, 0);
+            await play.BidAsync(id, "bob", null, 0);
+        }
+
+        var match = (await play.ViewAsync(id, "alice"))!.Match;
+        var mine = match.Seats[0].Tiles.First();
+        var theirs = match.Seats[1].Tiles.First();
+
+        var first = await play.OrdersAsync(id, "alice", Orders.Summon(0, mine, UnitKind.Imp, 2));
+        Assert.Equal(1, (await play.ViewAsync(id, "bob"))!.Match.CurrentRound);
+        Assert.Contains("Waiting for Seat 2", first.Lines[^1], StringComparison.Ordinal);
+
+        await play.OrdersAsync(id, "bob", Orders.Summon(1, theirs, UnitKind.Imp, 1));
+        var after = (await play.ViewAsync(id, "bob"))!.Match;
+
+        Assert.Equal(2, after.CurrentRound);
+        Assert.Equal(new Army(2, 0), after.UnitsOn(mine)); // alice's orders came back from her row intact
+        Assert.Equal(new Army(1, 0), after.UnitsOn(theirs));
+    }
+
+    [Fact]
     public async Task A_trait_pick_is_not_the_matchs_last_report()
     {
         var id = await store.CreateAsync(["alice", "bob"], GameRules.Default, DateTimeOffset.UtcNow);
