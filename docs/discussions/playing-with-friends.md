@@ -35,8 +35,10 @@ several people share a match. The owner made these choices; each one was Claude'
   picked a trait gets one picked for them, as a bot would). Committing resets the count; two misses in a row and a
   bot plays the seat, and the person keeps watching. With one person left, the deadline goes: nobody waits on anyone.
   The page shows the time left and warns after one miss.
-- The host's hand-off (22 Oct 2026): the invite's host can hand another person's seat to a bot at any time, after a
-  confirm step. It isn't a miss. If everyone else has committed, the step resolves at once.
+- The host's hand-off (22 Oct 2026): the invite's host can hand another person's seat to a bot, after a
+  confirm step, but only a seat that hasn't committed this step (someone who has is still playing; Claude's choice,
+  easy to widen). It isn't a miss. If everyone else has committed, the step resolves at once. If the host deletes
+  their account, the invite goes with it and nobody can hand a seat over; the deadlines still apply.
 
 ## Still to build
 

@@ -150,6 +150,20 @@ public sealed class MatchDeadlineTests : TestDatabase
     }
 
     [Fact]
+    public async Task A_hand_off_while_others_still_choose_keeps_the_deadline()
+    {
+        var id = await InvitedAsync("bob", "carol");
+        await PassAsync(id, "alice", Start);
+
+        Assert.True((await store.HandToBotAsync(id, "alice", 1, Start.AddHours(5))).Succeeded);
+
+        var match = (await store.LoadAsync(id))!;
+        Assert.Equal(1, match.Match.OpeningUnveil); // carol still chooses
+        Assert.Equal(Start + MatchStore.StepDeadline, match.DueAt);
+        Assert.Equal([0, 2], match.People);
+    }
+
+    [Fact]
     public async Task Only_the_host_hands_a_seat_over_and_a_refusal_changes_nothing()
     {
         var id = await InvitedAsync("bob", "carol");
@@ -157,11 +171,12 @@ public sealed class MatchDeadlineTests : TestDatabase
         var before = await WithDbAsync(db => db.LoadGameStateAsync(id));
 
         var notHost = await store.HandToBotAsync(id, "bob", 2, Start);
+        var committed = await store.HandToBotAsync(id, "alice", 1, Start);
         var self = await store.HandToBotAsync(id, "alice", 0, Start);
         var noSuchSeat = await store.HandToBotAsync(id, "alice", 7, Start);
         var botMatch = await store.HandToBotAsync(await store.CreateAsync(["alice", "bob"], GameRules.Default, Start), "alice", 1, Start);
 
-        Assert.All(new[] { notHost, self, noSuchSeat, botMatch }, r => Assert.False(r.Succeeded));
+        Assert.All(new[] { notHost, committed, self, noSuchSeat, botMatch }, r => Assert.False(r.Succeeded));
         var match = (await store.LoadAsync(id))!;
         Assert.Empty(match.Away);
         Assert.Equal([1], match.Committed);

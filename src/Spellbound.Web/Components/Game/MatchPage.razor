@@ -49,8 +49,8 @@ else
 
     @if (view.IsRunning && view.Away.Contains(you))
     {
-        <p class="commit-line">A bot plays your seat now: you missed two deadlines in a row, or the host handed it over.
-            You can still watch the match to its end.</p>
+        <p class="commit-line">A bot plays your seat now: @(view.Missed.GetValueOrDefault(you) >= MatchStore.MissesBeforeBot
+            ? "you missed two deadlines in a row" : "the host handed it over"). You can still watch the match to its end.</p>
     }
     else if (view.IsRunning && view.People.Count() > 1 && match.Phase != MatchPhase.Ended)
     {
@@ -176,7 +176,7 @@ else
         </section>
     }
 
-    @if (playing && view.HostId == ownerId && view.People.Any(p => p != you))
+    @if (playing && view.HostId == ownerId && view.People.Any(p => p != you && !view.Committed.Contains(p)))
     {
         <section id="host">
         <h2 class="h4">You are the host</h2>
@@ -191,12 +191,13 @@ else
         }
         else
         {
-            <p>If a player has gone quiet, you can hand their seat to a bot instead of waiting for the deadline.</p>
-            @foreach (var person in view.People.Where(p => p != you))
+            <p>If a player has gone quiet, you can hand their seat to a bot instead of waiting for the deadline. Only
+                players who haven't committed this step are listed.</p>
+            @foreach (var person in view.People.Where(p => p != you && !view.Committed.Contains(p)))
             {
                 var p = person;
                 <button type="button" class="btn btn-outline-primary btn-lg w-100 mb-2" disabled="@busy" @onclick="() => handOff = p">
-                    Seat @(p + 1)@(view.Committed.Contains(p) ? " (committed)" : "")@(view.Missed.GetValueOrDefault(p) > 0 ? ", missed the last deadline" : ""): hand to a bot…
+                    Seat @(p + 1)@(view.Missed.GetValueOrDefault(p) > 0 ? ", missed the last deadline" : ""): hand to a bot…
                 </button>
             }
         }

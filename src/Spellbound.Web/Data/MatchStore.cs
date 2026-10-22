@@ -253,6 +253,7 @@ public sealed class MatchStore(HostDatabase database)
 
     /// <summary>
     /// The host hands another person's seat to a bot (the same as missing two deadlines): the person can still watch.
+    /// Only a seat that hasn't committed this step: someone who has is still playing.
     /// If everyone else has committed, the step resolves now. Changes nothing for anyone but the host.
     /// </summary>
     public async Task<Report> HandToBotAsync(long id, string ownerId, int seat, DateTimeOffset now)
@@ -272,6 +273,11 @@ public sealed class MatchStore(HostDatabase database)
         if (seat == host || !match.People.Contains(seat))
         {
             return Report.Fail($"Seat {seat + 1} isn't a person's seat to hand over.");
+        }
+
+        if (match.Committed.Contains(seat))
+        {
+            return Report.Fail($"Seat {seat + 1} has committed this step: they are still playing.");
         }
 
         await db.ExecuteAsync(
