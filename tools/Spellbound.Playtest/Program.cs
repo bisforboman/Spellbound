@@ -264,8 +264,8 @@ namespace Spellbound.Playtest
             {
                 await GoAsync(page, "/");
                 await page.ClickAsync("a:has-text('New match')");
-                await Expect(page, "Start the match");
-                await page.ClickAsync("button:has-text('Start the match')");
+                await Expect(page, "Play bots");
+                await page.ClickAsync("button:has-text('Play bots')");
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
                 await Expect(page, "Choose your trait");
             });
@@ -456,12 +456,59 @@ namespace Spellbound.Playtest
 
                 await Expect(page, "Over after 8 rounds");
             });
+            var invite = string.Empty;
+            await StepAsync(merlin, "invite", async page =>
+            {
+                await GoAsync(page, "/match/new");
+                await page.ClickAsync("label:has-text('2 players')");
+                await page.ClickAsync("button:has-text('Invite friends')");
+                await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/join/[a-z0-9]+$"));
+                await Expect(page, "Send this link");
+                await Expect(page, "Starts now: 1 person and 1 bot");
+                invite = new Uri(page.Url).AbsolutePath;
+            });
+            await StepAsync(morgana, "join", async page =>
+            {
+                await GoAsync(page, invite);
+                await Expect(page, "Take seat 2");
+                await page.ClickAsync("button:has-text('Join')");
+                await Expect(page, "Waiting for the host to start the match");
+            });
+            await StepAsync(merlin, "start-with-a-friend", async page =>
+            {
+                await page.ClickAsync("button:has-text('Refresh')");
+                await Expect(page, "Starts now: 2 people and 0 bots");
+                await page.ClickAsync("button:has-text('Start the match')");
+                await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
+                await Expect(page, "Choose your trait");
+            });
+            await StepAsync(merlin, "commit-and-wait", async page =>
+            {
+                await page.Locator("input[name='trait']").First.CheckAsync();
+                await page.ClickAsync("button:has-text('Choose '):not([disabled])");
+                await page.ClickAsync("button:has-text('Pass')");
+                await Expect(page, "You have committed. Waiting for Seat 2");
+                await page.ClickAsync("button:has-text('Take back')");
+                await Expect(page, "Opening auction 1 of 3");
+                await page.ClickAsync("button:has-text('Pass')");
+                await Expect(page, "You have committed. Waiting for Seat 2");
+            });
+            await StepAsync(morgana, "commit-resolves", async page =>
+            {
+                await GoAsync(page, invite); // the invite sends a player in the match on to it
+                await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
+                await Expect(page, "Seat 1 committed and waits on you");
+                await page.Locator("input[name='trait']").First.CheckAsync();
+                await page.ClickAsync("button:has-text('Choose '):not([disabled])");
+                await page.ClickAsync("button:has-text('Pass')");
+                await Expect(page, "Opening auction 2 of 3");
+            });
             await StepAsync(morgana, "big-map", async page =>
             {
                 // Five players: the 37-tile map, the one whose hexes are smallest at 360 px.
                 await GoAsync(page, "/match/new");
                 await page.ClickAsync("label:has-text('5 players')");
-                await page.ClickAsync("button:has-text('Start the match')");
+                await page.ClickAsync("button:has-text('Play bots')");
                 await Expect(page, "Choose your trait");
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");

@@ -3,12 +3,24 @@
 @using System.Security.Claims
 @using Spellbound.Web.Data
 @inject MatchStore Matches
+@inject MatchLobbies Lobbies
 
 <PageTitle>Spellbound</PageTitle>
 <h1>Spellbound</h1>
 
-<p>A dark map, an opening mana auction, eight rounds of secret stances. Play a match against bots.</p>
+<p>A dark map, an opening mana auction, eight rounds of secret stances. Play against bots, or invite friends.</p>
 <a class="btn btn-primary btn-lg w-100" href="match/new">New match</a>
+
+@if (invites is { Count: > 0 })
+{
+    <h2 class="h4 mt-4">Your invites</h2>
+    <ul class="match-list">
+        @foreach (var invite in invites)
+        {
+            <li><a href="join/@invite.Code">@(invite.IsHost ? "Your invite" : "An invite")</a> for @invite.Seats players: @invite.Joined joined, not started.</li>
+        }
+    </ul>
+}
 
 <h2 class="h4 mt-4">Your matches</h2>
 @if (matches is null)
@@ -35,10 +47,12 @@ else
     private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private IReadOnlyList<PlayerMatch>? matches;
+    private IReadOnlyList<PlayerLobby>? invites;
 
     protected override async Task OnInitializedAsync()
     {
         var ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier);
         matches = ownerId is null ? [] : await Matches.ListForAsync(ownerId);
+        invites = ownerId is null ? [] : await Lobbies.ListForAsync(ownerId);
     }
 }

@@ -1067,3 +1067,18 @@ details.fold {
     details.fold > :not(summary) {
         margin-bottom: 0.75rem;
     }
+
+/* The invite link and its Copy button, side by side (InvitePage.razor). */
+.invite-link {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+    .invite-link input {
+        min-width: 0;
+    }
+
+.lobby-seats li {
+    min-height: 1.75rem;
+}

@@ -2,12 +2,15 @@
 @attribute [Authorize]
 @inject MatchPlay Play
 @inject GameRules Rules
+@inject MatchLobbies Lobbies
+@inject TimeProvider Time
 @inject NavigationManager Navigation
 
 <PageTitle>New match</PageTitle>
 <h1>New match</h1>
 
-<p>You against bots, played at once: you bid and give your orders, and the bots answer straight away.</p>
+<p>Play against bots, who answer straight away, or invite friends with a link: each round then resolves when everyone
+    has committed, and bots take the seats nobody took.</p>
 
 <fieldset>
     <legend class="h5">Players</legend>
@@ -16,12 +19,23 @@
         var count = n;
         <label class="choice">
             <input type="radio" name="players" checked="@(players == count)" @onchange="() => players = count" />
-            <span><b>@count players</b>: you and @(count - 1) @(count == 2 ? "bot" : "bots"), on a map of @Hex.Within(Rules.MapRadius(count)).Count tiles.</span>
+            <span><b>@count players</b>, on a map of @Hex.Within(Rules.MapRadius(count)).Count tiles.</span>
         </label>
     }
 </fieldset>
 
-<button type="button" class="btn btn-primary btn-lg w-100 mt-2" disabled="@busy" @onclick="StartAsync">Start the match</button>
+@if (status is not null)
+{
+    <p class="alert alert-warning mt-2" role="alert">@status</p>
+}
+
+<div class="action-bar">
+    <p class="action-sum">You and @(players - 1) @(players == 2 ? "bot" : "bots"), or an invite for @players players.</p>
+    <div class="action-row">
+        <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="InviteAsync">Invite friends</button>
+        <button type="button" class="btn btn-primary btn-lg" disabled="@busy" @onclick="StartAsync">Play bots</button>
+    </div>
+</div>
 
 @code {
     [CascadingParameter]
@@ -29,6 +43,7 @@
 
     private int players = 3;
     private bool busy;
+    private string? status;
 
     private async Task StartAsync()
     {
@@ -40,5 +55,24 @@
         busy = true;
         var id = await Play.StartAsync(ownerId, players, Rules);
         Navigation.NavigateTo($"match/{id}");
+    }
+
+    private async Task InviteAsync()
+    {
+        if (busy || (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } ownerId)
+        {
+            return;
+        }
+
+        busy = true;
+        var (report, code) = await Lobbies.OpenAsync(ownerId, players, Rules, Time.GetUtcNow());
+        busy = false;
+        if (code is null)
+        {
+            status = report.Lines[0];
+            return;
+        }
+
+        Navigation.NavigateTo($"join/{code}");
     }
 }
