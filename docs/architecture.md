@@ -101,6 +101,8 @@ an admin ends it. Bans are global (per account).
     `match_players.missed` counts it; at two in a row, or when the host hands the seat over, `bot_since` is set and a
     bot plays the seat while the person can still watch. A commit, a deadline and a hand-off all resolve through
     `MatchStore.ResolveAsync` and `MatchSteps.Resolve`.
+  - **Notifications** (`Data/MatchNotices.cs`): built inside a change's transaction and handed to the host's
+    `PushSink` only after it commits, never to the person whose action caused it.
   - **Invites** (`Data/MatchLobbies.cs`, `Data/Sql/013`): `match_lobbies` (a random code, the host, the size) and
     `match_lobby_members` (one row per account, ordered by when they joined). Starting makes the match and records its
     id in the lobby in one transaction; bots take the free seats.

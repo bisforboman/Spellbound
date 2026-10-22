@@ -198,7 +198,8 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
         if (waiting.Count > 0)
         {
             await db.CommitAsync();
-            if (waiting.Count == 1 && loaded.Match.Owners[waiting[0]] is { } last)
+            // Only on a first commitment: changing your mind doesn't ping the last one again.
+            if (waiting.Count == 1 && !loaded.Match.Committed.Contains(seat) && loaded.Match.Owners[waiting[0]] is { } last)
             {
                 Send([MatchNotices.WaitingOnYou(id, last, MatchNotices.StepName(loaded.Match.Match))]);
             }

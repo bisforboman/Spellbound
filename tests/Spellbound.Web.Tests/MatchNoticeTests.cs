@@ -59,6 +59,9 @@ public sealed class MatchNoticeTests : TestDatabase
         Assert.Equal("carol", waiting.OwnerId);
         Assert.Equal($"Match {id}: they're waiting on you", waiting.Title);
         Assert.Equal($"match/{id}", waiting.Url);
+
+        await PassAsync(id, "bob", Start); // a change of mind
+        Assert.Empty(Sent());
     }
 
     [Fact]
