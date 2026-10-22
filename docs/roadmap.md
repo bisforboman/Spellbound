@@ -97,8 +97,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Commit-and-wait rounds: commit, take back, see who has committed ([decisions](discussions/playing-with-friends.md))
 - [x] Round timeout and holds for players who time out: 24 hours a step, then hold; two misses in a row and a bot plays
   the seat (the player keeps watching)
-- [ ] Nudges and notifications (round resolved, your turn to commit, you were attacked); web push is already built
-  (`Hosting/Push.cs`), so this is wiring it to the game's events
+- [x] Notifications (a step resolved, the others are waiting on you, you were attacked, someone joined your invite,
+  your match started, a bot took your seat), over the web push already built (`Hosting/Push.cs`)
 - [x] Host hands a dropped player's seat to a bot
 
 ## M3: Hosting

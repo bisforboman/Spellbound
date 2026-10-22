@@ -8,7 +8,7 @@ namespace Spellbound.Web;
 /// Spellbound behind the host's hooks (Hosting/GameHooks.cs): its games are matches (<see cref="MatchStore"/>), started on
 /// demand. It answers the host's questions about them; its schema is the game's SQL scripts (Data/Sql).
 /// </summary>
-public sealed class SpellboundGame : IGameLifecycle, IAccountLifecycle, IPlayerSummaries, IGameSchema
+public sealed class SpellboundGame(PushSink? push = null) : IGameLifecycle, IAccountLifecycle, IPlayerSummaries, IGameSchema
 {
     /// <summary>The game's tables: its SQL scripts (Data/Sql), which also drop the old game's.</summary>
     public static SchemaModule GameSchema { get; } =
@@ -22,7 +22,7 @@ public sealed class SpellboundGame : IGameLifecycle, IAccountLifecycle, IPlayerS
 
     /// <summary>Steps past their deadline resolve, whoever hasn't committed holding (<see cref="MatchStore.HoldOverdueAsync"/>).</summary>
     public Task OnTickAsync(HostDatabase database, DateTimeOffset now, CancellationToken cancellationToken) =>
-        new MatchStore(database).HoldOverdueAsync(now);
+        new MatchStore(database, push).HoldOverdueAsync(now);
 
     public async Task<string> DescribeAsync(DbSession db, HostedGame game) =>
         await MatchStore.LoadAsync(db, game.Id, forUpdate: false) is { } loaded
