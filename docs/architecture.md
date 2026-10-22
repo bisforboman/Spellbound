@@ -54,8 +54,8 @@ extension points designed for a single game tend to come out wrong.
   on both the compiled types and the source files.
 - **The game plugs in** through `Hosting/GameHooks.cs`: `IGameSchema` (the game's own SQL scripts, migrated after
   the host's; hooks get the host's `DbSession`, so both save in one transaction), `IGameLifecycle` (`OnGameEndedAsync`,
-  what happens when the host ends a game, inside that transaction; and `DescribeAsync`, a line about a game for the
-  admin page), `IPlayerSummaries` (how a player shows on the admin page), and
+  what happens when the host ends a game, inside that transaction; `DescribeAsync`, a line about a game for the
+  admin page; and `OnTickAsync`, called on each `GameKeeper` check for the game's own deadlines), `IPlayerSummaries` (how a player shows on the admin page), and
   `IAccountLifecycle` (deleting an account deletes the player's game data in the same transaction, and the data
   download includes it). `AdminPageOptions.GameSections` adds game sections to the admin page.
   `SpellboundGame` implements the hooks: its games are matches, which it starts on demand (`MatchStore`).
@@ -96,6 +96,11 @@ an admin ends it. Bans are global (per account).
     `match_players` row (`pending`, and `pending_for`, the step it was for) until every person has committed; the
     match is never loaded with them, so no page can show a rival's. The last commitment resolves the step, bots
     choosing then, and clears them all.
+  - **Deadlines** (`Data/Sql/014`): with two or more people in a match, `match_deadlines` holds when the current
+    step resolves without whoever hasn't committed (24 hours after it began). They hold (pass, in the opening), and
+    `match_players.missed` counts it; at two in a row, or when the host hands the seat over, `bot_since` is set and a
+    bot plays the seat while the person can still watch. A commit, a deadline and a hand-off all resolve through
+    `MatchStore.ResolveAsync` and `MatchSteps.Resolve`.
   - **Invites** (`Data/MatchLobbies.cs`, `Data/Sql/013`): `match_lobbies` (a random code, the host, the size) and
     `match_lobby_members` (one row per account, ordered by when they joined). Starting makes the match and records its
     id in the lobby in one transaction; bots take the free seats.
@@ -111,6 +116,8 @@ an admin ends it. Bans are global (per account).
   every minute and ends each game past its `ends_at`: with the row locked, it lets the game wrap it up
   (`OnGameEndedAsync`) and sets `ended_at` in one transaction, so two hosts can't both end it. The admin page's
   "end now" does the same. A match that plays to its end sets `ended_at` itself, in the transaction of its last round.
+  After ending games, each check calls the game's `OnTickAsync`; Spellbound resolves the match steps past their
+  deadline there (`MatchStore.HoldOverdueAsync`, below), one transaction per match.
 - **Notifications** (`Hosting/Push.cs`, `Hosting/WebPushCrypto.cs`): Web Push with .NET's own cryptography, no
   package. Players turn them on per device on the Account page (`wwwroot/push.js` subscribes with the server's VAPID
   key; `wwwroot/sw.js`, a service worker with no fetch handler, shows them). `push_subscriptions` holds each device's
@@ -171,7 +178,7 @@ an admin ends it. Bans are global (per account).
   cron job (see [deploy.md](deploy.md#backups)).
 - **Cloudflare** free tier in front for DNS, DDoS protection and static asset caching.
 - **PWA manifest and service worker**, so the game installs to the home screen without an app store.
-- Global events (ending games at their end) run in the `GameKeeper` hosted service.
+- Global events (ending games at their end, and match steps at their deadline) run in the `GameKeeper` hosted service.
   Players never need a per-player job.
 - CI: GitHub Actions builds and tests on every push, builds the Docker image and checks that it starts
   (`.github/workflows/ci.yml`).

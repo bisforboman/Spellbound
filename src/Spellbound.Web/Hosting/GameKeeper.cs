@@ -2,7 +2,8 @@ namespace Spellbound.Web.Hosting;
 
 /// <summary>
 /// The one background job for games: every minute it ends each game still running past its end, letting the game wrap
-/// it up (<see cref="IGameLifecycle.OnGameEndedAsync"/>). The admin page ends a game the same way. Games start on demand,
+/// it up (<see cref="IGameLifecycle.OnGameEndedAsync"/>), then lets the game act on its own deadlines
+/// (<see cref="IGameLifecycle.OnTickAsync"/>). The admin page ends a game the same way. Games start on demand,
 /// so nothing here starts one, and players never need a per-player job. Safe to run on several hosts at once: the
 /// game's row is locked while it is ended, and a game already ended is left alone.
 /// </summary>
@@ -30,6 +31,7 @@ public sealed class GameKeeper(HostDatabase database, TimeProvider time, IGameLi
             }
         }
 
+        await game.OnTickAsync(database, now, cancellationToken);
         return ended;
     }
 

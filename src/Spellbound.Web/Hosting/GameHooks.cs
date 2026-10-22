@@ -37,6 +37,13 @@ public interface IGameLifecycle
 
     /// <summary>A short line about where a game is, for the admin page (for example its round).</summary>
     Task<string> DescribeAsync(DbSession db, HostedGame game);
+
+    /// <summary>
+    /// Called by <see cref="GameKeeper"/> on each check, after it has ended overdue games and outside any transaction:
+    /// the game's chance to act on its own deadlines (for example a step that resolves when its time is up). Open a
+    /// transaction per game through <paramref name="database"/>, so one game's problem doesn't hold up the rest.
+    /// </summary>
+    Task OnTickAsync(HostDatabase database, DateTimeOffset now, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
 /// <summary>What the hosting code tells the game about accounts.</summary>

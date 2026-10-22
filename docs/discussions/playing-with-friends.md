@@ -30,7 +30,15 @@ several people share a match. The owner made these choices; each one was Claude'
   account; the host starts when they like, and bots take the free seats. A host can have 3 invites open at once.
   Players are shown by seat ("the host", "joined", "you"), never by email.
 
-## Still to build, in order
+- Deadlines and holds (22 Oct 2026). A step in a match with two or more people resolves 24 hours after it began,
+  checked every minute by `GameKeeper`. A person who hasn't committed holds (passes in the opening; one who hadn't
+  picked a trait gets one picked for them, as a bot would). Committing resets the count; two misses in a row and a
+  bot plays the seat, and the person keeps watching. With one person left, the deadline goes: nobody waits on anyone.
+  The page shows the time left and warns after one miss.
+- The host's hand-off (22 Oct 2026): the invite's host can hand another person's seat to a bot at any time, after a
+  confirm step. It isn't a miss. If everyone else has committed, the step resolves at once.
+
+## Still to build
 
 1. The 24-hour deadline, holds, and a bot taking a dropped seat (and the host's hand-off).
 2. The four notifications, over the web push already built (`Hosting/Push.cs`).

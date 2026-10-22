@@ -20,6 +20,10 @@ public sealed class SpellboundGame : IGameLifecycle, IAccountLifecycle, IPlayerS
     public Task OnGameEndedAsync(DbSession db, HostedGame ended, BanList bans, CancellationToken cancellationToken) =>
         Task.CompletedTask;
 
+    /// <summary>Steps past their deadline resolve, whoever hasn't committed holding (<see cref="MatchStore.HoldOverdueAsync"/>).</summary>
+    public Task OnTickAsync(HostDatabase database, DateTimeOffset now, CancellationToken cancellationToken) =>
+        new MatchStore(database).HoldOverdueAsync(now);
+
     public async Task<string> DescribeAsync(DbSession db, HostedGame game) =>
         await MatchStore.LoadAsync(db, game.Id, forUpdate: false) is { } loaded
             ? $"{MatchStore.Describe(loaded.Match.Match, game.IsRunning)}, {loaded.Match.Owners.Count} seats"
@@ -32,8 +36,12 @@ public sealed class SpellboundGame : IGameLifecycle, IAccountLifecycle, IPlayerS
     public async Task<object> ExportAsync(DbSession db, string ownerId) => new
     {
         matches = await db.QueryAsync(
-            "SELECT game_id, seat, pending::text FROM match_players WHERE owner_id = $1 ORDER BY game_id",
-            r => new { match = r.GetInt64(0), seat = r.GetInt32(1) + 1, committed = r.IsDBNull(2) ? null : r.GetString(2) },
+            "SELECT game_id, seat, pending::text, missed, bot_since FROM match_players WHERE owner_id = $1 ORDER BY game_id",
+            r => new
+            {
+                match = r.GetInt64(0), seat = r.GetInt32(1) + 1, committed = r.IsDBNull(2) ? null : r.GetString(2),
+                missedDeadlines = r.GetInt32(3), botSince = r.IsDBNull(4) ? (DateTimeOffset?)null : r.GetFieldValue<DateTimeOffset>(4),
+            },
             ownerId),
         invites = await db.QueryAsync(
             "SELECT l.code, l.host_id = $1, l.seats, m.joined_at, l.game_id FROM match_lobby_members m JOIN match_lobbies l ON l.code = m.code WHERE m.owner_id = $1 ORDER BY m.joined_at",

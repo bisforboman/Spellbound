@@ -54,6 +54,29 @@ public sealed class GameKeeperTests : TestDatabase
         Assert.False(await Keeper.EndAsync(id));
     }
 
+    [Fact]
+    public async Task A_match_step_past_its_deadline_resolves_on_the_tick_once()
+    {
+        foreach (var owner in new[] { "alice", "bob" })
+        {
+            await WithDbAsync(db => db.ExecuteAsync(
+                "INSERT INTO accounts (id, provider, subject, email, created_at, last_sign_in_at) VALUES ($1, 'dev', $1, $1 || '@example.com', now(), now())",
+                owner));
+        }
+
+        var id = await Matches.CreateAsync(["alice", "bob"], GameRules.Default, time.GetUtcNow());
+        time.Advance(MatchStore.StepDeadline - TimeSpan.FromMinutes(1));
+        await Keeper.TickAsync();
+        Assert.Equal(1, (await Matches.LoadAsync(id))!.Match.OpeningUnveil);
+
+        time.Advance(TimeSpan.FromMinutes(1));
+        await Task.WhenAll(Keeper.TickAsync(), Keeper.TickAsync()); // two hosts at once
+
+        var match = (await Matches.LoadAsync(id))!;
+        Assert.Equal(2, match.Match.OpeningUnveil);
+        Assert.Equal(new Dictionary<int, int> { [0] = 1, [1] = 1 }, match.Missed);
+    }
+
     public override void Dispose()
     {
         factory.Dispose();

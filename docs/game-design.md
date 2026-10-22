@@ -129,7 +129,7 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 
 1. **Income:** every player collects the mana yield of each tile they hold.
 2. **Upkeep:** pay 1 mana per Golem; a Golem that can't be paid for dissolves.
-3. **Commit:** every player secretly commits one stance plus any moves. When all have committed, everything is revealed. Until then a player can take their orders back and commit again; everyone sees who has committed, never what.
+3. **Commit:** every player secretly commits one stance plus any moves. When all have committed, everything is revealed. Until then a player can take their orders back and commit again; everyone sees who has committed, never what. With friends, a round that has waited **24 hours** resolves anyway: whoever hasn't committed holds (in the opening, passes). After two misses in a row, a bot plays that seat (see `discussions/playing-with-friends.md`).
 4. **Moves** resolve. Defenders can reinforce a threatened tile in the same round; attackers can't be sure what they'll meet.
 5. **Attune, Summon and Build** resolve, then **spells**. New tiles exist, new units can defend, and spells take effect before
    attacks (Blight waits for the next round's income).
