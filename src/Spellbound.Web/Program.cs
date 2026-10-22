@@ -19,6 +19,7 @@ builder.Services.AddSingleton<IAccountLifecycle>(sp => sp.GetRequiredService<Spe
 builder.Services.AddSingleton(Spellbound.Web.Data.RulesSetup.FromConfiguration(builder.Configuration));
 builder.Services.AddSingleton<Spellbound.Web.Data.MatchStore>();
 builder.Services.AddSingleton<Spellbound.Web.Data.MatchPlay>();
+builder.Services.AddSingleton<Spellbound.Web.Data.MatchLobbies>();
 
 var app = builder.Build();
 

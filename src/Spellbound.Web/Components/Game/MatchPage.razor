@@ -22,7 +22,7 @@ else
     <p class="match-status">
         <b>@MatchStore.Describe(match, view.IsRunning)</b>.
         You are seat @(you + 1), in <span class="seat-ink" style="--seat: @Seats.Ink(you)">your ink</span>:
-        <span class="ledger-line">@me.Mana mana, @me.Tiles.Count tiles, @me.Score points.</span>
+        <span class="ledger-line">@me.Mana mana, @me.Tiles.Count @(me.Tiles.Count == 1 ? "tile" : "tiles"), @me.Score @(me.Score == 1 ? "point" : "points").</span>
     </p>
 
     @if (me.Trait is { } mine)
@@ -47,9 +47,8 @@ else
 
     @if (view.IsRunning && view.People.Count() > 1 && match.Phase != MatchPhase.Ended)
     {
-        var waitingOn = view.People.Where(p => !view.Committed.Contains(p)).Select(p => $"Seat {p + 1}").ToList();
         <p class="commit-line">@(view.Committed.Contains(you)
-            ? $"You have committed. Waiting for {string.Join(" and ", waitingOn)}; the step resolves when everyone has."
+            ? "Everyone gives orders in secret; the step resolves when all players have committed. Until then you can take yours back."
             : view.Committed.Count > 0
                 ? $"{string.Join(" and ", view.Committed.Order().Select(p => $"Seat {p + 1}"))} committed and {(view.Committed.Count == 1 ? "waits" : "wait")} on you."
                 : "Everyone gives orders in secret; the step resolves when all players have committed.")</p>
@@ -58,7 +57,7 @@ else
     @if (view.IsRunning && view.Committed.Contains(you))
     {
         <div class="action-bar">
-            <p class="action-sum">Changed your mind? Take your orders back while others are still choosing.</p>
+            <p class="action-sum">You have committed. Waiting for @string.Join(" and ", view.People.Where(p => !view.Committed.Contains(p)).Select(p => $"Seat {p + 1}")).</p>
             <div class="action-row">
                 <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="LoadAsync">Refresh</button>
                 <button type="button" class="btn btn-primary btn-lg" disabled="@busy" @onclick="WithdrawAsync">Take back</button>

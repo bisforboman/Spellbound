@@ -60,11 +60,20 @@ public sealed class MatchStore(HostDatabase database)
     /// <summary>Starts a match with a seat for each owner (null for a bot) and returns its id.</summary>
     public async Task<long> CreateAsync(IReadOnlyList<string?> owners, GameRules rules, DateTimeOffset now, int? seed = null)
     {
+        await using var db = await database.BeginAsync();
+        var id = await CreateAsync(db, owners, rules, now, seed);
+        await db.CommitAsync();
+        return id;
+    }
+
+    /// <summary>Starts a match inside the caller's transaction (a lobby starts its match and records it together).</summary>
+    public static async Task<long> CreateAsync(DbSession db, IReadOnlyList<string?> owners, GameRules rules, DateTimeOffset now, int? seed = null)
+    {
+        ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(owners);
         var chosen = seed ?? Random.Shared.Next();
         var match = Match.Start(owners.Count, rules, new SeededRandom(chosen));
 
-        await using var db = await database.BeginAsync();
         await db.LockGamesOfModeAsync(Mode);
         var game = await db.InsertGameAsync(new NewGame(Mode, OpenFor, MatchJson.Serialize(rules)), now);
         await db.SaveGameStateAsync(game.Id, MatchJson.Serialize(new StoredMatch(chosen, match.Save())));
@@ -76,7 +85,6 @@ public sealed class MatchStore(HostDatabase database)
             }
         }
 
-        await db.CommitAsync();
         return game.Id;
     }
 

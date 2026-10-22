@@ -1,0 +1,171 @@
+@page "/join/{Code}"
+@attribute [Authorize]
+@inject MatchLobbies Lobbies
+@inject GameRules Rules
+@inject TimeProvider Time
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Invite</PageTitle>
+
+@if (loading)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (lobby is null)
+{
+    <h1>Not found</h1>
+    <p>There is no such invite: it may have been cancelled. <a href="">Back home</a></p>
+}
+else if (lobby.IsStarted)
+{
+    <h1>Started</h1>
+    <p>This match started without you. <a href="">Back home</a></p>
+}
+else
+{
+    var isHost = lobby.HostId == ownerId;
+    var isIn = lobby.Members.Contains(ownerId);
+    <h1>Invite to a match</h1>
+    <p>A match for <b>@lobby.Seats players</b>, on a map of @Hex.Within(Rules.MapRadius(lobby.Seats)).Count tiles.
+        Everyone gives orders in secret, and each round resolves when everyone has committed.</p>
+
+    <ol class="lobby-seats">
+        @for (var seat = 0; seat < lobby.Seats; seat++)
+        {
+            <li>@SeatText(seat)</li>
+        }
+    </ol>
+    @if (isIn)
+    {
+        <button type="button" class="btn btn-outline-secondary mb-3" disabled="@busy" @onclick="LoadAsync">Refresh</button>
+    }
+
+    @if (status is not null)
+    {
+        <p class="alert alert-warning" role="alert">@status</p>
+    }
+
+    @if (isIn)
+    {
+        <label class="form-label" for="invite-link">Send this link to the friends you want to play:</label>
+        <div class="invite-link">
+            <input id="invite-link" class="form-control form-control-lg" readonly value="@Link" onfocus="this.select()" />
+            <button type="button" class="btn btn-outline-primary btn-lg" @onclick="CopyAsync">@(copied ? "Copied" : "Copy")</button>
+        </div>
+    }
+
+    <div class="action-bar">
+        <p class="action-sum">@(isHost
+            ? $"Starts now: {lobby.Members.Count} {(lobby.Members.Count == 1 ? "person" : "people")} and {lobby.Free} {(lobby.Free == 1 ? "bot" : "bots")}."
+            : isIn ? "Waiting for the host to start the match."
+            : lobby.Free > 0 ? $"Take seat {lobby.Members.Count + 1}." : "Every seat is taken.")</p>
+        <div class="action-row">
+            @if (isHost)
+            {
+                <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="CancelAsync">Cancel</button>
+                <button type="button" class="btn btn-primary btn-lg" disabled="@busy" @onclick="StartAsync">Start the match</button>
+            }
+            else if (isIn)
+            {
+                <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="LeaveAsync">Leave</button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || lobby.Free == 0)" @onclick="JoinAsync">Join</button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Code { get; set; } = string.Empty;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private string ownerId = string.Empty;
+    private Lobby? lobby;
+    private string? status;
+    private bool loading = true;
+    private bool busy;
+    private bool copied;
+
+    private string Link => $"{Navigation.BaseUri}join/{Code}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        await LoadAsync();
+        loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        lobby = await Lobbies.LoadAsync(Code);
+        if (lobby is { GameId: { } id } && lobby.Members.Contains(ownerId))
+        {
+            Navigation.NavigateTo($"match/{id}");
+        }
+    }
+
+    private string SeatText(int seat)
+    {
+        if (seat >= lobby!.Members.Count)
+        {
+            return "Open: a bot takes it if nobody joins.";
+        }
+
+        var who = lobby.Members[seat] == ownerId ? "you" : "joined";
+        return seat == 0 ? $"The host ({who})." : $"{char.ToUpperInvariant(who[0])}{who[1..]}.";
+    }
+
+    private async Task CopyAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Link);
+            copied = true;
+        }
+        catch (JSException)
+        {
+            status = "Your browser didn't let us copy: tap the link and copy it yourself.";
+        }
+    }
+
+    private Task JoinAsync() => ActAsync(() => Lobbies.JoinAsync(Code, ownerId, Time.GetUtcNow()));
+
+    private Task LeaveAsync() => ActAsync(() => Lobbies.LeaveAsync(Code, ownerId));
+
+    private async Task CancelAsync()
+    {
+        await ActAsync(() => Lobbies.CancelAsync(Code, ownerId));
+        if (lobby is null)
+        {
+            Navigation.NavigateTo("");
+        }
+    }
+
+    private Task StartAsync() => ActAsync(async () => (await Lobbies.StartAsync(Code, ownerId, Rules, Time.GetUtcNow())).Report);
+
+    private async Task ActAsync(Func<Task<Report>> action)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var report = await action();
+            status = report.Succeeded ? null : report.Lines[0];
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

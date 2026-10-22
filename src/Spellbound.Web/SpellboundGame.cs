@@ -28,12 +28,16 @@ public sealed class SpellboundGame : IGameLifecycle, IAccountLifecycle, IPlayerS
     /// <summary>Nothing to do: the player's seats (match_players) go with the account row, and play on as bots.</summary>
     public Task OnAccountDeletedAsync(DbSession db, string ownerId) => Task.CompletedTask;
 
-    /// <summary>The matches the player sits in, and their seat in each.</summary>
+    /// <summary>The matches the player sits in, their seat in each, and the invites they opened or joined.</summary>
     public async Task<object> ExportAsync(DbSession db, string ownerId) => new
     {
         matches = await db.QueryAsync(
-            "SELECT game_id, seat FROM match_players WHERE owner_id = $1 ORDER BY game_id",
-            r => new { match = r.GetInt64(0), seat = r.GetInt32(1) + 1 },
+            "SELECT game_id, seat, pending::text FROM match_players WHERE owner_id = $1 ORDER BY game_id",
+            r => new { match = r.GetInt64(0), seat = r.GetInt32(1) + 1, committed = r.IsDBNull(2) ? null : r.GetString(2) },
+            ownerId),
+        invites = await db.QueryAsync(
+            "SELECT l.code, l.host_id = $1, l.seats, m.joined_at, l.game_id FROM match_lobby_members m JOIN match_lobbies l ON l.code = m.code WHERE m.owner_id = $1 ORDER BY m.joined_at",
+            r => new { code = r.GetString(0), host = r.GetBoolean(1), seats = r.GetInt32(2), joined = r.GetFieldValue<DateTimeOffset>(3), match = r.IsDBNull(4) ? (long?)null : r.GetInt64(4) },
             ownerId),
     };
 

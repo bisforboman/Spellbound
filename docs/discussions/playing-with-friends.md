@@ -25,8 +25,12 @@ several people share a match. The owner made these choices; each one was Claude'
   `pending_for`, the step it was for) and is never loaded with the match, so no page can show it to a rival. Only a
   step that resolves writes the match's last report, so picking a trait doesn't show anyone a report.
 
+- The invite link (22 Oct 2026). "Invite friends" on the new-match page opens an invite for the chosen size and
+  shows its link (`/join/{code}`, 16 random characters). Whoever opens it, signed in, can take a free seat, one per
+  account; the host starts when they like, and bots take the free seats. A host can have 3 invites open at once.
+  Players are shown by seat ("the host", "joined", "you"), never by email.
+
 ## Still to build, in order
 
-1. The invite link and lobby.
-2. The 24-hour deadline, holds, and a bot taking a dropped seat (and the host's hand-off).
-3. The four notifications, over the web push already built (`Hosting/Push.cs`).
+1. The 24-hour deadline, holds, and a bot taking a dropped seat (and the host's hand-off).
+2. The four notifications, over the web push already built (`Hosting/Push.cs`).

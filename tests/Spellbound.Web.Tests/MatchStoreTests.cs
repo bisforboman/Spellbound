@@ -151,7 +151,7 @@ public sealed class MatchStoreTests : TestDatabase
         var export = MatchJson.Serialize(await WithDbAsync(db => game.ExportAsync(db, "alice")));
         await WithDbAsync(db => db.ExecuteAsync("DELETE FROM accounts WHERE id = 'bob'"));
 
-        Assert.Equal($$"""{"matches":[{"match":{{id}},"seat":2}]}""", export);
+        Assert.Equal($$"""{"matches":[{"match":{{id}},"seat":2,"committed":null}],"invites":[]}""", export);
         Assert.Equal([null, "alice", null], (await store.LoadAsync(id))!.Owners);
     }
 }

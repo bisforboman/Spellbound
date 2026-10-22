@@ -92,6 +92,13 @@ an admin ends it. Bans are global (per account).
   account's seats go with it (the seat plays on as a bot). JSON is `Data/MatchJson.cs`: camelCase, enums by name, a hex
   as `[q, r]`. The state's shape is versioned (`MatchState.Version`); SQL scripts never edit it, so a change to it bumps
   the version and `Match.Load` learns to read the old one.
+  - **Commit-and-wait** (`MatchStore.CommitAsync`, `Data/Sql/012`): a person's bid or orders wait on their own
+    `match_players` row (`pending`, and `pending_for`, the step it was for) until every person has committed; the
+    match is never loaded with them, so no page can show a rival's. The last commitment resolves the step, bots
+    choosing then, and clears them all.
+  - **Invites** (`Data/MatchLobbies.cs`, `Data/Sql/013`): `match_lobbies` (a random code, the host, the size) and
+    `match_lobby_members` (one row per account, ordered by when they joined). Starting makes the match and records its
+    id in the lobby in one transaction; bots take the free seats.
   - **Every change** goes through `MatchStore.ApplyAsync`: load with the row locked (`FOR UPDATE`), one domain call,
     save only if it succeeded, one transaction. Two actions on one match take turns.
   - **Randomness** is never stored: each step gets `SeededRandom(seed + step)`, where the step is the opening auction
