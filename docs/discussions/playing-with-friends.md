@@ -47,8 +47,11 @@ several people share a match. The owner made these choices; each one was Claude'
   - the others are waiting on you: when everyone but one person has committed, that person;
   - someone joined your invite: the host.
 
-  Two more that the flow needed, Claude's addition: "your match has started", to the people who joined when the
+  Two more that the flow needed, Claude's addition, kept by the owner (22 Oct 2026): "your match has started", to the people who joined when the
   host starts it, and "a bot plays your seat now", to a person replaced after two misses or by the host. A person
   replaced by a bot hears nothing more until the match ends, which everyone with a seat hears.
+
+  No reminder before the deadline for now (the owner, 22 Oct 2026): "waiting on you" reaches only the last one left;
+  revisit after real play with friends.
 
 M2 is built.
