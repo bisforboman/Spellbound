@@ -1,0 +1,17 @@
+@* The start of a match in three steps, with the current one marked: a welcome, the trait, the first auction. *@
+<ol class="start-steps" aria-label="Getting started">
+    @foreach (var (number, name) in Names)
+    {
+        <li class="@(number == Step ? "now" : number < Step ? "done" : "")" aria-current="@(number == Step ? "step" : null)">
+            <span class="start-step-number">@number</span> @name
+        </li>
+    }
+</ol>
+
+@code {
+    private static readonly (int, string)[] Names = [(1, "Welcome"), (2, "Trait"), (3, "Auction")];
+
+    /// <summary>The current step, 1 to 3.</summary>
+    [Parameter]
+    public int Step { get; set; }
+}
