@@ -20,6 +20,7 @@ builder.Services.AddSingleton(Spellbound.Web.Data.RulesSetup.FromConfiguration(b
 builder.Services.AddSingleton<Spellbound.Web.Data.MatchStore>();
 builder.Services.AddSingleton<Spellbound.Web.Data.MatchPlay>();
 builder.Services.AddSingleton<Spellbound.Web.Data.MatchLobbies>();
+builder.Services.AddSingleton<Spellbound.Web.Components.Game.TileArt>();
 
 var app = builder.Build();
 
