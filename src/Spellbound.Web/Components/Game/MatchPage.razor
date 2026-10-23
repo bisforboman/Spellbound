@@ -156,13 +156,13 @@ else
             <div class="ledger mt-2">
                 @foreach (var line in check.Lines)
                 {
-                    <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@line</p>
+                    <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@TileNames.In(match.Map, line)</p>
                 }
             </div>
         }
 
         <div class="action-bar">
-            <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@(check?.Lines[0] ?? "Choose a tile to bid on, or pass.")</p>
+            <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@(check is not null ? TileNames.In(match.Map, check.Lines[0]) : "Choose a tile to bid on, or pass.")</p>
             <div class="action-row">
                 <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="PassAsync">Pass</button>
                 <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || check is not { Succeeded: true })" @onclick="BidAsync">Bid @amount mana</button>
@@ -195,7 +195,7 @@ else
             {
                 @if (fullReport || yours.Contains(i))
                 {
-                    <p>@Seats.Phrase(lastReport[i], view.Owners, you)</p>
+                    <p>@Seats.Phrase(TileNames.In(match.Map, lastReport[i]), view.Owners, you)</p>
                     @if (verdicts.TryGetValue(i, out var verdict))
                     {
                         <p class="stamp-line"><span class="stamp @(verdict.Won ? "stamp-victory" : "stamp-defeat")">@verdict.Text</span></p>
@@ -369,9 +369,15 @@ else
         }
 
         var leaders = match.Seats.Where(s => s.Score == top).Select(s => Seats.Name(view!, s.Index, you)).ToList();
+        var points = $"{top} {(top == 1 ? "point" : "points")}";
+        if (leaders.Count > 2)
+        {
+            return $"{leaders.Count} tied, {points}";
+        }
+
         var name = string.Join(" and ", leaders);
         var verb = match.Phase == MatchPhase.Ended ? "win" : "lead";
-        return $"{name} {verb}{(leaders.Count == 1 && name != "You" ? "s" : "")}, {top} {(top == 1 ? "point" : "points")}";
+        return $"{name} {verb}{(leaders.Count == 1 && name != "You" ? "s" : "")}, {points}";
     }
 
     private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, selected, amount));
@@ -418,7 +424,7 @@ else
         try
         {
             var report = await action();
-            status = report.Succeeded ? null : report.Lines[0];
+            status = report.Succeeded ? null : view is null ? report.Lines[0] : TileNames.In(view.Match.Map, report.Lines[0]);
             selected = null;
             await LoadAsync();
         }

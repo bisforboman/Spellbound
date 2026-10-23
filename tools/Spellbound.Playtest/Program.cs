@@ -751,6 +751,11 @@ namespace Spellbound.Playtest
                     problems.Add($"The page scrolls sideways by {check.Overflow} px at 360 px wide.");
                 }
 
+                if (check.Coordinates.Length > 0)
+                {
+                    problems.Add($"Tile coordinates on the page, where a name belongs: {string.Join(", ", check.Coordinates)}.");
+                }
+
                 if (check.ErrorBar)
                 {
                     problems.Add("Blazor's error bar is showing (an unhandled error in the page's connection).");
@@ -827,12 +832,13 @@ namespace Spellbound.Playtest
     internal sealed class PlaytestException(string message) : Exception(message);
 
     /// <summary>What the page check script returns.</summary>
-    internal sealed record PageCheck(int Overflow, bool ErrorBar, string[] SmallTargets)
+    internal sealed record PageCheck(int Overflow, bool ErrorBar, string[] SmallTargets, string[] Coordinates)
     {
         public static PageCheck From(System.Text.Json.JsonElement json) => new(
             json.GetProperty("overflow").GetInt32(),
             json.GetProperty("errorBar").GetBoolean(),
-            [.. json.GetProperty("smallTargets").EnumerateArray().Select(t => t.GetString() ?? "")]);
+            [.. json.GetProperty("smallTargets").EnumerateArray().Select(t => t.GetString() ?? "")],
+            [.. json.GetProperty("coordinates").EnumerateArray().Select(t => t.GetString() ?? "")]);
 
         public const string Script =
             """
@@ -845,10 +851,15 @@ namespace Spellbound.Playtest
                 .filter(({ r }) => r.width > 0 && (r.height < 44 || r.width < 44))
                 .map(({ e, r }) => `"${(e.innerText || e.value || e.getAttribute('aria-label') || e.tagName).trim().replace(/\s+/g, ' ').slice(0, 40)}" ${Math.round(r.width)}×${Math.round(r.height)}`);
               const bar = document.getElementById('blazor-error-ui');
+              // Players see tiles by name ("C3"), never as coordinates ("(0, 1)"): in the text, the dropdowns and the map's labels.
+              const text = [document.body.innerText,
+                ...[...document.querySelectorAll('option')].map(o => o.textContent),
+                ...[...document.querySelectorAll('[aria-label]')].map(e => e.getAttribute('aria-label'))].join('\n');
               return {
                 overflow: Math.max(0, d.scrollWidth - d.clientWidth),
                 errorBar: !!bar && getComputedStyle(bar).display !== 'none',
                 smallTargets: [...new Set(targets)],
+                coordinates: [...new Set(text.match(/\(-?\d+, -?\d+\)/g) || [])].slice(0, 5),
               };
             }
             """;
