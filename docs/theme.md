@@ -2,7 +2,8 @@
 
 Adopted 18 Oct 2026 from the owner's art proposal. The game reads like a dark, gritty spellbook that has been through
 a fire: soot-black paper with a grain and a vignette, bone-coloured ink, iron-plate buttons, and each mage's pages
-inked in their school's colour. It is all CSS on top of Bootstrap's dark mode; no images, no JavaScript.
+inked in their school's colour. It is all CSS on top of Bootstrap's dark mode; no JavaScript, and no images except
+the map's painted tiles once they exist (the brief is in [tile art](tile-art.md)).
 
 ## Where it lives
 
@@ -68,4 +69,5 @@ SVG filters stay in the layout.
 Phase 1 (fonts, palette, cards, buttons, school inks) and phase 2 (the game pieces above and the SVG filters) were
 built for the old game. Still open, for whatever the new game needs: the rest of the motion (a flare after an action,
 numbers that flash when they change, reports that burn in), a light variant, and a check on a real phone that
-blackletter reads well at 360 px, that the SVG filters are fast enough, and that the glyphs render.
+blackletter reads well at 360 px, that the SVG filters are fast enough, that the glyphs render, and, once the painted
+tiles are in, that they read at 40–55 px wide.

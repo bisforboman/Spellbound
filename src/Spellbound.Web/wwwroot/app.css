@@ -774,8 +774,9 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     }
 }
 
-/* The match map (Components/Game/HexMap.razor): soot hexes for dark land, charred leather once unveiled, filled with the
-   owner's ink. Marked tiles (on auction) get a dashed bone edge; the chosen one a solid edge in the page's ink. */
+/* The match map (Components/Game/HexMap.razor): soot hexes for dark land, charred leather (or the painted tile art)
+   once unveiled, and a ring inside the edge in the owner's ink. Marked tiles (on auction) get a dashed bone edge; the
+   chosen one a solid edge in the page's ink. The ring and the edge are separate, so a held tile can be both. */
 .hex-map {
     display: block;
     width: 100%;
@@ -789,27 +790,53 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         outline: none;
     }
 
-    .hex-map polygon {
+    .hex-map .rim {
         fill: var(--paper-deep);
         stroke: var(--paper-edge);
         stroke-width: 1.5;
     }
 
-    .hex-map .dark polygon {
+    .hex-map.painted .hex:not(.dark) .rim {
+        fill: none; /* the art shows through */
+    }
+
+    .hex-map .dark .rim {
         fill: #0d0b09;
         stroke: #2a231c;
     }
 
-    .hex-map .marked polygon {
+    .hex-map .held {
+        fill: none;
+        stroke-width: 3;
+    }
+
+    .hex-map .yours .held {
+        stroke-width: 4.5;
+    }
+
+    .hex-map .marked .rim {
         stroke: var(--ink);
         stroke-dasharray: 4 3;
         stroke-width: 2;
     }
 
-    .hex-map .selected polygon, .hex-map .hex:focus-visible polygon {
+    .hex-map .selected .rim, .hex-map .hex:focus-visible .rim {
         stroke: var(--school);
         stroke-dasharray: none;
         stroke-width: 3.5;
+    }
+
+    /* On painted tiles: the yield on a dark seal, and the labels edged in soot so they read over the art */
+    .hex-map .hex-seal {
+        fill: rgb(20 17 14 / 0.82);
+        stroke: var(--paper-edge);
+        stroke-width: 1;
+    }
+
+    .hex-map.painted text {
+        paint-order: stroke;
+        stroke: var(--paper);
+        stroke-width: 2.6px;
     }
 
     .hex-map text {
@@ -1113,6 +1140,15 @@ tr.you td {
 
 .tile-mark {
     color: var(--ink);
+}
+
+.tile-swatch {
+    width: 1.1em;
+    height: 1.25em;
+    vertical-align: -0.25em;
+    margin-right: 0.15em;
+    object-fit: cover;
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 }
 
 .report-toggle {

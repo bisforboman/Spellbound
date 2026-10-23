@@ -1,9 +1,15 @@
 @* The board as inline SVG (docs/theme.md): pointy-top hexes, each a button. Dark tiles are soot; unveiled ones show
-   their name (A1: row, then place in the row; TileNames), their type's mark and yield, are filled with their owner's ink, and show
-   units and monster guards. The same choices are offered as plain buttons on the page, so the map is a convenience,
-   not the only way. *@
+   their name (A1: row, then place in the row; TileNames), their yield, and units and monster guards; a held tile has
+   an inner ring in its owner's ink (heavier for yours). Each type has its painted image when all three are there
+   (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol. The same choices are offered as
+   plain buttons on the page, so the map is a convenience, not the only way. *@
+@inject TileArt Art
 
-<svg class="hex-map" viewBox="@ViewBox" role="group" aria-label="The map">
+<svg class="hex-map@(Art.Paths is null ? "" : " painted")" viewBox="@ViewBox" role="group" aria-label="The map">
+    @if (Art.Paths is not null)
+    {
+        <defs><clipPath id="hex-clip"><polygon points="@Points(0, 0)" /></clipPath></defs>
+    }
     @foreach (var tile in Match.Map.Tiles.OrderBy(t => t.Hex.R).ThenBy(t => t.Hex.Q))
     {
         var hex = tile.Hex;
@@ -14,12 +20,30 @@
                       + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "");
         <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners, mark: false)"
            @onclick="() => OnSelect.InvokeAsync(hex)" @onkeydown="e => KeyAsync(e, hex)">
-            <polygon points="@Points(x, y)" style="@(owner is { } o ? $"fill: color-mix(in srgb, {Seats.Ink(o)} 38%, var(--paper-deep))" : "")" />
+            @if (tile.IsUnveiled && Art.Paths is { } art)
+            {
+                <g transform="translate(@F(x) @F(y))" clip-path="url(#hex-clip)">
+                    <image href="@Assets[art[tile.Type]]" x="-30" y="-30" width="60" height="60" preserveAspectRatio="xMidYMid slice" />
+                </g>
+            }
+            <polygon class="rim" points="@Points(x, y)" />
+            @if (owner is { } o)
+            {
+                <polygon class="held" points="@Points(x, y, inset: 3.5)" style="stroke: @Seats.Ink(o)" />
+            }
             @if (tile.IsUnveiled)
             {
                 @Label(x, y - 18, "hex-name", TileNames.Of(Match.Map, hex))
-                @Label(x - 10, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
-                @Label(x + 6, y - 2, "hex-yield", tile.Yield.ToString()!)
+                @if (Art.Paths is null)
+                {
+                    @Label(x - 10, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
+                    @Label(x + 6, y - 2, "hex-yield", tile.Yield.ToString()!)
+                }
+                else
+                {
+                    <circle class="hex-seal" cx="@F(x)" cy="@F(y - 1)" r="9.5" />
+                    @Label(x, y - 1, "hex-yield", tile.Yield.ToString()!)
+                }
                 @if (tile.IsGuarded)
                 {
                     @Label(x, y + 16, "hex-note", $"☠{tile.Guard}")
@@ -41,7 +65,13 @@
     <p class="tile-key">
         @foreach (var type in Enum.GetValues<TileType>())
         {
-            <span><span class="tile-mark">@Seats.Mark(type)</span> @type: @Meaning(type)</span>
+            <span>
+                @if (Art.Paths is { } art)
+                {
+                    <img class="tile-swatch" src="@Assets[art[type]]" alt="" />
+                }
+                <span class="tile-mark">@Seats.Mark(type)</span> @type: @Meaning(type)
+            </span>
         }
     </p>
 }
@@ -83,11 +113,12 @@
 
     private static (double X, double Y) Center(Hex hex) => (Size * Root3 * (hex.Q + hex.R / 2.0), Size * 1.5 * hex.R);
 
-    private static string Points(double x, double y) =>
+    /// <summary>A hex's corners, <paramref name="inset"/> inside its edge (for the owner's ring).</summary>
+    private static string Points(double x, double y, double inset = 0) =>
         string.Join(' ', Enumerable.Range(0, 6).Select(i =>
         {
             var angle = Math.PI / 180 * (60 * i - 30);
-            return $"{F(x + (Size - 1) * Math.Cos(angle))},{F(y + (Size - 1) * Math.Sin(angle))}";
+            return $"{F(x + (Size - 1 - inset) * Math.Cos(angle))},{F(y + (Size - 1 - inset) * Math.Sin(angle))}";
         }));
 
     private static string Meaning(TileType type) => type switch
