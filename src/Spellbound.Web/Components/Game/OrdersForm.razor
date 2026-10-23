@@ -22,9 +22,7 @@
         break;
 
     case "Summon":
-        <p>Tap one of your tiles, or choose one:</p>
-        @Targets(Me.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R))
-        <div class="d-flex gap-2 mt-2">
+        <div class="d-flex gap-2">
             <label class="choice flex-fill">
                 <input type="radio" name="kind" checked="@(kind == UnitKind.Imp)" @onchange="() => kind = UnitKind.Imp" />
                 <span><b>Imps</b>: power @Match.Rules.ImpPower, @Match.Rules.ImpCost mana</span>
@@ -36,6 +34,8 @@
         </div>
         <label class="form-label" for="count">How many</label>
         <input id="count" type="number" class="form-control form-control-lg" min="1" @bind="count" @bind:event="oninput" />
+        <p class="mt-3">Where: tap one of your tiles, or choose one:</p>
+        @Targets(Me.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R))
         break;
 
     case "Build":

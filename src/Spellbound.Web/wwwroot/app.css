@@ -828,6 +828,16 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         fill: var(--ink-soft);
     }
 
+    /* A tile's type, as its symbol left of the yield (the key is under the map) */
+    .hex-map .hex-type {
+        font-size: 16px;
+        fill: var(--ink-soft);
+    }
+
+    .hex-map .hex-type.steady {
+        font-size: 11px; /* ◆ is drawn larger than ≈ and ✶ at the same size */
+    }
+
     .hex-map .hex-yield {
         font-size: 17px;
         font-weight: 700;
@@ -1090,6 +1100,20 @@ tr.you td {
         color: var(--ink);
         box-shadow: inset 0 3px 0 var(--school);
     }
+
+/* The key to the map's type symbols */
+.tile-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 1rem;
+    margin: -0.25rem 0 0.75rem;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+}
+
+.tile-mark {
+    color: var(--ink);
+}
 
 .report-toggle {
     margin-top: 0.25rem;
