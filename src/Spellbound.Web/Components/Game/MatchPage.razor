@@ -286,12 +286,15 @@ else
     <p><a href="">Back home</a></p>
     </div>
 
+    @if (!drafting)
+    {
     <nav class="match-tabs" aria-label="Match">
         <a href="match/@Id#map">Map</a>
         <a href="match/@Id#orders">@(match.Phase == MatchPhase.Ended ? "End" : "Orders")</a>
         <a href="match/@Id#report">Report</a>
         <button type="button" @onclick="OpenStandings">Standings</button>
     </nav>
+    }
 }
 
 @code {
@@ -356,7 +359,7 @@ else
         }
     }
 
-    /// <summary>Who leads on points, for the folded standings: "Bot 3 leads, 4 points".</summary>
+    /// <summary>Who leads on points, for the folded standings: "Bot 3 leads, 4 points" (at the end, "wins").</summary>
     private string Leaders(Match match)
     {
         var top = match.Seats.Max(s => s.Score);
@@ -367,7 +370,8 @@ else
 
         var leaders = match.Seats.Where(s => s.Score == top).Select(s => Seats.Name(view!, s.Index, you)).ToList();
         var name = string.Join(" and ", leaders);
-        return $"{name} {(leaders.Count == 1 && name != "You" ? "leads" : "lead")}, {top} {(top == 1 ? "point" : "points")}";
+        var verb = match.Phase == MatchPhase.Ended ? "win" : "lead";
+        return $"{name} {verb}{(leaders.Count == 1 && name != "You" ? "s" : "")}, {top} {(top == 1 ? "point" : "points")}";
     }
 
     private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, selected, amount));

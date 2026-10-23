@@ -480,6 +480,7 @@ namespace Spellbound.Playtest
 
                 await Expect(page, "Over after 8 rounds");
                 await page.Locator("table.standings").WaitForAsync(); // open by itself at the end
+                await page.Locator(".fold-sum", new PageLocatorOptions { HasTextRegex = new System.Text.RegularExpressions.Regex(" wins?, ") }).WaitForAsync();
             });
             var invite = string.Empty;
             var friendMatch = string.Empty;
