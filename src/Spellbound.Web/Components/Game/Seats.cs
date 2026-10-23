@@ -46,8 +46,17 @@ public static class Seats
         return Regex.Replace(line, @"(^|[.:!?] )(you|your)\b", m => m.Groups[1].Value + char.ToUpperInvariant(m.Groups[2].Value[0]) + m.Groups[2].Value[1..]);
     }
 
-    /// <summary>What a tile is, in a few words, for its label and the tile panel.</summary>
-    public static string Describe(Match match, Hex hex, int? you, IReadOnlyList<string?>? owners = null)
+    /// <summary>A tile type's symbol, on the map and before a tile in the lists: ◆ Steady, ≈ Shifting, ✶ Wild.</summary>
+    public static string Mark(TileType type) => type switch
+    {
+        TileType.Steady => "◆",
+        TileType.Shifting => "≈",
+        _ => "✶",
+    };
+
+    /// <summary>What a tile is, in a few words, for its label and the tile panel; with its type's
+    /// <paramref name="mark"/> first, except where a screen reader would read the symbol out.</summary>
+    public static string Describe(Match match, Hex hex, int? you, IReadOnlyList<string?>? owners = null, bool mark = true)
     {
         var tile = match.Map[hex];
         if (!tile.IsUnveiled)
@@ -60,6 +69,6 @@ public static class Seats
         var seen = you is { } viewer ? match.UnitsSeenBy(viewer, hex) : match.UnitsOn(hex);
         var units = seen is { IsEmpty: false } army ? $", {army}" : seen is null && match.OwnerOf(hex) is not null ? ", units unseen" : "";
         var built = match.UpgradeOn(hex) is { } upgrade ? $", with a {upgrade}" : "";
-        return $"{tile.Type} tile {TileNames.Of(match.Map, hex)}, yields {tile.Yield}, {owner}{built}{units}";
+        return $"{(mark ? Mark(tile.Type) + " " : "")}{tile.Type} tile {TileNames.Of(match.Map, hex)}, yields {tile.Yield}, {owner}{built}{units}";
     }
 }
