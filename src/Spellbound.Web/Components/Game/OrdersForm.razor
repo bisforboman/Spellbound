@@ -64,7 +64,7 @@
                 var here = AfterMoves(f);
                 var sent = sends.GetValueOrDefault(f, here);
                 <div class="attack-source">
-                    <span>@f (@here)</span>
+                    <span>@TileNames.Of(Match.Map, f) (@here)</span>
                     @if (here.Imps > 0)
                     {
                         <label>Imps <input type="number" class="form-control" min="0" max="@here.Imps" value="@sent.Imps"
