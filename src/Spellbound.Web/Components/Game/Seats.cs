@@ -52,7 +52,7 @@ public static class Seats
         var tile = match.Map[hex];
         if (!tile.IsUnveiled)
         {
-            return $"Dark tile at {hex}";
+            return $"Dark tile {TileNames.Of(match.Map, hex)}";
         }
 
         var owner = match.OwnerOf(hex) is { } o ? (o == you ? "yours" : owners?[o] is null && owners is not null ? $"Bot {o + 1}'s" : $"seat {o + 1}'s") : tile.IsGuarded ? $"guarded by monsters (power {tile.Guard})" : "free";
@@ -60,6 +60,6 @@ public static class Seats
         var seen = you is { } viewer ? match.UnitsSeenBy(viewer, hex) : match.UnitsOn(hex);
         var units = seen is { IsEmpty: false } army ? $", {army}" : seen is null && match.OwnerOf(hex) is not null ? ", units unseen" : "";
         var built = match.UpgradeOn(hex) is { } upgrade ? $", with a {upgrade}" : "";
-        return $"{tile.Type} tile at {hex}, yields {tile.Yield}, {owner}{built}{units}";
+        return $"{tile.Type} tile {TileNames.Of(match.Map, hex)}, yields {tile.Yield}, {owner}{built}{units}";
     }
 }

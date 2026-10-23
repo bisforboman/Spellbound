@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Spellbound.Domain;
+using Spellbound.Web.Components.Game;
 using Spellbound.Web.Data;
 using Spellbound.Web.Hosting;
 
@@ -53,7 +54,7 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal(new Army(2, 0), saved.Match.UnitsOn(home));
         Assert.Equal(report.Lines, saved.LastReport);
         Assert.Contains("Round 2 of 8", page, StringComparison.Ordinal);
-        Assert.Contains($"You summon 2 Imps at {home}", page, StringComparison.Ordinal); // the short report, in your words
+        Assert.Contains($"You summon 2 Imps at {TileNames.Of(saved.Match.Map, home)}", page, StringComparison.Ordinal); // in your words, by tile name
         Assert.Contains("Your trait:", page, StringComparison.Ordinal);
         Assert.Contains($"href=\"match/{id}#report\"", page, StringComparison.Ordinal); // the jump bar
     }

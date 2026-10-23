@@ -115,7 +115,7 @@
 {
     var m = move;
     <div class="attack-source">
-        <span>@m.Units from @m.From to @m.To</span>
+        <span>@m.Units from @TileNames.Of(Match.Map, m.From) to @TileNames.Of(Match.Map, m.To)</span>
         <button type="button" class="btn btn-link" @onclick="() => moves.Remove(m)">Remove</button>
     </div>
 }
@@ -127,7 +127,7 @@
             <option value="">Choose a tile with units</option>
             @foreach (var h in MoveFroms())
             {
-                <option value="@Key(h)">@h (@Movable(h))</option>
+                <option value="@Key(h)">@TileNames.Of(Match.Map, h) (@Movable(h))</option>
             }
         </select>
         @if (Parse(moveFrom) is { } from)
@@ -137,7 +137,7 @@
                 <option value="">Choose a neighbouring tile of yours</option>
                 @foreach (var h in Me.Tiles.Where(from.IsNextTo).OrderBy(h => h.Q).ThenBy(h => h.R))
                 {
-                    <option value="@Key(h)">@h</option>
+                    <option value="@Key(h)">@Seats.Describe(Match, h, You, Owners)</option>
                 }
             </select>
             var movable = Movable(from);
@@ -214,7 +214,7 @@
                     <option value="">Choose another tile of yours</option>
                     @foreach (var h in Me.Tiles.Where(h => h != on).OrderBy(h => h.Q).ThenBy(h => h.R))
                     {
-                        <option value="@Key(h)">@h</option>
+                        <option value="@Key(h)">@Seats.Describe(Match, h, You, Owners)</option>
                     }
                 </select>
                 var free = Riders(on);
@@ -282,12 +282,12 @@
     <div class="ledger mt-2">
         @foreach (var line in check.Lines)
         {
-            <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@line</p>
+            <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@TileNames.In(Match.Map, line)</p>
         }
     </div>
 }
 <div class="action-bar">
-    <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@ActionSummary(check)</p>
+    <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@TileNames.In(Match.Map, ActionSummary(check))</p>
     <div class="action-row">
         <button type="button" class="btn btn-primary btn-lg" disabled="@(Busy || check is not { Succeeded: true })"
                 @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance@(orders?.Cast is { } cast ? $" and {cast.Spell}" : "")@(orders?.Guess is not null ? " and guess" : "")</button>
@@ -457,7 +457,7 @@
     private string SpellSummary() => (spell, Parse(spellTarget)) switch
     {
         (null, _) => "none",
-        ({ } s, { } on) => $"{s} on {on}",
+        ({ } s, { } on) => $"{s} on {TileNames.Of(Match.Map, on)}",
         ({ } s, null) => $"{s}, choose a tile",
     };
 
