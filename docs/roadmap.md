@@ -71,7 +71,10 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   choices, 21 Oct 2026): a bottom bar that jumps to Map, Orders, Report and Standings; the action (Commit, Bid and
   Pass, Choose) and its cost fixed above it in thumb reach; the stances as a 2×2 grid; Moves and Spell folded behind
   a header that says what's in them; and a short report (your lines, your battles, where the match is) with
-  "Everything that happened" a tap away
+  "Everything that happened" a tap away. A match starts in three steps (owner's choice, 23 Oct 2026): a welcome
+  (your seat, who's playing, how the match goes), the trait with the map still dark, then the map and the first
+  auction; the standings are folded (with who leads) until the Standings tab opens them, and open by themselves at
+  the end
 - [x] PWA manifest and icons so the game can be added to the home screen *(already built)*
 - [x] Integration test for a round (WebApplicationFactory on a real PostgreSQL, like the platform's tests):
   `RoundFlowTests` commits a round and reads the match page back over HTTP, checks that failed orders change nothing

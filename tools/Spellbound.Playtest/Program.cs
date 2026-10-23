@@ -267,13 +267,22 @@ namespace Spellbound.Playtest
                 await Expect(page, "Play bots");
                 await page.ClickAsync("button:has-text('Play bots')");
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
-                await Expect(page, "Choose your trait");
+                await Expect(page, "Welcome to match");
+                await Expect(page, "against Bot 2 and Bot 3");
             });
             await StepAsync(merlin, "trait", async page =>
             {
+                await page.ClickAsync("button:has-text('Next: choose your trait')");
+                await Expect(page, "Choose your trait");
+                if (await page.Locator(".hex-map").CountAsync() > 0)
+                {
+                    throw new PlaytestException("The map shows before the trait is chosen.");
+                }
+
                 await page.Locator("input[name='trait']").Nth(1).CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening auction 1 of 3");
+                await Expect(page, "The map is revealed");
                 await Expect(page, "Your trait:");
             });
             await StepAsync(merlin, "bid", async page =>
@@ -284,6 +293,21 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Bid 2 mana')");
                 await Expect(page, "Opening auction 2 of 3");
                 await Expect(page, "What just happened");
+            });
+            await StepAsync(merlin, "standings", async page =>
+            {
+                // Folded during the match; the bottom tab opens it.
+                if (await page.Locator("table.standings").CountAsync() > 0)
+                {
+                    throw new PlaytestException("The standings are open before anyone asked for them.");
+                }
+
+                await page.ClickAsync(".match-tabs button:has-text('Standings')");
+                await Expect(page, "nobody has points yet");
+                await page.Locator("table.standings").WaitForAsync();
+                await page.WaitForFunctionAsync(
+                    "() => { const r = document.querySelector('table.standings').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }",
+                    null, new PageWaitForFunctionOptions { Timeout = 5_000 });
             });
             await StepAsync(merlin, "pass-to-the-rounds", async page =>
             {
@@ -455,6 +479,7 @@ namespace Spellbound.Playtest
                 }
 
                 await Expect(page, "Over after 8 rounds");
+                await page.Locator("table.standings").WaitForAsync(); // open by itself at the end
             });
             var invite = string.Empty;
             var friendMatch = string.Empty;
@@ -481,11 +506,12 @@ namespace Spellbound.Playtest
                 await Expect(page, "Starts now: 2 people and 0 bots");
                 await page.ClickAsync("button:has-text('Start the match')");
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
-                await Expect(page, "Choose your trait");
+                await Expect(page, "Welcome to match");
                 friendMatch = new Uri(page.Url).AbsolutePath;
             });
             await StepAsync(merlin, "commit-and-wait", async page =>
             {
+                await page.ClickAsync("button:has-text('Next: choose your trait')");
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await page.ClickAsync("button:has-text('Pass')");
@@ -500,6 +526,7 @@ namespace Spellbound.Playtest
                 await GoAsync(page, invite); // the invite sends a player in the match on to it
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
                 await Expect(page, "Seat 1 committed and waits on you");
+                await page.ClickAsync("button:has-text('Next: choose your trait')");
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await page.ClickAsync("button:has-text('Pass')");
@@ -534,7 +561,7 @@ namespace Spellbound.Playtest
                 await GoAsync(page, "/match/new");
                 await page.ClickAsync("label:has-text('5 players')");
                 await page.ClickAsync("button:has-text('Play bots')");
-                await Expect(page, "Choose your trait");
+                await page.ClickAsync("button:has-text('Next: choose your trait')");
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening auction 1 of 3");

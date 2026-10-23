@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject MatchPlay Play
 @inject TimeProvider Time
+@inject NavigationManager Nav
 
 <PageTitle>Match @Id</PageTitle>
 
@@ -19,6 +20,8 @@ else
     var match = view.Match;
     var me = match.Seats[you];
     var playing = view.IsRunning && !view.Away.Contains(you);
+    // The start of a match in steps: a welcome, the trait (the map stays dark), then the map and the first auction.
+    var drafting = playing && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null && !view.Committed.Contains(you);
     <div class="match-page">
     <h1>Match @Id</h1>
     <p class="match-status">
@@ -32,14 +35,17 @@ else
         <p class="trait-line">Your trait: <b>@mine</b>, @match.GoalText(mine)</p>
     }
 
-    <section id="map">
-    <HexMap Match="match" You="you" Owners="view.Owners" Selected="selected" Highlight="auction" OnSelect="Select" />
-
-    @if (selected is { } tile)
+    @if (!drafting)
     {
-        <p class="tile-panel">@Seats.Describe(match, tile, you, view.Owners)@(auction.Contains(tile) ? ", up for auction" : "").</p>
+        <section id="map">
+        <HexMap Match="match" You="you" Owners="view.Owners" Selected="selected" Highlight="auction" OnSelect="Select" />
+
+        @if (selected is { } tile)
+        {
+            <p class="tile-panel">@Seats.Describe(match, tile, you, view.Owners)@(auction.Contains(tile) ? ", up for auction" : "").</p>
+        }
+        </section>
     }
-    </section>
 
     <section id="orders">
     @if (status is not null)
@@ -76,11 +82,32 @@ else
             </div>
         </div>
     }
-    else if (playing && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null)
+    else if (drafting && !welcomed)
     {
+        <StartSteps Step="1" />
+        <h2 class="h4">Welcome to match @Id</h2>
+        <p>You play seat @(you + 1) against @string.Join(" and ", match.Seats.Where(s => s.Index != you).Select(s => Seats.Name(view, s.Index, you))).
+            The map lies dark; this is how the match goes:</p>
+        <ol class="start-plan">
+            <li><b>Choose your trait</b>: a secret goal, scored at the end.</li>
+            <li><b>The opening</b>: @match.Rules.OpeningUnveils auctions reveal the map. Bid mana for a tile, or pass and
+                get one nobody wanted.</li>
+            <li><b>@match.Rules.Rounds rounds</b>: each round, attack, attune or summon. Points are banked every round,
+                and the most points wins.</li>
+        </ol>
+        <div class="action-bar">
+            <p class="action-sum">First, your trait.</p>
+            <div class="action-row">
+                <button type="button" class="btn btn-primary btn-lg" @onclick="() => welcomed = true">Next: choose your trait</button>
+            </div>
+        </div>
+    }
+    else if (drafting)
+    {
+        <StartSteps Step="2" />
         <h2 class="h4">Choose your trait</h2>
-        <p>Your trait gives you a goal, scored at the end. Nobody else was offered these, and rivals only learn which
-            you chose when the rounds begin.</p>
+        <p>Your trait gives you a goal, scored at the end. Nobody else was offered these, and rivals never learn which
+            you chose until the match ends: they can only guess. The map is revealed once you have chosen.</p>
         <fieldset class="traits">
             @foreach (var offered in me.Offer)
             {
@@ -100,7 +127,16 @@ else
     }
     else if (playing && match.Phase == MatchPhase.Opening)
     {
+        @if (match.OpeningUnveil == 1)
+        {
+            <StartSteps Step="3" />
+        }
         <h2 class="h4">Opening auction @match.OpeningUnveil of @match.Rules.OpeningUnveils</h2>
+        @if (match.OpeningUnveil == 1)
+        {
+            <p>The map is revealed: @match.OnAuction.Count tiles are up for auction, marked on the map. Whoever bids
+                highest on a tile takes it; everyone else gets a tile nobody wanted.</p>
+        }
         <p>Bid mana on one tile, or pass. Tap a marked tile on the map, or choose here:</p>
         @foreach (var hex in match.OnAuction)
         {
@@ -204,8 +240,16 @@ else
         </section>
     }
 
+    @if (!drafting)
+    {
     <section id="standings">
-    <h2 class="h4 mt-4">Standings</h2>
+    <button type="button" class="fold-head mt-4" aria-expanded="@showStandings" @onclick="() => showStandings = !showStandings">
+        <span class="fold-title">Standings @(showStandings ? "▾" : "▸")</span>
+        <span class="fold-sum">@Leaders(match)</span>
+    </button>
+    @if (showStandings)
+    {
+    <div class="fold-body">
     <table class="table standings">
         <thead><tr><th>Seat</th><th>Points</th><th>Tiles</th><th>Mana</th></tr></thead>
         <tbody>
@@ -235,7 +279,10 @@ else
     {
         <p><b>@string.Join(" and ", match.Winners.Select(w => Seats.Name(view, w.Index, you))) @(match.Winners.Count == 1 && match.Winners[0].Index != you ? "wins" : "win").</b></p>
     }
+    </div>
+    }
     </section>
+    }
     <p><a href="">Back home</a></p>
     </div>
 
@@ -243,7 +290,7 @@ else
         <a href="match/@Id#map">Map</a>
         <a href="match/@Id#orders">@(match.Phase == MatchPhase.Ended ? "End" : "Orders")</a>
         <a href="match/@Id#report">Report</a>
-        <a href="match/@Id#standings">Standings</a>
+        <button type="button" @onclick="OpenStandings">Standings</button>
     </nav>
 }
 
@@ -266,6 +313,9 @@ else
     private bool loading = true;
     private bool busy;
     private int? handOff;
+    private bool welcomed;
+    private bool showStandings;
+    private bool scrollToStandings;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -277,6 +327,7 @@ else
     private async Task LoadAsync()
     {
         view = await Play.ViewAsync(Id, ownerId);
+        showStandings |= view?.Match.Phase == MatchPhase.Ended; // the payoff of an ended match
         you = view?.SeatOf(ownerId) ?? 0;
         auction = view?.Match.OnAuction.ToHashSet() ?? [];
         if (selected is { } s && view?.Match.Map.Contains(s) != true)
@@ -288,6 +339,36 @@ else
     }
 
     private void Select(Hex hex) => selected = hex;
+
+    /// <summary>The bottom tab: opens the standings, then (once they are on the page) scrolls to them.</summary>
+    private void OpenStandings()
+    {
+        showStandings = true;
+        scrollToStandings = true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (scrollToStandings)
+        {
+            scrollToStandings = false;
+            Nav.NavigateTo($"match/{Id}#standings");
+        }
+    }
+
+    /// <summary>Who leads on points, for the folded standings: "Bot 3 leads, 4 points".</summary>
+    private string Leaders(Match match)
+    {
+        var top = match.Seats.Max(s => s.Score);
+        if (top == 0)
+        {
+            return "nobody has points yet";
+        }
+
+        var leaders = match.Seats.Where(s => s.Score == top).Select(s => Seats.Name(view!, s.Index, you)).ToList();
+        var name = string.Join(" and ", leaders);
+        return $"{name} {(leaders.Count == 1 && name != "You" ? "leads" : "lead")}, {top} {(top == 1 ? "point" : "points")}";
+    }
 
     private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, selected, amount));
 
