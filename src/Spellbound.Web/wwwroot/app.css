@@ -1191,7 +1191,7 @@ tr.you td {
             flex: 1;
         }
 
-/* The view tabs: Board, Report, Standings. The current one is lit; a dot marks a report not yet read. */
+/* The view tabs: Board, Report, Standings, Help. The current one is lit; a dot marks a report not yet read. */
 .match-tabs {
     position: fixed;
     bottom: 0;
@@ -1385,20 +1385,6 @@ tr.you td {
     border-radius: 3px;
     background: var(--seat);
     box-shadow: 0 0 0 2px var(--paper-edge);
-}
-
-.help-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--paper-edge);
-    border-radius: 50%;
-    color: var(--ink);
-    font-family: var(--font-label);
-    font-weight: 700;
-    text-decoration: none;
 }
 
 .help-list {

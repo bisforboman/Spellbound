@@ -1,24 +1,14 @@
-@page "/match/{Id:long}/help"
-@attribute [Authorize]
-@inject MatchPlay Play
 @inject TileArt Art
 
-@* The help page behind the match page's "?": what doesn't need to be on the main screen every round (owner's choice,
-   24 Oct 2026). Your trait's goal, the tile types, the opening, a round, and scoring. *@
+@* The match page's Help view: what doesn't need to be on the main screen every round (owner's choice, 24 Oct 2026).
+   Your trait's goal, the tile types, the opening, a round, and scoring. *@
 
-<PageTitle>How to play</PageTitle>
-
-@if (view is null)
-{
-    <p class="text-muted">@(loaded ? "There is no such match that you sit in." : "Loading…")</p>
+@{
+    var match = Match;
+    var me = match.Seats[You];
 }
-else
-{
-    var match = view.Match;
-    var me = match.Seats[you];
     <div class="match-help">
-    <h1>How to play</h1>
-    <p><a href="match/@Id">Back to the match</a></p>
+    <h2 class="h4">How to play</h2>
 
     @if (me.Trait is { } trait)
     {
@@ -71,28 +61,14 @@ else
             <li><b>@t</b>: @match.GoalText(t)</li>
         }
     </ul>
-    <p><a href="match/@Id">Back to the match</a></p>
     </div>
-}
 
 @code {
-    [Parameter]
-    public long Id { get; set; }
+    [Parameter, EditorRequired]
+    public Match Match { get; set; } = default!;
 
-    [CascadingParameter]
-    private Task<AuthenticationState> AuthState { get; set; } = default!;
+    [Parameter]
+    public int You { get; set; }
 
     private static string Capitalised(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
-
-    private LoadedMatch? view;
-    private int you;
-    private bool loaded;
-
-    protected override async Task OnParametersSetAsync()
-    {
-        var ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-        view = await Play.ViewAsync(Id, ownerId);
-        you = view?.SeatOf(ownerId) ?? 0;
-        loaded = true;
-    }
 }

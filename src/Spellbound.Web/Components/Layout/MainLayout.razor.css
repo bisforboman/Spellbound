@@ -50,19 +50,6 @@
         padding-bottom: 5rem; /* room for the bottom nav */
     }
 
-.site-footer {
-    margin-top: 2rem;
-    text-align: center;
-}
-
-    .site-footer a {
-        display: inline-block;
-        min-height: 2.75rem; /* 44 px tap target */
-        line-height: 2.75rem;
-        padding: 0 1rem;
-        color: var(--bs-secondary-color);
-    }
-
 .bottom-nav {
     position: fixed;
     bottom: 0;
