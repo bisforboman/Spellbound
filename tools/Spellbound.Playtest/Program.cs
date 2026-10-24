@@ -294,29 +294,19 @@ namespace Spellbound.Playtest
                 await Expect(page, "Opening auction 2 of 3");
                 await Expect(page, "What just happened");
             });
-            await StepAsync(merlin, "standings", async page =>
-            {
-                // Folded during the match; the bottom tab opens it.
-                if (await page.Locator("table.standings").CountAsync() > 0)
-                {
-                    throw new PlaytestException("The standings are open before anyone asked for them.");
-                }
-
-                await page.ClickAsync(".match-tabs button:has-text('Standings')");
-                await Expect(page, "nobody has points yet");
-                await page.Locator("table.standings").WaitForAsync();
-                await page.WaitForFunctionAsync(
-                    "() => { const r = document.querySelector('table.standings').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }",
-                    null, new PageWaitForFunctionOptions { Timeout = 5_000 });
-            });
             await StepAsync(merlin, "pass-to-the-rounds", async page =>
             {
+                // Nobody scores in the opening, so the standings wait for the rounds.
+                if (await page.Locator("#standings, .match-tabs button:has-text('Standings')").CountAsync() > 0)
+                {
+                    throw new PlaytestException("The standings show during the opening.");
+                }
+
                 await page.ClickAsync("button:has-text('Pass')");
                 await Expect(page, "Opening auction 3 of 3");
                 await page.ClickAsync("button:has-text('Pass')");
                 await Expect(page, "Round 1 of 8");
                 await Expect(page, "The rounds begin");
-                await Expect(page, "Rivals' traits are secret until the end");
                 // The fog of war: a rival's income is its mana, so nobody else reads it.
                 await page.ClickAsync("button.report-toggle:has-text('Everything that happened')");
                 await Expect(page, "Only what concerns you");
@@ -324,6 +314,21 @@ namespace Spellbound.Playtest
                 {
                     throw new InvalidOperationException("A rival's income shows through the fog.");
                 }
+            });
+            await StepAsync(merlin, "standings", async page =>
+            {
+                // Folded during the rounds; the bottom tab opens it.
+                if (await page.Locator("table.standings").CountAsync() > 0)
+                {
+                    throw new PlaytestException("The standings are open before anyone asked for them.");
+                }
+
+                await page.ClickAsync(".match-tabs button:has-text('Standings')");
+                await page.Locator("table.standings").WaitForAsync();
+                await Expect(page, "Rivals' traits are secret until the end");
+                await page.WaitForFunctionAsync(
+                    "() => { const r = document.querySelector('table.standings').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }",
+                    null, new PageWaitForFunctionOptions { Timeout = 5_000 });
             });
             await StepAsync(merlin, "summon", async page =>
             {

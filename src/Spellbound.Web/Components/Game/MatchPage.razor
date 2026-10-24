@@ -240,7 +240,8 @@ else
         </section>
     }
 
-    @if (!drafting)
+    @* Nobody scores in the opening, so the standings wait for the rounds. *@
+    @if (match.Phase != MatchPhase.Opening)
     {
     <section id="standings">
     <button type="button" class="fold-head mt-4" aria-expanded="@showStandings" @onclick="() => showStandings = !showStandings">
@@ -292,7 +293,10 @@ else
         <a href="match/@Id#map">Map</a>
         <a href="match/@Id#orders">@(match.Phase == MatchPhase.Ended ? "End" : "Orders")</a>
         <a href="match/@Id#report">Report</a>
-        <button type="button" @onclick="OpenStandings">Standings</button>
+        @if (match.Phase != MatchPhase.Opening)
+        {
+            <button type="button" @onclick="OpenStandings">Standings</button>
+        }
     </nav>
     }
 }
