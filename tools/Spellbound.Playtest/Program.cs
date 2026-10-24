@@ -318,7 +318,7 @@ namespace Spellbound.Playtest
                 {
                     if (await page.Locator("input[name='pick']").CountAsync() > 0)
                     {
-                        await page.Locator("input[name='pick']").First.CheckAsync();
+                        await page.Locator("label.choice:has(input[name='pick'])").First.ClickAsync();
                         await page.ClickAsync("button:has-text('Pick '):not([disabled])");
                     }
 
@@ -607,7 +607,7 @@ namespace Spellbound.Playtest
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening draft 1 of 3");
-                await page.Locator("input[name='pick']").First.CheckAsync();
+                await page.Locator("label.choice:has(input[name='pick'])").First.ClickAsync();
                 await page.ClickAsync("button:has-text('Pick '):not([disabled])");
                 // Morgana got the last tile, and the second draft starts with her.
                 await Expect(page, "Seat 2 picks next");
@@ -621,7 +621,7 @@ namespace Spellbound.Playtest
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening draft 2 of 3");
-                await page.Locator("input[name='pick']").First.CheckAsync();
+                await page.Locator("label.choice:has(input[name='pick'])").First.ClickAsync();
                 await page.ClickAsync("button:has-text('Pick '):not([disabled])");
                 await Expect(page, "Opening draft 3 of 3");
                 await Expect(page, "Seat 1 picks next");
@@ -637,7 +637,7 @@ namespace Spellbound.Playtest
             {
                 await page.ClickAsync("button:has-text('Hand seat 2 to a bot')");
                 await Expect(page, "A bot plays seat 2 from now on");
-                await page.Locator("input[name='pick']").First.CheckAsync();
+                await page.Locator("label.choice:has(input[name='pick'])").First.ClickAsync();
                 await page.ClickAsync("button:has-text('Pick '):not([disabled])");
                 await Expect(page, "Round 1 of 8"); // the bot got the last tile
             });
