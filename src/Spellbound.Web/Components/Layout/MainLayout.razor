@@ -20,15 +20,14 @@
         </Authorized>
         <NotAuthorized>
             <a href="Account/Login">Sign in</a>
+            @* Signed in, the notice is linked from the Account page: four links don't fit the bar at 360 px. *@
+            <a href="privacy">Privacy</a>
         </NotAuthorized>
     </AuthorizeView>
 </header>
 
 <main class="content">
     @Body
-    <footer class="site-footer">
-        <a href="privacy">Privacy</a>
-    </footer>
 </main>
 
 </div>
