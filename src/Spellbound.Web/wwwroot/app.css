@@ -957,12 +957,22 @@ tr.you td {
         scroll-margin-top: 3.5rem; /* below the sticky top bar */
     }
 
-/* The stances: a 2×2 grid of short plates */
+/* The stances: one plate a row */
 .stances {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr; /* one stance a row, its options under it */
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+}
+
+    .stance-options {
+        margin: -0.25rem 0 0.5rem 1.6rem;
+    }
+
+/* What the next tap on the map is for */
+.pick-prompt {
+    color: var(--school);
+    font-style: italic;
 }
 
     .stances .choice {

@@ -52,7 +52,7 @@ else
     @if (!drafting)
     {
         <section id="map">
-        <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is null ? auction : null)" OnSelect="Select" ShowNames="named"
+        <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is not null ? null : match.Phase == MatchPhase.Rounds && playing ? ordersForm?.Pickable : auction)" OnSelect="Select" ShowNames="named"
                 Unowned="@ReplayPending"
                 Gains="@(fresh ? match.Seats.SelectMany(s => s.Tiles).ToDictionary(h => h, match.IncomeOf) : null)" />
 
@@ -205,7 +205,8 @@ else
     }
     else if (playing && match.Phase == MatchPhase.Rounds)
     {
-        <OrdersForm Match="match" You="you" Owners="view.Owners" Selected="selected" OnSelect="Select" OnCommit="CommitAsync" Busy="busy" />
+        <OrdersForm @ref="ordersForm" Match="match" You="you" Owners="view.Owners" Selected="selected" OnCommit="CommitAsync"
+                    OnChanged="OrdersChanged" Busy="busy" />
     }
     else if (match.Phase == MatchPhase.Ended)
     {
@@ -358,6 +359,7 @@ else
     private bool showStandings;
     private bool scrollToStandings;
     private int? seenRound;
+    private OrdersForm? ordersForm;
     private string? seenReport;
     private IReadOnlyList<string>? replay;
     private int replayBeat;
@@ -406,7 +408,20 @@ else
         amount = Math.Clamp(amount, view?.Match.Rules.MinBid ?? 1, Math.Max(1, view?.Match.Seats[you].Mana ?? 1));
     }
 
-    private void Select(Hex hex) => selected = hex;
+    /// <summary>A tap on the map: the orders' pick under way takes it first (a move, a spell's tile, where to guard),
+    /// else it is the tile to show and, if it suits, the stance's.</summary>
+    private void Select(Hex hex)
+    {
+        if (ordersForm?.Tap(hex) != true)
+        {
+            selected = hex;
+        }
+    }
+
+    /// <summary>The orders changed what can be tapped: draw the map's outlines again (the page renders after this).</summary>
+    private static void OrdersChanged()
+    {
+    }
 
     /// <summary>Where the match is, in a few characters for the top line.</summary>
     private static string ShortStep(Match match, bool isRunning) => (isRunning, match.Phase) switch
