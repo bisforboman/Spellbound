@@ -894,8 +894,8 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     .look-swatch[data-swatch="slate"] { background: radial-gradient(circle at 50% 40%, #33404a, #0b0d10 75%); }
 
 /* The match map (Components/Game/HexMap.razor): soot hexes for dark land, charred leather (or the painted tile art)
-   once unveiled, and a ring inside the edge in the owner's ink. Marked tiles (to pick) get a dashed bone edge; the
-   chosen one a solid edge in the page's ink. The ring and the edge are separate, so a held tile can be both. */
+   once unveiled, and a held tile's edge in its owner's ink, left out between tiles of the same owner (one zone).
+   Marked tiles (to pick) get a dashed bone edge; the chosen one a solid edge in the page's ink, over its zone. */
 .hex-map {
     display: block;
     width: 100%;
@@ -946,12 +946,22 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         stroke-width: 1.4;
     }
 
-    .hex-map .held {
-        fill: none;
-        stroke-width: 1.5;
+    /* A held tile's one border is its zone edge (below), not the plain rim */
+    .hex-map .held:not(.selected):not(.marked) .rim {
+        stroke: none;
     }
 
-    .hex-map .yours .held {
+    .hex-map .zones {
+        pointer-events: none;
+    }
+
+    .hex-map .zone {
+        fill: none;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+    }
+
+    .hex-map .zone.yours {
         stroke-width: 2.25;
     }
 
