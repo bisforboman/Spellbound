@@ -12,7 +12,7 @@
         var s = choice;
         <label class="choice">
             <input type="radio" name="stance" checked="@(stance == s.Key)" @onchange="() => ChooseStance(s.Key)" />
-            <span><b>@s.Key</b>: @s.Value@if (Favour(s.Key) is > 0 and var f) {<text> (@f <ManaIcon /> off)</text>}</span>
+            <span><b>@s.Key</b>: @s.Value@if (Favour(s.Key) is > 0 and var f) {<text> (<span class="text-nowrap">@f <ManaIcon /></span> off)</text>}</span>
         </label>
         @if (stance == s.Key)
         {
@@ -115,7 +115,7 @@ else
                 <button type="button" class="btn btn-link" @onclick="() => StartPick(Pick.SpellTarget)">Change</button></p>
             @if (chosen == Spell.Scorch)
             {
-                <label class="form-label mt-2" for="scorch-power">Power to burn (@Match.Rules.ScorchManaPerPower <ManaIcon /> each)</label>
+                <label class="form-label mt-2" for="scorch-power">Power to burn (<span class="text-nowrap">@Match.Rules.ScorchManaPerPower <ManaIcon /></span> each)</label>
                 <input id="scorch-power" type="number" class="form-control form-control-lg" min="1" max="@Match.UnitsOn(on).Power(Match.Rules)"
                        @bind="scorchPower" @bind:event="oninput" />
             }
@@ -312,11 +312,11 @@ else
                 <div class="d-flex gap-2">
                     <label class="choice flex-fill">
                         <input type="radio" name="kind" checked="@(kind == UnitKind.Imp)" @onchange="() => kind = UnitKind.Imp" />
-                        <span><b>Imps</b>: power @Match.Rules.ImpPower, @Match.Rules.ImpCost <ManaIcon /></span>
+                        <span><b>Imps</b>: power @Match.Rules.ImpPower, <span class="text-nowrap">@Match.Rules.ImpCost <ManaIcon /></span></span>
                     </label>
                     <label class="choice flex-fill">
                         <input type="radio" name="kind" checked="@(kind == UnitKind.Golem)" @onchange="() => kind = UnitKind.Golem" />
-                        <span><b>Golems</b>: power @Match.Rules.GolemPower, @Match.Rules.GolemCost <ManaIcon />, upkeep @Match.Rules.GolemUpkeep <ManaIcon /></span>
+                        <span><b>Golems</b>: power @Match.Rules.GolemPower, <span class="text-nowrap">@Match.Rules.GolemCost <ManaIcon />,</span> upkeep <span class="text-nowrap">@Match.Rules.GolemUpkeep <ManaIcon /></span></span>
                     </label>
                 </div>
                 <label class="form-label" for="count">How many</label>
@@ -333,7 +333,7 @@ else
                         <span><b>@k</b>: @Match.UpgradeEffect(k)</span>
                     </label>
                 }
-                <p class="text-muted">@Match.Rules.UpgradeCost <ManaIcon />; at most @Match.Rules.UpgradeCap upgrades; each is worth
+                <p class="text-muted"><span class="text-nowrap">@Match.Rules.UpgradeCost <ManaIcon />;</span> at most @Match.Rules.UpgradeCap upgrades; each is worth
                     @Match.Rules.PointsPerUpgrade point at the end and passes with the tile if it's taken.</p>
                 @TargetLine()
                 break;
