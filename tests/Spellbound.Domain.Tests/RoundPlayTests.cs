@@ -61,7 +61,7 @@ public class RoundPlayTests
             Assert.Equal(2, match.Map[steady].Yield);
             Assert.Equal(mana + match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value), match.Seats[0].Mana); // the income is the rolls
             var line = Assert.Single(report.Lines, l => l.StartsWith("This round's rolls: ", StringComparison.Ordinal));
-            Assert.Contains($"Wild {wild} rolls {match.Map[wild].Yield}", line, StringComparison.Ordinal);
+            Assert.Contains($"{wild}: {match.Map[wild].Yield}", line, StringComparison.Ordinal);
             Assert.DoesNotContain($"{steady}", line, StringComparison.Ordinal);
         }
 

@@ -874,6 +874,10 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         font-size: 13px;
     }
 
+    .hex-map.painted .hex-yield.range {
+        font-size: 11px; /* inside the seal */
+    }
+
     .hex-map .hex-note {
         font-size: 11px;
         fill: var(--ink-soft);

@@ -154,7 +154,7 @@ public sealed partial class Match
         foreach (var hex in seats.SelectMany(s => s.Tiles).OrderBy(h => h.Q).ThenBy(h => h.R).Where(h => Rules.Varies(Map[h].Type)))
         {
             Map.Roll(hex, Rules, random);
-            rolls.Add($"{Map[hex].Type} {hex} rolls {Map[hex].Yield}");
+            rolls.Add($"{hex}: {Map[hex].Yield}"); // short: it shows every round, and the map gives the type
         }
 
         if (rolls.Count > 0)
