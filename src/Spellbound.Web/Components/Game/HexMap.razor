@@ -18,7 +18,7 @@
         var units = You is { } viewer ? Match.UnitsSeenBy(viewer, hex) : Match.UnitsOn(hex); // null: hidden by the fog
         var classes = "hex" + (tile.IsUnveiled ? "" : " dark") + (Highlight?.Contains(hex) == true ? " marked" : "")
                       + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "");
-        <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners, mark: false)"
+        <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners, mark: false, named: ShowNames)"
            @onclick="() => OnSelect.InvokeAsync(hex)" @onkeydown="e => KeyAsync(e, hex)">
             @if (tile.IsUnveiled && Art.Paths is { } art)
             {
@@ -33,7 +33,10 @@
             }
             @if (tile.IsUnveiled)
             {
-                @Label(x, y - 18, "hex-name", TileNames.Of(Match.Map, hex))
+                @if (ShowNames)
+                {
+                    @Label(x, y - 18, "hex-name", TileNames.Of(Match.Map, hex))
+                }
                 @if (Art.Paths is null)
                 {
                     @Label(x - 10, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
@@ -109,6 +112,10 @@
 
     [Parameter]
     public EventCallback<Hex> OnSelect { get; set; }
+
+    /// <summary>Whether the hexes show their names; the opening leaves them out (only the tile up now matters).</summary>
+    [Parameter]
+    public bool ShowNames { get; set; } = true;
 
     /// <summary>What each held tile paid as a round began, shown once as a "+N" rising from it; null otherwise.</summary>
     [Parameter]
