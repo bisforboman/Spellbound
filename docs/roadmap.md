@@ -79,7 +79,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   shows its type's symbol (◆ Steady, ≈ Shifting, ✶ Wild), with a key under the map and the symbol before each tile in
   the lists; a summon asks what and how many before where. A held tile is ringed in its owner's ink instead of
   filled (heavier for yours), and the map takes painted art for the three types once it exists
-  ([tile art](tile-art.md), the owner is sourcing it)
+  ([tile art](tile-art.md), the owner is sourcing it). Shifting and Wild tiles roll their yield every round (owner's choice, 24 Oct 2026): the map shows each type's range, the round report lists the rolls
 - [x] PWA manifest and icons so the game can be added to the home screen *(already built)*
 - [x] Integration test for a round (WebApplicationFactory on a real PostgreSQL, like the platform's tests):
   `RoundFlowTests` commits a round and reads the match page back over HTTP, checks that failed orders change nothing

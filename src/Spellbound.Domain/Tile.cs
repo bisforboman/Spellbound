@@ -14,9 +14,10 @@ public enum TileType
 }
 
 /// <summary>
-/// One hex of the map. Its type is fixed when the map is made; its mana yield is decided once, when it is unveiled,
-/// and kept for the whole game. Until then it is dark: nobody knows its type or yield. A tile revealed in a later
-/// Unveil may be guarded by monsters: <see cref="Guard"/> is their battle power, 0 when unguarded.
+/// One hex of the map. Its type is fixed when the map is made. Until it is unveiled it is dark: nobody knows its type.
+/// Its mana yield is rolled from its type's range: when it is unveiled, and again for each round's income while
+/// someone holds it, so <see cref="Yield"/> is its latest roll (a Steady tile always rolls the same). A tile revealed
+/// in a later Unveil may be guarded by monsters: <see cref="Guard"/> is their battle power, 0 when unguarded.
 /// </summary>
 public sealed record Tile(Hex Hex, TileType Type, int? Yield = null, int Guard = 0)
 {

@@ -36,8 +36,8 @@ public class FavourTests
 
         match = Match.Load(match.Save(), match.Rules); // favour is saved with the match
         var mana = match.Seats[0].Mana;
-        var income = match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value) + 1; // the Shrine yields 1 more
         Play(match, Orders.Build(0, tile, Upgrade.Shrine));
+        var income = match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value) + 1; // this round's rolls; the Shrine yields 1 more
 
         Assert.Equal(mana - 2 + income, match.Seats[0].Mana);
         Assert.Equal(0, match.FavourOf(Stance.Build)); // chosen, so it resets

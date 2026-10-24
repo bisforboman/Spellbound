@@ -7,7 +7,7 @@ A one-page version of `game-design.md` for a first test on a table. All numbers 
 ## Setup
 
 1. Make 19 face-down hexes and lay them out as a round board (1 in the middle, a ring of 6, an outer ring of 12).
-2. Write a type on each: **Steady** 7, **Shifting** 6, **Wild** 6. A tile's mana yield is decided when it's turned over: Steady = 2; Shifting = 1–3 (d6: 1–2 → 1, 3–4 → 2, 5–6 → 3); Wild = 0–4 (d6: 1 → 0, 2 → 1, 3–4 → 2, 5 → 3, 6 → 4). Write the yield on the tile.
+2. Write a type on each: **Steady** 7, **Shifting** 6, **Wild** 6. A tile's mana yield is rolled every round, at income (below): Steady = 2; Shifting = 1–3 (d6: 1–2 → 1, 3–4 → 2, 5–6 → 3); Wild = 0–4 (d6: 1 → 0, 2 → 1, 3–4 → 2, 5 → 3, 6 → 4).
 3. Each player takes **9 mana**. Play the first test **without traits**.
 
 ## The opening (before round 1)
@@ -23,7 +23,7 @@ Each player now holds 3 tiles, scattered or connected.
 
 ## A round (8 rounds)
 
-1. **Income:** each player collects the mana yield of every tile they hold.
+1. **Income:** roll a d6 for each Shifting and Wild tile someone holds (see the table above); each player collects the yield of every tile they hold.
 2. **Upkeep:** pay 1 mana per Golem. A Golem you can't pay for dissolves.
 3. **Commit, in secret:** one stance plus any unit moves. Reveal together. (Later Unveils in rounds 2 and 4 happen before income.)
    - **Attune:** claim one free, unguarded tile next to any tile you own. Cost: **1 + 1 for each of your first 3 tiles, + 3 for each tile beyond**. If two players attune the same tile, nobody gets it and nobody pays.

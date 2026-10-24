@@ -202,8 +202,8 @@ public sealed partial class Match
     }
 
     private string Describe(Hex hex) =>
-        $"the {Map[hex].Type} tile at {hex} (yields {Map[hex].Yield}" + (Map[hex].IsGuarded ? $", guarded by power {Map[hex].Guard})" : ")");
+        $"the {Map[hex].Type} tile at {hex} (yields {Rules.YieldRange(Map[hex].Type)}" + (Map[hex].IsGuarded ? $", guarded by power {Map[hex].Guard})" : ")");
 
     /// <summary>A tile's type, place and yield, for lines that say who holds it separately.</summary>
-    private string DescribePlain(Hex hex) => $"the {Map[hex].Type} tile at {hex} (yields {Map[hex].Yield})";
+    private string DescribePlain(Hex hex) => $"the {Map[hex].Type} tile at {hex} (yields {Rules.YieldRange(Map[hex].Type)})";
 }

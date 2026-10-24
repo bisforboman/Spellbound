@@ -54,8 +54,8 @@ public static class Bot
         }
 
         var me = match.Seats[seat];
-        var best = PickGood(match.OnAuction, h => match.Map[h].Yield!.Value + (Suits(match, me, h) ? TraitLean : 0), random);
-        var amount = Math.Clamp(match.Map[best].Yield!.Value + random.Next(3) - 1, match.Rules.MinBid, Math.Max(match.Rules.MinBid, mana / 2));
+        var best = PickGood(match.OnAuction, h => Worth(match, h) + (Suits(match, me, h) ? TraitLean : 0), random);
+        var amount = Math.Clamp(Worth(match, best) + random.Next(3) - 1, match.Rules.MinBid, Math.Max(match.Rules.MinBid, mana / 2));
         return new Bid(seat, best, amount);
     }
 
@@ -160,7 +160,7 @@ public static class Bot
     private static Orders? LastUpgrade(Match match, int seat)
     {
         var me = match.Seats[seat];
-        var open = me.Tiles.Where(h => match.UpgradeOn(h) is null).OrderByDescending(h => match.Map[h].Yield)
+        var open = me.Tiles.Where(h => match.UpgradeOn(h) is null).OrderByDescending(h => Worth(match, h))
             .ThenBy(h => h.Q).ThenBy(h => h.R).ToList();
         return open.Count == 0 || match.UpgradesOf(me) >= match.Rules.UpgradeCap ? null : Orders.Build(seat, open[0], Upgrade.Shrine);
     }
@@ -185,12 +185,19 @@ public static class Bot
             Trait.Wanderer => me.Tiles.Count > 0 && !me.Tiles.Any(hex.IsNextTo),
             Trait.Warbrand or Trait.Spellweaver => neighbours.Any(n => match.OwnerOf(n) is { } o && o != me.Index),
             Trait.Beastbane => neighbours.Any(n => match.Map[n].IsGuarded) || neighbours.Count(n => !match.Map[n].IsUnveiled) >= 3,
-            Trait.Golemwright => match.Map[hex].Yield >= 3,
+            Trait.Golemwright => match.Map[hex].Type == TileType.Steady, // a sure yield for the upkeep
             _ => false,
         };
     }
 
     /// <summary>One of the hexes scoring within 1 of the best, at random, so bots don't all reach for the same one.</summary>
+    /// <summary>What a tile yields on average: the bots weigh tiles by it, since a tile rolls its yield each round.</summary>
+    private static int Worth(Match match, Hex hex) => (int)Math.Round(match.Rules.AverageYield(match.Map[hex].Type));
+
+    /// <summary>A tile's average income, a Shrine's included.</summary>
+    private static int Income(Match match, Hex hex) =>
+        Worth(match, hex) + (match.UpgradeOn(hex) == Upgrade.Shrine ? match.Rules.ShrineYield : 0);
+
     private static Hex PickGood(IReadOnlyCollection<Hex> hexes, Func<Hex, int> score, IRandomSource random)
     {
         var best = hexes.Max(score);
@@ -233,7 +240,8 @@ public static class Bot
             yield return new SpellCast(Spell.Scorch, rival, Power(rival) - MyPowerNextTo(rival) + 1);
         }
 
-        foreach (var rival in rivals.Where(h => match.Map[h].Yield >= 3).OrderByDescending(h => match.Map[h].Yield))
+        foreach (var rival in rivals.Where(h => Income(match, h) >= 3 || match.Map[h].Type == TileType.Wild) // a Shrine, or a tile that may roll high
+                     .OrderByDescending(h => Income(match, h)).ThenBy(h => h.Q).ThenBy(h => h.R))
         {
             yield return new SpellCast(Spell.Blight, rival);
         }
@@ -263,10 +271,10 @@ public static class Bot
 
         var free = mine.SelectMany(match.Map.NeighboursOf).Distinct()
             .Where(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded).ToList();
-        var attune = free.Count == 0 ? null : Orders.Attune(seat, PickGood(free, h => match.Map[h].Yield!.Value, random));
-        var richFree = free.Where(h => match.Map[h].Yield >= 2).ToList();
+        var attune = free.Count == 0 ? null : Orders.Attune(seat, PickGood(free, h => Worth(match, h), random));
+        var richFree = free.Where(h => Worth(match, h) >= 2).ToList();
         var richAttune = richFree.Count == 0 ? null
-            : Orders.Attune(seat, richFree.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First());
+            : Orders.Attune(seat, richFree.OrderByDescending(h => Worth(match, h)).ThenBy(h => h.Q).ThenBy(h => h.R).First());
 
         // Every plan takes land while it's cheap (a small realm's price): no real player passes up a tile for a few mana.
         var cheap = attune is not null && rules.AttunePrice(me.Tiles.Count) <= rules.AttunePrice(rules.AttuneCheapTiles) ? attune : null;
@@ -287,7 +295,7 @@ public static class Bot
             var threatened = defend?.Target is { } d && open.Contains(d) ? d : (Hex?)null;
             return threatened is { } tower
                 ? Orders.Build(seat, tower, Upgrade.Tower)
-                : Orders.Build(seat, open.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First(), first);
+                : Orders.Build(seat, open.OrderByDescending(h => Worth(match, h)).ThenBy(h => h.Q).ThenBy(h => h.R).First(), first);
         }
 
         IEnumerable<Orders?> order = plan switch
@@ -356,7 +364,7 @@ public static class Bot
 
         // Attune: one of the best free tiles next to its land, leaning to its trait's.
         var attune = free.Count == 0 ? null
-            : Orders.Attune(seat, PickGood(free, h => match.Map[h].Yield!.Value + (Suits(match, me, h) ? TraitLean : 0), random));
+            : Orders.Attune(seat, PickGood(free, h => Worth(match, h) + (Suits(match, me, h) ? TraitLean : 0), random));
 
         // Summon: half its mana (at least one unit's worth) on a tile next to a rival, monsters or free land.
         // A seat always holds a tile after the opening: the last one can't be taken.
@@ -389,7 +397,7 @@ public static class Bot
             }
             else if (open.Count > 0)
             {
-                var best = open.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First();
+                var best = open.OrderByDescending(h => Worth(match, h)).ThenBy(h => h.Q).ThenBy(h => h.R).First();
                 yield return Orders.Build(seat, best, me.Trait is Trait.Spellweaver or Trait.Hexer ? Upgrade.Sanctum : Upgrade.Shrine);
             }
         }
