@@ -19,14 +19,17 @@ public static partial class TileNames
         All(map).TryGetValue(hex, out var name) ? name : hex.ToString();
 
     /// <summary>A line with every tile's coordinates replaced by its name: "the Steady tile at (0, 1)" reads "the Steady
-    /// tile C3", and "takes (0, 1)" reads "takes C3".</summary>
-    public static string In(GameMap map, string line)
+    /// tile C3", and "takes (0, 1)" reads "takes C3". Unless <paramref name="named"/>, the place is left out instead
+    /// ("the Steady tile"), as in the opening, where the map shows the tile up now and names would only be clutter.</summary>
+    public static string In(GameMap map, string line, bool named = true)
     {
         ArgumentNullException.ThrowIfNull(line);
         return Coordinates().Replace(line, m =>
         {
             var hex = new Hex(int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture), int.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture));
-            return map.Contains(hex) ? (m.Groups[1].Success ? "tile " : "") + Of(map, hex) : m.Value;
+            return !map.Contains(hex) ? m.Value
+                : named ? (m.Groups[1].Success ? "tile " : "") + Of(map, hex)
+                : m.Groups[1].Success ? "tile" : "the tile";
         });
     }
 

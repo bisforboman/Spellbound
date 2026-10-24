@@ -24,6 +24,8 @@ else
     var drafting = playing && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null && !view.Committed.Contains(you);
     // A round that began while the page was open plays a short animation: a banner and what each tile paid.
     var fresh = newRound == match.CurrentRound && match.Phase == MatchPhase.Rounds;
+    // Tiles go by name from the rounds on; in the opening the map marks the tile up now, and names are only clutter.
+    var named = match.Phase != MatchPhase.Opening;
     <div class="match-page">
     @if (fresh)
     {
@@ -50,12 +52,12 @@ else
     @if (!drafting)
     {
         <section id="map">
-        <HexMap Match="match" You="you" Owners="view.Owners" Selected="selected" Highlight="auction" OnSelect="Select"
+        <HexMap Match="match" You="you" Owners="view.Owners" Selected="selected" Highlight="auction" OnSelect="Select" ShowNames="named"
                 Gains="@(fresh ? match.Seats.SelectMany(s => s.Tiles).ToDictionary(h => h, match.IncomeOf) : null)" />
 
         @if (selected is { } tile)
         {
-            <p class="tile-panel">@Seats.Describe(match, tile, you, view.Owners)@(auction.Contains(tile) ? ", up for auction" : "").</p>
+            <p class="tile-panel">@Seats.Describe(match, tile, you, view.Owners, named: named)@(auction.Contains(tile) ? ", up for auction" : "").</p>
         }
         </section>
     }
@@ -157,10 +159,10 @@ else
         }
         else
         {
-            <p class="tile-up">Up now: <b>@Seats.Describe(match, up, you, view.Owners)</b>.</p>
+            <p class="tile-up">Up now: <b>@Seats.Describe(match, up, you, view.Owners, named: false)</b>.</p>
             @if (match.OnAuction.Count > 1)
             {
-                <p class="text-muted">Still to come: @string.Join(", ", match.OnAuction.Skip(1).Select(h => TileNames.Of(match.Map, h))).
+                <p class="text-muted">Still to come: @string.Join(", ", match.OnAuction.Skip(1).Select(h => $"{Seats.Mark(match.Map[h].Type)} {match.Map[h].Type}")).
                     @(match.OnAuction.Count == 2 ? "Lose this one and it's yours, free." : "The last one goes free to whoever wins none.")</p>
             }
 
@@ -171,12 +173,12 @@ else
             <div class="ledger mt-2">
                 @foreach (var line in check.Lines)
                 {
-                    <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@TileNames.In(match.Map, line)</p>
+                    <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@TileNames.In(match.Map, line, named)</p>
                 }
             </div>
 
             <div class="action-bar">
-                <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@TileNames.In(match.Map, check.Lines[0])</p>
+                <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@TileNames.In(match.Map, check.Lines[0], named)</p>
                 <div class="action-row">
                     <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="PassAsync">Pass</button>
                     <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || !check.Succeeded)" @onclick="BidAsync">Bid @amount mana</button>
@@ -210,7 +212,7 @@ else
             {
                 @if (fullReport || yours.Contains(i))
                 {
-                    <p>@Seats.Phrase(TileNames.In(match.Map, lastReport[i]), view.Owners, you)</p>
+                    <p>@Seats.Phrase(TileNames.In(match.Map, lastReport[i], named), view.Owners, you)</p>
                     @if (verdicts.TryGetValue(i, out var verdict))
                     {
                         <p class="stamp-line"><span class="stamp @(verdict.Won ? "stamp-victory" : "stamp-defeat")">@verdict.Text</span></p>
@@ -458,7 +460,7 @@ else
         try
         {
             var report = await action();
-            status = report.Succeeded ? null : view is null ? report.Lines[0] : TileNames.In(view.Match.Map, report.Lines[0]);
+            status = report.Succeeded ? null : view is null ? report.Lines[0] : TileNames.In(view.Match.Map, report.Lines[0], view.Match.Phase != MatchPhase.Opening);
             selected = null;
             await LoadAsync();
         }

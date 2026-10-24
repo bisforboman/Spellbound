@@ -30,4 +30,13 @@ public class TileNamesTests
         Assert.Equal($"Seat 1 takes {name} with 1 Imp.", TileNames.In(Map, $"Seat 1 takes {hex} with 1 Imp."));
         Assert.Equal("Seat 1 takes (40, 40).", TileNames.In(Map, "Seat 1 takes (40, 40).")); // not on this map
     }
+
+    [Fact]
+    public void Without_names_a_line_leaves_the_place_out()
+    {
+        var hex = Map.Tiles.First().Hex;
+
+        Assert.Equal("Bid 2 mana on the Steady tile (yields 2).", TileNames.In(Map, $"Bid 2 mana on the Steady tile at {hex} (yields 2).", named: false));
+        Assert.Equal("Seat 1 takes (40, 40).", TileNames.In(Map, "Seat 1 takes (40, 40).", named: false)); // not on this map
+    }
 }
