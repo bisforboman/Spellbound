@@ -20,7 +20,7 @@ public static class MatchSteps
         if (match.Phase == MatchPhase.Opening)
         {
             // The picker gets a trait now, in secret, if it has none and didn't commit: a bot, or a person who let the
-            // deadline go by. Everyone picks in the first draft, so every bot has one from then on.
+            // deadline go by. A seat that never picks before the rounds gets one as the opening ends.
             var picker = match.Picker!.Value;
             if (match.Seats[picker].Trait is null && !committed.ContainsKey(picker) && Bot.ChooseTrait(match, picker, random) is { } trait)
             {

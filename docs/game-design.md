@@ -219,7 +219,7 @@ Kept simple for now, to be extended later.
 ## Resources
 
 - **Mana:** produced by tiles (see *Tiles*); pays for attuning, summoning, building and spells (the opening draft is free).
-- **Starting mana: 4** (owner's choice, 24 Oct 2026, with the draft: about what players had left after the auction it replaced). Players start with nothing else: no tiles until the opening, and no units.
+- **Starting mana: 4** (lowered from 9 with the draft, the owner's choice, 24 Oct 2026; 4 is the simulator's number, about what players had left after the auction: see *The opening draft*). Players start with nothing else: no tiles until the opening, and no units.
 - **Unspent mana carries over** to the next round, including the starting mana, which the opening doesn't touch.
 - **Spells** use mana alongside the stance (see *Spells*).
 
