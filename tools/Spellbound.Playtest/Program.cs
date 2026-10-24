@@ -226,6 +226,7 @@ namespace Spellbound.Playtest
             var ada = await PlayerAsync("Ada", AdminEmail);
             var merlin = await PlayerAsync("Merlin", "merlin@playtest.local");
             var morgana = await PlayerAsync("Morgana", "morgana@playtest.local");
+            string? bigMap = null; // the 5-player match, for the looks
 
             foreach (var player in new[] { ada, merlin, morgana })
             {
@@ -620,7 +621,31 @@ namespace Spellbound.Playtest
                 await Expect(page, "Opening auction 1 of 3");
                 await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                 await Expect(page, "up for auction");
+                bigMap = new Uri(page.Url).PathAndQuery;
             });
+            // Every look (docs/theme.md), picked on the account page, then the 37-tile map in it; the default last, so
+            // the steps after these are in it again.
+            foreach (var look in new[] { "sigil", "table", "dust", "slate", "grimoire" })
+            {
+                await StepAsync(morgana, $"look-{look}", async page =>
+                {
+                    await GoAsync(page, "/Account/Manage");
+                    await page.ClickAsync($".look-option[href^='look/{look}?']");
+                    await page.WaitForURLAsync(url => url.Contains("/Account/Manage", StringComparison.Ordinal));
+                    var set = await page.GetAttributeAsync("html", "data-look");
+                    if (set != look)
+                    {
+                        throw new PlaytestException($"Picking the {look} look left data-look at \"{set}\".");
+                    }
+
+                    await Expect(page, "(in use)");
+                    await page.Locator(".look-list").ScrollIntoViewIfNeededAsync();
+                    await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, $"look-{look}-account.png") });
+                    await GoAsync(page, bigMap ?? "/");
+                    await page.Locator(".hex-map").First.WaitForAsync();
+                    await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, $"look-{look}-screen.png") });
+                });
+            }
             await StepAsync(morgana, "privacy", async page =>
             {
                 // The notice is in folds: one tap opens a section.

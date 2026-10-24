@@ -72,6 +72,11 @@ grids and parchment) and ask for a top-down landscape instead; and Wild's negati
 no glow at all, so it comes out magenta and `finish.py` desaturates it to ash-violet. The seeds and settings of the
 images in use are in `wwwroot/tiles/LICENSE.md`.
 
+The same ComfyUI makes the page backdrop of the painted rune-slate look ([theme](theme.md), "Looks"):
+`tools/tile-art/backdrop.py` asks for 768×1344 candidates of a dark engraved slate table, and `backdrop.py --finish`
+turns the chosen one into the 720 px WebP in `wwwroot/backdrops/`. Its seed and settings are in
+`wwwroot/backdrops/LICENSE.md`.
+
 ## Trying it
 
 Put the three files in `src/Spellbound.Web/wwwroot/tiles/`, restart the app (it looks for them at startup) and open
