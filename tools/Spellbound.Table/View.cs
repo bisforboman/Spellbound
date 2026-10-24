@@ -142,7 +142,7 @@ internal static class View
         The first draft starts with seat 1, each next one a seat later; the last to pick gets the tile left over.
 
         A ROUND: income, then Golem upkeep ({{r.GolemUpkeep}} mana each; unpaid Golems dissolve). Then each player picks
-        ONE stance, plus any moves, plus at most ONE spell:
+        ONE stance, plus any moves:
           attune: claim a free, unguarded tile next to yours. Costs {{r.AttuneBasePrice}} + {{r.AttunePricePerTile}} for
             each of the first {{r.AttuneCheapTiles}} tiles you hold, + {{r.AttunePricePerTileBeyond}} for each tile beyond them. Two players attuning the same tile: nobody gets it, nobody pays.
           summon: units on one of your tiles. Imp: power {{r.ImpPower}}, {{r.ImpCost}} mana. Golem: power
@@ -155,6 +155,7 @@ internal static class View
             Shrine: the tile yields {{r.ShrineYield}} more. Tower: it defends with {{r.TowerPower}} more power, even empty.
             Sanctum: your spells aimed at it or next to it cost {{r.SanctumDiscount}} less. An upgrade passes with the
             tile when it's taken, and is worth {{r.PointsPerUpgrade}} point at the end to whoever holds it.
+          cast: one spell (below).
           hold: none of the above.
           moves: units step once a round to a neighbouring tile of yours. Moves happen first, so moved units can attack.
         Order: moves, attunes, summons and builds, spells, attacks, then points.
@@ -164,18 +165,14 @@ internal static class View
         loser is wiped out. Scorch burns the same way. A tie wipes out both and the tile stays (against monsters a tie takes it).
         A player's last tile can't be taken. Several attackers on one tile fight the defender together, then each other.
 
-        SPELLS (alongside the stance, paid on top):
+        SPELLS (the cast stance, one a round):
           scorch ({{r.ScorchManaPerPower}} mana per power that burns): burn power on a rival's tile next to yours, weakest
             first; you pay only for what burns.
-          ward ({{r.WardCost}} mana): one of your tiles (or the one you attune this round) defends with {{r.WardPower}} more
-            power this round.
-          Spells see the round as it will be: they can use what you attune or summon this round.
+          ward ({{r.WardCost}} mana): one of your tiles defends with {{r.WardPower}} more power this round.
           leyline ({{r.LeylineManaPerUnit}} per unit, at least {{r.LeylineMinCost}}): move units between any two of your tiles.
           blight ({{r.BlightCost}} mana): a rival's tile next to yours yields nothing in the next round's income; not the
             same tile two rounds running.
           lure ({{r.LureCost}} mana): a monster tile next to yours loses {{r.LurePower}} guard power for good (never below {{r.MinGuard}}).
-          rally ({{r.RallyCost}} mana): the tile you attack this round; your attack strikes with {{r.RallyPower}} more power, which
-            takes the blows first. Paid even if your attack doesn't happen.
 
         POINTS, banked every round and never lost: 1 per {{r.TilesPerPoint}} tile-rounds held (tiles held, added up each
         round), 1 per {{r.ManaPerPoint}} mana your land produced, {{r.PointsPerConquest}} per monster tile cleared or
@@ -184,7 +181,7 @@ internal static class View
         FOG OF WAR: you see rivals' units only on tiles next to your land, and rivals' mana only at the end. Who holds
         each tile, yields, upgrades and scores are seen by all. The report shows only what you could see.
 
-        UNPICKED STANCES GET CHEAPER: attune, summon or build that nobody chose in a round costs {{r.FavourPerRound}} mana less
+        UNPICKED STANCES GET CHEAPER: attune, summon or build (not cast or attack) that nobody chose in a round costs {{r.FavourPerRound}} mana less
         the next round, more each round it waits (at most {{r.FavourCap}} less). Choosing it resets it.
 
         TRAITS ARE SECRET until the end. No trait is offered to two players, so a rival never has one you were offered.
@@ -196,11 +193,11 @@ internal static class View
           {"stance": "summon", "target": "0,1", "kind": "golem", "count": 2}
           {"stance": "attack", "target": "1,0", "send": [{"from": "0,0", "imps": 3, "golems": 1}]}
           {"stance": "build", "target": "0,1", "upgrade": "tower"}
+          {"stance": "cast", "spell": "scorch", "target": "1,0", "count": 2}
+          {"stance": "cast", "spell": "leyline", "target": "0,0", "to": "2,-1", "imps": 2, "golems": 0}
           {"stance": "hold"}
         Any stance can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
         An attack can add "reinforce": {"target": "0,0", "kind": "imp", "count": 3}
-        and one "spell": {"name": "scorch", "target": "1,0", "count": 2}
-                     or {"name": "leyline", "target": "0,0", "to": "2,-1", "imps": 2, "golems": 0}
         `check` shows what an action would cost and do, changing nothing. `act` commits it and waits for the others.
         """;
 }

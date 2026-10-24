@@ -36,20 +36,18 @@ public sealed partial class Match
 
         var lines = new List<string>();
         var positions = new Dictionary<Hex, Army>();
-        if ((MovesProblem(orders, lines, positions) ?? SpellProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)
-             ?? ReinforceProblem(orders, lines)) is { } problem)
+        if ((MovesProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions) ?? ReinforceProblem(orders, lines)) is { } problem)
         {
             return Report.Fail(problem);
         }
 
         var mana = seats[orders.Seat].Mana;
-        var extras = orders.Cast is not null || orders.Reinforce is not null;
-        if (extras && CostOf(orders) > mana)
+        if (orders.Reinforce is not null && CostOf(orders) > mana)
         {
             return Report.Fail($"Your orders cost {CostOf(orders)} mana together; you have {mana}.");
         }
 
-        if (extras)
+        if (orders.Reinforce is not null)
         {
             lines.Add($"All together: {CostOf(orders)} mana, leaving {mana - CostOf(orders)}.");
         }
@@ -58,8 +56,8 @@ public sealed partial class Match
     }
 
     /// <summary>
-    /// Resolves the round with every seat's orders: moves, then Attunes and Summons, then attacks, then points are
-    /// banked (docs/game-design.md, Round order). Then the next round starts (with a later Unveil in rounds 2 and 4,
+    /// Resolves the round with every seat's orders: moves, then Attunes, Summons and Builds, then spells, then attacks,
+    /// then points are banked (docs/game-design.md, Round order). Then the next round starts (with a later Unveil in rounds 2 and 4,
     /// then income and upkeep), or after the last round the match ends. Fails, changing nothing, unless every seat has
     /// exactly one set of orders and all of them check.
     /// </summary>
@@ -337,6 +335,9 @@ public sealed partial class Match
 
             case Stance.Build:
                 return BuildProblem(orders, target, lines);
+
+            case Stance.Cast:
+                return SpellProblem(orders, target, lines);
 
             default:
                 return $"Unknown stance {orders.Stance}.";

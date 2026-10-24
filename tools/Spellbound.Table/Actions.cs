@@ -71,7 +71,8 @@ internal abstract record Action
             "attack" => Orders.Attack(seat, HexOf(Need(root, "target")),
                 [.. Need(root, "send").EnumerateArray().Select(s => new Move(HexOf(Need(s, "from")), HexOf(Need(root, "target")), ArmyOf(s)))],
                 moves),
-            _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build or hold."),
+            "cast" => CastOf(root, seat, moves),
+            _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build, cast or hold."),
         };
 
         if (Get(root, "reinforce") is { ValueKind: JsonValueKind.Object } reinforce)
@@ -80,16 +81,16 @@ internal abstract record Action
                 Enum.Parse<UnitKind>(Get(reinforce, "kind")?.GetString() ?? "imp", ignoreCase: true), Int(reinforce, "count"));
         }
 
-        if (Get(root, "spell") is not { ValueKind: JsonValueKind.Object } spell)
-        {
-            return orders;
-        }
+        return orders;
+    }
 
-        var name = Enum.Parse<Spell>(Need(spell, "name").GetString()!, ignoreCase: true);
-        var target = HexOf(Need(spell, "target"));
+    private static Orders CastOf(JsonElement root, int seat, List<Move> moves)
+    {
+        var name = Enum.Parse<Spell>(Need(root, "spell").GetString()!, ignoreCase: true);
+        var target = HexOf(Need(root, "target"));
         return name == Spell.Leyline
-            ? orders.CastingLeyline(new Move(target, HexOf(Need(spell, "to")), ArmyOf(spell)))
-            : orders.Casting(name, target, Int(spell, "count"));
+            ? Orders.Leyline(seat, new Move(target, HexOf(Need(root, "to")), ArmyOf(root)), moves)
+            : Orders.Cast(seat, name, target, Int(root, "count"), moves);
     }
 
     private static Move MoveOf(JsonElement e) => new(HexOf(Need(e, "from")), HexOf(Need(e, "to")), ArmyOf(e));

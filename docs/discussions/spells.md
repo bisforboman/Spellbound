@@ -5,6 +5,14 @@ fourth stance**; once built, the simulator showed that as a stance spells used t
 (bots still ended with 52 mana unspent), so the owner moved them **alongside the stance**, as decision 1 below
 recommends (26 unspent). The rules are in [game-design.md](../game-design.md#spells).
 
+**24 Oct 2026: back to a stance.** The owner made Cast a stance again: a Cast round casts one spell instead of the
+stance's action, at the same costs; Rally, which needed an attack in the same round, was removed; Cast doesn't get the
+unpicked-stance discount (a 3-mana spell would become free). Why go back: one decision a round again ("a stance is one
+button"), and spells become a choice that costs a round, not a top-up that every round gets. The known risk was the
+surplus this page's first build ran into, and it came back: in 2,000 bot games (3 players), unspent mana at the end
+went from about 11 to 28 a seat, spells cast from 19 a game to 2, and Spellweaver's win rate from 29% to 6% (Hexer
+34% to 12%). Fixes are proposed to the owner, not built: see the PR that made the change.
+
 ## The problem they solve
 
 Mana piles up. Bots finish a match with 50–60 mana unspent and sit on 25–30 by round 4; the simulator never sees a

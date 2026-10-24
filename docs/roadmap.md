@@ -38,6 +38,9 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   simulator's mana numbers (unspent at the end, spent per stance and on spells, spells cast, Imps and Golems summoned)
 - [x] Pages: a "Spell (optional)" section on the orders form (a spell, its target and how much, with the preview), and
   its playtest step
+- [x] Cast is a stance again (owner's choice, 24 Oct 2026): one spell a Cast round, at the same costs, no unpicked-stance
+  discount, Rally removed; a Cast row on the orders form replaces the "Spell (optional)" fold; bots and the simulator
+  updated (unspent mana at the end rose from 11 to 28 a seat: a fix is proposed to the owner, not built)
 - [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [x] Domain: a round's submission (one stance + moves) and its validation (`Orders`, `Match.Check`)
 - [x] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles
