@@ -79,11 +79,7 @@ public static partial class Simulation
 
         while (match.Phase == MatchPhase.Opening)
         {
-            var bids = match.Bidders.Select(s => Bot.ChooseBid(match, s, random, PlanOf(s))).ToList();
-            report.Bids.AddRange(bids.Where(b => b.Tile is not null).Select(b => b.Amount));
-            report.Passes += bids.Count(b => b.Tile is null);
-            var lines = Resolved(match.Auction(bids, random));
-            report.OpeningTies += lines.Count(l => l.StartsWith("A tie", StringComparison.Ordinal));
+            Resolved(match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random));
         }
 
         report.ManaAfterOpening.AddRange(match.Seats.Select(s => s.Mana));
@@ -263,8 +259,6 @@ public sealed class SimulationReport(int players, int games, int seed, int round
 
     public int Players => players;
     public int Games => games;
-    public List<int> Bids { get; } = [];
-    public int Passes { get; internal set; }
     public int LandPoints { get; internal set; }
     public List<int> ManaLeft { get; } = [];
     public Dictionary<string, int> ManaSpent { get; } = [];
@@ -273,7 +267,6 @@ public sealed class SimulationReport(int players, int games, int seed, int round
     public List<int> GolemsSummoned { get; } = [];
     public int ManaPoints { get; internal set; }
     public int ConquestPoints { get; internal set; }
-    public int OpeningTies { get; internal set; }
     public List<int> ManaAfterOpening { get; } = [];
     public IReadOnlyList<RoundStats> Rounds { get; } = [.. Enumerable.Range(0, rounds).Select(_ => new RoundStats())];
     public List<int> MostImpsOnATile { get; } = [];
@@ -290,9 +283,7 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine(c, $"# Simulation: {games} games, {players} bots, seed {seed}");
         md.AppendLine();
         md.AppendLine("## The opening");
-        md.AppendLine(c, $"- Bids: {Bids.Count}, average {Avg(Bids)}, highest {(Bids.Count > 0 ? Bids.Max() : 0)}; passes: {Passes}; ties: {OpeningTies}.");
-        md.AppendLine(c, $"- Bids by amount: {string.Join(", ", Bids.GroupBy(b => b).OrderBy(g => g.Key).Select(g => $"{g.Key}: {g.Count()}"))}.");
-        md.AppendLine(c, $"- Mana left after the opening: average {Avg(ManaAfterOpening)}, lowest {ManaAfterOpening.DefaultIfEmpty().Min()}, highest {ManaAfterOpening.DefaultIfEmpty().Max()}.");
+        md.AppendLine(c, $"- Mana after the opening (with round 1's income): average {Avg(ManaAfterOpening)}, lowest {ManaAfterOpening.DefaultIfEmpty().Min()}, highest {ManaAfterOpening.DefaultIfEmpty().Max()}.");
         md.AppendLine();
         md.AppendLine("## The rounds (per game)");
         md.AppendLine();

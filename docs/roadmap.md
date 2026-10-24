@@ -1,6 +1,6 @@
 # Spellbound roadmap
 
-Rewritten for the clean-slate design in [game-design.md](game-design.md): a dark hex map, an opening mana auction, one
+Rewritten for the clean-slate design in [game-design.md](game-design.md): a dark hex map, an opening draft, one
 stance per round, Imps and Golems, 8 rounds, points banked as you go.
 
 The old game (the Realm and its Mageborn rework) was removed on 18 Oct 2026 and is in the git history at `b171e46`.
@@ -99,6 +99,9 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Follow orders (shared stances, from Puerto Rico), built and then removed after the sixth AI-taste session: 4 of 13 happened
 - [x] Unpicked stances get cheaper (Puerto Rico's doubloons): Attune, Summon or Build nobody chose costs 1 less a round, up to 3
 - [x] Playtest steps for the new pages (`tools/Spellbound.Playtest`): every page has one, the not-found ones included
+- [x] The opening as a draft (owner's choice, 24 Oct 2026; it replaced the tile-by-tile auction): each Unveil's tiles
+  are taken one each in turn, for free, the first seat rotating from one draft to the next; starting mana 4; a missed
+  pick is a bot's after 24 hours (`Match.Draft`, `Bot.ChoosePick`, the match page's pick list)
 
 ## M2: Playing with friends
 - [x] Invites and a lobby (2–5 seats, bots fill empty seats): an invite link, `/join/{code}`

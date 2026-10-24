@@ -36,7 +36,7 @@ public class TileNamesTests
     {
         var hex = Map.Tiles.First().Hex;
 
-        Assert.Equal("Bid 2 mana on the Steady tile (yields 2).", TileNames.In(Map, $"Bid 2 mana on the Steady tile at {hex} (yields 2).", named: false));
+        Assert.Equal("Pick the Steady tile (yields 2).", TileNames.In(Map, $"Pick the Steady tile at {hex} (yields 2).", named: false));
         Assert.Equal("Seat 1 takes (40, 40).", TileNames.In(Map, "Seat 1 takes (40, 40).", named: false)); // not on this map
     }
 }

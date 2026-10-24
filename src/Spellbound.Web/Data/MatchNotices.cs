@@ -10,12 +10,12 @@ namespace Spellbound.Web.Data;
 /// </summary>
 public static class MatchNotices
 {
-    /// <summary>The step a match is on, in words: "opening auction 2, tile 1" or "round 3".</summary>
+    /// <summary>The step a match is on, in words: "opening draft 2, pick 1" or "round 3".</summary>
     public static string StepName(Match match)
     {
         ArgumentNullException.ThrowIfNull(match);
         return match.Phase == MatchPhase.Opening
-            ? $"opening auction {match.OpeningUnveil}, tile {match.AuctionTile}"
+            ? $"opening draft {match.OpeningUnveil}, pick {match.PickNumber}"
             : $"round {match.CurrentRound}";
     }
 
@@ -24,7 +24,8 @@ public static class MatchNotices
         new(ownerId, $"Match {id}: they're waiting on you", $"Everyone else has committed to {step}.", Url(id));
 
     /// <summary>
-    /// After a step resolved: each person but <paramref name="actor"/> hears what's next, a person whose land was
+    /// After a step resolved: each person but <paramref name="actor"/> hears what's next (in the opening, only the one
+    /// whose turn it is to pick), a person whose land was
     /// attacked hears that first, and a person a bot has just replaced hears that instead. At the end, everyone with a
     /// seat hears it, watchers too.
     /// </summary>
@@ -39,10 +40,10 @@ public static class MatchNotices
         var id = loaded.Id;
         var ended = match.Phase == MatchPhase.Ended;
         var next = ended ? "The match is over: see who won." : $"{MatchStore.Describe(match, true)}: your move.";
-        var sitOut = $"{MatchStore.Describe(match, true)}: you have your tile, the others bid on the rest.";
         for (var seat = 0; seat < loaded.Owners.Count; seat++)
         {
-            if (loaded.Owners[seat] is not { } owner || seat == actor || (loaded.Away.Contains(seat) && !ended))
+            if (loaded.Owners[seat] is not { } owner || seat == actor || (loaded.Away.Contains(seat) && !ended)
+                || (match.Phase == MatchPhase.Opening && !loaded.InStep.Contains(seat) && !nowAway.Contains(seat)))
             {
                 continue;
             }
@@ -53,7 +54,7 @@ public static class MatchNotices
                 : attacked.Contains(seat)
                     ? new PushMessage(owner, $"Match {id}: you were attacked", $"In {resolved}. {next}", Url(id))
                     : new PushMessage(owner, $"Match {id}: {Capitalised(resolved)} resolved",
-                        ended || loaded.InStep.Contains(seat) ? next : sitOut, Url(id));
+                        next, Url(id));
         }
     }
 
@@ -68,7 +69,7 @@ public static class MatchNotices
 
     /// <summary>The host started a match the person had joined.</summary>
     public static PushMessage Started(long id, string ownerId) =>
-        new(ownerId, $"Match {id} has started", "Choose your trait, then bid in the opening auction.", Url(id));
+        new(ownerId, $"Match {id} has started", "Choose your trait, then draft your opening tiles.", Url(id));
 
     private static string Url(long id) => $"match/{id}";
 

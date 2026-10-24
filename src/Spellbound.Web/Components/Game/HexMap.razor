@@ -94,14 +94,14 @@
     [Parameter]
     public Hex? Selected { get; set; }
 
-    /// <summary>Tiles to mark, for example the ones on auction.</summary>
+    /// <summary>Tiles to mark, for example the ones to pick in the draft.</summary>
     [Parameter]
     public IReadOnlySet<Hex>? Highlight { get; set; }
 
     [Parameter]
     public EventCallback<Hex> OnSelect { get; set; }
 
-    /// <summary>Tiles to draw as unowned for now (an auction playing back hasn't handed them out yet).</summary>
+    /// <summary>Tiles to draw as unowned for now (a draft playing back hasn't handed them out yet).</summary>
     [Parameter]
     public IReadOnlySet<Hex>? Unowned { get; set; }
 

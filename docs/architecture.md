@@ -92,12 +92,12 @@ an admin ends it. Bans are global (per account).
   account's seats go with it (the seat plays on as a bot). JSON is `Data/MatchJson.cs`: camelCase, enums by name, a hex
   as `[q, r]`. The state's shape is versioned (`MatchState.Version`); SQL scripts never edit it, so a change to it bumps
   the version and `Match.Load` learns to read the old one.
-  - **Commit-and-wait** (`MatchStore.CommitAsync`, `Data/Sql/012`): a person's bid or orders wait on their own
-    `match_players` row (`pending`, and `pending_for`, the step it was for) until every person has committed; the
+  - **Commit-and-wait** (`MatchStore.CommitAsync`, `Data/Sql/012`): a person's pick or orders wait on their own
+    `match_players` row (`pending`, and `pending_for`, the step it was for) until every person has committed (in the opening draft, only the one whose turn it is: the step waits on them alone, and the bots after them pick at once); the
     match is never loaded with them, so no page can show a rival's. The last commitment resolves the step, bots
     choosing then, and clears them all.
   - **Deadlines** (`Data/Sql/014`): with two or more people in a match, `match_deadlines` holds when the current
-    step resolves without whoever hasn't committed (24 hours after it began). They hold (pass, in the opening), and
+    step resolves without whoever hasn't committed (24 hours after it began). They hold (in the opening, a bot picks for them), and
     `match_players.missed` counts it; at two in a row, or when the host hands the seat over, `bot_since` is set and a
     bot plays the seat while the person can still watch. A commit, a deadline and a hand-off all resolve through
     `MatchStore.ResolveAsync` and `MatchSteps.Resolve`.
@@ -109,7 +109,7 @@ an admin ends it. Bans are global (per account).
   - **Every change** goes through `MatchStore.ApplyAsync`: load with the row locked (`FOR UPDATE`), one domain call,
     save only if it succeeded, one transaction. Two actions on one match take turns.
   - **Randomness** is never stored: each step gets `SeededRandom(seed + step)`, where the step is 10 × the opening
-    auction (1–3) + the tile up for bidding (1–5), or 100 + the round, so a step's dice don't depend on how often the match was saved. The seed is picked by the
+    draft (1–3) + the pick (1–5), or 100 + the round, so a step's dice don't depend on how often the match was saved. The seed is picked by the
     web layer (`Random.Shared`) when the match starts. The saved state is the truth; replaying from the seed is only for
     tests, so a change to `System.Random` can't break a saved match. Never `HashCode` (it differs per process).
 - **Times** are stored as UTC (`timestamptz`); `DbSession` converts any `DateTimeOffset` with another offset.

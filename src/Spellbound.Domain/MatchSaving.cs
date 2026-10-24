@@ -9,7 +9,7 @@ public sealed partial class Match
         Phase,
         OpeningUnveil,
         CurrentRound,
-        [.. onAuction],
+        [.. toPick],
         [.. Map.Tiles.OrderBy(t => t.Hex.Q).ThenBy(t => t.Hex.R).Select(t => new TileState(t.Hex, t.Type, t.Yield, t.Guard))],
         [.. seats.Select(s => new SeatState(
             s.Mana, s.Score, s.ProducedThisRound, s.ProducedCarry, s.ConquestPointsThisRound,
@@ -20,8 +20,7 @@ public sealed partial class Match
             .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))],
         [.. upgrades.OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R).Select(u => new UpgradeState(u.Key, u.Value))],
         [.. blightedLastRound.OrderBy(h => h.Q).ThenBy(h => h.R)],
-        [.. favour.Where(f => f.Value > 0).OrderBy(f => f.Key).Select(f => new FavourState(f.Key, f.Value))],
-        [.. unveilWinners.Order()]);
+        [.. favour.Where(f => f.Value > 0).OrderBy(f => f.Key).Select(f => new FavourState(f.Key, f.Value))]);
 
     /// <summary>A saved match, to play on under the rules it was saved with.</summary>
     public static Match Load(MatchState state, GameRules rules)
@@ -70,8 +69,7 @@ public sealed partial class Match
             OpeningUnveil = state.OpeningUnveil,
             CurrentRound = state.CurrentRound,
         };
-        match.onAuction.AddRange(state.OnAuction);
-        match.unveilWinners.UnionWith(state.UnveilWinners ?? []);
+        match.toPick.AddRange(state.OnAuction);
         foreach (var u in state.Units)
         {
             match.units[u.Hex] = new Army(u.Imps, u.Golems);

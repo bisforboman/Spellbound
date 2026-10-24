@@ -22,11 +22,11 @@ else
     var match = view.Match;
     var me = match.Seats[you];
     var playing = view.IsRunning && !view.Away.Contains(you);
-    // The start of a match in steps: a welcome, the trait (the map stays dark), then the map and the first auction.
+    // The start of a match in steps: a welcome, the trait (the map stays dark), then the map and the first draft.
     var drafting = playing && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null && !view.Committed.Contains(you);
     // A round that began while the page was open plays a short animation: a banner and what each tile paid.
-    var fresh = newRound == match.CurrentRound && match.Phase == MatchPhase.Rounds && replay is null; // after any auction playback
-    // Tiles go by name from the rounds on; in the opening the map marks the tile up now, and names are only clutter.
+    var fresh = newRound == match.CurrentRound && match.Phase == MatchPhase.Rounds && replay is null; // after any draft playback
+    // Tiles go by name from the rounds on; in the opening the map marks the tiles to pick, and names are only clutter.
     var named = match.Phase != MatchPhase.Opening;
     <div class="match-page">
     @if (fresh)
@@ -52,22 +52,22 @@ else
     @if (!drafting)
     {
         <section id="map">
-        <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is not null ? null : match.Phase == MatchPhase.Rounds && playing ? ordersForm?.Pickable : auction)" OnSelect="Select" ShowNames="named"
+        <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is not null ? null : match.Phase == MatchPhase.Rounds && playing ? ordersForm?.Pickable : toPick)" OnSelect="Select" ShowNames="named"
                 Unowned="@ReplayPending"
                 Gains="@(fresh ? match.Seats.SelectMany(s => s.Tiles).ToDictionary(h => h, match.IncomeOf) : null)" />
 
         @if (selected is { } tile)
         {
-            <p class="tile-panel">@Seats.Describe(match, tile, you, view.Owners, named: named)@(auction.Contains(tile) ? ", up for auction" : "").</p>
+            <p class="tile-panel">@Seats.Describe(match, tile, you, view.Owners, named: named)@(toPick.Contains(tile) ? ", to pick" : "").</p>
         }
         </section>
     }
 
     @if (replay is { } beats)
     {
-        // The auction plays back one line at a time, so the player sees each tile's bids, then who got it.
+        // The draft plays back one pick at a time, so the player sees who took which tile.
         <section id="playback">
-        <h2 class="h4">The auction</h2>
+        <h2 class="h4">The draft</h2>
         <div class="match-report playback">
             @for (var b = 0; b < replayBeat && b < beats.Count; b++)
             {
@@ -92,14 +92,19 @@ else
     }
     else if (view.IsRunning && view.People.Count() > 1 && match.Phase != MatchPhase.Ended)
     {
-        <p class="commit-line">@(view.Committed.Contains(you)
-            ? "Everyone gives orders in secret; the step resolves when all players have committed. Until then you can take yours back."
-            : view.Committed.Count > 0
-                ? $"{string.Join(" and ", view.Committed.Order().Select(p => $"Seat {p + 1}"))} committed and {(view.Committed.Count == 1 ? "waits" : "wait")} on you."
-                : "Everyone gives orders in secret; the step resolves when all players have committed.")</p>
+        @if (match.Phase == MatchPhase.Rounds)
+        {
+            <p class="commit-line">@(view.Committed.Contains(you)
+                ? "Everyone gives orders in secret; the step resolves when all players have committed. Until then you can take yours back."
+                : view.Committed.Count > 0
+                    ? $"{string.Join(" and ", view.Committed.Order().Select(p => $"Seat {p + 1}"))} committed and {(view.Committed.Count == 1 ? "waits" : "wait")} on you."
+                    : "Everyone gives orders in secret; the step resolves when all players have committed.")</p>
+        }
         @if (view.DueAt is { } due)
         {
-            <p class="commit-line">Due in <b>@Until(due)</b>: whoever hasn't committed by then holds (in the opening, passes).
+            <p class="commit-line">Due in <b>@Until(due)</b>: @(match.Phase == MatchPhase.Opening
+                ? "if the pick isn't made by then, a bot makes it."
+                : "whoever hasn't committed by then holds.")
                 @(view.Missed.GetValueOrDefault(you) > 0 ? "You missed the last deadline: miss this one too and a bot takes your seat." : "")</p>
         }
     }
@@ -122,8 +127,8 @@ else
             The map lies dark; this is how the match goes:</p>
         <ol class="start-plan">
             <li><b>Choose your trait</b>: a secret goal, scored at the end.</li>
-            <li><b>The opening</b>: @match.Rules.OpeningUnveils auctions reveal the map, a tile for each player at a time.
-                Bid mana on the tile up now, or wait for the next; whoever wins none gets the last one free.</li>
+            <li><b>The opening</b>: @match.Rules.OpeningUnveils drafts reveal the map, a tile for each player at a time,
+                and everyone takes one in turn, for free.</li>
             <li><b>@match.Rules.Rounds rounds</b>: each round, attack, attune or summon. Points are banked every round,
                 and the most points wins.</li>
         </ol>
@@ -163,42 +168,35 @@ else
         {
             <StartSteps Step="3" />
         }
-        var up = match.OnAuction[0];
-        <h2 class="h4">Opening auction @match.OpeningUnveil of @match.Rules.OpeningUnveils: tile @match.AuctionTile of @match.Seats.Count</h2>
-        @if (match.OpeningUnveil == 1 && match.AuctionTile == 1)
+        <h2 class="h4">Opening draft @match.OpeningUnveil of @match.Rules.OpeningUnveils: pick @match.PickNumber of @match.Seats.Count</h2>
+        @if (match.OpeningUnveil == 1 && match.PickNumber == 1)
         {
-            <p>The map is revealed: one tile for each player, and they go up one at a time. Bid on the tile up now, or
-                pass and wait for a better one. The highest bid wins it; whoever wins none gets the last tile free.</p>
+            <p>The map is revealed: one tile for each player. Everyone takes one in turn, and the next draft starts one
+                seat later. Picks cost nothing.</p>
         }
-        @if (!match.Bidders.Contains(you))
+        @if (match.Picker != you)
         {
-            <p class="commit-line">You have your tile from this auction. The others bid on the rest.</p>
+            <p class="commit-line">@Seats.Name(view, match.Picker!.Value, you) picks next.</p>
         }
         else
         {
-            <p class="tile-up">Up now: <b>@Seats.Describe(match, up, you, view.Owners, named: false)</b>.</p>
-            @if (match.OnAuction.Count > 1)
-            {
-                <p class="text-muted">Still to come: @string.Join(", ", match.OnAuction.Skip(1).Select(h => $"{Seats.Mark(match.Map[h].Type)} {match.Map[h].Type}")).
-                    @(match.OnAuction.Count == 2 ? "Lose this one and it's yours, free." : "The last one goes free to whoever wins none.")</p>
-            }
-
-            <label class="form-label mt-2" for="amount">Your bid (mana)</label>
-            <input id="amount" type="number" class="form-control form-control-lg" min="@match.Rules.MinBid" max="@me.Mana" @bind="amount" @bind:event="oninput" />
-
-            var check = match.CheckBid(new Bid(you, up, amount));
-            <div class="ledger mt-2">
-                @foreach (var line in check.Lines)
+            <fieldset class="traits">
+                <legend class="form-label">Your pick</legend>
+                @foreach (var offered in match.ToPick)
                 {
-                    <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@TileNames.In(match.Map, line, named)</p>
+                    var h = offered;
+                    <label class="choice">
+                        <input type="radio" name="pick" checked="@(selected == h)" @onchange="() => selected = h" />
+                        <span>@Seats.Mark(match.Map[h].Type) <b>@match.Map[h].Type</b>, yields @match.Rules.YieldRange(match.Map[h].Type)</span>
+                    </label>
                 }
-            </div>
+            </fieldset>
 
+            var check = selected is { } pick && match.ToPick.Contains(pick) ? match.CheckPick(new Pick(you, pick)) : null;
             <div class="action-bar">
-                <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@TileNames.In(match.Map, check.Lines[0], named)</p>
+                <p class="action-sum">@(check is null ? "Choose a tile, here or on the map." : Seats.Phrase(TileNames.In(match.Map, string.Join(" ", check.Lines), named), view.Owners, you))</p>
                 <div class="action-row">
-                    <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="PassAsync">Pass</button>
-                    <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || !check.Succeeded)" @onclick="BidAsync">Bid @amount mana</button>
+                    <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || check is null)" @onclick="PickAsync">Pick @(check is null ? "a tile" : match.Map[selected!.Value].Type.ToString())</button>
                 </div>
             </div>
         }
@@ -345,10 +343,8 @@ else
     private string ownerId = string.Empty;
     private LoadedMatch? view;
     private int you;
-    private IReadOnlySet<Hex> auction = new HashSet<Hex>();
+    private IReadOnlySet<Hex> toPick = new HashSet<Hex>();
     private Hex? selected;
-    private int amount = 1;
-    private string? bidStep;
     private Trait? trait;
     private bool fullReport;
     private string? status;
@@ -393,19 +389,11 @@ else
         seenRound = view?.Match.CurrentRound;
         showStandings |= view?.Match.Phase == MatchPhase.Ended; // the payoff of an ended match
         you = view?.SeatOf(ownerId) ?? 0;
-        auction = view?.Match.OnAuction.Take(1).ToHashSet() ?? []; // the tile up now
+        toPick = view?.Match.Picker == you ? view.Match.ToPick.ToHashSet() : [];
         if (selected is { } s && view?.Match.Map.Contains(s) != true)
         {
             selected = null;
         }
-
-        if (view is not null && MatchStore.StepKey(view.Match) != bidStep)
-        {
-            bidStep = MatchStore.StepKey(view.Match);
-            amount = view.Match.Rules.MinBid; // a new tile starts from the smallest bid, not the last one
-        }
-
-        amount = Math.Clamp(amount, view?.Match.Rules.MinBid ?? 1, Math.Max(1, view?.Match.Seats[you].Mana ?? 1));
     }
 
     /// <summary>A tap on the map: the orders' pick under way takes it first (a move, a spell's tile, where to guard),
@@ -428,18 +416,18 @@ else
     {
         (_, MatchPhase.Ended) => "Over",
         (false, _) => "Ended early",
-        (_, MatchPhase.Opening) => $"Auction {match.OpeningUnveil}/{match.Rules.OpeningUnveils}",
+        (_, MatchPhase.Opening) => $"Draft {match.OpeningUnveil}/{match.Rules.OpeningUnveils}",
         _ => $"Round {match.CurrentRound}/{match.Rules.Rounds}",
     };
 
     /// <summary>
-    /// Plays an auction's report back a line at a time, <see cref="ReplayDelay"/> apart: each tile's bids, then who got
-    /// it, with the tile marked and its owner's ring only appearing then. Only the auction's lines play; whatever
-    /// follows (the rounds beginning) shows once it is done. Skip ends it at once.
+    /// Plays a draft's report back a pick at a time, <see cref="ReplayDelay"/> apart, with the tile marked and its
+    /// owner's ring only appearing then. Only the picks play; whatever follows (the rounds beginning) shows once they
+    /// are done. Skip ends it at once.
     /// </summary>
     private void StartReplay(IReadOnlyList<string> report)
     {
-        var beats = report.TakeWhile(IsAuctionLine).ToList();
+        var beats = report.TakeWhile(Hands).ToList();
         if (beats.Count == 0)
         {
             return;
@@ -452,11 +440,7 @@ else
         _ = ReplayAsync(replayStop.Token);
     }
 
-    private static bool IsAuctionLine(string line) =>
-        line.StartsWith("Bids on ", StringComparison.Ordinal) || line.StartsWith("A tie for ", StringComparison.Ordinal)
-        || line.StartsWith("Nobody bids on ", StringComparison.Ordinal) || System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (wins|gets) ");
-
-    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^(Seat \d+ (wins|gets) |Nobody bids on )");
+    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (picks|gets the last tile) ");
 
     private async Task ReplayAsync(CancellationToken stop)
     {
@@ -538,7 +522,7 @@ else
         return $"{name} {verb}{(leaders.Count == 1 && name != "You" ? "s" : "")}, {points}";
     }
 
-    private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, view?.Match.OnAuction.FirstOrDefault(), amount));
+    private Task PickAsync() => selected is { } tile ? ActAsync(() => Play.PickAsync(Id, ownerId, tile)) : Task.CompletedTask;
 
     private Task CommitAsync(Orders orders) => ActAsync(() => Play.OrdersAsync(Id, ownerId, orders));
 
@@ -568,8 +552,6 @@ else
     private Task WithdrawAsync() => ActAsync(async () => await Play.WithdrawAsync(Id, ownerId)
         ? new Report(true, ["Taken back."])
         : Report.Fail("The step has already resolved."));
-
-    private Task PassAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, null, 0));
 
     private async Task ActAsync(Func<Task<Report>> action)
     {

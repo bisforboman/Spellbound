@@ -1,6 +1,6 @@
 namespace Spellbound.Domain;
 
-/// <summary>Where a match is: the opening's auctions, the rounds, or over.</summary>
+/// <summary>Where a match is: the opening's draft, the rounds, or over.</summary>
 public enum MatchPhase
 {
     Opening,
@@ -16,8 +16,7 @@ public enum MatchPhase
 public sealed partial class Match
 {
     private readonly List<Seat> seats;
-    private readonly List<Hex> onAuction = [];
-    private readonly HashSet<int> unveilWinners = [];
+    private readonly List<Hex> toPick = [];
 
     private Match(GameRules rules, GameMap map, List<Seat> seats)
     {
@@ -34,13 +33,12 @@ public sealed partial class Match
 
     public MatchPhase Phase { get; private set; }
 
-    /// <summary>The opening Unveil being auctioned (1 to <see cref="GameRules.OpeningUnveils"/>), or 0 once the
+    /// <summary>The opening Unveil being drafted (1 to <see cref="GameRules.OpeningUnveils"/>), or 0 once the
     /// opening is over.</summary>
     public int OpeningUnveil { get; private set; }
 
-    /// <summary>The tiles of the current opening Unveil still to be handed out, in the order they go up (by name: row,
-    /// then place in the row). The first is the one being bid on.</summary>
-    public IReadOnlyList<Hex> OnAuction => onAuction;
+    /// <summary>The tiles of the current opening Unveil still to be picked, by name (row, then place in the row).</summary>
+    public IReadOnlyList<Hex> ToPick => toPick;
 
     /// <summary>The seat holding a tile, or null if it is unowned.</summary>
     public int? OwnerOf(Hex hex) => seats.FirstOrDefault(s => s.Tiles.Contains(hex))?.Index;
@@ -58,57 +56,29 @@ public sealed partial class Match
     }
 
     /// <summary>
-    /// Settles the bidding on the current tile (docs/game-design.md, "The Unveil auction"): every seat still bidding in
-    /// this Unveil bids secretly or passes. The highest bid wins the tile and pays; a tie at the top is settled at
-    /// random among the tied; if nobody bids, a seat still bidding gets it free, at random. The winner sits out the rest
-    /// of the Unveil, and the last tile goes free to the one seat left. Then the next Unveil is laid out, or after the
-    /// last one the rounds begin. Fails, changing nothing, unless there is exactly one valid bid per seat still bidding.
+    /// The seat whose turn it is takes one of this Unveil's tiles (docs/game-design.md, "The opening draft"). When one
+    /// tile is left, it goes to the last seat to pick. Then the next Unveil is laid out, or after the last one the rounds
+    /// begin. Fails, changing nothing, unless it is this seat's turn and the tile is still on the table.
     /// </summary>
-    public Report Auction(IReadOnlyCollection<Bid> bids, IRandomSource random)
+    public Report Draft(Pick pick, IRandomSource random)
     {
-        ArgumentNullException.ThrowIfNull(bids);
+        ArgumentNullException.ThrowIfNull(pick);
         ArgumentNullException.ThrowIfNull(random);
-        if (Phase != MatchPhase.Opening)
+        var check = CheckPick(pick);
+        if (!check.Succeeded)
         {
-            return Report.Fail("The opening auctions are over.");
-        }
-
-        if (BidProblem(bids) is { } problem)
-        {
-            return Report.Fail(problem);
+            return check;
         }
 
         var lines = new ReportLines();
-        var tile = onAuction[0];
-        // Every bid is revealed once the tile is settled (owner's choice, 24 Oct 2026), so players learn how rivals value land.
-        lines.Add($"Bids on {Describe(tile)}: {string.Join(", ", bids.OrderBy(b => b.Seat).Select(b => b.Tile is null ? $"Seat {b.Seat + 1} passes" : $"Seat {b.Seat + 1} {b.Amount}"))}.");
-        var top = bids.Where(b => b.Tile == tile).GroupBy(b => b.Amount).MaxBy(g => g.Key)?.OrderBy(b => b.Seat).ToList();
-        if (top is { Count: > 0 })
+        Hand(pick.Tile, pick.Seat, lines, $"Seat {pick.Seat + 1} picks {Describe(pick.Tile)}.");
+        if (toPick.Count == 1)
         {
-            var winner = top[top.Count == 1 ? 0 : random.Next(top.Count)];
-            if (top.Count > 1)
-            {
-                lines.Add($"A tie for {Describe(tile)} at {winner.Amount} mana: {string.Join(" and ", top.Select(b => $"Seat {b.Seat + 1}"))} bid it, and Seat {winner.Seat + 1} is drawn.");
-            }
-
-            seats[winner.Seat].Mana -= winner.Amount;
-            Hand(tile, winner.Seat, lines, $"Seat {winner.Seat + 1} wins {Describe(tile)} for {winner.Amount} mana.");
-        }
-        else
-        {
-            var bidders = Bidders.ToList();
-            var lucky = bidders[random.Next(bidders.Count)];
-            Hand(tile, lucky, lines, $"Nobody bids on {Describe(tile)}: Seat {lucky + 1} gets it for free, drawn at random.");
+            var last = Picker!.Value;
+            Hand(toPick[0], last, lines, $"Seat {last + 1} gets the last tile, {Describe(toPick[0])}.");
         }
 
-        if (onAuction.Count == 1)
-        {
-            var last = Bidders.Single();
-            var leftover = onAuction[0];
-            Hand(leftover, last, lines, $"Seat {last + 1} gets the last tile, {Describe(leftover)}, for free.");
-        }
-
-        if (onAuction.Count > 0)
+        if (toPick.Count > 0)
         {
             return lines.ToReport();
         }
@@ -130,102 +100,56 @@ public sealed partial class Match
         return lines.ToReport();
     }
 
-    /// <summary>The seats still bidding in this opening Unveil: everyone who hasn't got a tile from it yet.</summary>
-    public IEnumerable<int> Bidders => Phase == MatchPhase.Opening
-        ? seats.Where(s => !unveilWinners.Contains(s.Index)).Select(s => s.Index)
-        : [];
+    /// <summary>The seat whose turn it is to pick, or null outside the opening. Each Unveil goes round the table once,
+    /// starting one seat later than the one before (1-2-3, 2-3-1, 3-1-2), like the rounds' rotating first seat.</summary>
+    public int? Picker => Phase == MatchPhase.Opening ? (OpeningUnveil - 1 + PickNumber - 1) % seats.Count : null;
 
-    /// <summary>Which of this Unveil's tiles is up now, counting from 1.</summary>
-    public int AuctionTile => seats.Count - onAuction.Count + 1;
+    /// <summary>Which pick of this Unveil is up now, counting from 1.</summary>
+    public int PickNumber => seats.Count - toPick.Count + 1;
 
-    /// <summary>Gives a tile from the auction to a seat, which then sits out the rest of the Unveil.</summary>
     private void Hand(Hex tile, int seat, ReportLines lines, string line)
     {
         seats[seat].Take(tile);
-        unveilWinners.Add(seat);
-        onAuction.Remove(tile);
+        toPick.Remove(tile);
         lines.Add(line);
     }
 
-    private string? BidProblem(IReadOnlyCollection<Bid> bids)
+    /// <summary>What a pick gets, or why it can't be made. Changes nothing.</summary>
+    public Report CheckPick(Pick pick)
     {
-        var bidders = Bidders.ToHashSet();
-        if (bids.Count != bidders.Count || !bids.Select(b => b.Seat).ToHashSet().SetEquals(bidders))
-        {
-            return "Every seat still bidding needs exactly one bid or pass.";
-        }
-
-        return bids.Select(OneBidProblem).FirstOrDefault(p => p is not null);
-    }
-
-    /// <summary>What one seat's bid would cost and get, or why it can't be made. Changes nothing.</summary>
-    public Report CheckBid(Bid bid)
-    {
-        ArgumentNullException.ThrowIfNull(bid);
+        ArgumentNullException.ThrowIfNull(pick);
         if (Phase != MatchPhase.Opening)
         {
-            return Report.Fail("The opening auctions are over.");
+            return Report.Fail("The opening draft is over.");
         }
 
-        if (bid.Seat < 0 || bid.Seat >= seats.Count)
+        if (pick.Seat != Picker)
         {
-            return Report.Fail($"There is no seat {bid.Seat + 1}.");
+            return Report.Fail($"It's Seat {Picker + 1}'s turn to pick, not Seat {pick.Seat + 1}'s.");
         }
 
-        if (OneBidProblem(bid) is { } problem)
+        if (!toPick.Contains(pick.Tile))
         {
-            return Report.Fail(problem);
+            return Report.Fail($"{pick.Tile} isn't one of the tiles to pick from.");
         }
 
-        return bid.Tile is not { } tile
-            ? new Report(true, ["Pass: you pay nothing and bid again on the next tile. Whoever wins none gets the last one free."])
-            : new Report(true,
-            [
-                $"Bid {bid.Amount} mana on {Describe(tile)}.",
-                $"If yours is the highest bid, you pay {bid.Amount} and keep {seats[bid.Seat].Mana - bid.Amount} mana. A tie is drawn at random.",
-                "If you're outbid, you pay nothing and bid again on the next tile. Whoever wins none gets the last one free.",
-            ]);
+        return new Report(true,
+        [
+            $"Pick {Describe(pick.Tile)}. It costs nothing.",
+            toPick.Count == 2 ? $"Seat {(Picker + 1) % seats.Count + 1} gets the other one." : $"Then Seat {(Picker + 1) % seats.Count + 1} picks from the rest.",
+        ]);
     }
 
-    private string? OneBidProblem(Bid bid)
-    {
-        if (unveilWinners.Contains(bid.Seat))
-        {
-            return $"Seat {bid.Seat + 1} already has a tile from this Unveil.";
-        }
-
-        if (bid.Tile is not { } tile)
-        {
-            return null;
-        }
-
-        if (onAuction.Count == 0 || onAuction[0] != tile)
-        {
-            return $"Seat {bid.Seat + 1} bid on {tile}, which isn't the tile up for auction now.";
-        }
-
-        if (bid.Amount < Rules.MinBid || bid.Amount > seats[bid.Seat].Mana)
-        {
-            return seats[bid.Seat].Mana < Rules.MinBid
-                ? $"Seat {bid.Seat + 1} has too little mana to bid and must pass."
-                : $"Seat {bid.Seat + 1} can bid from {Rules.MinBid} to {seats[bid.Seat].Mana} mana, or pass.";
-        }
-
-        return null;
-    }
-
-    /// <summary>Reveals the next opening Unveil: one tile per seat, from the dark tiles at random, to go up one at a
-    /// time by name.</summary>
+    /// <summary>Reveals the next opening Unveil: one tile per seat, from the dark tiles at random, listed by name.</summary>
     private void NextOpeningUnveil(IRandomSource random)
     {
         OpeningUnveil++;
-        onAuction.Clear();
-        unveilWinners.Clear();
-        onAuction.AddRange(RevealDark(seats.Count, random).OrderBy(h => h.R).ThenBy(h => h.Q));
+        toPick.Clear();
+        toPick.AddRange(RevealDark(seats.Count, random).OrderBy(h => h.R).ThenBy(h => h.Q));
     }
 
     /// <summary>As the rounds begin, the free tiles are revealed: unowned, for anyone to attune (the opening itself is
-    /// only auctions; owner's choice, 24 Oct 2026).</summary>
+    /// only the draft; owner's choice, 24 Oct 2026).</summary>
     private void RevealFreeTiles(IRandomSource random, ReportLines lines)
     {
         var free = RevealDark(Rules.FreeTilesWhenRoundsBegin, random).OrderBy(h => h.R).ThenBy(h => h.Q).ToList();

@@ -8,16 +8,13 @@ A one-page version of `game-design.md` for a first test on a table. All numbers 
 
 1. Make 19 face-down hexes and lay them out as a round board (1 in the middle, a ring of 6, an outer ring of 12).
 2. Write a type on each: **Steady** 7, **Shifting** 6, **Wild** 6. A tile's mana yield is rolled every round, at income (below): Steady = 2; Shifting = 1–3 (d6: 1–2 → 1, 3–4 → 2, 5–6 → 3); Wild = 0–4 (d6: 1 → 0, 2 → 1, 3–4 → 2, 5 → 3, 6 → 4).
-3. Each player takes **9 mana**. Play the first test **without traits**.
+3. Each player takes **4 mana**. Play the first test **without traits**.
 
 ## The opening (before round 1)
 
 Do this **three times**:
 1. **Unveil:** turn over 3 random face-down tiles (one per player). Put them in a row, in reading order.
-2. **Auction, one tile at a time:** for the first tile, every player still bidding secretly writes a bid of at least 1 mana, or "pass". Reveal together.
-   - The highest bid wins the tile and pays; losers don't pay. A tie at the top: roll for it among the tied; only the winner pays.
-   - Nobody bids: roll for which player still bidding gets it free.
-   - The winner sits out the rest of this Unveil. Then the next tile, and so on: the last tile goes free to whoever won none.
+2. **Draft, in turn:** players take one tile each, for free. The first time player 1 picks first, then player 2, then player 3; the second time player 2 starts, the third time player 3. The last player in the order gets the tile left over.
 
 Each player now holds 3 tiles, scattered or connected. Then turn over 3 more face-down tiles: they are free, for anyone to attune from round 1.
 
@@ -48,7 +45,7 @@ After round 8, most points wins. Tie-break: most tiles held, then most mana in h
 
 ## Watch for
 
-- Is 9 starting mana enough for the opening? Do bids end up all 1s and 2s, or does someone spend everything?
+- Does picking first in a draft feel worth much? Is 4 starting mana enough for round 1?
 - Are there enough free tiles to attune after the opening, or does the 19-hex map run out at once?
 - Is this Attune price too cheap or too dear?
 - Do Imps pile up into an unbeatable horde?

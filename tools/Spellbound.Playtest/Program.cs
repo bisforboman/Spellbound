@@ -90,7 +90,7 @@ static Process StartApp(Options options)
         ["RateLimits__AccountPosts"] = "1000",
         ["RateLimits__ConnectionRequestsPerMinute"] = "10000",
         ["RateLimits__RequestsPerMinute"] = "10000",
-        // The auction plays back quickly here, so steps don't wait on it.
+        // The draft plays back quickly here, so steps don't wait on it.
         ["Match__ReplayDelayMs"] = "300",
         ["Logging__LogLevel__Default"] = "Information",
     };
@@ -283,24 +283,24 @@ namespace Spellbound.Playtest
 
                 await page.Locator("input[name='trait']").Nth(1).CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
-                await Expect(page, "Opening auction 1 of 3");
+                await Expect(page, "Opening draft 1 of 3");
                 await Expect(page, "The map is revealed");
-                await Expect(page, "Auction 1/3"); // the top line: colour, where the match is, mana
+                await Expect(page, "Draft 1/3"); // the top line: colour, where the match is, mana
             });
-            await StepAsync(merlin, "bid", async page =>
+            await StepAsync(merlin, "pick", async page =>
             {
-                await Expect(page, "Up now:");
-                await page.FillAsync("#amount", "5"); // more than a bot bids, so it wins and the bots settle the rest
-                await Expect(page, "If yours is the highest bid");
-                await page.ClickAsync("button:has-text('Bid 5 mana')");
-                // The auction plays back one line at a time: each tile's bids, then who got it.
+                await Expect(page, "Your pick");
+                await page.Locator(".hex-map .hex.marked").Nth(1).ClickAsync(); // a tile to pick, chosen on the map
+                await Expect(page, "It costs nothing");
+                await page.ClickAsync("button:has-text('Pick '):not([disabled])");
+                // The bots pick at once, until it is Merlin's turn again; the draft plays back a pick at a time.
                 await page.Locator("#playback").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
-                await Expect(page, "Bids on the");
-                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "auction-playback-screen.png"), FullPage = true });
-                await Expect(page, "Opening auction 2 of 3");
+                await Expect(page, "picks the");
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "draft-playback-screen.png"), FullPage = true });
+                await Expect(page, "Opening draft 3 of 3");
                 await Expect(page, "What just happened");
             });
-            await StepAsync(merlin, "pass-to-the-rounds", async page =>
+            await StepAsync(merlin, "pick-to-the-rounds", async page =>
             {
                 // Nobody scores in the opening, so the standings wait for the rounds.
                 if (await page.Locator("#standings, .match-tabs button:has-text('Standings')").CountAsync() > 0)
@@ -308,14 +308,13 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("The standings show during the opening.");
                 }
 
-                // Pass on every tile until the rounds begin: lose them all and the last one of each auction is yours, free.
-                // (between tiles the auction plays back, and the Pass button is back once it's done)
+                // Pick the first tile on every turn until the rounds begin (between turns the draft plays back).
                 for (var wait = 0; wait < 100 && !(await page.InnerTextAsync(".match-top")).Contains("Round 1/8", StringComparison.Ordinal); wait++)
                 {
-                    var pass = page.Locator("button:has-text('Pass'):not([disabled])");
-                    if (await pass.CountAsync() > 0)
+                    if (await page.Locator("input[name='pick']").CountAsync() > 0)
                     {
-                        await pass.ClickAsync();
+                        await page.Locator("input[name='pick']").First.CheckAsync();
+                        await page.ClickAsync("button:has-text('Pick '):not([disabled])");
                     }
 
                     await page.WaitForTimeoutAsync(300);
@@ -562,28 +561,30 @@ namespace Spellbound.Playtest
                 await Expect(page, "Welcome to match");
                 friendMatch = new Uri(page.Url).AbsolutePath;
             });
-            await StepAsync(merlin, "commit-and-wait", async page =>
+            await StepAsync(merlin, "pick-and-wait", async page =>
             {
                 await page.ClickAsync("button:has-text('Next: choose your trait')");
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
-                await page.ClickAsync("button:has-text('Pass')");
-                await Expect(page, "You have committed. Waiting for Seat 2");
-                await page.ClickAsync("button:has-text('Take back')");
-                await Expect(page, "Opening auction 1 of 3");
-                await page.ClickAsync("button:has-text('Pass')");
-                await Expect(page, "You have committed. Waiting for Seat 2");
+                await Expect(page, "Opening draft 1 of 3");
+                await page.Locator("input[name='pick']").First.CheckAsync();
+                await page.ClickAsync("button:has-text('Pick '):not([disabled])");
+                // Morgana got the last tile, and the second draft starts with her.
+                await Expect(page, "Seat 2 picks next");
+                await Expect(page, "if the pick isn't made by then, a bot makes it");
             });
-            await StepAsync(morgana, "commit-resolves", async page =>
+            await StepAsync(morgana, "pick-in-turn", async page =>
             {
                 await GoAsync(page, invite); // the invite sends a player in the match on to it
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("/match/\\d+$"));
-                await Expect(page, "Seat 1 committed and waits on you");
                 await page.ClickAsync("button:has-text('Next: choose your trait')");
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
-                await page.ClickAsync("button:has-text('Pass')");
-                await Expect(page, "Opening auction 2 of 3");
+                await Expect(page, "Opening draft 2 of 3");
+                await page.Locator("input[name='pick']").First.CheckAsync();
+                await page.ClickAsync("button:has-text('Pick '):not([disabled])");
+                await Expect(page, "Opening draft 3 of 3");
+                await Expect(page, "Seat 1 picks next");
             });
             await StepAsync(merlin, "host", async page =>
             {
@@ -596,14 +597,15 @@ namespace Spellbound.Playtest
             {
                 await page.ClickAsync("button:has-text('Hand seat 2 to a bot')");
                 await Expect(page, "A bot plays seat 2 from now on");
-                await page.ClickAsync("button:has-text('Pass')");
-                await Expect(page, "Opening auction 3 of 3"); // nobody left to wait for
+                await page.Locator("input[name='pick']").First.CheckAsync();
+                await page.ClickAsync("button:has-text('Pick '):not([disabled])");
+                await Expect(page, "Round 1 of 8"); // the bot got the last tile
             });
             await StepAsync(morgana, "watching", async page =>
             {
                 await GoAsync(page, friendMatch);
                 await Expect(page, "A bot plays your seat now");
-                if (await page.Locator("button:has-text('Pass')").CountAsync() > 0)
+                if (await page.Locator("button:has-text('Commit')").CountAsync() > 0)
                 {
                     throw new PlaytestException("A player whose seat a bot plays can still give orders.");
                 }
@@ -617,9 +619,9 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Next: choose your trait')");
                 await page.Locator("input[name='trait']").First.CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
-                await Expect(page, "Opening auction 1 of 3");
+                await Expect(page, "Opening draft 1 of 3");
                 await page.Locator(".hex-map .hex.marked").First.ClickAsync();
-                await Expect(page, "up for auction");
+                await Expect(page, "to pick");
             });
             await StepAsync(morgana, "privacy", async page =>
             {
@@ -649,7 +651,7 @@ namespace Spellbound.Playtest
             await StepAsync(ada, "admin", async page =>
             {
                 await GoAsync(page, "/admin");
-                await Expect(page, "Opening auction 1 of 3, tile 1 of 5, 5 seats");
+                await Expect(page, "Opening draft 1 of 3, pick 1 of 5, 5 seats");
                 await Expect(page, "Problems");
             });
             await StepAsync(ada, "end-game", async page =>

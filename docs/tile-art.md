@@ -29,7 +29,7 @@ On top of the art, the game draws:
 - **the middle:** a dark round seal with the tile's yield, about 16% of the height across;
 - **the top fifth:** the tile's name ("C3");
 - **the bottom fifth:** units or a monster guard ("3i", "☠3");
-- **the edge:** a ring in the owner's colour when someone holds the tile, and the outlines for "up for auction" and
+- **the edge:** a ring in the owner's colour when someone holds the tile, and the outlines for "to pick" and
   "selected".
 
 So put the subject in the ring between the middle and the edge, and keep the middle and top quiet.

@@ -16,7 +16,7 @@ public class SavingTests
         while (match.Phase != MatchPhase.Ended)
         {
             var report = match.Phase == MatchPhase.Opening
-                ? match.Auction([.. match.Bidders.Select(s => Bot.ChooseBid(match, s, random))], random)
+                ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
                 : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random))], random);
             Assert.True(report.Succeeded);
             lines.AddRange(report.Lines);
