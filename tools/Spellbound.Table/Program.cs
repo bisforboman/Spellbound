@@ -86,7 +86,9 @@ int Act(int seat, string json)
         Log(table, seat, json, true, lines);
         var pending = new Dictionary<int, string>(table.Pending) { [seat] = json };
         var next = table with { Pending = pending };
-        return table.AiSeats.All(pending.ContainsKey) ? (Resolve(next), (table.Step, null)) : (next, (table.Step, null));
+        var loaded = table.Load();
+        var ready = loaded.Phase == MatchPhase.Opening ? pending.ContainsKey(loaded.Picker!.Value) : table.AiSeats.All(pending.ContainsKey);
+        return ready ? (Resolve(next), (table.Step, null)) : (next, (table.Step, null));
     });
 
     if (outcome is { } done)
@@ -152,11 +154,11 @@ static (Spellbound.Table.Action? Action, string[] Lines) Validate(TableState tab
 
     switch (action)
     {
-        case Spellbound.Table.Action.MakeBid when match.Seats[seat] is { Trait: null, Offer.Count: > 0 }:
+        case Spellbound.Table.Action.PickTile when match.Seats[seat] is { Trait: null, Offer.Count: > 0 }:
             return (null, ["Choose your trait first."]);
-        case Spellbound.Table.Action.MakeBid bid:
-            var bidCheck = match.CheckBid(bid.Bid);
-            return (bidCheck.Succeeded ? action : null, [.. bidCheck.Lines]);
+        case Spellbound.Table.Action.PickTile pick:
+            var pickCheck = match.CheckPick(pick.Pick);
+            return (pickCheck.Succeeded ? action : null, [.. pickCheck.Lines]);
         case Spellbound.Table.Action.GiveOrders orders:
             var check = match.Check(orders.Orders);
             return (check.Succeeded ? action : null, [.. check.Lines]);
@@ -173,11 +175,16 @@ TableState Resolve(TableState table)
     Report report;
     if (match.Phase == MatchPhase.Opening)
     {
-        report = match.Auction(
-            [.. match.Seats.Select(s => table.Pending.TryGetValue(s.Index, out var json)
-                ? ((Spellbound.Table.Action.MakeBid)Spellbound.Table.Action.Parse(json, s.Index).Action!).Bid
-                : Bot.ChooseBid(match, s.Index, random))],
-            random);
+        var picker = match.Picker!.Value;
+        report = match.Draft(table.Pending.TryGetValue(picker, out var json)
+            ? ((Spellbound.Table.Action.PickTile)Spellbound.Table.Action.Parse(json, picker).Action!).Pick
+            : Bot.ChoosePick(match, picker, random)!, random);
+        // The scripted bots after the AI seat pick at once, until it is an AI seat's turn again.
+        while (report.Succeeded && match.Phase == MatchPhase.Opening && !table.AiSeats.Contains(match.Picker!.Value))
+        {
+            var more = match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random);
+            report = new Report(more.Succeeded, [.. report.Lines, .. more.Lines], [.. report.Lines.Select((_, i) => report.TagOf(i)), .. more.Lines.Select((_, i) => more.TagOf(i))]);
+        }
     }
     else
     {

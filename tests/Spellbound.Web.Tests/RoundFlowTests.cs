@@ -130,7 +130,7 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
         var id = await Play.StartAsync(merlinId, 3, GameRules.Default);
         var offer = (await Play.ViewAsync(id, merlinId))!.Match.Seats[0].Offer;
         Assert.True((await Play.TraitAsync(id, merlinId, offer[0])).Succeeded);
-        await Opening.PassAsync(Play, id, merlinId);
+        await Opening.PickAsync(Play, id, merlinId);
 
         Assert.Equal(MatchPhase.Rounds, (await Play.ViewAsync(id, merlinId))!.Match.Phase);
         return id;

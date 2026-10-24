@@ -9,7 +9,7 @@ public class RoundPlayTests
         var match = Match.Start(players, rules ?? GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         return match;
@@ -38,7 +38,7 @@ public class RoundPlayTests
 
         Assert.Equal(MatchPhase.Rounds, match.Phase);
         Assert.Equal(1, match.CurrentRound);
-        Assert.All(match.Seats, s => Assert.Equal(9 + s.Tiles.Sum(h => match.Map[h].Yield!.Value), s.Mana));
+        Assert.All(match.Seats, s => Assert.Equal(match.Rules.StartingMana + s.Tiles.Sum(h => match.Map[h].Yield!.Value), s.Mana));
     }
 
     [Fact]
@@ -72,11 +72,11 @@ public class RoundPlayTests
     public void A_tile_is_described_by_its_range_not_its_latest_roll()
     {
         var seed = Enumerable.Range(1, 500).First(n =>
-            Match.Start(3, GameRules.Default, new SeededRandom(n)) is var m && m.Map[m.OnAuction[0]].Type == TileType.Wild);
+            Match.Start(3, GameRules.Default, new SeededRandom(n)) is var m && m.Map[m.ToPick[0]].Type == TileType.Wild);
         var match = Match.Start(3, GameRules.Default, new SeededRandom(seed));
-        var wild = match.OnAuction[0]; // the tile up now
+        var wild = match.ToPick[0];
 
-        var check = match.CheckBid(new Bid(0, wild, 1));
+        var check = match.CheckPick(new Pick(0, wild));
 
         Assert.Contains($"the Wild tile at {wild} (yields 0–4)", check.Lines[0], StringComparison.Ordinal);
         Assert.Equal("1–3", match.Rules.YieldRange(TileType.Shifting));

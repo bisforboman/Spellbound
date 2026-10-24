@@ -10,11 +10,11 @@ Decided discussions (background and the angles that were considered):
 
 A walkthrough of one game from start to finish, kept up to date as rules are settled.
 
-1. **Setup.** The map lies dark. Each player starts with **9 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening auctions put them.
-2. **The opening Unveils.** Traits are still hidden, so nobody knows for sure why a rival bids hard on a tile. Before the first round, three Unveils each reveal **one tile per player**, and those tiles go up for auction **one at a time**: everyone still bidding bids secretly or passes, the highest bid takes the tile, and whoever wins none gets the last one free. As the rounds begin, **3 more tiles** are revealed, unowned, for anyone to attune. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
+1. **Setup.** The map lies dark. Each player starts with **4 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening draft puts them.
+2. **The opening Unveils.** Before the first round, three Unveils each reveal **one tile per player**, and the players take **one each in turn**, for free: the first draft starts with seat 1, each next one a seat later, and the last to pick gets the tile left over. Traits are still hidden, so nobody knows for sure why a rival picked a tile. As the rounds begin, **3 more tiles** are revealed, unowned, for anyone to attune. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
 3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
-5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no auction). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
+5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no draft). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
 6. **The second half.** Rounds 5–8: with the map fully revealed and free land running out, growth turns into competition. Attuning gets more expensive as realms grow, so attacking rivals becomes the cheaper way to gain land. A player's last tile can never be taken.
 7. **The end.** After round 8, the player with the most points wins. Points are banked every round, so what you earned early can't be taken away. Trait-goal points are hidden until the end.
 
@@ -25,7 +25,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   "the same 3 for everyone"). The pool of 10 covers 5 players. A player who hasn't drafted when the opening ends gets
   the first trait of their offer.
 - A trait is something to **build around**: it should pull a player towards a strategy (certain tiles, a way of expanding, a style of play), not just add a small bonus.
-- Traits are **secret until the end of the match** (decided 21 Oct 2026, reversing "revealed when the rounds start"; asked for by the Bluffer, `discussions/reading-rivals.md`). Players can only guess at each other's traits: from how they bid in the opening, and from everything they do after.
+- Traits are **secret until the end of the match** (decided 21 Oct 2026, reversing "revealed when the rounds start"; asked for by the Bluffer, `discussions/reading-rivals.md`). Players can only guess at each other's traits: from what they pick in the opening, and from everything they do after.
 - **No guessing** (owner's choice, 24 Oct 2026; it removed a guess at each rival's trait, worth a point at the end): players read rivals from what they do, for nothing but their own plans.
 - Traits give **trait goals**: their own way to score (see *Scoring and winning*). Every goal is scored once, at the
   end, hidden until then, and capped at **3 points**.
@@ -46,7 +46,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Hexer | Scorch and Blight | 1 point per Scorch or Blight cast (a Scorch counts only if it burns something) |
 
 - No trait changes the Attune price, income, upkeep or a cost: they would snowball (principle 7 in `design-principles.md`).
-- **Measured** (1,000 bot games each; bots draft at random, bid like their trait and lean towards their trait's
+- **Measured** (1,000 bot games each; bots draft at random, pick like their trait and lean towards their trait's
   tiles, units and spells): every trait wins between 25% and 39% of 3-player games (33% is even) and between 16% and
   24% of 5-player games (20% is even). Spellweaver and Weaver win least. Goals average 0.5 (Beastbane) to 1.9 points.
   *(21 Oct 2026, after the AI players' sessions: Spellweaver no longer hits its cap by round 4 (1 per 2 spells plus 1
@@ -73,36 +73,44 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Shifting | 1–3 | 2 |
 | Wild | 0–4 | 2 |
 
-- A tile's yield is **rolled every round** (owner's choice, 24 Oct 2026; it replaced a yield fixed once, when the tile was unveiled): at the start of each round, every held Shifting and Wild tile rolls its yield from its type's range, and its owner collects that roll. Steady tiles always yield 2. The map and the auctions show each type's range ("0–4"), so players bid on a risk, not a number. The rolls are public: the round's report lists every one.
+- A tile's yield is **rolled every round** (owner's choice, 24 Oct 2026; it replaced a yield fixed once, when the tile was unveiled): at the start of each round, every held Shifting and Wild tile rolls its yield from its type's range, and its owner collects that roll. Steady tiles always yield 2. The map and the draft show each type's range ("0–4"), so players pick a risk, not a number. The rolls are public: the round's report lists every one.
 - **The odds** are the paper prototype's die: Shifting yields 1, 2 or 3 with equal chance; Wild yields 0 or 4 one time in six each, 1 or 3 one time in six each, and 2 two times in six.
 - **Mix:** roughly **equal thirds** of each type (19 hexes: 7 Steady, 6 Shifting, 6 Wild).
 
 ## Unveil
 
 - An **Unveil** turns over a batch of tiles on the dark map, one at a time.
-- **The opening:** before round 1, three Unveils each reveal **one tile per player**, and each has an auction (below), so every player ends with 3 tiles. The opening is only auctions (owner's choice, 24 Oct 2026): the **3 free tiles** are revealed as the rounds begin, for anyone to attune from round 1.
+- **The opening:** before round 1, three Unveils each reveal **one tile per player**, and the players draft them (below), so every player ends with 3 tiles. The opening is only the draft (owner's choice, 24 Oct 2026): the **3 free tiles** are revealed as the rounds begin, for anyone to attune from round 1.
 
-| Players | Map | Opening reveals | Auctioned | Left free | Still dark |
+| Players | Map | Opening reveals | Drafted | Left free | Still dark |
 |---|---|---|---|---|---|
 | 2 | 19 | 9 | 6 | 3 | 10 |
 | 3 | 19 | 12 | 9 | 3 | 7 |
 | 4 | 37 | 15 | 12 | 3 | 22 |
 | 5 | 37 | 18 | 15 | 3 | 19 |
-- **The later Unveils:** in **rounds 2 and 4**. The tiles still dark after the opening are **split evenly** between them (an odd one goes to round 2). They have **no auction**: the tiles stay unowned until someone takes them. After round 4 the whole map is revealed.
+- **The later Unveils:** in **rounds 2 and 4**. The tiles still dark after the opening are **split evenly** between them (an odd one goes to round 2). They have **no draft**: the tiles stay unowned until someone takes them. After round 4 the whole map is revealed.
 - About **1 in 3** tiles revealed in a later Unveil is **guarded by monsters** (decided at random). The opening Unveils never reveal guarded tiles.
 
-### The Unveil auction (opening only)
+### The opening draft
 
-Tile by tile (owner's choice, 24 Oct 2026; it replaced one sealed bid per player on any of the tiles):
+In turn (owner's choice, 24 Oct 2026; it replaced an auction, tile by tile, that the owner found a bit weird):
 
-- Each opening Unveil reveals **as many tiles as there are players**. They go up **one at a time, in name order** (A1 before B2).
-- For the tile up now, every player **still bidding** secretly bids **mana** on it, or passes.
-- The **highest bid wins** the tile and pays. **Losing bidders don't pay.** A **tie** at the top is drawn at random among the tied; only the winner pays.
-- Once a tile is settled, **every bid on it is revealed** (owner's choice, 24 Oct 2026), so players learn how rivals value land.
-- The winner **sits out** the rest of the Unveil. If **nobody bids**, the tile goes free to a player still bidding, drawn at random.
-- The **last tile** goes **free** to the one player who won none. So everyone ends each Unveil with exactly one new tile.
-- The smallest bid is **1 mana**; to spend nothing, pass. So bidding always costs something if you win, and passing keeps its meaning.
-- Won or leftover tiles don't need to connect to your other tiles (scattered holdings are allowed).
+- Each opening Unveil reveals **as many tiles as there are players**, listed by name (A1 before B2).
+- The players **take one each, in turn**: whoever's turn it is picks any of the tiles still on the table. A pick
+  **costs nothing**, and everyone sees it at once.
+- The **turn order rotates**: the first draft goes seat 1, 2, 3…, the second starts with seat 2, the third with seat 3
+  (1-2-3, 2-3-1, 3-1-2), like the rounds' rotating first seat. With 4 or 5 players, the last seats never pick first.
+- The **last tile** goes to the last seat in the order, without a turn. So everyone ends each Unveil with exactly one
+  new tile.
+- In a match with friends, a player whose turn it is has the usual **24 hours**; then a bot picks for them (a miss, as
+  in the rounds: two in a row and a bot takes the seat). Bots pick at once.
+- Picked tiles don't need to connect to your other tiles (scattered holdings are allowed).
+- **Measured** (2,000 bot games each, `--plans`; bots pick the tile worth most to them, so the tile their trait wants
+  first, else at random among equals): with 4 starting mana, mana after round 1's income averages 10.0 at 3 and at 5
+  players (the auction left 10.5 and 9.6 from 9). The rounds barely move: final scores 21.4 (was 21.5) and 20.6 (20.6),
+  and the plans' win rates stay within 5 points of the auction's at 3 players (Expander 55% to 50%, Warlord 42% to
+  43%) and within 3 at 5 (Warlord 33% to 30%, Economist 9% to 10%). Wins by seat stay even (3 players: 665, 673, 664 of 2,000; 5: 371 to 419). The
+  bots value every type alike (each averages 2), so this can't show how much picking first is worth to a person.
 
 ## Rounds and stances
 
@@ -210,9 +218,9 @@ Kept simple for now, to be extended later.
 
 ## Resources
 
-- **Mana:** produced by tiles (see *Tiles*); pays for opening bids, attuning and summoning.
-- **Starting mana: 9.** Players start with nothing else: no tiles until the opening, and no units.
-- **Unspent mana carries over** to the next round, including whatever is left after the opening auctions.
+- **Mana:** produced by tiles (see *Tiles*); pays for attuning, summoning, building and spells (the opening draft is free).
+- **Starting mana: 4** (lowered from 9 with the draft, the owner's choice, 24 Oct 2026; 4 is the simulator's number, about what players had left after the auction: see *The opening draft*). Players start with nothing else: no tiles until the opening, and no units.
+- **Unspent mana carries over** to the next round, including the starting mana, which the opening doesn't touch.
 - **Spells** use mana alongside the stance (see *Spells*).
 
 ## Spells

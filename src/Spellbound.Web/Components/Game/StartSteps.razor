@@ -1,4 +1,4 @@
-@* The start of a match in three steps, with the current one marked: a welcome, the trait, the first auction. *@
+@* The start of a match in three steps, with the current one marked: a welcome, the trait, the first draft. *@
 <ol class="start-steps" aria-label="Getting started">
     @foreach (var (number, name) in Names)
     {
@@ -9,7 +9,7 @@
 </ol>
 
 @code {
-    private static readonly (int, string)[] Names = [(1, "Welcome"), (2, "Trait"), (3, "Auction")];
+    private static readonly (int, string)[] Names = [(1, "Welcome"), (2, "Trait"), (3, "Draft")];
 
     /// <summary>The current step, 1 to 3.</summary>
     [Parameter]

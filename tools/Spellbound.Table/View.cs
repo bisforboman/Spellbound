@@ -40,9 +40,9 @@ internal static class View
             text.AppendLine($"  {Key(tile.Hex)}: {Describe(match, tile, seat)}");
         }
 
-        if (match.OnAuction.Count > 0)
+        if (match.ToPick.Count > 0)
         {
-            text.AppendLine($"Up for auction now: {string.Join(", ", match.OnAuction.Select(Key))}.");
+            text.AppendLine($"To pick now (Seat {match.Picker + 1}'s turn): {string.Join(", ", match.ToPick.Select(Key))}.");
         }
 
         if (table.LastReportFor(match, seat) is { Count: > 0 } seen)
@@ -78,11 +78,13 @@ internal static class View
 
         if (match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null)
         {
-            return "Your move: choose your trait, e.g. {\"trait\": \"" + me.Offer[0] + "\"}. Then bid.";
+            return "Your move: choose your trait, e.g. {\"trait\": \"" + me.Offer[0] + "\"}. Then pick on your turn.";
         }
 
         return match.Phase == MatchPhase.Opening
-            ? "Your move: bid on one tile up for auction, e.g. {\"bid\": \"q,r\", \"amount\": 2}, or {\"pass\": true}."
+            ? match.Picker == seat
+                ? "Your move: pick one of the tiles to pick, e.g. {\"pick\": \"q,r\"}."
+                : $"Seat {match.Picker + 1} picks now; wait for your turn."
             : "Your move: this round's orders (see `rules` for the format)."
               + string.Concat(Match.FavouredStances.Where(s => match.FavourOf(s) > 0)
                   .Select(s => $" {s} costs {match.FavourOf(s)} mana less this round (nobody chose it lately)."));
@@ -90,7 +92,7 @@ internal static class View
 
     private static string Phase(Match match) => match.Phase switch
     {
-        MatchPhase.Opening => $"Opening auction {match.OpeningUnveil} of {match.Rules.OpeningUnveils}.",
+        MatchPhase.Opening => $"Opening draft {match.OpeningUnveil} of {match.Rules.OpeningUnveils}, pick {match.PickNumber}.",
         MatchPhase.Rounds => $"Round {match.CurrentRound} of {match.Rules.Rounds}.",
         _ => "The match is over.",
     };
@@ -135,9 +137,9 @@ internal static class View
         Later Unveils (rounds {{string.Join(" and ", r.LaterUnveilRounds)}}) reveal the rest of the map; some new tiles are
         guarded by monsters (power {{r.MonsterPower}}).
 
-        OPENING: you start with {{r.StartingMana}} mana. First choose your trait. Then {{r.OpeningUnveils}} auctions:
-        bid mana (at least {{r.MinBid}}) on one tile up for auction, or pass. The only highest bid wins and pays; a tie
-        at the top wins nobody the tile; losers pay nothing. Everyone who didn't win gets a random leftover tile free.
+        OPENING: you start with {{r.StartingMana}} mana. First choose your trait. Then {{r.OpeningUnveils}} drafts:
+        each reveals one tile per player, and players take one each in turn, for free ({"pick": "q,r"} on your turn).
+        The first draft starts with seat 1, each next one a seat later; the last to pick gets the tile left over.
 
         A ROUND: income, then Golem upkeep ({{r.GolemUpkeep}} mana each; unpaid Golems dissolve). Then each player picks
         ONE stance, plus any moves, plus at most ONE spell:
@@ -189,7 +191,7 @@ internal static class View
 
         HOW TO ACT (one JSON object; tiles as "q,r"):
           {"trait": "Weaver"}
-          {"bid": "1,-1", "amount": 2}      or      {"pass": true}
+          {"pick": "1,-1"}                  (in the opening, on your turn)
           {"stance": "attune", "target": "0,1"}
           {"stance": "summon", "target": "0,1", "kind": "golem", "count": 2}
           {"stance": "attack", "target": "1,0", "send": [{"from": "0,0", "imps": 3, "golems": 1}]}

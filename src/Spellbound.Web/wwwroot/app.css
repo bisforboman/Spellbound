@@ -894,7 +894,7 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     .look-swatch[data-swatch="slate"] { background: radial-gradient(circle at 50% 40%, #33404a, #0b0d10 75%); }
 
 /* The match map (Components/Game/HexMap.razor): soot hexes for dark land, charred leather (or the painted tile art)
-   once unveiled, and a ring inside the edge in the owner's ink. Marked tiles (on auction) get a dashed bone edge; the
+   once unveiled, and a ring inside the edge in the owner's ink. Marked tiles (to pick) get a dashed bone edge; the
    chosen one a solid edge in the page's ink. The ring and the edge are separate, so a held tile can be both. */
 .hex-map {
     display: block;

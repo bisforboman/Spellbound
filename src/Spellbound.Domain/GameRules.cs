@@ -22,14 +22,11 @@ public sealed record GameRules
 
     // Setup and the opening (docs/game-design.md, Resources and Unveil)
 
-    /// <summary>The mana each player starts with; it also pays the opening's bids.</summary>
-    public int StartingMana { get; init; } = 9;
+    /// <summary>The mana each player starts with, for the rounds: the opening draft is free.</summary>
+    public int StartingMana { get; init; } = 4;
 
-    /// <summary>How many Unveils the opening has. Each reveals one tile per player and auctions them one at a time.</summary>
+    /// <summary>How many Unveils the opening has. Each reveals one tile per player, and the players take one each in turn.</summary>
     public int OpeningUnveils { get; init; } = 3;
-
-    /// <summary>The smallest bid in an opening auction. A player who wants to spend nothing passes instead.</summary>
-    public int MinBid { get; init; } = 1;
 
     /// <summary>The tiles revealed unowned as the rounds begin, free for anyone to attune.</summary>
     public int FreeTilesWhenRoundsBegin { get; init; } = 3;

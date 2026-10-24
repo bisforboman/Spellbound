@@ -6,7 +6,7 @@ namespace Spellbound.Table;
 
 /// <summary>
 /// One match on disk, shared by the AI seats that play it: the match, the seats played by AI (the rest are the
-/// scripted bots), and what each AI seat has committed for the current step. A step (an opening auction or a round)
+/// scripted bots), and what each AI seat has committed for the current step. A step (an opening pick or a round)
 /// resolves once every AI seat has acted; its randomness comes from the seed and the step, so a match replays.
 /// </summary>
 internal sealed record TableState(
