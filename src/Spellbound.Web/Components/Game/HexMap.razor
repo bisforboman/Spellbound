@@ -1,9 +1,8 @@
 @* The board as inline SVG (docs/theme.md): pointy-top hexes, each a button. Dark tiles are soot; unveiled ones show
    their name (A1: row, then place in the row; TileNames), what a held tile paid this round ("+3"), and units and
-   monster guards; a held tile has
-   an inner ring in its owner's ink (heavier for yours). Each type has its painted image when all three are there
-   (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol. The same choices are offered as
-   plain buttons on the page, so the map is a convenience, not the only way. *@
+   monster guards; a held tile has an inner ring in its owner's ink (heavier for yours). Each type has its painted
+   image when all three are there (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol; the
+   key to the types is on the help page (MatchHelp). *@
 @inject TileArt Art
 
 <svg class="hex-map@(Art.Paths is null ? "" : " painted")" viewBox="@ViewBox" role="group" aria-label="The map">
@@ -75,21 +74,6 @@
         </g>
     }
 </svg>
-@if (Match.Map.Tiles.Any(t => t.IsUnveiled))
-{
-    <p class="tile-key">
-        @foreach (var type in Enum.GetValues<TileType>())
-        {
-            <span>
-                @if (Art.Paths is { } art)
-                {
-                    <img class="tile-swatch" src="@Assets[art[type]]" alt="" />
-                }
-                <span class="tile-mark">@Seats.Mark(type)</span> @type: @Meaning(type)
-            </span>
-        }
-    </p>
-}
 
 @code {
     private const double Size = 30;
@@ -150,12 +134,6 @@
             var angle = Math.PI / 180 * (60 * i - 30);
             return $"{F(x + (Size - 1 - inset) * Math.Cos(angle))},{F(y + (Size - 1 - inset) * Math.Sin(angle))}";
         }));
-
-    private string Meaning(TileType type) => type switch
-    {
-        TileType.Steady => $"yields {Match.Rules.YieldRange(type)} every round",
-        _ => $"rolls {Match.Rules.YieldRange(type)} each round",
-    };
 
     private static string UnitText(Army army) =>
         string.Join(' ', new[] { army.Imps > 0 ? $"{army.Imps}i" : null, army.Golems > 0 ? $"{army.Golems}g" : null }.OfType<string>());

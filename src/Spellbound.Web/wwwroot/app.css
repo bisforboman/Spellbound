@@ -1219,15 +1219,49 @@ tr.you td {
     }
 }
 
-/* The key to the map's type symbols */
-.tile-key {
+/* The match page's top line: your colour, where the match is, your mana, and the way to the help page */
+.match-top {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.15rem 1rem;
-    margin: -0.25rem 0 0.75rem;
-    color: var(--ink-soft);
-    font-size: 0.85rem;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.25rem 0 0.75rem;
+    font-size: 1.05rem;
 }
+
+    .match-top .match-mana {
+        flex: 1;
+        color: var(--ink-soft);
+    }
+
+.ink-dot {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 3px;
+    background: var(--seat);
+    box-shadow: 0 0 0 2px var(--paper-edge);
+}
+
+.help-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--paper-edge);
+    border-radius: 50%;
+    color: var(--ink);
+    font-family: var(--font-label);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.help-list {
+    padding-left: 1.1rem;
+}
+
+    .help-list li {
+        margin-bottom: 0.35rem;
+    }
 
 .tile-mark {
     color: var(--ink);

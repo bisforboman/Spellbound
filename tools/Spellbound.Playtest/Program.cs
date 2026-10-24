@@ -285,7 +285,7 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening auction 1 of 3");
                 await Expect(page, "The map is revealed");
-                await Expect(page, "Your trait:");
+                await Expect(page, "Auction 1/3"); // the top line: colour, where the match is, mana
             });
             await StepAsync(merlin, "bid", async page =>
             {
@@ -309,9 +309,15 @@ namespace Spellbound.Playtest
                 }
 
                 // Pass on every tile until the rounds begin: lose them all and the last one of each auction is yours, free.
-                for (var tile = 0; tile < 20 && !(await page.InnerTextAsync("body")).Contains("Round 1 of 8", StringComparison.Ordinal); tile++)
+                // (between tiles the auction plays back, and the Pass button is back once it's done)
+                for (var wait = 0; wait < 100 && !(await page.InnerTextAsync(".match-top")).Contains("Round 1/8", StringComparison.Ordinal); wait++)
                 {
-                    await page.ClickAsync("button:has-text('Pass'):not([disabled])");
+                    var pass = page.Locator("button:has-text('Pass'):not([disabled])");
+                    if (await pass.CountAsync() > 0)
+                    {
+                        await pass.ClickAsync();
+                    }
+
                     await page.WaitForTimeoutAsync(300);
                 }
 
@@ -339,6 +345,18 @@ namespace Spellbound.Playtest
                 await page.WaitForFunctionAsync(
                     "() => { const r = document.querySelector('table.standings').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }",
                     null, new PageWaitForFunctionOptions { Timeout = 5_000 });
+            });
+            await StepAsync(merlin, "help", async page =>
+            {
+                // The "?" in the top line: the trait's goal, the tile types and the rules, off the main screen.
+                var matchPath = new Uri(page.Url).AbsolutePath;
+                await page.ClickAsync(".match-top .help-link");
+                await Expect(page, "How to play");
+                await Expect(page, "Your trait:");
+                await Expect(page, "Every trait");
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "help-page.png"), FullPage = true });
+                await GoAsync(page, matchPath);
+                await Expect(page, "Round 1 of 8");
             });
             await StepAsync(merlin, "summon", async page =>
             {
@@ -455,10 +473,6 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("label:has-text('Ward')");
                 await Expect(page, "Choose where Ward goes");
                 await page.SelectOptionAsync("#spell-target", new SelectOptionValue { Index = 1 });
-                // A guess at a rival's secret trait rides along with the orders.
-                await page.ClickAsync("button:has-text('Guess a trait')");
-                await page.SelectOptionAsync("#guess-rival", new SelectOptionValue { Index = 1 });
-                await page.SelectOptionAsync("#guess-trait", new SelectOptionValue { Index = 1 });
                 await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
             });
             await StepAsync(merlin, "spell-commit", async page =>
@@ -470,7 +484,6 @@ namespace Spellbound.Playtest
 
                 await page.ClickAsync("button:has-text('Commit:')");
                 await Expect(page, "Round 5 of 8");
-                await Expect(page, "Your guesses:");
             });
             await StepAsync(merlin, "build", async page =>
             {
@@ -502,7 +515,7 @@ namespace Spellbound.Playtest
                     await Expect(page, round < 8 ? $"Round {round + 1} of 8" : "The match is over");
                 }
 
-                await Expect(page, "Over after 8 rounds");
+                await Expect(page, "The match is over");
                 await page.Locator("table.standings").WaitForAsync(); // open by itself at the end
                 await page.Locator(".fold-sum", new PageLocatorOptions { HasTextRegex = new System.Text.RegularExpressions.Regex(" wins?, ") }).WaitForAsync();
             });
