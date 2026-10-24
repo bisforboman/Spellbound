@@ -246,7 +246,7 @@ else
         </section>
     }
 
-    @if (playing && view.HostId == ownerId && view.InStep.Any(p => p != you && !view.Committed.Contains(p)))
+    @if (playing && view.HostId == ownerId && view.People.Any(p => p != you && !view.Committed.Contains(p)))
     {
         <section id="host">
         <h2 class="h4">You are the host</h2>
@@ -263,7 +263,7 @@ else
         {
             <p>If a player has gone quiet, you can hand their seat to a bot instead of waiting for the deadline. Only
                 players who haven't committed this step are listed.</p>
-            @foreach (var person in view.InStep.Where(p => p != you && !view.Committed.Contains(p)))
+            @foreach (var person in view.People.Where(p => p != you && !view.Committed.Contains(p)))
             {
                 var p = person;
                 <button type="button" class="btn btn-outline-primary btn-lg w-100 mb-2" disabled="@busy" @onclick="() => handOff = p">

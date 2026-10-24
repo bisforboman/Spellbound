@@ -432,7 +432,8 @@ namespace Spellbound.Playtest
             await StepAsync(merlin, "attune", async page =>
             {
                 await page.ClickAsync("label:has-text('Attune:')");
-                await Expect(page, "Tap a free tile next to your land"); // the stance's own choices, not the last one's
+                // The stance's own choices, not the last one's (the map isn't seeded, so there may be no free tile to tap).
+                await page.Locator("text=/Tap a free tile next to your land|No free tile next to your land/").First.WaitForAsync();
                 var free = page.Locator(".hex-map .hex.marked");
                 if (await free.CountAsync() == 0)
                 {
