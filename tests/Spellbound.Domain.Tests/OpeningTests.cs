@@ -65,6 +65,7 @@ public class OpeningTests
         Assert.Equal([1, 2], match.Bidders);
         Assert.Equal(second, match.OnAuction[0]);
         Assert.Contains(report.Lines, l => l.StartsWith("Seat 1 wins", StringComparison.Ordinal));
+        Assert.Equal($"Bids on the {match.Map[first].Type} tile at {first} (yields {match.Rules.YieldRange(match.Map[first].Type)}): Seat 1 4, Seat 2 3, Seat 3 passes.", report.Lines[0]); // revealed once settled
 
         match.Auction([Bid.Pass(1), new Bid(2, second, 1)], new SeededRandom(2));
 

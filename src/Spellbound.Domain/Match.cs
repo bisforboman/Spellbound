@@ -80,6 +80,8 @@ public sealed partial class Match
 
         var lines = new ReportLines();
         var tile = onAuction[0];
+        // Every bid is revealed once the tile is settled (owner's choice, 24 Oct 2026), so players learn how rivals value land.
+        lines.Add($"Bids on {Describe(tile)}: {string.Join(", ", bids.OrderBy(b => b.Seat).Select(b => b.Tile is null ? $"Seat {b.Seat + 1} passes" : $"Seat {b.Seat + 1} {b.Amount}"))}.");
         var top = bids.Where(b => b.Tile == tile).GroupBy(b => b.Amount).MaxBy(g => g.Key)?.OrderBy(b => b.Seat).ToList();
         if (top is { Count: > 0 })
         {
