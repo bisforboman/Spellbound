@@ -269,6 +269,11 @@ public sealed partial class Match
 
     private int Ward(Hex hex) => wards.GetValueOrDefault(hex);
 
+    /// <summary>What a tile paid its holder at the start of this round: its roll and a Shrine's extra, or nothing if it
+    /// was blighted. For the page's "+N" on each tile.</summary>
+    public int IncomeOf(Hex hex) =>
+        blightedLastRound.Contains(hex) ? 0 : (Map[hex].Yield ?? 0) + (UpgradeOn(hex) == Upgrade.Shrine ? Rules.ShrineYield : 0);
+
     private int YieldFor(Hex hex) =>
         blights.Contains(hex) ? 0 : (Map[hex].Yield ?? 0) + (UpgradeOn(hex) == Upgrade.Shrine ? Rules.ShrineYield : 0);
 

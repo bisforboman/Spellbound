@@ -56,6 +56,16 @@
                 {
                     @Label(x, y + 16, "hex-note", UnitText(seen))
                 }
+
+                @if (Gains?.TryGetValue(hex, out var gain) == true)
+                {
+                    <g @key="@($"gain {Round} {hex}")" transform="translate(@F(x) @F(y - 4))">
+                        <g class="hex-gain@(gain == 0 ? " none" : "")">
+                            <rect x="-13" y="-10" width="26" height="20" rx="10" />
+                            @Label(0, 1, "", $"+{gain}")
+                        </g>
+                    </g>
+                }
             }
         </g>
     }
@@ -99,6 +109,13 @@
 
     [Parameter]
     public EventCallback<Hex> OnSelect { get; set; }
+
+    /// <summary>What each held tile paid as a round began, shown once as a "+N" rising from it; null otherwise.</summary>
+    [Parameter]
+    public IReadOnlyDictionary<Hex, int>? Gains { get; set; }
+
+    /// <summary>The round the gains are for: each round's chips are new elements, so their animation plays again.</summary>
+    private int Round => Match.CurrentRound;
 
     private string ViewBox
     {
