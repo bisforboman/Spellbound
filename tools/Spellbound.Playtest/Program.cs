@@ -279,11 +279,20 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("The map shows before the trait is chosen.");
                 }
 
+                if (await page.Locator(".traits svg.trait-icon[aria-label]").CountAsync() != 2)
+                {
+                    throw new PlaytestException("The offered traits don't each show their icon.");
+                }
+
                 await page.Locator("input[name='trait']").Nth(1).CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening auction 1 of 3");
                 await Expect(page, "The map is revealed");
                 await Expect(page, "Your trait:");
+                if (await page.Locator(".trait-line svg.trait-icon[aria-label]").CountAsync() != 1)
+                {
+                    throw new PlaytestException("Your trait shows no icon.");
+                }
             });
             await StepAsync(merlin, "bid", async page =>
             {

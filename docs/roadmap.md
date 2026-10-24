@@ -65,6 +65,9 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
     "Bot 2 attunes")
   - [x] 6d: the trait pick before the first bid, your trait on the match page, rivals' traits once the rounds begin,
     and each goal in the end report
+  - [x] An icon per trait (`TraitIcon.razor`, drawn for the game: [theme](theme.md), "Trait icons"), next to the trait's
+    name in the draft, your trait line and the rivals' traits at the end (24 Oct 2026). Still open: the top line kept
+    to round, colour and mana with the trait as its icon, and the goal text moved to a help page
 - [x] Battle report text in the art direction's tone ([theme](theme.md)): your battles end in a stamp (Conquered,
   Repelled, Thwarted, Held, Lost), and the report and tile labels say "you" and "Bot N"
 - [x] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll. The match page (owner's

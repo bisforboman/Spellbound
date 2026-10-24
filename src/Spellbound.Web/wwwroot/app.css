@@ -576,6 +576,17 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         box-shadow: inset 3px 0 0 var(--school);
     }
 
+/* A trait's icon (TraitIcon.razor), drawn in the text's ink and set on the line beside its name */
+.trait-icon {
+    display: inline-block;
+    vertical-align: -0.3em;
+    flex-shrink: 0;
+}
+
+.trait-name {
+    white-space: nowrap;
+}
+
 /* An ornament between sections: <div class="ornament" aria-hidden="true"><span>✣</span></div> */
 .ornament {
     display: flex;

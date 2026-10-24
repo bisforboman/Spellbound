@@ -46,7 +46,7 @@ else
 
     @if (me.Trait is { } mine)
     {
-        <p class="trait-line">Your trait: <b>@mine</b>, @match.GoalText(mine)</p>
+        <p class="trait-line">Your trait: <span class="trait-name"><TraitIcon Trait="mine" /> <b>@mine</b></span>, @match.GoalText(mine)</p>
     }
 
     @if (!drafting)
@@ -129,7 +129,7 @@ else
                 var t = offered;
                 <label class="choice">
                     <input type="radio" name="trait" checked="@(trait == t)" @onchange="() => trait = t" />
-                    <span><b>@t</b>: @Capitalised(match.GoalText(t))</span>
+                    <span><span class="trait-name"><TraitIcon Trait="t" /> <b>@t</b></span>: @Capitalised(match.GoalText(t))</span>
                 </label>
             }
         </fieldset>
@@ -284,8 +284,13 @@ else
     </table>
     @if (match.Phase == MatchPhase.Ended && match.Seats.Any(s => s.Index != you && s.Trait is not null))
     {
-        <p class="trait-line">Rivals' traits: @string.Join(", ", match.Seats.Where(s => s.Index != you && s.Trait is not null)
-            .Select(s => $"{Seats.Name(view, s.Index, you)} had {s.Trait}")).</p>
+        var rivals = match.Seats.Where(s => s.Index != you && s.Trait is not null).ToList();
+        <p class="trait-line">Rivals' traits:
+            @for (var i = 0; i < rivals.Count; i++)
+            {
+                var rival = rivals[i];
+                @(i > 0 ? ", " : "")@Seats.Name(view, rival.Index, you)@(" had ")<span class="trait-name"><TraitIcon Trait="rival.Trait!.Value" /> @rival.Trait</span>
+            }.</p>
     }
     else if (match.Phase == MatchPhase.Rounds && match.Seats.Any(s => s.Index != you && s.Trait is not null))
     {
