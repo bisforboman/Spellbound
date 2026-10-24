@@ -870,6 +870,10 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         font-weight: 700;
     }
 
+    .hex-map .hex-yield.range {
+        font-size: 13px;
+    }
+
     .hex-map .hex-note {
         font-size: 11px;
         fill: var(--ink-soft);

@@ -37,12 +37,12 @@
                 @if (Art.Paths is null)
                 {
                     @Label(x - 10, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
-                    @Label(x + 6, y - 2, "hex-yield", tile.Yield.ToString()!)
+                    @Label(x + 6, y - 2, YieldClass(tile.Type), Match.Rules.YieldRange(tile.Type))
                 }
                 else
                 {
                     <circle class="hex-seal" cx="@F(x)" cy="@F(y - 1)" r="9.5" />
-                    @Label(x, y - 1, "hex-yield", tile.Yield.ToString()!)
+                    @Label(x, y - 1, YieldClass(tile.Type), Match.Rules.YieldRange(tile.Type))
                 }
                 @if (tile.IsGuarded)
                 {
@@ -121,11 +121,13 @@
             return $"{F(x + (Size - 1 - inset) * Math.Cos(angle))},{F(y + (Size - 1 - inset) * Math.Sin(angle))}";
         }));
 
-    private static string Meaning(TileType type) => type switch
+    /// <summary>A range ("0–4") is set smaller than a single yield so it fits the hex.</summary>
+    private string YieldClass(TileType type) => Match.Rules.Varies(type) ? "hex-yield range" : "hex-yield";
+
+    private string Meaning(TileType type) => type switch
     {
-        TileType.Steady => "the same yield every round",
-        TileType.Shifting => "a little up or down",
-        _ => "swings a lot",
+        TileType.Steady => $"yields {Match.Rules.YieldRange(type)} every round",
+        _ => $"rolls {Match.Rules.YieldRange(type)} each round",
     };
 
     private static string UnitText(Army army) =>

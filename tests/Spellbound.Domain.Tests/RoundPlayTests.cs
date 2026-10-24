@@ -42,6 +42,48 @@ public class RoundPlayTests
     }
 
     [Fact]
+    public void Held_wild_and_shifting_tiles_roll_their_yield_every_round_and_steady_ones_dont()
+    {
+        // Wild tiles that only ever roll 0 or 4, so a few rounds show both.
+        var rules = GameRules.Default with { WildYields = [0, 4], ShiftingYields = [0, 4] };
+        var match = FirstWhere(m => m.Seats[0].Tiles.Any(h => m.Map[h].Type == TileType.Wild)
+                                    && m.Seats[0].Tiles.Any(h => m.Map[h].Type == TileType.Steady), rules);
+        var wild = match.Seats[0].Tiles.First(h => match.Map[h].Type == TileType.Wild);
+        var steady = match.Seats[0].Tiles.First(h => match.Map[h].Type == TileType.Steady);
+        var rolls = new HashSet<int>();
+
+        for (var round = 0; round < 6; round++)
+        {
+            var mana = match.Seats[0].Mana;
+            var report = match.Resolve(HoldAll(match), new SeededRandom(100 + round));
+
+            rolls.Add(match.Map[wild].Yield!.Value);
+            Assert.Equal(2, match.Map[steady].Yield);
+            Assert.Equal(mana + match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value), match.Seats[0].Mana); // the income is the rolls
+            var line = Assert.Single(report.Lines, l => l.StartsWith("This round's rolls: ", StringComparison.Ordinal));
+            Assert.Contains($"Wild {wild} rolls {match.Map[wild].Yield}", line, StringComparison.Ordinal);
+            Assert.DoesNotContain($"{steady}", line, StringComparison.Ordinal);
+        }
+
+        Assert.Equal([0, 4], rolls.Order());
+    }
+
+    [Fact]
+    public void A_tile_is_described_by_its_range_not_its_latest_roll()
+    {
+        var seed = Enumerable.Range(1, 500).First(n =>
+            Match.Start(3, GameRules.Default, new SeededRandom(n)) is var m && m.OnAuction.Any(h => m.Map[h].Type == TileType.Wild));
+        var match = Match.Start(3, GameRules.Default, new SeededRandom(seed));
+        var wild = match.OnAuction.First(h => match.Map[h].Type == TileType.Wild);
+
+        var check = match.CheckBid(new Bid(0, wild, 1));
+
+        Assert.Contains($"the Wild tile at {wild} (yields 0–4)", check.Lines[0], StringComparison.Ordinal);
+        Assert.Equal("1–3", match.Rules.YieldRange(TileType.Shifting));
+        Assert.Equal("2", match.Rules.YieldRange(TileType.Steady));
+    }
+
+    [Fact]
     public void Summoning_places_units_on_your_tile_and_costs_their_price()
     {
         var match = Opened();

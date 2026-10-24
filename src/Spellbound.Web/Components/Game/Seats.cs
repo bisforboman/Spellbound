@@ -69,6 +69,6 @@ public static class Seats
         var seen = you is { } viewer ? match.UnitsSeenBy(viewer, hex) : match.UnitsOn(hex);
         var units = seen is { IsEmpty: false } army ? $", {army}" : seen is null && match.OwnerOf(hex) is not null ? ", units unseen" : "";
         var built = match.UpgradeOn(hex) is { } upgrade ? $", with a {upgrade}" : "";
-        return $"{(mark ? Mark(tile.Type) + " " : "")}{tile.Type} tile {TileNames.Of(match.Map, hex)}, yields {tile.Yield}, {owner}{built}{units}";
+        return $"{(mark ? Mark(tile.Type) + " " : "")}{tile.Type} tile {TileNames.Of(match.Map, hex)}, yields {match.Rules.YieldRange(tile.Type)}, {owner}{built}{units}";
     }
 }

@@ -146,14 +146,32 @@ public sealed partial class Match
         return lines.ToReport();
     }
 
-    /// <summary>Starts the next round: a later Unveil if it's one of their rounds, then every seat collects its
-    /// land's mana and pays its Golems' upkeep. A Golem that can't be paid for dissolves, on the seat's tiles in board
-    /// order.</summary>
+    /// <summary>Every held Shifting and Wild tile rolls its yield for this round's income, in board order. The rolls
+    /// are public (owner's choice, 24 Oct 2026); Steady tiles always yield the same, so they don't roll.</summary>
+    private void RollYields(IRandomSource random, ReportLines lines)
+    {
+        var rolls = new List<string>();
+        foreach (var hex in seats.SelectMany(s => s.Tiles).OrderBy(h => h.Q).ThenBy(h => h.R).Where(h => Rules.Varies(Map[h].Type)))
+        {
+            Map.Roll(hex, Rules, random);
+            rolls.Add($"{Map[hex].Type} {hex} rolls {Map[hex].Yield}");
+        }
+
+        if (rolls.Count > 0)
+        {
+            lines.Add($"This round's rolls: {string.Join(", ", rolls)}.");
+        }
+    }
+
+    /// <summary>Starts the next round: a later Unveil if it's one of their rounds, then the held tiles roll their
+    /// yields, and every seat collects its land's mana and pays its Golems' upkeep. A Golem that can't be paid for
+    /// dissolves, on the seat's tiles in board order.</summary>
     private ReportLines StartRound(IRandomSource random)
     {
         CurrentRound++;
         var lines = new ReportLines($"Round {CurrentRound} of {Rules.Rounds} begins.");
         LaterUnveil(random, lines);
+        RollYields(random, lines);
         foreach (var seat in seats)
         {
             var income = seat.Tiles.Sum(YieldFor);
