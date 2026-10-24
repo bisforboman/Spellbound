@@ -948,11 +948,11 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
 
     .hex-map .held {
         fill: none;
-        stroke-width: 3;
+        stroke-width: 1.5;
     }
 
     .hex-map .yours .held {
-        stroke-width: 4.5;
+        stroke-width: 2.25;
     }
 
     .hex-map .marked .rim {
