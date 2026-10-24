@@ -1,5 +1,6 @@
 @* The board as inline SVG (docs/theme.md): pointy-top hexes, each a button. Dark tiles are soot; unveiled ones show
-   their name (A1: row, then place in the row; TileNames), their yield, and units and monster guards; a held tile has
+   their name (A1: row, then place in the row; TileNames), what a held tile paid this round ("+3"), and units and
+   monster guards; a held tile has
    an inner ring in its owner's ink (heavier for yours). Each type has its painted image when all three are there
    (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol. The same choices are offered as
    plain buttons on the page, so the map is a convenience, not the only way. *@
@@ -39,13 +40,14 @@
                 }
                 @if (Art.Paths is null)
                 {
-                    @Label(x - 10, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
-                    @Label(x + 6, y - 2, YieldClass(tile.Type), Match.Rules.YieldRange(tile.Type))
+                    @Label(x, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
                 }
-                else
+
+                @if (owner is not null && Match.Phase != MatchPhase.Opening)
                 {
-                    <circle class="hex-seal" cx="@F(x)" cy="@F(y - 1)" r="9.5" />
-                    @Label(x, y - 1, YieldClass(tile.Type), Match.Rules.YieldRange(tile.Type))
+                    // What the tile paid its holder this round: a small hint, the type's range is in the key.
+                    <circle class="hex-seal" cx="@F(x)" cy="@F(y + 1)" r="8" />
+                    @Label(x, y + 1, "hex-income", $"+{Match.IncomeOf(hex)}")
                 }
                 @if (tile.IsGuarded)
                 {
@@ -144,9 +146,6 @@
             var angle = Math.PI / 180 * (60 * i - 30);
             return $"{F(x + (Size - 1 - inset) * Math.Cos(angle))},{F(y + (Size - 1 - inset) * Math.Sin(angle))}";
         }));
-
-    /// <summary>A range ("0–4") is set smaller than a single yield so it fits the hex.</summary>
-    private string YieldClass(TileType type) => Match.Rules.Varies(type) ? "hex-yield range" : "hex-yield";
 
     private string Meaning(TileType type) => type switch
     {

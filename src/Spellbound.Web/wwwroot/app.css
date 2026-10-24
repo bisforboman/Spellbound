@@ -865,17 +865,10 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         font-size: 11px; /* ◆ is drawn larger than ≈ and ✶ at the same size */
     }
 
-    .hex-map .hex-yield {
-        font-size: 17px;
+    /* A held tile's income this round, small on its seal */
+    .hex-map .hex-income {
+        font-size: 10px;
         font-weight: 700;
-    }
-
-    .hex-map .hex-yield.range {
-        font-size: 13px;
-    }
-
-    .hex-map.painted .hex-yield.range {
-        font-size: 11px; /* inside the seal */
     }
 
     .hex-map .hex-note {
@@ -1215,8 +1208,9 @@ tr.you td {
 }
 
 @keyframes mana-gain {
-    0%, 100% { opacity: 0; }
-    15%, 80% { opacity: 1; }
+    0% { opacity: 0; }
+    15%, 80% { opacity: 1; font-size: 1em; }
+    100% { opacity: 0; font-size: 0; } /* and gives its room back */
 }
 
 @media (prefers-reduced-motion: reduce) {
