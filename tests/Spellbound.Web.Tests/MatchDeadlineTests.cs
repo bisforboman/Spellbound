@@ -130,14 +130,13 @@ public sealed class MatchDeadlineTests : TestDatabase
         var id = await store.CreateAsync(["alice", "bob", "carol"], GameRules.Default, Start);
         var now = Start;
 
-        await BidOneAsync(id, "alice", now); // tile 1: alice and carol bid, bob lets the deadline pass
-        await BidOneAsync(id, "carol", now);
+        await BidAsync(id, "alice", 2, now); // tile 1: alice outbids carol, bob lets the deadline pass
+        await BidAsync(id, "carol", 1, now);
         now += MatchStore.StepDeadline;
         await store.HoldOverdueAsync(now);
         Assert.Equal(1, (await store.LoadAsync(id))!.Missed[1]);
 
-        await BidAsync(id, "bob", 5, now); // tile 2: bob wins, and the last tile goes to whoever is left
-        await PassAsync(id, "alice", now);
+        await BidAsync(id, "bob", 5, now); // tile 2: bob wins, and the last tile goes to carol
         await PassAsync(id, "carol", now);
         Assert.Equal(2, (await store.LoadAsync(id))!.Match.OpeningUnveil);
         Assert.Empty((await store.LoadAsync(id))!.Missed); // bob committed, so his miss is cleared
