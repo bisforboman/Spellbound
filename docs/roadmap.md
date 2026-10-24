@@ -73,7 +73,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   a header that says what's in them; and a short report (your lines, your battles, where the match is) with
   "Everything that happened" a tap away. A match starts in three steps (owner's choice, 23 Oct 2026): a welcome
   (your seat, who's playing, how the match goes), the trait with the map still dark, then the map and the first
-  auction; the standings are folded (with who leads) until the Standings tab opens them, and open by themselves at
+  auction; the standings wait for the rounds (nobody scores in the opening), then are folded (with who leads) until the Standings tab opens them, and open by themselves at
   the end. Tiles go by name, not coordinates (owner's choice, 23 Oct 2026): a row letter from the top and the place
   in the row ("C3"), shown on each revealed hex and used in the lists, the orders and the reports. Each revealed hex
   shows its type's symbol (◆ Steady, ≈ Shifting, ✶ Wild), with a key under the map and the symbol before each tile in
