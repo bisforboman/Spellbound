@@ -1,6 +1,7 @@
 @* The board as inline SVG (docs/theme.md): pointy-top hexes, each a button. Dark tiles are soot; unveiled ones show
    what a held tile paid this round ("+3"), and units and
-   monster guards; a held tile has an inner ring in its owner's ink (heavier for yours). Only the
+   monster guards. A held tile has one border, its own edge in its owner's ink (heavier for yours), drawn only
+   where the next tile isn't theirs, so a player's tiles together form one zone. Only the
    selected tile shows its name (A1: row, then place in the row; TileNames). Each type has its painted
    image when all three are there (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol; the
    key to the types is on the help page (MatchHelp). The map is the only way to choose a tile: the orders form says
@@ -19,7 +20,7 @@
         var owner = Unowned?.Contains(hex) == true ? null : Match.OwnerOf(hex);
         var units = You is { } viewer ? Match.UnitsSeenBy(viewer, hex) : Match.UnitsOn(hex); // null: hidden by the fog
         var classes = "hex" + (tile.IsUnveiled ? "" : " dark") + (Highlight?.Contains(hex) == true ? " marked" : "")
-                      + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "");
+                      + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "") + (owner is null ? "" : " held");
         <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners, mark: false, named: ShowNames)"
            @onclick="() => OnSelect.InvokeAsync(hex)" @onkeydown="e => KeyAsync(e, hex)">
             @if (tile.IsUnveiled && Art.Paths is { } art)
@@ -29,10 +30,6 @@
                 </g>
             }
             <polygon class="rim" points="@Points(x, y)" />
-            @if (owner is { } o)
-            {
-                <polygon class="held" points="@Points(x, y, inset: 3.5)" style="stroke: @Seats.Ink(o)" />
-            }
             @if (tile.IsUnveiled)
             {
                 @if (ShowNames && hex == Selected)
@@ -75,6 +72,20 @@
             }
         </g>
     }
+    @* The zones, over every tile so a neighbour's art can't cover them. *@
+    <g class="zones">
+        @foreach (var tile in Match.Map.Tiles)
+        {
+            if (OwnerAt(tile.Hex) is not { } o)
+            {
+                continue;
+            }
+
+            var (x, y) = Center(tile.Hex);
+            var inset = o == You ? 2.25 : 1.5; // half the stroke, so the border sits just inside the edge
+            <path class="@(o == You ? "zone yours" : "zone")" style="stroke: @Seats.Ink(o)" d="@ZoneEdges(tile.Hex, o, x, y, inset)" />
+        }
+    </g>
 </svg>
 
 @code {
@@ -129,13 +140,41 @@
 
     private static (double X, double Y) Center(Hex hex) => (Size * Root3 * (hex.Q + hex.R / 2.0), Size * 1.5 * hex.R);
 
-    /// <summary>A hex's corners, <paramref name="inset"/> inside its edge (for the owner's ring).</summary>
-    private static string Points(double x, double y, double inset = 0) =>
-        string.Join(' ', Enumerable.Range(0, 6).Select(i =>
+    /// <summary>A hex's corners.</summary>
+    private static string Points(double x, double y) =>
+        string.Join(' ', Enumerable.Range(0, 6).Select(i => Corner(x, y, i, 0)).Select(c => $"{F(c.X)},{F(c.Y)}"));
+
+    /// <summary>Who holds a tile as drawn: nobody if it is dark or <see cref="Unowned"/> for now.</summary>
+    private int? OwnerAt(Hex hex) =>
+        !Match.Map.Contains(hex) || !Match.Map[hex].IsUnveiled || Unowned?.Contains(hex) == true ? null : Match.OwnerOf(hex);
+
+    /// <summary>The edges of a held tile that face a tile not held by the same seat, as one SVG path.</summary>
+    private string ZoneEdges(Hex hex, int owner, double x, double y, double inset)
+    {
+        var path = new System.Text.StringBuilder();
+        for (var i = 0; i < 6; i++)
         {
-            var angle = Math.PI / 180 * (60 * i - 30);
-            return $"{F(x + (Size - 1 - inset) * Math.Cos(angle))},{F(y + (Size - 1 - inset) * Math.Sin(angle))}";
-        }));
+            if (OwnerAt(new Hex(hex.Q + EdgeNeighbour[i].Q, hex.R + EdgeNeighbour[i].R)) == owner)
+            {
+                continue;
+            }
+
+            var (x1, y1) = Corner(x, y, i, inset);
+            var (x2, y2) = Corner(x, y, i + 1, inset);
+            path.Append($"M{F(x1)},{F(y1)}L{F(x2)},{F(y2)}");
+        }
+
+        return path.ToString();
+    }
+
+    /// <summary>The neighbour across each edge: edge i runs from corner i to corner i + 1, facing 60 × i degrees.</summary>
+    private static readonly Hex[] EdgeNeighbour = [new(1, 0), new(0, 1), new(-1, 1), new(-1, 0), new(0, -1), new(1, -1)];
+
+    private static (double X, double Y) Corner(double x, double y, int i, double inset)
+    {
+        var angle = Math.PI / 180 * (60 * i - 30);
+        return (x + (Size - 1 - inset) * Math.Cos(angle), y + (Size - 1 - inset) * Math.Sin(angle));
+    }
 
     private static string UnitText(Army army) =>
         string.Join(' ', new[] { army.Imps > 0 ? $"{army.Imps}i" : null, army.Golems > 0 ? $"{army.Golems}g" : null }.OfType<string>());

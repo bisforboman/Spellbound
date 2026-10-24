@@ -805,12 +805,22 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         stroke: #2a231c;
     }
 
-    .hex-map .held {
-        fill: none;
-        stroke-width: 3;
+    /* A held tile's one border is its zone edge (below), not the plain rim */
+    .hex-map .held:not(.selected):not(.marked) .rim {
+        stroke: none;
     }
 
-    .hex-map .yours .held {
+    .hex-map .zones {
+        pointer-events: none;
+    }
+
+    .hex-map .zone {
+        fill: none;
+        stroke-width: 3;
+        stroke-linecap: round;
+    }
+
+    .hex-map .zone.yours {
         stroke-width: 4.5;
     }
 
