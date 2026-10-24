@@ -53,11 +53,11 @@ weighed less (owner, 21 Oct 2026).
 
 The owner said the game is missing elements for reading rivals (21 Oct 2026). These are the ideas so far, with
 where each came from. The owner chose three of them to build, in this order: a Rally spell (the commitment; built), secret traits
-with guessing (built), and fog of war (built) (`discussions/reading-rivals.md`).
+(built; guessing them for points was built and removed on 24 Oct 2026), and fog of war (built) (`discussions/reading-rivals.md`).
 
 | Idea | Who asked | Inspired by |
 |---|---|---|
-| Traits kept secret until the end, with a reward for guessing a rival's | Bluffer, sessions 1 and 2 ([s2](playtests/2026-10-21-ai-tastes-2/match3-seat1.md)) | Coup |
+| Traits kept secret until the end (the reward for guessing a rival's was removed, 24 Oct 2026) | Bluffer, sessions 1 and 2 ([s2](playtests/2026-10-21-ai-tastes-2/match3-seat1.md)) | Coup |
 | A non-binding pact or threat line before orders | Bluffer, sessions 1 and 2 ([s2](playtests/2026-10-21-ai-tastes-2/match3-seat1.md)); Casual player, session 1 (trading mana for a promise) | Diplomacy, Catan |
 | A secret commitment of extra power to a battle | Wargamer, session 2 ([review](playtests/2026-10-21-ai-tastes-2/match1-seat2.md)); Bluffer and Combo player (outside), session 1 | Kemet, Blood Rage, Cosmic Encounter |
 | A third player can back a side in a battle | Bluffer, session 2 ([review](playtests/2026-10-21-ai-tastes-2/match3-seat1.md)) | Cosmic Encounter's allies |

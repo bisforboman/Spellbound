@@ -142,10 +142,6 @@ public sealed record GameRules
     /// <summary>The most points a trait goal can add.</summary>
     public int TraitGoalCap { get; init; } = 3;
 
-    /// <summary>Points at the end for each rival's trait guessed right, and the most that guessing can add.</summary>
-    public int PointsPerTraitGuess { get; init; } = 1;
-    public int TraitGuessCap { get; init; } = 3;
-
     /// <summary>Wildheart and Hearthkeeper: one point per this many tiles of their type.</summary>
     public int TilesOfTypePerTraitPoint { get; init; } = 1;
 

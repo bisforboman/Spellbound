@@ -36,20 +36,18 @@ else
             <span>You collect @me.ProducedThisRound mana</span>
         </div>
     }
-    <h1>Match @Id</h1>
-    <p class="match-status">
-        <b>@MatchStore.Describe(match, view.IsRunning)</b>.
-        You are seat @(you + 1), in <span class="seat-ink" style="--seat: @Seats.Ink(you)">your ink</span>:
-        <span class="ledger-line">@($"{me.Mana} mana")@if (fresh)
+    <h1 class="visually-hidden">Match @Id</h1>
+    @* The top line: kept to what changes the next choice. Tiles and points are on the map and in the standings, the
+       trait's goal and the rules on the help page. *@
+    <div class="match-top">
+        <span class="ink-dot" style="--seat: @Seats.Ink(you)" role="img" aria-label="Your colour"></span>
+        <b class="match-step">@ShortStep(match, view.IsRunning)</b>
+        <span class="match-mana">@($"{me.Mana} mana")@if (fresh)
             {
                 <span class="mana-gain" @key="newRound" aria-hidden="true"> +@me.ProducedThisRound</span>
-            }, @me.Tiles.Count @(me.Tiles.Count == 1 ? "tile" : "tiles"), @me.Score @(me.Score == 1 ? "point" : "points").</span>
-    </p>
-
-    @if (me.Trait is { } mine)
-    {
-        <p class="trait-line">Your trait: <b>@mine</b>, @match.GoalText(mine)</p>
-    }
+            }</span>
+        <a class="help-link" href="match/@Id/help" aria-label="Help: the rules and your trait">?</a>
+    </div>
 
     @if (!drafting)
     {
@@ -141,7 +139,7 @@ else
         <StartSteps Step="2" />
         <h2 class="h4">Choose your trait</h2>
         <p>Your trait gives you a goal, scored at the end. Nobody else was offered these, and rivals never learn which
-            you chose until the match ends: they can only guess. The map is revealed once you have chosen.</p>
+            you chose until the match ends. The map is revealed once you have chosen.</p>
         <fieldset class="traits">
             @foreach (var offered in me.Offer)
             {
@@ -309,9 +307,7 @@ else
     }
     else if (match.Phase == MatchPhase.Rounds && match.Seats.Any(s => s.Index != you && s.Trait is not null))
     {
-        <p class="trait-line">Rivals' traits are secret until the end.
-            @(me.Guesses.Count == 0 ? "You haven't guessed any yet."
-                : "Your guesses: " + string.Join(", ", me.Guesses.OrderBy(g => g.Key).Select(g => $"{Seats.Name(view, g.Key, you)}: {g.Value}")) + ".")</p>
+        <p class="trait-line">Rivals' traits are secret until the end.</p>
     }
     @if (match.Phase == MatchPhase.Ended && match.Winners.Count > 0)
     {
@@ -411,6 +407,15 @@ else
     }
 
     private void Select(Hex hex) => selected = hex;
+
+    /// <summary>Where the match is, in a few characters for the top line.</summary>
+    private static string ShortStep(Match match, bool isRunning) => (isRunning, match.Phase) switch
+    {
+        (_, MatchPhase.Ended) => "Over",
+        (false, _) => "Ended early",
+        (_, MatchPhase.Opening) => $"Auction {match.OpeningUnveil}/{match.Rules.OpeningUnveils}",
+        _ => $"Round {match.CurrentRound}/{match.Rules.Rounds}",
+    };
 
     /// <summary>
     /// Plays an auction's report back a line at a time, <see cref="ReplayDelay"/> apart: each tile's bids, then who got

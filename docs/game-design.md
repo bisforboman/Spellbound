@@ -12,7 +12,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 1. **Setup.** The map lies dark. Each player starts with **9 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening auctions put them.
 2. **The opening Unveils.** Traits are still hidden, so nobody knows for sure why a rival bids hard on a tile. Before the first round, three Unveils each reveal **one tile per player**, and those tiles go up for auction **one at a time**: everyone still bidding bids secretly or passes, the highest bid takes the tile, and whoever wins none gets the last one free. As the rounds begin, **3 more tiles** are revealed, unowned, for anyone to attune. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
-3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end; alongside any round's orders a player may guess a rival's (once per rival), for points at the end. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
+3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
 5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no auction). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
 6. **The second half.** Rounds 5–8: with the map fully revealed and free land running out, growth turns into competition. Attuning gets more expensive as realms grow, so attacking rivals becomes the cheaper way to gain land. A player's last tile can never be taken.
@@ -26,7 +26,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   the first trait of their offer.
 - A trait is something to **build around**: it should pull a player towards a strategy (certain tiles, a way of expanding, a style of play), not just add a small bonus.
 - Traits are **secret until the end of the match** (decided 21 Oct 2026, reversing "revealed when the rounds start"; asked for by the Bluffer, `discussions/reading-rivals.md`). Players can only guess at each other's traits: from how they bid in the opening, and from everything they do after.
-- **Guessing:** alongside any round's orders, a player may guess one rival's trait. Once per rival; a guess can't be changed and stays secret. At the end each right guess is worth **1 point**, at most **3**. A trait you were offered can't be a rival's (no trait is offered to two players), so it can't be guessed.
+- **No guessing** (owner's choice, 24 Oct 2026; it removed a guess at each rival's trait, worth a point at the end): players read rivals from what they do, for nothing but their own plans.
 - Traits give **trait goals**: their own way to score (see *Scoring and winning*). Every goal is scored once, at the
   end, hidden until then, and capped at **3 points**.
 - **The pool** (the first six decided 20 Oct 2026, the last four 21 Oct 2026; the reasoning is in
@@ -295,7 +295,7 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
   - **Mana produced:** points for the mana your land produces.
   - **Conquest:** points for rival tiles taken and monster tiles cleared.
   - **Trait goals:** each trait can add its own way to score.
-- **Visibility:** the main score is **visible** to everyone during the game; **traits, trait-goal points and guesses are hidden** until the end, and so is rivals' mana (see *Fog of war*).
+- **Visibility:** the main score is **visible** to everyone during the game; **traits and trait-goal points are hidden** until the end, and so is rivals' mana (see *Fog of war*).
 - **Point values**, banked at the end of every round:
 
 | Source | Points |
@@ -305,7 +305,6 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
 | Conquest | 2 per monster tile cleared or **defended** rival tile taken (it had units, a Ward or a Tower when the battle began); **1 per undefended** rival tile taken. Kept even if the tile is lost again. (It was 1 for any, then 2 for any from 21 Oct 2026, when fighting didn't pay. The same day the third AI-taste session found raids on empty tiles decided every match, and the owner made an undefended capture worth 1.) |
 | Trait goals | set by each trait, scored once at the end, up to 3 (see *Traits*) |
 | Upgrades | 1 per upgrade you hold at the end |
-| Guesses | 1 per rival's trait guessed right, scored once at the end, up to 3 (see *Traits*) |
 
 - **Tie-break:** most tiles held at the end; if still tied, most mana in hand.
 - **Scale** (changed 20 Oct 2026): a 3-player game ends around **18 points** a seat (about 12 for land, 5 for mana,
