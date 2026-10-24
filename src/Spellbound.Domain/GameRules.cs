@@ -173,7 +173,7 @@ public sealed record GameRules
     public int HexesPerTraitPoint { get; init; } = 1;
 
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.
-    // On average every type yields 2.
+    // A held tile rolls its yield every round. On average every type yields 2.
 
     public IReadOnlyList<int> SteadyYields { get; init; } = [2, 2, 2, 2, 2, 2];
     public IReadOnlyList<int> ShiftingYields { get; init; } = [1, 1, 2, 2, 3, 3];
@@ -192,6 +192,24 @@ public sealed record GameRules
 
     public int AttunePrice(int tilesHeld) => AttuneBasePrice + AttunePricePerTile * Math.Min(tilesHeld, AttuneCheapTiles)
         + AttunePricePerTileBeyond * Math.Max(0, tilesHeld - AttuneCheapTiles);
+
+    /// <summary>One roll of a tile's yield: a face of its type's die.</summary>
+    public int RollYield(TileType type, IRandomSource random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        var faces = YieldsOf(type);
+        return faces[random.Next(faces.Count)];
+    }
+
+    /// <summary>Whether a type's yield can change from one roll to the next (Steady's can't).</summary>
+    public bool Varies(TileType type) => YieldsOf(type).Distinct().Skip(1).Any();
+
+    /// <summary>A type's possible yields in words: "2" or "0–4".</summary>
+    public string YieldRange(TileType type) =>
+        Varies(type) ? $"{YieldsOf(type).Min()}–{YieldsOf(type).Max()}" : $"{YieldsOf(type)[0]}";
+
+    /// <summary>What a type yields on average, for the bots' sums.</summary>
+    public double AverageYield(TileType type) => YieldsOf(type).Average();
 
     public IReadOnlyList<int> YieldsOf(TileType type) => type switch
     {

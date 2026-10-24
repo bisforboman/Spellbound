@@ -62,17 +62,19 @@ public class SpellTests
     [Fact]
     public void Blight_leaves_a_rivals_tile_out_of_their_next_income()
     {
-        var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Map[b.Theirs].Yield > 0);
+        var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Map[b.Theirs].Type == TileType.Steady);
         var (_, theirs) = Border(match, 0, 1)!.Value;
-        var income = match.Seats[1].Tiles.Sum(h => match.Map[h].Yield!.Value);
         var before = match.Seats[1].Mana;
 
         var report = Play(match, Orders.Hold(0).Casting(Spell.Blight, theirs));
 
-        Assert.Equal(before + income - match.Map[theirs].Yield!.Value, match.Seats[1].Mana);
-        Assert.Contains(report.Lines, l => l.Contains($"Seat 2 collects {income - match.Map[theirs].Yield} mana", StringComparison.Ordinal));
+        // Each tile's yield is the roll this round's income used.
+        var income = match.Seats[1].Tiles.Where(h => h != theirs).Sum(h => match.Map[h].Yield!.Value);
+        Assert.Equal(before + income, match.Seats[1].Mana);
+        Assert.Contains(report.Lines, l => l.Contains($"Seat 2 collects {income} mana", StringComparison.Ordinal));
+        before = match.Seats[1].Mana;
         Play(match);
-        Assert.Equal(before + 2 * income - match.Map[theirs].Yield!.Value, match.Seats[1].Mana); // one round only
+        Assert.Equal(before + match.Seats[1].Tiles.Sum(h => match.Map[h].Yield!.Value), match.Seats[1].Mana); // one round only
     }
 
     [Fact]
@@ -103,11 +105,11 @@ public class SpellTests
         var (mine, theirs) = Border(match, 0, 1)!.Value;
         Play(match, Orders.Summon(0, mine, UnitKind.Imp, 1), Orders.Summon(1, theirs, UnitKind.Imp, 3));
         var mana = match.Seats[0].Mana;
-        var income = match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value);
 
         var report = Play(match,
             Orders.Attack(0, theirs, [new Move(mine, theirs, new Army(1, 0))]).Casting(Spell.Rally, theirs),
             Orders.Hold(1).Casting(Spell.Scorch, mine, 1));
+        var income = match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value); // this round's rolls
 
         Assert.Contains(report.Lines, l => l.Contains("has no units left to send", StringComparison.Ordinal));
         Assert.Equal(1, match.OwnerOf(theirs));

@@ -73,7 +73,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Shifting | 1–3 | 2 |
 | Wild | 0–4 | 2 |
 
-- A tile's yield is decided **once, when it is unveiled**: it gets a fixed value within its type's range and keeps it for the whole game. The value is visible from then on, so players know exactly what they are bidding on.
+- A tile's yield is **rolled every round** (owner's choice, 24 Oct 2026; it replaced a yield fixed once, when the tile was unveiled): at the start of each round, every held Shifting and Wild tile rolls its yield from its type's range, and its owner collects that roll. Steady tiles always yield 2. The map and the auctions show each type's range ("0–4"), so players bid on a risk, not a number. The rolls are public: the round's report lists every one.
 - **The odds** are the paper prototype's die: Shifting yields 1, 2 or 3 with equal chance; Wild yields 0 or 4 one time in six each, 1 or 3 one time in six each, and 2 two times in six.
 - **Mix:** roughly **equal thirds** of each type (19 hexes: 7 Steady, 6 Shifting, 6 Wild).
 
@@ -127,7 +127,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 
-1. **Income:** every player collects the mana yield of each tile they hold.
+1. **Income:** every held Shifting and Wild tile rolls its yield (see *Tiles*); every player collects the yield of each tile they hold.
 2. **Upkeep:** pay 1 mana per Golem; a Golem that can't be paid for dissolves.
 3. **Commit:** every player secretly commits one stance plus any moves. When all have committed, everything is revealed. Until then a player can take their orders back and commit again; everyone sees who has committed, never what. With friends, a round that has waited **24 hours** resolves anyway: whoever hasn't committed holds (in the opening, passes). After two misses in a row, a bot plays that seat (see `discussions/playing-with-friends.md`).
 4. **Moves** resolve. Defenders can reinforce a threatened tile in the same round; attackers can't be sure what they'll meet.

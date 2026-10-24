@@ -110,7 +110,7 @@ internal static class View
             ? match.OwnerOf(tile.Hex) is not null ? ", units unseen" : ""
             : seen.IsEmpty ? "" : $", {seen}";
         var built = match.UpgradeOn(tile.Hex) is { } upgrade ? $", with a {upgrade}" : "";
-        return $"{tile.Type}, yields {tile.Yield}, {owner}{built}{units}";
+        return $"{tile.Type}, yields {match.Rules.YieldRange(tile.Type)} (rolled each round), {owner}{built}{units}";
     }
 
     public static string Key(Hex hex) => $"({hex.Q},{hex.R})";
