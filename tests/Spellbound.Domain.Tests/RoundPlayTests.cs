@@ -9,7 +9,7 @@ public class RoundPlayTests
         var match = Match.Start(players, rules ?? GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
         }
 
         return match;
@@ -72,9 +72,9 @@ public class RoundPlayTests
     public void A_tile_is_described_by_its_range_not_its_latest_roll()
     {
         var seed = Enumerable.Range(1, 500).First(n =>
-            Match.Start(3, GameRules.Default, new SeededRandom(n)) is var m && m.OnAuction.Any(h => m.Map[h].Type == TileType.Wild));
+            Match.Start(3, GameRules.Default, new SeededRandom(n)) is var m && m.Map[m.OnAuction[0]].Type == TileType.Wild);
         var match = Match.Start(3, GameRules.Default, new SeededRandom(seed));
-        var wild = match.OnAuction.First(h => match.Map[h].Type == TileType.Wild);
+        var wild = match.OnAuction[0]; // the tile up now
 
         var check = match.CheckBid(new Bid(0, wild, 1));
 
@@ -142,14 +142,14 @@ public class RoundPlayTests
     {
         var match = FirstWhere(m => FreeNeighbours(m, 0).Intersect(FreeNeighbours(m, 1)).Any());
         var target = FreeNeighbours(match, 0).Intersect(FreeNeighbours(match, 1)).First();
-        var before = match.Seats.Select(s => s.Mana - s.Tiles.Sum(h => match.Map[h].Yield!.Value)).ToList();
+        var mana = match.Seats[0].Mana;
 
         var report = match.Resolve(HoldAll(match, Orders.Attune(0, target), Orders.Attune(1, target)), new SeededRandom(7));
 
         Assert.True(report.Succeeded);
         Assert.Null(match.OwnerOf(target));
         Assert.Contains(report.Lines, l => l.Contains("nobody gets it", StringComparison.Ordinal));
-        Assert.Equal(before[0] + 2 * match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value), match.Seats[0].Mana);
+        Assert.Equal(mana + match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value), match.Seats[0].Mana); // only the next round's income
     }
 
     [Fact]

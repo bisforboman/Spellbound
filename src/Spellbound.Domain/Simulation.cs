@@ -79,7 +79,7 @@ public static partial class Simulation
 
         while (match.Phase == MatchPhase.Opening)
         {
-            var bids = match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random, PlanOf(s.Index))).ToList();
+            var bids = match.Bidders.Select(s => Bot.ChooseBid(match, s, random, PlanOf(s))).ToList();
             report.Bids.AddRange(bids.Where(b => b.Tile is not null).Select(b => b.Amount));
             report.Passes += bids.Count(b => b.Tile is null);
             var lines = Resolved(match.Auction(bids, random));

@@ -21,7 +21,8 @@ public sealed partial class Match
             .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))],
         [.. upgrades.OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R).Select(u => new UpgradeState(u.Key, u.Value))],
         [.. blightedLastRound.OrderBy(h => h.Q).ThenBy(h => h.R)],
-        [.. favour.Where(f => f.Value > 0).OrderBy(f => f.Key).Select(f => new FavourState(f.Key, f.Value))]);
+        [.. favour.Where(f => f.Value > 0).OrderBy(f => f.Key).Select(f => new FavourState(f.Key, f.Value))],
+        [.. unveilWinners.Order()]);
 
     /// <summary>A saved match, to play on under the rules it was saved with.</summary>
     public static Match Load(MatchState state, GameRules rules)
@@ -77,6 +78,7 @@ public sealed partial class Match
             CurrentRound = state.CurrentRound,
         };
         match.onAuction.AddRange(state.OnAuction);
+        match.unveilWinners.UnionWith(state.UnveilWinners ?? []);
         foreach (var u in state.Units)
         {
             match.units[u.Hex] = new Army(u.Imps, u.Golems);

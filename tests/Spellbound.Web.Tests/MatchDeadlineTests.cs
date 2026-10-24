@@ -34,6 +34,15 @@ public sealed class MatchDeadlineTests : TestDatabase
     private Task<(Report Report, bool Resolved)?> PassAsync(long id, string ownerId, DateTimeOffset now) =>
         store.CommitAsync(id, ownerId, now, MatchJson.Serialize(new Bid(0, null, 0)), (loaded, seat) => loaded.Match.CheckBid(new Bid(seat, null, 0)));
 
+    /// <summary>A bid on the tile up now (refused, changing nothing, for someone who already has their tile).</summary>
+    private async Task BidAsync(long id, string ownerId, int amount, DateTimeOffset now)
+    {
+        var tile = (await store.LoadAsync(id))!.Match.OnAuction[0];
+        await store.CommitAsync(id, ownerId, now, MatchJson.Serialize(new Bid(0, tile, amount)), (loaded, seat) => loaded.Match.CheckBid(new Bid(seat, tile, amount)));
+    }
+
+    private Task BidOneAsync(long id, string ownerId, DateTimeOffset now) => BidAsync(id, ownerId, 1, now);
+
     /// <summary>A match started from an invite, so alice is its host.</summary>
     private async Task<long> InvitedAsync(params string[] joiners)
     {
@@ -94,8 +103,9 @@ public sealed class MatchDeadlineTests : TestDatabase
         var now = Start;
         for (var miss = 0; miss < MatchStore.MissesBeforeBot; miss++)
         {
-            await PassAsync(id, "alice", now);
-            await PassAsync(id, "carol", now);
+            // alice and carol bid on each tile, so bob, who holds, is still bidding for the next one.
+            await BidOneAsync(id, "alice", now);
+            await BidOneAsync(id, "carol", now);
             now += MatchStore.StepDeadline;
             await store.HoldOverdueAsync(now);
         }
@@ -110,8 +120,65 @@ public sealed class MatchDeadlineTests : TestDatabase
         await PassAsync(id, "alice", now);
         var resolved = await PassAsync(id, "carol", now);
         Assert.True(resolved!.Value.Resolved);
-        Assert.Equal(MatchPhase.Rounds, (await store.LoadAsync(id))!.Match.Phase);
+        Assert.Equal((2, 2), ((await store.LoadAsync(id))!.Match.OpeningUnveil, (await store.LoadAsync(id))!.Match.AuctionTile));
         Assert.DoesNotContain(0, (await store.LoadAsync(id))!.Missed.Keys);
+    }
+
+    [Fact]
+    public async Task Sitting_out_a_tile_neither_counts_as_a_miss_nor_clears_one()
+    {
+        var id = await store.CreateAsync(["alice", "bob", "carol"], GameRules.Default, Start);
+        var now = Start;
+
+        await BidAsync(id, "alice", 2, now); // tile 1: alice outbids carol, bob lets the deadline pass
+        await BidAsync(id, "carol", 1, now);
+        now += MatchStore.StepDeadline;
+        await store.HoldOverdueAsync(now);
+        Assert.Equal(1, (await store.LoadAsync(id))!.Missed[1]);
+
+        await BidAsync(id, "bob", 5, now); // tile 2: bob wins, and the last tile goes to carol
+        await PassAsync(id, "carol", now);
+        Assert.Equal(2, (await store.LoadAsync(id))!.Match.OpeningUnveil);
+        Assert.Empty((await store.LoadAsync(id))!.Missed); // bob committed, so his miss is cleared
+
+        await BidAsync(id, "alice", 5, now); // the next auction: alice wins tile 1 and sits out tile 2
+        await PassAsync(id, "bob", now);
+        await PassAsync(id, "carol", now);
+        now += MatchStore.StepDeadline;
+        await store.HoldOverdueAsync(now); // tile 2: bob and carol both let it pass
+
+        var missed = (await store.LoadAsync(id))!.Missed;
+        Assert.Equal(1, missed[1]);
+        Assert.Equal(1, missed[2]);
+        Assert.DoesNotContain(0, missed.Keys); // alice sat it out: no miss for her
+    }
+
+    [Fact]
+    public async Task A_miss_survives_a_tile_its_player_sits_out()
+    {
+        // A seed where nobody bids on the first tile and it lands, free, on bob, who let the deadline pass.
+        for (var seed = 1; seed <= 200; seed++)
+        {
+            var id = await store.CreateAsync(["alice", "bob", "carol"], GameRules.Default, Start, seed);
+            await PassAsync(id, "alice", Start);
+            await PassAsync(id, "carol", Start);
+            var late = Start + MatchStore.StepDeadline;
+            await store.HoldOverdueAsync(late);
+            if ((await store.LoadAsync(id))!.Match.Seats[1].Tiles.Count == 0)
+            {
+                continue;
+            }
+
+            await PassAsync(id, "alice", late); // tile 2, without bob
+            await PassAsync(id, "carol", late);
+
+            var match = (await store.LoadAsync(id))!;
+            Assert.Equal(2, match.Match.OpeningUnveil);
+            Assert.Equal(1, match.Missed[1]); // still one miss: sitting out neither adds nor clears one
+            return;
+        }
+
+        Assert.Fail("No seed handed bob the first tile.");
     }
 
     [Fact]
@@ -145,7 +212,7 @@ public sealed class MatchDeadlineTests : TestDatabase
         Assert.Equal("A bot plays seat 2 from now on.", report.Lines[0]);
         var match = (await store.LoadAsync(id))!;
         Assert.Equal([1], match.Away);
-        Assert.Equal(2, match.Match.OpeningUnveil);
+        Assert.Equal(2, match.Match.AuctionTile); // the first tile went
         Assert.Empty(match.Missed); // a hand-off isn't a miss
     }
 

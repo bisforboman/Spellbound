@@ -108,8 +108,8 @@ an admin ends it. Bans are global (per account).
     id in the lobby in one transaction; bots take the free seats.
   - **Every change** goes through `MatchStore.ApplyAsync`: load with the row locked (`FOR UPDATE`), one domain call,
     save only if it succeeded, one transaction. Two actions on one match take turns.
-  - **Randomness** is never stored: each step gets `SeededRandom(seed + step)`, where the step is the opening auction
-    (1–3) or 100 + the round, so a step's dice don't depend on how often the match was saved. The seed is picked by the
+  - **Randomness** is never stored: each step gets `SeededRandom(seed + step)`, where the step is 10 × the opening
+    auction (1–3) + the tile up for bidding (1–5), or 100 + the round, so a step's dice don't depend on how often the match was saved. The seed is picked by the
     web layer (`Random.Shared`) when the match starts. The saved state is the truth; replaying from the seed is only for
     tests, so a change to `System.Random` can't break a saved match. Never `HashCode` (it differs per process).
 - **Times** are stored as UTC (`timestamptz`); `DbSession` converts any `DateTimeOffset` with another offset.

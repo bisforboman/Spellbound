@@ -5,8 +5,9 @@ several people share a match. The owner made these choices; each one was Claude'
 
 ## Decided
 
-- **Commit-and-wait.** A step (an opening Unveil's bids, or a round's orders) resolves only when every person in the
-  match has committed. Bots still choose at the moment it resolves. Until then a person can **take back** their
+- **Commit-and-wait.** A step (the bids on one opening tile, or a round's orders) resolves only when every person in
+  it has committed: in the opening, only those still bidding in the Unveil (since 24 Oct 2026 its tiles go up one at
+  a time, and a tile only bots still bid on goes at once). Bots still choose at the moment it resolves. Until then a person can **take back** their
   orders and commit again. Everyone sees *who* has committed, never *what*.
 - **Joining: an invite link.** The host makes a match and shares a link; whoever opens it takes a free seat. Bots
   fill the seats nobody took when the host starts.

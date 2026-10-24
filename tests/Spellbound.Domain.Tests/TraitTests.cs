@@ -79,7 +79,7 @@ public class TraitTests
         Report report = null!;
         while (match.Phase == MatchPhase.Opening)
         {
-            report = match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            report = match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
         }
 
         Assert.Equal(match.Seats[0].Offer[0], match.Seats[0].Trait);
@@ -95,7 +95,7 @@ public class TraitTests
         var random = new SeededRandom(1);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
         }
 
         return match;
