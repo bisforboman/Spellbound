@@ -134,7 +134,7 @@
         string.Join(' ', Enumerable.Range(0, 6).Select(i =>
         {
             var angle = Math.PI / 180 * (60 * i - 30);
-            return $"{F(x + (Size - 1 - inset) * Math.Cos(angle))},{F(y + (Size - 1 - inset) * Math.Sin(angle))}";
+            return $"{F(x + (Size - 0.5 - inset) * Math.Cos(angle))},{F(y + (Size - 0.5 - inset) * Math.Sin(angle))}";
         }));
 
     private static string UnitText(Army army) =>

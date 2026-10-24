@@ -28,6 +28,8 @@ else
     var fresh = newRound == match.CurrentRound && match.Phase == MatchPhase.Rounds && replay is null; // after any draft playback
     // Tiles go by name from the rounds on; in the opening the map marks the tiles to pick, and names are only clutter.
     var named = match.Phase != MatchPhase.Opening;
+    // The view the bottom tabs show. The board is hidden, not removed, so half-given orders survive a look elsewhere.
+    var tab = drafting ? MatchTab.Board : Tab;
     <div class="match-page">
     @if (fresh)
     {
@@ -51,7 +53,7 @@ else
 
     @if (!drafting)
     {
-        <section id="map">
+        <section id="map" hidden="@(tab != MatchTab.Board)">
         <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is not null ? null : match.Phase == MatchPhase.Rounds && playing ? ordersForm?.Pickable : toPick)" OnSelect="Select" ShowNames="named"
                 Unowned="@ReplayPending"
                 Gains="@(fresh ? match.Seats.SelectMany(s => s.Tiles).ToDictionary(h => h, match.IncomeOf) : null)" />
@@ -66,7 +68,7 @@ else
     @if (replay is { } beats)
     {
         // The draft plays back one pick at a time, so the player sees who took which tile.
-        <section id="playback">
+        <section id="playback" hidden="@(tab != MatchTab.Board)">
         <h2 class="h4">The draft</h2>
         <div class="match-report playback">
             @for (var b = 0; b < replayBeat && b < beats.Count; b++)
@@ -79,7 +81,7 @@ else
     }
     else
     {
-    <section id="orders">
+    <section id="orders" hidden="@(tab != MatchTab.Board)">
     @if (status is not null)
     {
         <p class="alert alert-warning" role="alert">@status</p>
@@ -209,16 +211,21 @@ else
     else if (match.Phase == MatchPhase.Ended)
     {
         <h2 class="h4">The match is over</h2>
-        <p>After @match.Rules.Rounds rounds, the most points wins; ties go to the most tiles, then the most mana.</p>
+        <p>After @match.Rules.Rounds rounds, the most points wins; ties go to the most tiles, then the most mana.
+            <a href="match/@Id#standings" @onclick="() => Show(MatchTab.Standings)">See the standings</a>.</p>
     }
     </section>
     }
 
     @{ var lastReport = view.LastReportFor(you); }
-    @if (lastReport.Count > 0 && replay is null)
+    @if (tab == MatchTab.Report && (lastReport.Count == 0 || replay is not null))
     {
-        <section id="report">
-        <h2 class="h4 mt-4">What just happened</h2>
+        <p class="text-muted">@(replay is null ? "Nothing has happened yet." : "The draft is playing back on the board.")</p>
+    }
+    else if (lastReport.Count > 0 && replay is null)
+    {
+        <section id="report" hidden="@(tab != MatchTab.Report)">
+        <h2 class="h4">What just happened</h2>
         <div class="match-report">
             @{
                 var verdicts = Verdicts.Find(lastReport, you);
@@ -248,7 +255,7 @@ else
 
     @if (playing && view.HostId == ownerId && view.People.Any(p => p != you && !view.Committed.Contains(p)))
     {
-        <section id="host">
+        <section id="host" hidden="@(tab != MatchTab.Board)">
         <h2 class="h4">You are the host</h2>
         @if (handOff is { } seat)
         {
@@ -274,17 +281,11 @@ else
         </section>
     }
 
-    @* Nobody scores in the opening, so the standings wait for the rounds. *@
-    @if (match.Phase != MatchPhase.Opening)
+    @if (tab == MatchTab.Standings)
     {
     <section id="standings">
-    <button type="button" class="fold-head mt-4" aria-expanded="@showStandings" @onclick="() => showStandings = !showStandings">
-        <span class="fold-title">Standings @(showStandings ? "▾" : "▸")</span>
-        <span class="fold-sum">@Leaders(match)</span>
-    </button>
-    @if (showStandings)
-    {
-    <div class="fold-body">
+    <h2 class="h4">Standings</h2>
+    <p class="standings-sum">@Capitalised(Leaders(match)).</p>
     <table class="table standings">
         <thead><tr><th>Seat</th><th>Points</th><th>Tiles</th><th>Mana</th></tr></thead>
         <tbody>
@@ -312,8 +313,6 @@ else
     {
         <p><b>@string.Join(" and ", match.Winners.Select(w => Seats.Name(view, w.Index, you))) @(match.Winners.Count == 1 && match.Winners[0].Index != you ? "wins" : "win").</b></p>
     }
-    </div>
-    }
     </section>
     }
     <p><a href="">Back home</a></p>
@@ -321,13 +320,19 @@ else
 
     @if (!drafting)
     {
-    <nav class="match-tabs" aria-label="Match">
-        <a href="match/@Id#map">Map</a>
-        <a href="match/@Id#orders">@(match.Phase == MatchPhase.Ended ? "End" : "Orders")</a>
-        <a href="match/@Id#report">Report</a>
+    <nav class="match-tabs" aria-label="Match views">
+        <a href="match/@Id#board" aria-current="@(tab == MatchTab.Board ? "page" : null)" @onclick="() => Show(MatchTab.Board)">Board</a>
+        <a href="match/@Id#report" aria-current="@(tab == MatchTab.Report ? "page" : null)" class="@(unread ? "unread" : null)" @onclick="() => Show(MatchTab.Report)">
+            <span>Report</span>
+            @if (unread)
+            {
+                <span class="visually-hidden"> (new)</span>
+            }
+        </a>
+        @* Nobody scores in the opening, so the standings wait for the rounds. *@
         @if (match.Phase != MatchPhase.Opening)
         {
-            <button type="button" @onclick="OpenStandings">Standings</button>
+            <a href="match/@Id#standings" aria-current="@(tab == MatchTab.Standings ? "page" : null)" @onclick="() => Show(MatchTab.Standings)">Standings</a>
         }
     </nav>
     }
@@ -352,8 +357,7 @@ else
     private bool busy;
     private int? handOff;
     private bool welcomed;
-    private bool showStandings;
-    private bool scrollToStandings;
+    private bool unread; // a report came in while the page was open, and the Report view hasn't been opened since
     private int? seenRound;
     private OrdersForm? ordersForm;
     private string? seenReport;
@@ -364,6 +368,40 @@ else
     private TimeSpan ReplayDelay => TimeSpan.FromMilliseconds(Config.GetValue("Match:ReplayDelayMs", 1500));
     private int? newRound;
 
+    private enum MatchTab { Board, Report, Standings }
+
+    /// <summary>The view in the URL (#board, #report, #standings), so back, reload and links keep it. With none, the
+    /// board, or at the end the standings; nobody scores in the opening, so there the standings wait for the rounds.</summary>
+    private MatchTab Tab => (chosen, new Uri(Nav.Uri).Fragment, view?.Match.Phase) switch
+    {
+        (MatchTab.Standings, _, MatchPhase.Opening) => MatchTab.Board,
+        ({ } tab, _, _) => tab,
+        (_, "#report", _) => MatchTab.Report,
+        (_, "#standings", not MatchPhase.Opening) => MatchTab.Standings,
+        (_, "", MatchPhase.Ended) => MatchTab.Standings,
+        _ => MatchTab.Board,
+    };
+
+    /// <summary>The tab tapped last. A tap changes only the URL's fragment, which raises no LocationChanged, so the
+    /// tap sets the view itself (its link still puts it in the URL).</summary>
+    private MatchTab? chosen;
+
+    private void Show(MatchTab tab)
+    {
+        chosen = tab;
+        unread &= tab != MatchTab.Report;
+    }
+
+    protected override void OnInitialized() => Nav.LocationChanged += TabChanged;
+
+    /// <summary>Back and forward: the page stays, the view follows the URL.</summary>
+    private void TabChanged(object? sender, LocationChangedEventArgs e) => _ = InvokeAsync(() =>
+    {
+        chosen = null;
+        unread &= Tab != MatchTab.Report;
+        StateHasChanged();
+    });
+
     protected override async Task OnParametersSetAsync()
     {
         ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
@@ -373,11 +411,19 @@ else
 
     private async Task LoadAsync()
     {
+        var running = view is { Match.Phase: not MatchPhase.Ended };
         view = await Play.ViewAsync(Id, ownerId);
+        if (running && view?.Match.Phase == MatchPhase.Ended)
+        {
+            chosen = MatchTab.Standings; // it ended while the page was open: the payoff
+            Nav.NavigateTo($"match/{Id}#standings", replace: true);
+        }
+
         var report = string.Join('\n', view?.LastReport ?? []);
         if (seenReport is not null && report != seenReport && view is not null)
         {
             StartReplay(view.LastReportFor(you));
+            unread = Tab != MatchTab.Report;
         }
 
         seenReport = report;
@@ -387,7 +433,6 @@ else
         }
 
         seenRound = view?.Match.CurrentRound;
-        showStandings |= view?.Match.Phase == MatchPhase.Ended; // the payoff of an ended match
         you = view?.SeatOf(ownerId) ?? 0;
         toPick = view?.Match.Picker == you ? view.Match.ToPick.ToHashSet() : [];
         if (selected is { } s && view?.Match.Map.Contains(s) != true)
@@ -483,25 +528,13 @@ else
         ? beats.Skip(replayBeat).Where(Hands).SelectMany(l => TileNames.Of(l).Take(1)).ToHashSet()
         : null;
 
-    public void Dispose() => replayStop?.Cancel();
-
-    /// <summary>The bottom tab: opens the standings, then (once they are on the page) scrolls to them.</summary>
-    private void OpenStandings()
+    public void Dispose()
     {
-        showStandings = true;
-        scrollToStandings = true;
+        replayStop?.Cancel();
+        Nav.LocationChanged -= TabChanged;
     }
 
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (scrollToStandings)
-        {
-            scrollToStandings = false;
-            Nav.NavigateTo($"match/{Id}#standings");
-        }
-    }
-
-    /// <summary>Who leads on points, for the folded standings: "Bot 3 leads, 4 points" (at the end, "wins").</summary>
+    /// <summary>Who leads on points, over the standings: "Bot 3 leads, 4 points" (at the end, "wins").</summary>
     private string Leaders(Match match)
     {
         var top = match.Seats.Max(s => s.Score);

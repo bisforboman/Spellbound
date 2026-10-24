@@ -56,7 +56,7 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
         Assert.Contains("Round 2 of 8", page, StringComparison.Ordinal);
         Assert.Contains($"You summon 2 Imps at {TileNames.Of(saved.Match.Map, home)}", page, StringComparison.Ordinal); // in your words, by tile name
         Assert.Contains($"href=\"match/{id}/help\"", page, StringComparison.Ordinal); // the trait's goal and the rules
-        Assert.Contains($"href=\"match/{id}#report\"", page, StringComparison.Ordinal); // the jump bar
+        Assert.Contains($"href=\"match/{id}#report\"", page, StringComparison.Ordinal); // the view tabs
     }
 
     [Fact]
