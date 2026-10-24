@@ -233,6 +233,7 @@ namespace Spellbound.Playtest
                 await StepAsync(player, "sign-in", async page =>
                 {
                     await GoAsync(page, "/Account/Login");
+                    await page.Locator(".top-bar a[href='privacy']").WaitForAsync(); // signed out, the top bar links the notice
                     await page.FillAsync("#email", player.Email);
                     await page.ClickAsync("form[action='Account/DevSignIn'] button[type=submit]");
                     await page.WaitForURLAsync($"{options.Url}/");
@@ -355,14 +356,14 @@ namespace Spellbound.Playtest
             });
             await StepAsync(merlin, "help", async page =>
             {
-                // The "?" in the top line: the trait's goal, the tile types and the rules, off the main screen.
-                var matchPath = new Uri(page.Url).AbsolutePath;
-                await page.ClickAsync(".match-top .help-link");
+                // The Help tab: the trait's goal, the tile types and the rules, off the main screen.
+                await page.ClickAsync(".match-tabs a:has-text('Help')");
+                await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("#help$"));
                 await Expect(page, "How to play");
                 await Expect(page, "Your trait:");
                 await Expect(page, "Every trait");
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "help-page.png"), FullPage = true });
-                await GoAsync(page, matchPath);
+                await page.ClickAsync(".match-tabs a:has-text('Board')");
                 await Expect(page, "Round 1 of 8");
             });
             await StepAsync(merlin, "summon", async page =>
@@ -689,8 +690,9 @@ namespace Spellbound.Playtest
             }
             await StepAsync(morgana, "privacy", async page =>
             {
-                // The notice is in folds: one tap opens a section.
-                await GoAsync(page, "/privacy", interactive: false);
+                // Signed in, the Account page links the notice; it is in folds: one tap opens a section.
+                await GoAsync(page, "/Account/Manage");
+                await page.ClickAsync("a:has-text('privacy notice')");
                 await page.ClickAsync("summary:has-text('Cookies')");
                 await Expect(page, "No ads, no analytics");
             });

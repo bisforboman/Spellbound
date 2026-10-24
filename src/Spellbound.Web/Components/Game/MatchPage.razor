@@ -40,7 +40,7 @@ else
     }
     <h1 class="visually-hidden">Match @Id</h1>
     @* The top line: kept to what changes the next choice. Tiles and points are on the map and in the standings, the
-       trait's goal and the rules on the help page. *@
+       trait's goal and the rules in the Help view. *@
     <div class="match-top">
         <span class="ink-dot" style="--seat: @Seats.Ink(you)" role="img" aria-label="Your colour"></span>
         <b class="match-step">@ShortStep(match, view.IsRunning)</b>
@@ -48,7 +48,6 @@ else
             {
                 <span class="mana-gain" @key="newRound" aria-hidden="true"> +@me.ProducedThisRound</span>
             }</span>
-        <a class="help-link" href="match/@Id/help" aria-label="Help: the rules and your trait">?</a>
     </div>
 
     @if (!drafting)
@@ -315,7 +314,12 @@ else
     }
     </section>
     }
-    <p><a href="">Back home</a></p>
+    @if (tab == MatchTab.Help)
+    {
+        <section id="help">
+        <MatchHelp Match="match" You="you" />
+        </section>
+    }
     </div>
 
     @if (!drafting)
@@ -334,6 +338,7 @@ else
         {
             <a href="match/@Id#standings" aria-current="@(tab == MatchTab.Standings ? "page" : null)" @onclick="() => Show(MatchTab.Standings)">Standings</a>
         }
+        <a href="match/@Id#help" aria-current="@(tab == MatchTab.Help ? "page" : null)" @onclick="() => Show(MatchTab.Help)">Help</a>
     </nav>
     }
 }
@@ -368,9 +373,9 @@ else
     private TimeSpan ReplayDelay => TimeSpan.FromMilliseconds(Config.GetValue("Match:ReplayDelayMs", 1500));
     private int? newRound;
 
-    private enum MatchTab { Board, Report, Standings }
+    private enum MatchTab { Board, Report, Standings, Help }
 
-    /// <summary>The view in the URL (#board, #report, #standings), so back, reload and links keep it. With none, the
+    /// <summary>The view in the URL (#board, #report, #standings, #help), so back, reload and links keep it. With none, the
     /// board, or at the end the standings; nobody scores in the opening, so there the standings wait for the rounds.</summary>
     private MatchTab Tab => (chosen, new Uri(Nav.Uri).Fragment, view?.Match.Phase) switch
     {
@@ -378,6 +383,7 @@ else
         ({ } tab, _, _) => tab,
         (_, "#report", _) => MatchTab.Report,
         (_, "#standings", not MatchPhase.Opening) => MatchTab.Standings,
+        (_, "#help", _) => MatchTab.Help,
         (_, "", MatchPhase.Ended) => MatchTab.Standings,
         _ => MatchTab.Board,
     };

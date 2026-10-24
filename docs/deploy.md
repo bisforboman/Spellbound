@@ -46,7 +46,7 @@ One small Linux server runs three containers from `docker-compose.yml`:
 
 ## Privacy notice
 
-The game shows a privacy notice at `/privacy`, linked from the sign-in page and every page's footer. It describes what
+The game shows a privacy notice at `/privacy`, linked from the sign-in page, the top bar when signed out, and the Account page. It describes what
 the app stores, written from the code. **Read it before launch**: you run the game, so you're responsible for its data
 (this is a description of the software, not legal advice). It fills in from `.env`:
 
