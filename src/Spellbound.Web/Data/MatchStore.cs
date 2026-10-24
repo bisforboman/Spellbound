@@ -338,6 +338,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
                 r => (Seat: r.GetInt32(0), Pending: r.GetString(1)), id, StepKey(loaded.Match)))
             .ToDictionary(p => p.Seat, p => p.Pending);
         var random = StepRandom(seed, loaded.Match);
+        var inStep = loaded.InStep.ToArray(); // before the step resolves: whoever sat it out keeps their misses as they are
         var (report, attacked) = MatchSteps.Resolve(loaded.Match, committed, holding, random);
         if (!report.Succeeded)
         {
@@ -362,10 +363,10 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
         await db.ExecuteAsync(
             """
             UPDATE match_players SET pending = NULL, pending_for = NULL,
-                missed = CASE WHEN seat = ANY($2) THEN missed + 1 ELSE 0 END
+                missed = CASE WHEN seat = ANY($2) THEN missed + 1 WHEN seat = ANY($3) THEN 0 ELSE missed END
             WHERE game_id = $1 AND bot_since IS NULL
             """,
-            id, holding.ToArray());
+            id, holding.ToArray(), inStep);
         await db.ExecuteAsync(
             "UPDATE match_players SET bot_since = $2 WHERE game_id = $1 AND bot_since IS NULL AND missed >= $3",
             id, now, MissesBeforeBot);
