@@ -39,24 +39,31 @@ public static class Bot
         return offer.Count == 0 ? null : offer[random.Next(offer.Count)];
     }
 
-    /// <summary>Bids on one of the best tiles on auction (within 1 of the best, picked at random): about its yield in
-    /// mana, give or take one, never more than half its mana. A trait about land makes its tiles worth
-    /// <see cref="TraitLean"/> more. Passes when it can't afford the smallest bid.</summary>
+    /// <summary>Bids on the tile up now if it is one of the best still to come in this Unveil (within 1 of the best):
+    /// about its average yield in mana, give or take one, never more than half its mana; otherwise it waits for a
+    /// better one. A trait about land makes its tiles worth <see cref="TraitLean"/> more. Passes when it can't afford
+    /// the smallest bid, or already has its tile from this Unveil.</summary>
     public static Bid ChooseBid(Match match, int seat, IRandomSource random, Plan plan = Plan.Balanced)
     {
         ArgumentNullException.ThrowIfNull(match);
         ArgumentNullException.ThrowIfNull(random);
         var mana = match.Seats[seat].Mana;
 
-        if (match.OnAuction.Count == 0 || mana < match.Rules.MinBid)
+        if (match.OnAuction.Count == 0 || mana < match.Rules.MinBid || !match.Bidders.Contains(seat))
         {
             return Bid.Pass(seat);
         }
 
         var me = match.Seats[seat];
-        var best = PickGood(match.OnAuction, h => Worth(match, h) + (Suits(match, me, h) ? TraitLean : 0), random);
-        var amount = Math.Clamp(Worth(match, best) + random.Next(3) - 1, match.Rules.MinBid, Math.Max(match.Rules.MinBid, mana / 2));
-        return new Bid(seat, best, amount);
+        int Value(Hex h) => Worth(match, h) + (Suits(match, me, h) ? TraitLean : 0);
+        var up = match.OnAuction[0];
+        if (Value(up) < match.OnAuction.Max(Value) - 1)
+        {
+            return Bid.Pass(seat);
+        }
+
+        var amount = Math.Clamp(Value(up) + random.Next(3) - 2, match.Rules.MinBid, Math.Max(match.Rules.MinBid, mana / 2));
+        return new Bid(seat, up, amount);
     }
 
     /// <summary>In order: attack a weaker rival or monster tile next to its units; attune the best free tile next to

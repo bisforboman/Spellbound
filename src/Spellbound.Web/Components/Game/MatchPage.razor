@@ -88,7 +88,7 @@ else
     @if (playing && view.Committed.Contains(you))
     {
         <div class="action-bar">
-            <p class="action-sum">You have committed. Waiting for @string.Join(" and ", view.People.Where(p => !view.Committed.Contains(p)).Select(p => $"Seat {p + 1}")).</p>
+            <p class="action-sum">You have committed. Waiting for @string.Join(" and ", view.InStep.Where(p => !view.Committed.Contains(p)).Select(p => $"Seat {p + 1}")).</p>
             <div class="action-row">
                 <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="LoadAsync">Refresh</button>
                 <button type="button" class="btn btn-primary btn-lg" disabled="@busy" @onclick="WithdrawAsync">Take back</button>
@@ -103,8 +103,8 @@ else
             The map lies dark; this is how the match goes:</p>
         <ol class="start-plan">
             <li><b>Choose your trait</b>: a secret goal, scored at the end.</li>
-            <li><b>The opening</b>: @match.Rules.OpeningUnveils auctions reveal the map. Bid mana for a tile, or pass and
-                get one nobody wanted.</li>
+            <li><b>The opening</b>: @match.Rules.OpeningUnveils auctions reveal the map, a tile for each player at a time.
+                Bid mana on the tile up now, or wait for the next; whoever wins none gets the last one free.</li>
             <li><b>@match.Rules.Rounds rounds</b>: each round, attack, attune or summon. Points are banked every round,
                 and the most points wins.</li>
         </ol>
@@ -144,43 +144,45 @@ else
         {
             <StartSteps Step="3" />
         }
-        <h2 class="h4">Opening auction @match.OpeningUnveil of @match.Rules.OpeningUnveils</h2>
-        @if (match.OpeningUnveil == 1)
+        var up = match.OnAuction[0];
+        <h2 class="h4">Opening auction @match.OpeningUnveil of @match.Rules.OpeningUnveils: tile @match.AuctionTile of @match.Seats.Count</h2>
+        @if (match.OpeningUnveil == 1 && match.AuctionTile == 1)
         {
-            <p>The map is revealed: @match.OnAuction.Count tiles are up for auction, marked on the map. Whoever bids
-                highest on a tile takes it; everyone else gets a tile nobody wanted.</p>
+            <p>The map is revealed: one tile for each player, and they go up one at a time. Bid on the tile up now, or
+                pass and wait for a better one. The highest bid wins it; whoever wins none gets the last tile free.</p>
         }
-        <p>Bid mana on one tile, or pass. Tap a marked tile on the map, or choose here:</p>
-        @foreach (var hex in match.OnAuction)
+        @if (!match.Bidders.Contains(you))
         {
-            var h = hex;
-            <label class="choice">
-                <input type="radio" name="bid-tile" checked="@(selected == h)" @onchange="() => Select(h)" />
-                <span>@Seats.Describe(match, h, you, view.Owners)</span>
-            </label>
+            <p class="commit-line">You have your tile from this auction. The others bid on the rest.</p>
         }
-
-        <label class="form-label mt-2" for="amount">Your bid (mana)</label>
-        <input id="amount" type="number" class="form-control form-control-lg" min="@match.Rules.MinBid" max="@me.Mana" @bind="amount" @bind:event="oninput" />
-
-        var check = selected is { } chosen && auction.Contains(chosen) ? match.CheckBid(new Bid(you, chosen, amount)) : null;
-        @if (check is not null)
+        else
         {
+            <p class="tile-up">Up now: <b>@Seats.Describe(match, up, you, view.Owners)</b>.</p>
+            @if (match.OnAuction.Count > 1)
+            {
+                <p class="text-muted">Still to come: @string.Join(", ", match.OnAuction.Skip(1).Select(h => TileNames.Of(match.Map, h))).
+                    @(match.OnAuction.Count == 2 ? "Lose this one and it's yours, free." : "The last one goes free to whoever wins none.")</p>
+            }
+
+            <label class="form-label mt-2" for="amount">Your bid (mana)</label>
+            <input id="amount" type="number" class="form-control form-control-lg" min="@match.Rules.MinBid" max="@me.Mana" @bind="amount" @bind:event="oninput" />
+
+            var check = match.CheckBid(new Bid(you, up, amount));
             <div class="ledger mt-2">
                 @foreach (var line in check.Lines)
                 {
                     <p class="@(check.Succeeded ? "ledger-line" : "ledger-problem")">@TileNames.In(match.Map, line)</p>
                 }
             </div>
-        }
 
-        <div class="action-bar">
-            <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@(check is not null ? TileNames.In(match.Map, check.Lines[0]) : "Choose a tile to bid on, or pass.")</p>
-            <div class="action-row">
-                <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="PassAsync">Pass</button>
-                <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || check is not { Succeeded: true })" @onclick="BidAsync">Bid @amount mana</button>
+            <div class="action-bar">
+                <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@TileNames.In(match.Map, check.Lines[0])</p>
+                <div class="action-row">
+                    <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="PassAsync">Pass</button>
+                    <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || !check.Succeeded)" @onclick="BidAsync">Bid @amount mana</button>
+                </div>
             </div>
-        </div>
+        }
     }
     else if (playing && match.Phase == MatchPhase.Rounds)
     {
@@ -225,7 +227,7 @@ else
         </section>
     }
 
-    @if (playing && view.HostId == ownerId && view.People.Any(p => p != you && !view.Committed.Contains(p)))
+    @if (playing && view.HostId == ownerId && view.InStep.Any(p => p != you && !view.Committed.Contains(p)))
     {
         <section id="host">
         <h2 class="h4">You are the host</h2>
@@ -242,7 +244,7 @@ else
         {
             <p>If a player has gone quiet, you can hand their seat to a bot instead of waiting for the deadline. Only
                 players who haven't committed this step are listed.</p>
-            @foreach (var person in view.People.Where(p => p != you && !view.Committed.Contains(p)))
+            @foreach (var person in view.InStep.Where(p => p != you && !view.Committed.Contains(p)))
             {
                 var p = person;
                 <button type="button" class="btn btn-outline-primary btn-lg w-100 mb-2" disabled="@busy" @onclick="() => handOff = p">
@@ -327,6 +329,7 @@ else
     private IReadOnlySet<Hex> auction = new HashSet<Hex>();
     private Hex? selected;
     private int amount = 1;
+    private string? bidStep;
     private Trait? trait;
     private bool fullReport;
     private string? status;
@@ -357,10 +360,16 @@ else
         seenRound = view?.Match.CurrentRound;
         showStandings |= view?.Match.Phase == MatchPhase.Ended; // the payoff of an ended match
         you = view?.SeatOf(ownerId) ?? 0;
-        auction = view?.Match.OnAuction.ToHashSet() ?? [];
+        auction = view?.Match.OnAuction.Take(1).ToHashSet() ?? []; // the tile up now
         if (selected is { } s && view?.Match.Map.Contains(s) != true)
         {
             selected = null;
+        }
+
+        if (view is not null && MatchStore.StepKey(view.Match) != bidStep)
+        {
+            bidStep = MatchStore.StepKey(view.Match);
+            amount = view.Match.Rules.MinBid; // a new tile starts from the smallest bid, not the last one
         }
 
         amount = Math.Clamp(amount, view?.Match.Rules.MinBid ?? 1, Math.Max(1, view?.Match.Seats[you].Mana ?? 1));
@@ -405,7 +414,7 @@ else
         return $"{name} {verb}{(leaders.Count == 1 && name != "You" ? "s" : "")}, {points}";
     }
 
-    private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, selected, amount));
+    private Task BidAsync() => ActAsync(() => Play.BidAsync(Id, ownerId, view?.Match.OnAuction.FirstOrDefault(), amount));
 
     private Task CommitAsync(Orders orders) => ActAsync(() => Play.OrdersAsync(Id, ownerId, orders));
 

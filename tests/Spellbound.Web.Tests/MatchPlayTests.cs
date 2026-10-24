@@ -48,12 +48,13 @@ public sealed class MatchPlayTests : TestDatabase
         var id = await play.StartAsync("alice", 3, GameRules.Default);
         var tile = (await play.ViewAsync(id, "alice"))!.Match.OnAuction[0];
 
-        var report = await play.BidAsync(id, "alice", tile, 2);
+        var report = await play.BidAsync(id, "alice", tile, 5); // more than a bot bids (half its mana at most)
         var view = (await play.ViewAsync(id, "alice"))!;
 
         Assert.True(report.Succeeded);
-        Assert.Equal(2, view.Match.OpeningUnveil);
-        Assert.Single(view.Match.Seats[0].Tiles);
+        Assert.Equal([tile], view.Match.Seats[0].Tiles);
+        Assert.Equal(2, view.Match.OpeningUnveil); // the bots bid the rest of the auction among themselves at once
+        Assert.All(view.Match.Seats, s => Assert.Single(s.Tiles));
         Assert.Equal(report.Lines, view.LastReport);
     }
 
@@ -86,10 +87,7 @@ public sealed class MatchPlayTests : TestDatabase
     {
         var id = await play.StartAsync("alice", 2, GameRules.Default);
 
-        for (var i = 0; i < 3; i++)
-        {
-            Assert.True((await play.BidAsync(id, "alice", null, 0)).Succeeded);
-        }
+        await Opening.PassAsync(play, id, "alice");
 
         var match = (await play.ViewAsync(id, "alice"))!.Match;
         Assert.Equal(MatchPhase.Rounds, match.Phase);
@@ -132,9 +130,29 @@ public sealed class MatchPlayTests : TestDatabase
         var after = (await play.ViewAsync(id, "alice"))!;
 
         Assert.True(second.Succeeded);
-        Assert.Equal(2, after.Match.OpeningUnveil); // the auction settled
+        Assert.Equal((1, 2), (after.Match.OpeningUnveil, after.Match.AuctionTile)); // the first tile is settled
         Assert.Empty(after.Committed);
         Assert.Equal(second.Lines, after.LastReport);
+    }
+
+    [Fact]
+    public async Task Whoever_wins_a_tile_sits_out_the_rest_of_the_auction_and_the_step_waits_only_on_the_others()
+    {
+        var id = await store.CreateAsync(["alice", "bob", null, null], GameRules.Default, DateTimeOffset.UtcNow);
+        var tile = (await play.ViewAsync(id, "alice"))!.Match.OnAuction[0];
+
+        await play.BidAsync(id, "alice", tile, 5); // more than a bot bids
+        await play.BidAsync(id, "bob", null, 0);
+        var view = (await play.ViewAsync(id, "bob"))!;
+
+        Assert.Equal([tile], view.Match.Seats[0].Tiles);
+        Assert.Equal((1, 2), (view.Match.OpeningUnveil, view.Match.AuctionTile));
+        Assert.Equal([1], view.InStep); // alice has her tile: the step waits on bob alone
+        Assert.False((await play.BidAsync(id, "alice", null, 0)).Succeeded);
+
+        var after = await play.BidAsync(id, "bob", null, 0); // bob passes again: the bots settle the tile, or one lands on bob
+        Assert.True(after.Succeeded);
+        Assert.NotEqual((1, 2), ((await play.ViewAsync(id, "bob"))!.Match.OpeningUnveil, (await play.ViewAsync(id, "bob"))!.Match.AuctionTile));
     }
 
     [Fact]
@@ -172,11 +190,7 @@ public sealed class MatchPlayTests : TestDatabase
     public async Task With_two_people_a_round_resolves_both_players_orders()
     {
         var id = await store.CreateAsync(["alice", "bob"], GameRules.Default, DateTimeOffset.UtcNow);
-        for (var i = 0; i < 3; i++)
-        {
-            await play.BidAsync(id, "alice", null, 0);
-            await play.BidAsync(id, "bob", null, 0);
-        }
+        await Opening.PassAsync(play, id, "alice", "bob");
 
         var match = (await play.ViewAsync(id, "alice"))!.Match;
         var mine = match.Seats[0].Tiles.First();
@@ -208,11 +222,7 @@ public sealed class MatchPlayTests : TestDatabase
     private async Task<long> InRoundsAsync(int players = 3)
     {
         var id = await play.StartAsync("alice", players, GameRules.Default);
-        for (var i = 0; i < 3; i++)
-        {
-            await play.BidAsync(id, "alice", null, 0);
-        }
-
+        await Opening.PassAsync(play, id, "alice");
         return id;
     }
 

@@ -11,7 +11,7 @@ Decided discussions (background and the angles that were considered):
 A walkthrough of one game from start to finish, kept up to date as rules are settled.
 
 1. **Setup.** The map lies dark. Each player starts with **9 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening auctions put them.
-2. **The opening Unveils.** Traits are still hidden, so nobody knows for sure why a rival bids hard on a tile. Before the first round, three Unveils reveal **3 tiles per player plus 3 extra**, one tile at a time. In each one, as many tiles as there are players go up for a secret mana auction: winners take the tile they bid on, and everyone else gets a random tile nobody wanted. The rest of the revealed tiles stay unowned, for later. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
+2. **The opening Unveils.** Traits are still hidden, so nobody knows for sure why a rival bids hard on a tile. Before the first round, three Unveils each reveal **one tile per player**, and those tiles go up for auction **one at a time**: everyone still bidding bids secretly or passes, the highest bid takes the tile, and whoever wins none gets the last one free. As the rounds begin, **3 more tiles** are revealed, unowned, for anyone to attune. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
 3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end; alongside any round's orders a player may guess a rival's (once per rival), for points at the end. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
 5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no auction). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
@@ -80,7 +80,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 ## Unveil
 
 - An **Unveil** turns over a batch of tiles on the dark map, one at a time.
-- **The opening:** before round 1, three Unveils reveal **3 tiles per player + 3 free tiles** in total (one free tile in each Unveil). Each has an auction (below), so every player ends with 3 tiles and 3 free tiles are left to attune.
+- **The opening:** before round 1, three Unveils each reveal **one tile per player**, and each has an auction (below), so every player ends with 3 tiles. The opening is only auctions (owner's choice, 24 Oct 2026): the **3 free tiles** are revealed as the rounds begin, for anyone to attune from round 1.
 
 | Players | Map | Opening reveals | Auctioned | Left free | Still dark |
 |---|---|---|---|---|---|
@@ -93,12 +93,14 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 ### The Unveil auction (opening only)
 
-- In each opening Unveil, **as many tiles as there are players** are auctioned; the other unveiled tiles are only revealed.
-- Each player secretly bids **mana** on one of the auctioned tiles, or passes.
-- The highest bid on a tile wins it and pays. **Losing bidders don't pay.**
-- Players who lost or passed each get **one of the tiles nobody bid on, at random, for free**. So everyone ends each Unveil with exactly one new tile.
-- **Ties:** if the top bids on a tile are tied, nobody gets it and nobody pays; the tile becomes one of the random leftovers.
-- The smallest bid is **1 mana**; to spend nothing, pass. So bidding always costs something if you win, and passing keeps its meaning. Leftovers are handed out in seat order, each drawn at random from those still left.
+Tile by tile (owner's choice, 24 Oct 2026; it replaced one sealed bid per player on any of the tiles):
+
+- Each opening Unveil reveals **as many tiles as there are players**. They go up **one at a time, in name order** (A1 before B2).
+- For the tile up now, every player **still bidding** secretly bids **mana** on it, or passes.
+- The **highest bid wins** the tile and pays. **Losing bidders don't pay.** A **tie** at the top is drawn at random among the tied; only the winner pays.
+- The winner **sits out** the rest of the Unveil. If **nobody bids**, the tile goes free to a player still bidding, drawn at random.
+- The **last tile** goes **free** to the one player who won none. So everyone ends each Unveil with exactly one new tile.
+- The smallest bid is **1 mana**; to spend nothing, pass. So bidding always costs something if you win, and passing keeps its meaning.
 - Won or leftover tiles don't need to connect to your other tiles (scattered holdings are allowed).
 
 ## Rounds and stances

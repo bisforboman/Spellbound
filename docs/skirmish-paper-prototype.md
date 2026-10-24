@@ -13,13 +13,13 @@ A one-page version of `game-design.md` for a first test on a table. All numbers 
 ## The opening (before round 1)
 
 Do this **three times**:
-1. **Unveil:** turn over 4 random face-down tiles. The first 3 are auctioned; the 4th stays free. 12 tiles are revealed in total, 3 of them free.
-2. **Auction:** each player secretly writes one of the 3 tiles and a bid of at least 1 mana, or "pass". Reveal together.
-   - Highest bid on a tile wins it and pays. Losers don't pay.
-   - A tie for the top bid: nobody gets that tile; it joins the leftovers.
-   - Everyone who didn't win gets a random leftover tile for free.
+1. **Unveil:** turn over 3 random face-down tiles (one per player). Put them in a row, in reading order.
+2. **Auction, one tile at a time:** for the first tile, every player still bidding secretly writes a bid of at least 1 mana, or "pass". Reveal together.
+   - The highest bid wins the tile and pays; losers don't pay. A tie at the top: roll for it among the tied; only the winner pays.
+   - Nobody bids: roll for which player still bidding gets it free.
+   - The winner sits out the rest of this Unveil. Then the next tile, and so on: the last tile goes free to whoever won none.
 
-Each player now holds 3 tiles, scattered or connected.
+Each player now holds 3 tiles, scattered or connected. Then turn over 3 more face-down tiles: they are free, for anyone to attune from round 1.
 
 ## A round (8 rounds)
 

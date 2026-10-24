@@ -71,12 +71,13 @@ public sealed class MatchNoticeTests : TestDatabase
         await PassAsync(id, "alice", Start);
         Sent();
 
-        await PassAsync(id, "bob", Start);
+        var tile = (await store.LoadAsync(id))!.Match.OnAuction[0];
+        await store.CommitAsync(id, "bob", Start, MatchJson.Serialize(new Bid(1, tile, 5)), (loaded, seat) => loaded.Match.CheckBid(new Bid(seat, tile, 5)));
 
-        var notice = Assert.Single(Sent());
+        var notice = Assert.Single(Sent()); // bob won the tile and is looking at the page
         Assert.Equal("alice", notice.OwnerId);
-        Assert.Equal($"Match {id}: Opening auction 1 resolved", notice.Title);
-        Assert.Equal("Opening auction 2 of 3: your move.", notice.Body);
+        Assert.Equal($"Match {id}: Opening auction 1, tile 1 resolved", notice.Title);
+        Assert.Equal("Opening auction 1 of 3, tile 2 of 3: your move.", notice.Body);
     }
 
     [Fact]
@@ -159,7 +160,7 @@ public sealed class MatchNoticeTests : TestDatabase
         var match = Match.Start(3, GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
         }
 
         foreach (var mine in match.Seats[0].Tiles)

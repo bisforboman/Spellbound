@@ -38,6 +38,10 @@ public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match M
     public IEnumerable<int> People => Owners.Select((owner, seat) => (owner, seat))
         .Where(s => s.owner is not null && !Away.Contains(s.seat)).Select(s => s.seat);
 
+    /// <summary>The people the current step waits on: in the opening, those still bidding in this Unveil (whoever has
+    /// won a tile from it sits out the rest), and in the rounds, everyone.</summary>
+    public IEnumerable<int> InStep => People.Where(s => Match.Phase != MatchPhase.Opening || Match.Bidders.Contains(s));
+
     /// <summary>The seat this account sits in, or null.</summary>
     public int? SeatOf(string ownerId)
     {
@@ -194,7 +198,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
 
         await db.ExecuteAsync("UPDATE match_players SET pending = $3::jsonb, pending_for = $4 WHERE game_id = $1 AND seat = $2",
             id, seat, pending, StepKey(loaded.Match.Match));
-        var waiting = loaded.Match.People.Where(s => s != seat && !loaded.Match.Committed.Contains(s)).ToList();
+        var waiting = loaded.Match.InStep.Where(s => s != seat && !loaded.Match.Committed.Contains(s)).ToList();
         if (waiting.Count > 0)
         {
             await db.CommitAsync();
@@ -248,7 +252,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
                 continue;
             }
 
-            var holding = loaded.Match.People.Where(s => !loaded.Match.Committed.Contains(s)).ToHashSet();
+            var holding = loaded.Match.InStep.Where(s => !loaded.Match.Committed.Contains(s)).ToHashSet();
             var (report, notices) = await ResolveAsync(db, id, loaded.Seed, loaded.Match, holding, now, actor: null);
             if (report.Succeeded)
             {
@@ -295,7 +299,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
             id, seat, now);
         var lines = new List<string> { $"A bot plays seat {seat + 1} from now on." };
         List<PushMessage> notices = [MatchNotices.HandedOver(id, match.Owners[seat]!)];
-        if (match.People.Where(s => s != seat).All(match.Committed.Contains))
+        if (match.InStep.Where(s => s != seat).All(match.Committed.Contains))
         {
             var (report, resolvedNotices) = await ResolveAsync(db, id, loaded.Seed, match with { Away = new HashSet<int>(match.Away) { seat } },
                 new HashSet<int>(), now, actor: host);
@@ -321,7 +325,8 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
     /// Resolves the current step in the caller's transaction (the match locked): the people's commitments, holds for
     /// <paramref name="holding"/>, bots for the rest. If it succeeds it is saved as the last report, the commitments
     /// are cleared, misses are counted (a bot takes a seat at <see cref="MissesBeforeBot"/>), and the next step gets its
-    /// deadline. Nothing is written if it fails. Returns the notifications to send once the caller has committed.
+    /// deadline. In the opening, the tiles that only bots are still bidding on then go too. Nothing is written if it
+    /// fails. Returns the notifications to send once the caller has committed.
     /// </summary>
     private static async Task<(Report Report, IReadOnlyList<PushMessage> Notices)> ResolveAsync(DbSession db, long id, int seed,
         LoadedMatch loaded, IReadOnlySet<int> holding, DateTimeOffset now, int? actor)
@@ -337,6 +342,20 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
         if (!report.Succeeded)
         {
             return (report, []);
+        }
+
+        // An opening tile only bots are still bidding on goes now: no person has anything to commit for it.
+        var after = loaded with { Away = loaded.Away.Union(nowAway).ToHashSet() };
+        while (after.Match.Phase == MatchPhase.Opening && !after.InStep.Any())
+        {
+            var (more, _) = MatchSteps.Resolve(after.Match, new Dictionary<int, string>(), new HashSet<int>(), StepRandom(seed, after.Match));
+            if (!more.Succeeded)
+            {
+                break;
+            }
+
+            report = new Report(true, [.. report.Lines, .. more.Lines],
+                [.. report.Lines.Select((_, i) => report.TagOf(i)), .. more.Lines.Select((_, i) => more.TagOf(i))]);
         }
 
         await db.SaveGameStateAsync(id, MatchJson.Serialize(new StoredMatch(seed, loaded.Match.Save(), report.Lines, report.Tags)));
@@ -406,9 +425,9 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
         return changed > 0;
     }
 
-    /// <summary>Which step of a match a commitment is for: an opening auction or a round.</summary>
+    /// <summary>Which step of a match a commitment is for: one tile of an opening auction, or a round.</summary>
     public static string StepKey(Match match) =>
-        match.Phase == MatchPhase.Opening ? $"opening-{match.OpeningUnveil}" : $"round-{match.CurrentRound}";
+        match.Phase == MatchPhase.Opening ? $"opening-{match.OpeningUnveil}-{match.AuctionTile}" : $"round-{match.CurrentRound}";
 
     /// <summary>The matches a player sits in, newest first.</summary>
     public async Task<IReadOnlyList<PlayerMatch>> ListForAsync(string ownerId)
@@ -435,7 +454,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
     {
         (_, MatchPhase.Ended) => $"Over after {match.Rules.Rounds} rounds",
         (false, _) => "Ended early by an admin",
-        (_, MatchPhase.Opening) => $"Opening auction {match.OpeningUnveil} of {match.Rules.OpeningUnveils}",
+        (_, MatchPhase.Opening) => $"Opening auction {match.OpeningUnveil} of {match.Rules.OpeningUnveils}, tile {match.AuctionTile} of {match.Seats.Count}",
         _ => $"Round {match.CurrentRound} of {match.Rules.Rounds}",
     };
 
@@ -444,7 +463,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
     /// changes from one run of the server to the next.</summary>
     public static IRandomSource StepRandom(int seed, Match match) => new SeededRandom(unchecked(match.Phase switch
     {
-        MatchPhase.Opening => seed + match.OpeningUnveil,
+        MatchPhase.Opening => seed + (10 * match.OpeningUnveil) + match.AuctionTile,
         _ => seed + 100 + match.CurrentRound,
     }));
 

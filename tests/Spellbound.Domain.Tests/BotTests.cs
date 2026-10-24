@@ -36,7 +36,7 @@ public class BotTests
         var match = Match.Start(3, rules, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
         }
 
         Assert.Equal(Orders.Hold(0).Target, Bot.ChooseOrders(match, 0, random).Target);
@@ -53,7 +53,7 @@ public class BotTests
         var match = Match.Start(3, GameRules.Default with { Rounds = 1, UpgradeCost = 1 }, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
         }
 
         Assert.Equal(Stance.Build, Bot.ChooseOrders(match, 0, random, plan).Stance);
@@ -66,7 +66,7 @@ public class BotTests
         var match = Match.Start(3, GameRules.Default with { Rounds = 1, UpgradeCost = 1, UpgradeCap = 0 }, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
         }
 
         var orders = Bot.ChooseOrders(match, 0, random);
@@ -102,7 +102,7 @@ public class BotTests
             while (match.Phase != MatchPhase.Ended)
             {
                 var report = match.Phase == MatchPhase.Opening
-                    ? match.Auction([.. match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random, plan))], random)
+                    ? match.Auction([.. match.Bidders.Select(s => Bot.ChooseBid(match, s, random, plan))], random)
                     : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random, plan))], random);
                 Assert.True(report.Succeeded, string.Join('\n', report.Lines));
                 lines.AddRange(report.Lines);

@@ -287,10 +287,10 @@ namespace Spellbound.Playtest
             });
             await StepAsync(merlin, "bid", async page =>
             {
-                await page.Locator("input[name='bid-tile']").First.CheckAsync();
-                await page.FillAsync("#amount", "2");
-                await Expect(page, "If yours is the only highest bid");
-                await page.ClickAsync("button:has-text('Bid 2 mana')");
+                await Expect(page, "Up now:");
+                await page.FillAsync("#amount", "5"); // more than a bot bids, so it wins and the bots settle the rest
+                await Expect(page, "If yours is the highest bid");
+                await page.ClickAsync("button:has-text('Bid 5 mana')");
                 await Expect(page, "Opening auction 2 of 3");
                 await Expect(page, "What just happened");
             });
@@ -302,9 +302,13 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("The standings show during the opening.");
                 }
 
-                await page.ClickAsync("button:has-text('Pass')");
-                await Expect(page, "Opening auction 3 of 3");
-                await page.ClickAsync("button:has-text('Pass')");
+                // Pass on every tile until the rounds begin: lose them all and the last one of each auction is yours, free.
+                for (var tile = 0; tile < 20 && !(await page.InnerTextAsync("body")).Contains("Round 1 of 8", StringComparison.Ordinal); tile++)
+                {
+                    await page.ClickAsync("button:has-text('Pass'):not([disabled])");
+                    await page.WaitForTimeoutAsync(300);
+                }
+
                 await Expect(page, "Round 1 of 8");
                 await Expect(page, "The rounds begin");
                 // The fog of war: a rival's income is its mana, so nobody else reads it.
@@ -611,7 +615,7 @@ namespace Spellbound.Playtest
             await StepAsync(ada, "admin", async page =>
             {
                 await GoAsync(page, "/admin");
-                await Expect(page, "Opening auction 1 of 3, 5 seats");
+                await Expect(page, "Opening auction 1 of 3, tile 1 of 5, 5 seats");
                 await Expect(page, "Problems");
             });
             await StepAsync(ada, "end-game", async page =>

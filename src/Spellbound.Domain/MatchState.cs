@@ -16,7 +16,8 @@ public sealed record MatchState(
     IReadOnlyList<UnitsState> Units,
     IReadOnlyList<UpgradeState>? Upgrades = null,
     IReadOnlyList<Hex>? Blighted = null,
-    IReadOnlyList<FavourState>? Favour = null)
+    IReadOnlyList<FavourState>? Favour = null,
+    IReadOnlyList<int>? UnveilWinners = null)
 {
     public const int CurrentVersion = 1;
 }

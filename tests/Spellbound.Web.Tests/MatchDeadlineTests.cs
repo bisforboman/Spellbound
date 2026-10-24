@@ -34,6 +34,13 @@ public sealed class MatchDeadlineTests : TestDatabase
     private Task<(Report Report, bool Resolved)?> PassAsync(long id, string ownerId, DateTimeOffset now) =>
         store.CommitAsync(id, ownerId, now, MatchJson.Serialize(new Bid(0, null, 0)), (loaded, seat) => loaded.Match.CheckBid(new Bid(seat, null, 0)));
 
+    /// <summary>A bid of 1 on the tile up now (refused, changing nothing, for someone who already has their tile).</summary>
+    private async Task BidOneAsync(long id, string ownerId, DateTimeOffset now)
+    {
+        var tile = (await store.LoadAsync(id))!.Match.OnAuction[0];
+        await store.CommitAsync(id, ownerId, now, MatchJson.Serialize(new Bid(0, tile, 1)), (loaded, seat) => loaded.Match.CheckBid(new Bid(seat, tile, 1)));
+    }
+
     /// <summary>A match started from an invite, so alice is its host.</summary>
     private async Task<long> InvitedAsync(params string[] joiners)
     {
@@ -94,8 +101,9 @@ public sealed class MatchDeadlineTests : TestDatabase
         var now = Start;
         for (var miss = 0; miss < MatchStore.MissesBeforeBot; miss++)
         {
-            await PassAsync(id, "alice", now);
-            await PassAsync(id, "carol", now);
+            // alice and carol bid on each tile, so bob, who holds, is still bidding for the next one.
+            await BidOneAsync(id, "alice", now);
+            await BidOneAsync(id, "carol", now);
             now += MatchStore.StepDeadline;
             await store.HoldOverdueAsync(now);
         }
@@ -110,7 +118,7 @@ public sealed class MatchDeadlineTests : TestDatabase
         await PassAsync(id, "alice", now);
         var resolved = await PassAsync(id, "carol", now);
         Assert.True(resolved!.Value.Resolved);
-        Assert.Equal(MatchPhase.Rounds, (await store.LoadAsync(id))!.Match.Phase);
+        Assert.Equal((2, 2), ((await store.LoadAsync(id))!.Match.OpeningUnveil, (await store.LoadAsync(id))!.Match.AuctionTile));
         Assert.DoesNotContain(0, (await store.LoadAsync(id))!.Missed.Keys);
     }
 
@@ -145,7 +153,7 @@ public sealed class MatchDeadlineTests : TestDatabase
         Assert.Equal("A bot plays seat 2 from now on.", report.Lines[0]);
         var match = (await store.LoadAsync(id))!;
         Assert.Equal([1], match.Away);
-        Assert.Equal(2, match.Match.OpeningUnveil);
+        Assert.Equal(2, match.Match.AuctionTile); // the first tile went
         Assert.Empty(match.Missed); // a hand-off isn't a miss
     }
 
