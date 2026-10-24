@@ -26,12 +26,16 @@ page (`/admin`), list that email under `Admins` in `appsettings.json`, or set it
 ### Playing on your phone at home
 
 To play from your phone on the same Wi-Fi, start the database as above, then run the app so it listens on your home
-network:
+network and reloads when the code changes:
 
 ```powershell
 docker compose -f docker-compose.dev.yml up -d
-dotnet run --project src/Spellbound.Web --launch-profile lan
+$env:DOTNET_WATCH_RESTART_ON_RUDE_EDIT = 'true'
+dotnet watch run --project src/Spellbound.Web --launch-profile lan
 ```
+
+Small edits apply while it runs; bigger ones (a new type, a changed signature) rebuild and restart it without asking.
+After a restart, reload the page on the phone.
 
 Find your computer's address with `ipconfig` (Windows) or `ip addr` (Linux): the "IPv4 Address", such as
 `192.168.1.20`. On your phone, open `http://192.168.1.20:5174`, sign in with the Development sign-in, then tap
