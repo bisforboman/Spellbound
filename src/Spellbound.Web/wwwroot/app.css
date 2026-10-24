@@ -287,6 +287,12 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row) {
     color: var(--bs-danger-text-emphasis) !important;
 }
 
+/* Mana's crystal shard (ManaIcon.razor) after a number, in cold blue, in text and on the map */
+.mana-icon {
+    vertical-align: -0.125em;
+    color: var(--tidal-ink);
+}
+
 /* Symbols before labels (Glyph.razor): stone grey, with dull brass for gold */
 .glyph {
     display: inline-block;

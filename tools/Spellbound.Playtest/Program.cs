@@ -292,7 +292,11 @@ namespace Spellbound.Playtest
                 await Expect(page, "Up now:");
                 await page.FillAsync("#amount", "5"); // more than a bot bids, so it wins and the bots settle the rest
                 await Expect(page, "If yours is the highest bid");
-                await page.ClickAsync("button:has-text('Bid 5 mana')");
+                if (await page.Locator(".match-top .mana-icon, button:has-text('Bid 5') .mana-icon").CountAsync() < 2)
+                {
+                    throw new PlaytestException("The mana icon is missing from the top line or the bid button.");
+                }
+                await page.ClickAsync("button:has-text('Bid 5')");
                 // The auction plays back one line at a time: each tile's bids, then who got it.
                 await page.Locator("#playback").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 await Expect(page, "Bids on the");
@@ -379,7 +383,7 @@ namespace Spellbound.Playtest
                 await Expect(page, "Summon 3 Imps");
                 await page.ClickAsync("button:has-text('Commit: Summon')");
                 await Expect(page, "Round 2 of 8");
-                await Expect(page, "mana off)"); // nobody builds in round 1, so Build is cheaper now
+                await Expect(page, " off)"); // nobody builds in round 1, so Build is cheaper now
                 // A round that begins while the page is open plays once: a banner, and "+N" rising from every held tile.
                 await page.Locator(".round-banner").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 if (await page.Locator(".hex-map .hex-gain").CountAsync() < 3)
