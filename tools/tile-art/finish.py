@@ -1,6 +1,6 @@
 """Turns a chosen candidate into a tile image: 512 px, toned down to the Burned Grimoire's range, WebP under 60 KB.
 
-    python tools/tile-art/finish.py <candidate.png> <steady|shifting|wild> [--saturation 0.5] [--lightness 60]
+    python tools/tile-art/finish.py <candidate.png> <steady|shifting|wild> [--saturation 0.5] [--lightness 62]
 
 Lightness is the target mean (0-255): the page is #14110e (about 17) and text #dbcfb7 (about 206), and the tiles
 sit well below the text so the numbers on them stay readable. Needs Pillow.
@@ -37,7 +37,7 @@ def main():
     parser.add_argument("source")
     parser.add_argument("type", choices=["steady", "shifting", "wild"])
     parser.add_argument("--saturation", type=float, default=1.0)
-    parser.add_argument("--lightness", type=float, default=60)
+    parser.add_argument("--lightness", type=float, default=62)
     parser.add_argument("--out", type=Path, default=TILES)
     args = parser.parse_args()
     data = webp(finish(args.source, args.saturation, args.lightness))
