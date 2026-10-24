@@ -341,6 +341,15 @@ namespace Spellbound.Playtest
                 await Expect(page, "Round 2 of 8");
                 await Expect(page, "mana off)"); // nobody builds in round 1, so Build is cheaper now
                 await Expect(page, "You summon 3 Imps");
+                // A round that begins while the page is open plays once: a banner, and "+N" rising from every held tile.
+                await page.Locator(".round-banner").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
+                if (await page.Locator(".hex-map .hex-gain").CountAsync() < 3)
+                {
+                    throw new PlaytestException("The new round doesn't show what the tiles paid.");
+                }
+                await page.Locator(".hex-map").ScrollIntoViewIfNeededAsync();
+                await page.WaitForTimeoutAsync(900); // mid-animation: the banner is up and the gains are rising
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "new-round-screen.png") });
             });
             await StepAsync(merlin, "jump-to-report", async page =>
             {

@@ -38,6 +38,7 @@ public class FavourTests
         var mana = match.Seats[0].Mana;
         Play(match, Orders.Build(0, tile, Upgrade.Shrine));
         var income = match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value) + 1; // this round's rolls; the Shrine yields 1 more
+        Assert.Equal(income, match.Seats[0].Tiles.Sum(match.IncomeOf)); // the page's "+N", the Shrine's included
 
         Assert.Equal(mana - 2 + income, match.Seats[0].Mana);
         Assert.Equal(0, match.FavourOf(Stance.Build)); // chosen, so it resets

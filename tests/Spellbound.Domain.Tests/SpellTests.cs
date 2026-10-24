@@ -72,6 +72,8 @@ public class SpellTests
         var income = match.Seats[1].Tiles.Where(h => h != theirs).Sum(h => match.Map[h].Yield!.Value);
         Assert.Equal(before + income, match.Seats[1].Mana);
         Assert.Contains(report.Lines, l => l.Contains($"Seat 2 collects {income} mana", StringComparison.Ordinal));
+        Assert.Equal(0, match.IncomeOf(theirs)); // what the page shows on the tile
+        Assert.All(match.Seats, seat => Assert.Equal(seat.ProducedThisRound, seat.Tiles.Sum(match.IncomeOf)));
         before = match.Seats[1].Mana;
         Play(match);
         Assert.Equal(before + match.Seats[1].Tiles.Sum(h => match.Map[h].Yield!.Value), match.Seats[1].Mana); // one round only
