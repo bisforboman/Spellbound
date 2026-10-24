@@ -1,8 +1,10 @@
 @* The board as inline SVG (docs/theme.md): pointy-top hexes, each a button. Dark tiles are soot; unveiled ones show
-   their name (A1: row, then place in the row; TileNames), their yield, and units and monster guards; a held tile has
-   an inner ring in its owner's ink (heavier for yours). Each type has its painted image when all three are there
-   (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol. The same choices are offered as
-   plain buttons on the page, so the map is a convenience, not the only way. *@
+   what a held tile paid this round ("+3"), and units and
+   monster guards; a held tile has an inner ring in its owner's ink (heavier for yours). Only the
+   selected tile shows its name (A1: row, then place in the row; TileNames). Each type has its painted
+   image when all three are there (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol; the
+   key to the types is on the help page (MatchHelp). The map is the only way to choose a tile: the orders form says
+   what to tap, and the tiles it can use are marked. *@
 @inject TileArt Art
 
 <svg class="hex-map@(Art.Paths is null ? "" : " painted")" viewBox="@ViewBox" role="group" aria-label="The map">
@@ -14,11 +16,11 @@
     {
         var hex = tile.Hex;
         var (x, y) = Center(hex);
-        var owner = Match.OwnerOf(hex);
+        var owner = Unowned?.Contains(hex) == true ? null : Match.OwnerOf(hex);
         var units = You is { } viewer ? Match.UnitsSeenBy(viewer, hex) : Match.UnitsOn(hex); // null: hidden by the fog
         var classes = "hex" + (tile.IsUnveiled ? "" : " dark") + (Highlight?.Contains(hex) == true ? " marked" : "")
                       + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "");
-        <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners, mark: false)"
+        <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners, mark: false, named: ShowNames)"
            @onclick="() => OnSelect.InvokeAsync(hex)" @onkeydown="e => KeyAsync(e, hex)">
             @if (tile.IsUnveiled && Art.Paths is { } art)
             {
@@ -33,16 +35,20 @@
             }
             @if (tile.IsUnveiled)
             {
-                @Label(x, y - 18, "hex-name", TileNames.Of(Match.Map, hex))
+                @if (ShowNames && hex == Selected)
+                {
+                    @Label(x, y - 18, "hex-name", TileNames.Of(Match.Map, hex))
+                }
                 @if (Art.Paths is null)
                 {
-                    @Label(x - 10, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
-                    @Label(x + 6, y - 2, YieldClass(tile.Type), Match.Rules.YieldRange(tile.Type))
+                    @Label(x, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
                 }
-                else
+
+                @if (owner is not null && Match.Phase != MatchPhase.Opening)
                 {
-                    <circle class="hex-seal" cx="@F(x)" cy="@F(y - 1)" r="9.5" />
-                    @Label(x, y - 1, YieldClass(tile.Type), Match.Rules.YieldRange(tile.Type))
+                    // What the tile paid its holder this round: a small hint, the type's range is in the key.
+                    <circle class="hex-seal" cx="@F(x)" cy="@F(y + 1)" r="8" />
+                    @Label(x, y + 1, "hex-income", $"+{Match.IncomeOf(hex)}")
                 }
                 @if (tile.IsGuarded)
                 {
@@ -56,25 +62,20 @@
                 {
                     @Label(x, y + 16, "hex-note", UnitText(seen))
                 }
+
+                @if (Gains?.TryGetValue(hex, out var gain) == true)
+                {
+                    <g @key="@($"gain {Round} {hex}")" transform="translate(@F(x) @F(y - 4))">
+                        <g class="hex-gain@(gain == 0 ? " none" : "")">
+                            <rect x="-13" y="-10" width="26" height="20" rx="10" />
+                            @Label(0, 1, "", $"+{gain}")
+                        </g>
+                    </g>
+                }
             }
         </g>
     }
 </svg>
-@if (Match.Map.Tiles.Any(t => t.IsUnveiled))
-{
-    <p class="tile-key">
-        @foreach (var type in Enum.GetValues<TileType>())
-        {
-            <span>
-                @if (Art.Paths is { } art)
-                {
-                    <img class="tile-swatch" src="@Assets[art[type]]" alt="" />
-                }
-                <span class="tile-mark">@Seats.Mark(type)</span> @type: @Meaning(type)
-            </span>
-        }
-    </p>
-}
 
 @code {
     private const double Size = 30;
@@ -100,6 +101,21 @@
     [Parameter]
     public EventCallback<Hex> OnSelect { get; set; }
 
+    /// <summary>Tiles to draw as unowned for now (an auction playing back hasn't handed them out yet).</summary>
+    [Parameter]
+    public IReadOnlySet<Hex>? Unowned { get; set; }
+
+    /// <summary>Whether the selected hex shows its name; the opening leaves it out (only the tile up now matters).</summary>
+    [Parameter]
+    public bool ShowNames { get; set; } = true;
+
+    /// <summary>What each held tile paid as a round began, shown once as a "+N" rising from it; null otherwise.</summary>
+    [Parameter]
+    public IReadOnlyDictionary<Hex, int>? Gains { get; set; }
+
+    /// <summary>The round the gains are for: each round's chips are new elements, so their animation plays again.</summary>
+    private int Round => Match.CurrentRound;
+
     private string ViewBox
     {
         get
@@ -120,15 +136,6 @@
             var angle = Math.PI / 180 * (60 * i - 30);
             return $"{F(x + (Size - 1 - inset) * Math.Cos(angle))},{F(y + (Size - 1 - inset) * Math.Sin(angle))}";
         }));
-
-    /// <summary>A range ("0–4") is set smaller than a single yield so it fits the hex.</summary>
-    private string YieldClass(TileType type) => Match.Rules.Varies(type) ? "hex-yield range" : "hex-yield";
-
-    private string Meaning(TileType type) => type switch
-    {
-        TileType.Steady => $"yields {Match.Rules.YieldRange(type)} every round",
-        _ => $"rolls {Match.Rules.YieldRange(type)} each round",
-    };
 
     private static string UnitText(Army army) =>
         string.Join(' ', new[] { army.Imps > 0 ? $"{army.Imps}i" : null, army.Golems > 0 ? $"{army.Golems}g" : null }.OfType<string>());

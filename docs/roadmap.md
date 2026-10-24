@@ -56,8 +56,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [ ] Pages: new game (pick a trait), the opening auction, the map with tap-to-select tiles, the stance buttons, the
   round report, the end screen. Each action shows its cost and result first: Attune's price, what a Summon's mana
   buys, both sides' power before an attack
-  - [x] 6a: new match (you and 2–4 bots), the match page with the hex map (inline SVG, tap a tile; the same choices as
-    plain buttons), each seat in one of the theme's inks, the opening auction with its preview (`Match.CheckBid`), the
+  - [x] 6a: new match (you and 2–4 bots), the match page with the hex map (inline SVG, tap a tile; at first the same choices as
+    plain buttons, now the map alone), each seat in one of the theme's inks, the opening auction with its preview (`Match.CheckBid`), the
     last report, standings and the end; the home page links your matches
   - [x] 6b: the rounds' orders (stance buttons, targets, how many units attack from each tile, `Match.Check` as the
     preview), the round report, the end screen
@@ -69,17 +69,17 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   Repelled, Thwarted, Held, Lost), and the report and tile labels say "you" and "Bot N"
 - [x] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll. The match page (owner's
   choices, 21 Oct 2026): a bottom bar that jumps to Map, Orders, Report and Standings; the action (Commit, Bid and
-  Pass, Choose) and its cost fixed above it in thumb reach; the stances as a 2×2 grid; Moves and Spell folded behind
+  Pass, Choose) and its cost fixed above it in thumb reach; the stances as a 2×2 grid (later one a row); Moves and Spell folded behind
   a header that says what's in them; and a short report (your lines, your battles, where the match is) with
   "Everything that happened" a tap away. A match starts in three steps (owner's choice, 23 Oct 2026): a welcome
   (your seat, who's playing, how the match goes), the trait with the map still dark, then the map and the first
   auction; the standings wait for the rounds (nobody scores in the opening), then are folded (with who leads) until the Standings tab opens them, and open by themselves at
   the end. Tiles go by name, not coordinates (owner's choice, 23 Oct 2026): a row letter from the top and the place
-  in the row ("C3"), shown on each revealed hex and used in the lists, the orders and the reports. Each revealed hex
+  in the row ("C3"), shown on the selected hex (on every revealed hex until 24 Oct 2026, the owner's choice) and used in the lists, the orders and the reports. Each revealed hex
   shows its type's symbol (◆ Steady, ≈ Shifting, ✶ Wild), with a key under the map and the symbol before each tile in
   the lists; a summon asks what and how many before where. A held tile is ringed in its owner's ink instead of
   filled (heavier for yours), and the map shows painted art for the three types
-  ([tile art](tile-art.md), generated with SDXL on a local ComfyUI, 24 Oct 2026). Shifting and Wild tiles roll their yield every round (owner's choice, 24 Oct 2026): the map shows each type's range, the round report lists the rolls
+  ([tile art](tile-art.md), generated with SDXL on a local ComfyUI, 24 Oct 2026). Shifting and Wild tiles roll their yield every round (owner's choice, 24 Oct 2026): the map shows each type's range, the round report lists the rolls. A round that begins while the match page is open plays once: a banner, "+N" rising from every held tile, and your mana's gain (owner's choice, 24 Oct 2026). The opening auctions go tile by tile: one tile per player, bid on in name order, the winner sits out the rest, the last tile goes free to whoever won none, and the 3 free tiles appear as the rounds begin (owner's choice, 24 Oct 2026). In the opening, tiles go without names (the map marks the tile up now); names start with the rounds. The hexes show no ranges (the painted art and the key show the type); a held tile shows what it paid this round, small ("+3") (owner's choice, 24 Oct 2026). After each auction step the page plays it back a line at a time (1.5 s apart, with Skip): every bid on each tile, revealed once it is settled, then who got it, with its ring appearing then. The match page's top line holds only your colour, where the match is and your mana; a "?" opens a help page with your trait's goal, the tile types, the opening, a round, scoring and every trait (owner's choice, 24 Oct 2026). The stances go one to a row, and the chosen one opens its own choices under it (a summon's units and how many, a build's upgrade, an attack's units and guard). Every tile is chosen on the map, with a line saying what to tap and the usable tiles marked: a stance's target, a move's from and to, a spell's tile, Leyline's second tile and where reinforcements guard; the lists and drop-downs are gone (owner's choice, 24 Oct 2026)
 - [x] PWA manifest and icons so the game can be added to the home screen *(already built)*
 - [x] Integration test for a round (WebApplicationFactory on a real PostgreSQL, like the platform's tests):
   `RoundFlowTests` commits a round and reads the match page back over HTTP, checks that failed orders change nothing
@@ -92,7 +92,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   per conquest, mana produced 1 per 10, no points for unspent mana (`discussions/strategies.md`)
 - [x] Reading rivals (`discussions/reading-rivals.md`), one at a time, asking the owner after each:
   - [x] Rally, the attacker's Ward (+2 power for 3 mana)
-  - [x] traits secret until the end, with a guess at each rival's (bots guess from the tiles a rival took in the opening)
+  - [x] traits secret until the end (a guess at each rival's trait was built, then removed on 24 Oct 2026: the owner found it beside the point)
   - [x] fog of war: rivals' far-off units and their mana hidden, and each player's report shows only what they could see
 - [x] An undefended capture scores 1 point, a defended one 2 (after the third AI-taste session: raids on empty tiles decided every match)
 - [x] Reinforcements with an attack: up to 3 power summoned at home, 1 mana more per unit (after the fourth AI-taste session)

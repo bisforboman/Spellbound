@@ -96,7 +96,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         var games = await Admin.GetRunningGamesAsync();
 
         Assert.Equal([first, second], games.Select(g => g.Game.Id));
-        Assert.Equal("Opening auction 1 of 3, 3 seats", games[0].Description);
+        Assert.Equal("Opening auction 1 of 3, tile 1 of 3, 3 seats", games[0].Description);
         Assert.Equal([$"Seat 1 in game {first}", $"Seat 3 in game {first}"], games[0].Players);
         Assert.Empty(games[1].Players);
         Assert.Equal($"Seat 1 in game {first}", Assert.Single(await Admin.GetPlayersAsync(), p => p.OwnerId == merlinId).Player!.Name);

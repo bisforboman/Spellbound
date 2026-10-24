@@ -67,7 +67,9 @@ SVG filters stay in the layout.
 ## Phases
 
 Phase 1 (fonts, palette, cards, buttons, school inks) and phase 2 (the game pieces above and the SVG filters) were
-built for the old game. Still open, for whatever the new game needs: the rest of the motion (a flare after an action,
-numbers that flash when they change, reports that burn in), a light variant, and a check on a real phone that
+built for the old game. The new game has its first motion: as a round begins on the open match page, a banner
+names it, a "+N" rises from every held tile and your mana shows what it gained (CSS only, played once, and off for
+phones set to reduce motion). Still open, for whatever the new game needs: the rest of the motion (a flare after an
+action, reports that burn in), a light variant, and a check on a real phone that
 blackletter reads well at 360 px, that the SVG filters are fast enough, that the glyphs render, and, once the painted
 tiles are in, that they read at 40–55 px wide.

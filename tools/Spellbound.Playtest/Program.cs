@@ -90,6 +90,8 @@ static Process StartApp(Options options)
         ["RateLimits__AccountPosts"] = "1000",
         ["RateLimits__ConnectionRequestsPerMinute"] = "10000",
         ["RateLimits__RequestsPerMinute"] = "10000",
+        // The auction plays back quickly here, so steps don't wait on it.
+        ["Match__ReplayDelayMs"] = "300",
         ["Logging__LogLevel__Default"] = "Information",
     };
     foreach (var (key, value) in environment)
@@ -283,14 +285,18 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening auction 1 of 3");
                 await Expect(page, "The map is revealed");
-                await Expect(page, "Your trait:");
+                await Expect(page, "Auction 1/3"); // the top line: colour, where the match is, mana
             });
             await StepAsync(merlin, "bid", async page =>
             {
-                await page.Locator("input[name='bid-tile']").First.CheckAsync();
-                await page.FillAsync("#amount", "2");
-                await Expect(page, "If yours is the only highest bid");
-                await page.ClickAsync("button:has-text('Bid 2 mana')");
+                await Expect(page, "Up now:");
+                await page.FillAsync("#amount", "5"); // more than a bot bids, so it wins and the bots settle the rest
+                await Expect(page, "If yours is the highest bid");
+                await page.ClickAsync("button:has-text('Bid 5 mana')");
+                // The auction plays back one line at a time: each tile's bids, then who got it.
+                await page.Locator("#playback").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
+                await Expect(page, "Bids on the");
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "auction-playback-screen.png"), FullPage = true });
                 await Expect(page, "Opening auction 2 of 3");
                 await Expect(page, "What just happened");
             });
@@ -302,9 +308,19 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("The standings show during the opening.");
                 }
 
-                await page.ClickAsync("button:has-text('Pass')");
-                await Expect(page, "Opening auction 3 of 3");
-                await page.ClickAsync("button:has-text('Pass')");
+                // Pass on every tile until the rounds begin: lose them all and the last one of each auction is yours, free.
+                // (between tiles the auction plays back, and the Pass button is back once it's done)
+                for (var wait = 0; wait < 100 && !(await page.InnerTextAsync(".match-top")).Contains("Round 1/8", StringComparison.Ordinal); wait++)
+                {
+                    var pass = page.Locator("button:has-text('Pass'):not([disabled])");
+                    if (await pass.CountAsync() > 0)
+                    {
+                        await pass.ClickAsync();
+                    }
+
+                    await page.WaitForTimeoutAsync(300);
+                }
+
                 await Expect(page, "Round 1 of 8");
                 await Expect(page, "The rounds begin");
                 // The fog of war: a rival's income is its mana, so nobody else reads it.
@@ -330,17 +346,47 @@ namespace Spellbound.Playtest
                     "() => { const r = document.querySelector('table.standings').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }",
                     null, new PageWaitForFunctionOptions { Timeout = 5_000 });
             });
+            await StepAsync(merlin, "help", async page =>
+            {
+                // The "?" in the top line: the trait's goal, the tile types and the rules, off the main screen.
+                var matchPath = new Uri(page.Url).AbsolutePath;
+                await page.ClickAsync(".match-top .help-link");
+                await Expect(page, "How to play");
+                await Expect(page, "Your trait:");
+                await Expect(page, "Every trait");
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "help-page.png"), FullPage = true });
+                await GoAsync(page, matchPath);
+                await Expect(page, "Round 1 of 8");
+            });
             await StepAsync(merlin, "summon", async page =>
             {
                 await page.ClickAsync("label:has-text('Summon:')");
-                await Expect(page, "Tap one of your tiles");
-                await page.Locator("input[name='target']").First.CheckAsync();
+                await Expect(page, "Tap one of your tiles to summon on");
+                // Tiles are chosen on the map only: a tile the stance can't use just shows what it is.
+                var other = page.Locator(".hex-map .hex:not(.marked):not(.dark)");
+                if (await other.CountAsync() > 0)
+                {
+                    await other.First.ClickAsync();
+                    await page.Locator(".tile-panel").WaitForAsync();
+                }
+
+                await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                 await page.FillAsync("#count", "3");
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "stances-screen.png"), FullPage = true });
                 await Expect(page, "Summon 3 Imps");
                 await page.ClickAsync("button:has-text('Commit: Summon')");
                 await Expect(page, "Round 2 of 8");
                 await Expect(page, "mana off)"); // nobody builds in round 1, so Build is cheaper now
                 await Expect(page, "You summon 3 Imps");
+                // A round that begins while the page is open plays once: a banner, and "+N" rising from every held tile.
+                await page.Locator(".round-banner").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
+                if (await page.Locator(".hex-map .hex-gain").CountAsync() < 3)
+                {
+                    throw new PlaytestException("The new round doesn't show what the tiles paid.");
+                }
+                await page.Locator(".hex-map").ScrollIntoViewIfNeededAsync();
+                await page.WaitForTimeoutAsync(900); // mid-animation: the banner is up and the gains are rising
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "new-round-screen.png") });
             });
             await StepAsync(merlin, "jump-to-report", async page =>
             {
@@ -373,10 +419,13 @@ namespace Spellbound.Playtest
                 // A move if two of Merlin's tiles touch (the match isn't seeded, so not every run can).
                 await page.ClickAsync("button:has-text('Moves (optional)')");
                 await Expect(page, "Units step to a neighbouring tile");
-                if (await page.Locator("#move-from option").CountAsync() > 1)
+                if (await page.Locator("button:has-text('Add a move')").CountAsync() > 0)
                 {
-                    await page.SelectOptionAsync("#move-from", new SelectOptionValue { Index = 1 });
-                    await page.SelectOptionAsync("#move-to", new SelectOptionValue { Index = 1 });
+                    await page.ClickAsync("button:has-text('Add a move')");
+                    await Expect(page, "Tap one of your tiles with units");
+                    await page.Locator(".hex-map .hex.marked").First.ClickAsync(); // from
+                    await Expect(page, "Tap a neighbouring tile of yours");
+                    await page.Locator(".hex-map .hex.marked").First.ClickAsync(); // to
                     await page.ClickAsync("button:has-text('Add this move')");
                     await Expect(page, "Remove");
                 }
@@ -385,14 +434,14 @@ namespace Spellbound.Playtest
             {
                 await page.ClickAsync("label:has-text('Attune:')");
                 await Expect(page, "Tap a free tile next to your land"); // the stance's own choices, not the last one's
-                var free = page.Locator("input[name='target']");
+                var free = page.Locator(".hex-map .hex.marked");
                 if (await free.CountAsync() == 0)
                 {
                     await page.ClickAsync("label:has-text('Hold:')");
                 }
                 else
                 {
-                    await free.First.CheckAsync();
+                    await free.First.ClickAsync();
                 }
 
                 await Expect(page, "mana");
@@ -404,14 +453,16 @@ namespace Spellbound.Playtest
             await StepAsync(merlin, "attack-pick", async page =>
             {
                 await page.ClickAsync("label:has-text('Attack:')");
-                await Expect(page, "Tap a rival's tile");
-                var targets = page.Locator("input[name='target']");
+                await Expect(page, "Tap a rival's or a monster's tile");
+                var targets = page.Locator(".hex-map .hex.marked");
                 if (await targets.CountAsync() > 0)
                 {
-                    await targets.First.CheckAsync();
+                    await targets.First.ClickAsync();
                     await Expect(page, "Send from");
-                    // Reinforcements guard home while the army is away.
-                    await page.SelectOptionAsync("#reinforce-at", new SelectOptionValue { Index = 1 });
+                    // Reinforcements guard home while the army is away: a second tap, on one of Merlin's tiles.
+                    await page.ClickAsync("button:has-text('Guard home')");
+                    await Expect(page, "Tap one of your tiles to guard");
+                    await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                     await page.WaitForSelectorAsync("#reinforce-imps");
                     await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
                 }
@@ -434,12 +485,9 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("label:has-text('Rally')"); // goes only with an attack, and says so
                 await Expect(page, "Rally goes with an attack");
                 await page.ClickAsync("label:has-text('Ward')");
-                await Expect(page, "Choose where Ward goes");
-                await page.SelectOptionAsync("#spell-target", new SelectOptionValue { Index = 1 });
-                // A guess at a rival's secret trait rides along with the orders.
-                await page.ClickAsync("button:has-text('Guess a trait')");
-                await page.SelectOptionAsync("#guess-rival", new SelectOptionValue { Index = 1 });
-                await page.SelectOptionAsync("#guess-trait", new SelectOptionValue { Index = 1 });
+                await Expect(page, "Tap the tile for Ward");
+                await page.Locator(".hex-map .hex.marked").First.ClickAsync();
+                await Expect(page, "On ");
                 await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
             });
             await StepAsync(merlin, "spell-commit", async page =>
@@ -451,18 +499,17 @@ namespace Spellbound.Playtest
 
                 await page.ClickAsync("button:has-text('Commit:')");
                 await Expect(page, "Round 5 of 8");
-                await Expect(page, "Your guesses:");
             });
             await StepAsync(merlin, "build", async page =>
             {
                 // A Tower on one of Merlin's tiles, if he can afford it (the match isn't seeded).
                 await page.ClickAsync("label:has-text('Build:')");
-                await Expect(page, "Tap one of your tiles without an upgrade");
-                var spots = page.Locator("input[name='target']");
+                await page.ClickAsync("label:has-text('Tower:')");
+                var spots = page.Locator(".hex-map .hex.marked");
                 if (await spots.CountAsync() > 0)
                 {
-                    await spots.First.CheckAsync();
-                    await page.ClickAsync("label:has-text('Tower:')");
+                    await Expect(page, "Tap one of your tiles without an upgrade");
+                    await spots.First.ClickAsync();
                     await Expect(page, "Build a Tower", optional: true);
                 }
 
@@ -483,7 +530,7 @@ namespace Spellbound.Playtest
                     await Expect(page, round < 8 ? $"Round {round + 1} of 8" : "The match is over");
                 }
 
-                await Expect(page, "Over after 8 rounds");
+                await Expect(page, "The match is over");
                 await page.Locator("table.standings").WaitForAsync(); // open by itself at the end
                 await page.Locator(".fold-sum", new PageLocatorOptions { HasTextRegex = new System.Text.RegularExpressions.Regex(" wins?, ") }).WaitForAsync();
             });
@@ -602,7 +649,7 @@ namespace Spellbound.Playtest
             await StepAsync(ada, "admin", async page =>
             {
                 await GoAsync(page, "/admin");
-                await Expect(page, "Opening auction 1 of 3, 5 seats");
+                await Expect(page, "Opening auction 1 of 3, tile 1 of 5, 5 seats");
                 await Expect(page, "Problems");
             });
             await StepAsync(ada, "end-game", async page =>

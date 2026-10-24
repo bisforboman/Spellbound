@@ -15,13 +15,13 @@ public sealed partial class Match
             s.Mana, s.Score, s.ProducedThisRound, s.ProducedCarry, s.ConquestPointsThisRound,
             [.. s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)], s.LandCarry,
             [.. s.Offer], s.Trait, s.TraitPoints, [.. s.OpeningTiles], s.MonstersCleared, s.RivalTilesTaken,
-            [.. s.SpellsCast.Order()], s.HexesCast, s.RoundsCast,
-            [.. s.Guesses.OrderBy(g => g.Key).Select(g => new GuessState(g.Key, g.Value))], s.GuessPoints))],
+            [.. s.SpellsCast.Order()], s.HexesCast, s.RoundsCast))],
         [.. units.Where(u => !u.Value.IsEmpty).OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R)
             .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))],
         [.. upgrades.OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R).Select(u => new UpgradeState(u.Key, u.Value))],
         [.. blightedLastRound.OrderBy(h => h.Q).ThenBy(h => h.R)],
-        [.. favour.Where(f => f.Value > 0).OrderBy(f => f.Key).Select(f => new FavourState(f.Key, f.Value))]);
+        [.. favour.Where(f => f.Value > 0).OrderBy(f => f.Key).Select(f => new FavourState(f.Key, f.Value))],
+        [.. unveilWinners.Order()]);
 
     /// <summary>A saved match, to play on under the rules it was saved with.</summary>
     public static Match Load(MatchState state, GameRules rules)
@@ -55,12 +55,6 @@ public sealed partial class Match
                 seat.Cast(spell);
             }
 
-            foreach (var guess in s.Guesses ?? [])
-            {
-                seat.Guess(guess.Rival, guess.Trait);
-            }
-
-            seat.GuessPoints = s.GuessPoints;
             seat.HexesCast = s.HexesCast;
             seat.RoundsCast = s.RoundsCast;
             foreach (var hex in s.Tiles)
@@ -77,6 +71,7 @@ public sealed partial class Match
             CurrentRound = state.CurrentRound,
         };
         match.onAuction.AddRange(state.OnAuction);
+        match.unveilWinners.UnionWith(state.UnveilWinners ?? []);
         foreach (var u in state.Units)
         {
             match.units[u.Hex] = new Army(u.Imps, u.Golems);

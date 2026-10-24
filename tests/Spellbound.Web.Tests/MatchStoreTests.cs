@@ -32,7 +32,7 @@ public sealed class MatchStoreTests : TestDatabase
     {
         var match = loaded.Match;
         return match.Phase == MatchPhase.Opening
-            ? match.Auction([.. match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random))], random)
+            ? match.Auction([.. match.Bidders.Select(s => Bot.ChooseBid(match, s, random))], random)
             : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random))], random);
     }
 
@@ -69,7 +69,7 @@ public sealed class MatchStoreTests : TestDatabase
             steps++;
         }
 
-        Assert.Equal(3 + 8, steps);
+        Assert.Equal((3 * 2) + 8, steps); // each opening auction has two bidding steps (the third tile is the leftover)
         Assert.Equal(Now, (await WithDbAsync(db => db.LoadGameAsync(id)))!.EndedAt); // its game ended with it
         Assert.Equal(MatchJson.Serialize(memory.Save()), MatchJson.Serialize((await store.LoadAsync(id))!.Match.Save()));
     }
@@ -93,10 +93,10 @@ public sealed class MatchStoreTests : TestDatabase
 
         // Each passes the auction it finds; if both read the same state, the second save would undo the first.
         var reports = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => Task.Run(() => store.ApplyAsync(id, Now,
-            (loaded, random) => loaded.Match.Auction([.. loaded.Match.Seats.Select(s => Bid.Pass(s.Index))], random)))));
+            (loaded, random) => loaded.Match.Auction([.. loaded.Match.Bidders.Select(Bid.Pass)], random)))));
 
         Assert.All(reports, r => Assert.True(r!.Succeeded));
-        Assert.Equal(3, (await store.LoadAsync(id))!.Match.OpeningUnveil);
+        Assert.Equal(2, (await store.LoadAsync(id))!.Match.OpeningUnveil); // both of the first auction's bidding steps
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public sealed class MatchStoreTests : TestDatabase
         var list = await store.ListForAsync("alice");
 
         Assert.Equal(
-            [new PlayerMatch(second, 1, "Opening auction 2 of 3", true), new PlayerMatch(first, 0, "Opening auction 1 of 3", true)],
+            [new PlayerMatch(second, 1, "Opening auction 2 of 3, tile 1 of 2", true), new PlayerMatch(first, 0, "Opening auction 1 of 3, tile 1 of 2", true)],
             list);
         Assert.Empty(await store.ListForAsync("bob"));
     }

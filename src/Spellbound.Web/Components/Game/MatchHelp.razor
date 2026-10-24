@@ -1,0 +1,99 @@
+@page "/match/{Id:long}/help"
+@attribute [Authorize]
+@inject MatchPlay Play
+@inject TileArt Art
+
+@* The help page behind the match page's "?": what doesn't need to be on the main screen every round (owner's choice,
+   24 Oct 2026). Your trait's goal, the tile types, the opening, a round, and scoring. *@
+
+<PageTitle>How to play</PageTitle>
+
+@if (view is null)
+{
+    <p class="text-muted">@(loaded ? "There is no such match that you sit in." : "Loading…")</p>
+}
+else
+{
+    var match = view.Match;
+    var me = match.Seats[you];
+    <div class="match-help">
+    <h1>How to play</h1>
+    <p><a href="match/@Id">Back to the match</a></p>
+
+    @if (me.Trait is { } trait)
+    {
+        <h2 class="h4">Your trait: @trait</h2>
+        <p>@Capitalised(match.GoalText(trait).TrimEnd('.')). Rivals learn it only when the match ends, and you learn theirs.</p>
+    }
+
+    <h2 class="h4">Tiles</h2>
+    <ul class="help-list">
+        @foreach (var type in Enum.GetValues<TileType>())
+        {
+            <li>
+                @if (Art.Paths is { } art)
+                {
+                    <img class="tile-swatch" src="@Assets[art[type]]" alt="" />
+                }
+                <span class="tile-mark">@Seats.Mark(type)</span>
+                <b>@type</b>: @(match.Rules.Varies(type) ? $"rolls {match.Rules.YieldRange(type)} mana each round" : $"yields {match.Rules.YieldRange(type)} mana every round").
+            </li>
+        }
+    </ul>
+    <p>A held tile shows what it paid this round ("+3"). Monsters (☠) guard some tiles revealed later; beat them to take
+        the tile.</p>
+
+    <h2 class="h4">The opening</h2>
+    <p>@match.Rules.OpeningUnveils auctions each reveal one tile per player, auctioned one at a time. Bid on the tile up
+        now or pass: the highest bid takes it, losers pay nothing, and whoever wins none gets the last tile free. Every
+        bid is shown once the tile is settled.</p>
+
+    <h2 class="h4">A round</h2>
+    <p>Everyone picks one stance in secret, then all resolve together:</p>
+    <ul class="help-list">
+        <li><b>Attune</b>: claim a free tile next to your land.</li>
+        <li><b>Summon</b>: put Imps (power @match.Rules.ImpPower, @match.Rules.ImpCost mana) or Golems (power
+            @match.Rules.GolemPower, @match.Rules.GolemCost mana, upkeep @match.Rules.GolemUpkeep) on one of your tiles.</li>
+        <li><b>Attack</b>: send units at a rival's or a monster's tile next to them.</li>
+        <li><b>Build</b>: an upgrade on one of your tiles.</li>
+        <li><b>Hold</b>: do nothing.</li>
+    </ul>
+    <p>Units can also step between your neighbouring tiles first, and one spell a round goes alongside the stance. A
+        stance nobody chose gets cheaper the next round.</p>
+
+    <h2 class="h4">Scoring</h2>
+    <p>Every round you bank points for your land and your mana income, and for tiles you take. At the end, upgrades and
+        your trait's goal add theirs. After @match.Rules.Rounds rounds, the most points wins.</p>
+
+    <h2 class="h4">Every trait</h2>
+    <ul class="help-list">
+        @foreach (var t in Enum.GetValues<Trait>())
+        {
+            <li><b>@t</b>: @match.GoalText(t)</li>
+        }
+    </ul>
+    <p><a href="match/@Id">Back to the match</a></p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public long Id { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private static string Capitalised(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
+
+    private LoadedMatch? view;
+    private int you;
+    private bool loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var ownerId = (await AuthState).User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        view = await Play.ViewAsync(Id, ownerId);
+        you = view?.SeatOf(ownerId) ?? 0;
+        loaded = true;
+    }
+}

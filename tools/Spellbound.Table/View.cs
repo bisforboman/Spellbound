@@ -28,8 +28,7 @@ internal static class View
 
         foreach (var rival in match.Seats.Where(s => s.Index != seat))
         {
-            var shown = match.Phase == MatchPhase.Ended && rival.Trait is { } rt ? $", trait {rt}"
-                : me.Guesses.TryGetValue(rival.Index, out var guessed) ? $", your guess: {guessed}" : "";
+            var shown = match.Phase == MatchPhase.Ended && rival.Trait is { } rt ? $", trait {rt}" : "";
             var mana = match.ManaSeenBy(seat, rival.Index) is { } m ? $"{m} mana" : "mana unseen";
             text.AppendLine($"Seat {rival.Index + 1}: {mana}, {rival.Tiles.Count} tiles, {rival.Score} points{shown}.");
         }
@@ -186,9 +185,7 @@ internal static class View
         UNPICKED STANCES GET CHEAPER: attune, summon or build that nobody chose in a round costs {{r.FavourPerRound}} mana less
         the next round, more each round it waits (at most {{r.FavourCap}} less). Choosing it resets it.
 
-        TRAITS ARE SECRET until the end. Alongside any round's orders you may guess one rival's trait (once per rival;
-        a guess can't be changed): {{r.PointsPerTraitGuess}} point at the end for each right guess, at most {{r.TraitGuessCap}}. No trait
-        is offered to two players, so a rival never has one you were offered.
+        TRAITS ARE SECRET until the end. No trait is offered to two players, so a rival never has one you were offered.
 
         HOW TO ACT (one JSON object; tiles as "q,r"):
           {"trait": "Weaver"}
@@ -200,7 +197,6 @@ internal static class View
           {"stance": "hold"}
         Any stance can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
         An attack can add "reinforce": {"target": "0,0", "kind": "imp", "count": 3}
-        and one "guess": {"seat": 2, "trait": "Hexer"}
         and one "spell": {"name": "scorch", "target": "1,0", "count": 2}
                      or {"name": "leyline", "target": "0,0", "to": "2,-1", "imps": 2, "golems": 0}
         `check` shows what an action would cost and do, changing nothing. `act` commits it and waits for the others.

@@ -16,6 +16,7 @@ public class SeatsTests
     [InlineData("Seat 1 (3 Imps) attack the tile, Seat 2's, held by 1 Golem: power 3 against 3.", "You (3 Imps) attack the tile, Bot 2's, held by 1 Golem: power 3 against 3.")]
     [InlineData("It's Seat 1's last tile: the defenders die but the tile stays theirs. Seat 2's 2 Imps go back.", "It's your last tile: the defenders die but the tile stays theirs. Bot 2's 2 Imps go back.")]
     [InlineData("The match is over. Seat 1 wins.", "The match is over. You win.")]
+    [InlineData("Bids on the tile: Seat 1 passes, Seat 2 3.", "Bids on the tile: You pass, Bot 2 3.")]
     [InlineData("The match is over. Seat 1 and Seat 3 share the win.", "The match is over. You and Bot 3 share the win.")]
     [InlineData("Seat 1 can't pay for 1 Golem: they dissolve.", "You can't pay for 1 Golem: they dissolve.")]
     [InlineData("Seat 10 is not seat 1.", "Seat 10 is not seat 1.")]

@@ -10,11 +10,13 @@ namespace Spellbound.Web.Data;
 /// </summary>
 public static class MatchNotices
 {
-    /// <summary>The step a match is on, in words: "opening auction 2" or "round 3".</summary>
+    /// <summary>The step a match is on, in words: "opening auction 2, tile 1" or "round 3".</summary>
     public static string StepName(Match match)
     {
         ArgumentNullException.ThrowIfNull(match);
-        return match.Phase == MatchPhase.Opening ? $"opening auction {match.OpeningUnveil}" : $"round {match.CurrentRound}";
+        return match.Phase == MatchPhase.Opening
+            ? $"opening auction {match.OpeningUnveil}, tile {match.AuctionTile}"
+            : $"round {match.CurrentRound}";
     }
 
     /// <summary>Everyone else has committed and one person is left.</summary>
@@ -37,6 +39,7 @@ public static class MatchNotices
         var id = loaded.Id;
         var ended = match.Phase == MatchPhase.Ended;
         var next = ended ? "The match is over: see who won." : $"{MatchStore.Describe(match, true)}: your move.";
+        var sitOut = $"{MatchStore.Describe(match, true)}: you have your tile, the others bid on the rest.";
         for (var seat = 0; seat < loaded.Owners.Count; seat++)
         {
             if (loaded.Owners[seat] is not { } owner || seat == actor || (loaded.Away.Contains(seat) && !ended))
@@ -49,7 +52,8 @@ public static class MatchNotices
                     "You missed two deadlines in a row. You can still watch the match.", Url(id))
                 : attacked.Contains(seat)
                     ? new PushMessage(owner, $"Match {id}: you were attacked", $"In {resolved}. {next}", Url(id))
-                    : new PushMessage(owner, $"Match {id}: {Capitalised(resolved)} resolved", next, Url(id));
+                    : new PushMessage(owner, $"Match {id}: {Capitalised(resolved)} resolved",
+                        ended || loaded.InStep.Contains(seat) ? next : sitOut, Url(id));
         }
     }
 

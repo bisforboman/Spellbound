@@ -8,7 +8,7 @@ public class FogTests
         var match = Match.Start(3, GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
         }
 
         return match;

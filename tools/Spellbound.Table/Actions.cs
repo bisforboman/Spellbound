@@ -85,11 +85,6 @@ internal abstract record Action
                 Enum.Parse<UnitKind>(Get(reinforce, "kind")?.GetString() ?? "imp", ignoreCase: true), Int(reinforce, "count"));
         }
 
-        if (Get(root, "guess") is { ValueKind: JsonValueKind.Object } guess)
-        {
-            orders = orders.Guessing(Int(guess, "seat") - 1, Enum.Parse<Trait>(Need(guess, "trait").GetString()!, ignoreCase: true));
-        }
-
         if (Get(root, "spell") is not { ValueKind: JsonValueKind.Object } spell)
         {
             return orders;

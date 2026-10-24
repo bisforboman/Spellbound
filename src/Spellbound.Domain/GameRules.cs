@@ -25,14 +25,14 @@ public sealed record GameRules
     /// <summary>The mana each player starts with; it also pays the opening's bids.</summary>
     public int StartingMana { get; init; } = 9;
 
-    /// <summary>How many Unveils the opening has. Each auctions one tile per player and leaves one free.</summary>
+    /// <summary>How many Unveils the opening has. Each reveals one tile per player and auctions them one at a time.</summary>
     public int OpeningUnveils { get; init; } = 3;
 
     /// <summary>The smallest bid in an opening auction. A player who wants to spend nothing passes instead.</summary>
     public int MinBid { get; init; } = 1;
 
-    /// <summary>The unauctioned tiles each opening Unveil reveals and leaves free.</summary>
-    public int OpeningFreeTilesPerUnveil { get; init; } = 1;
+    /// <summary>The tiles revealed unowned as the rounds begin, free for anyone to attune.</summary>
+    public int FreeTilesWhenRoundsBegin { get; init; } = 3;
 
     // Rounds (docs/game-design.md, Rounds and stances, Units, Taking unowned tiles, Scoring and winning)
 
@@ -141,10 +141,6 @@ public sealed record GameRules
 
     /// <summary>The most points a trait goal can add.</summary>
     public int TraitGoalCap { get; init; } = 3;
-
-    /// <summary>Points at the end for each rival's trait guessed right, and the most that guessing can add.</summary>
-    public int PointsPerTraitGuess { get; init; } = 1;
-    public int TraitGuessCap { get; init; } = 3;
 
     /// <summary>Wildheart and Hearthkeeper: one point per this many tiles of their type.</summary>
     public int TilesOfTypePerTraitPoint { get; init; } = 1;

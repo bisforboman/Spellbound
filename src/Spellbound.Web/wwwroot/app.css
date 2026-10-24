@@ -865,17 +865,10 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         font-size: 11px; /* ◆ is drawn larger than ≈ and ✶ at the same size */
     }
 
-    .hex-map .hex-yield {
-        font-size: 17px;
+    /* A held tile's income this round, small on its seal */
+    .hex-map .hex-income {
+        font-size: 10px;
         font-weight: 700;
-    }
-
-    .hex-map .hex-yield.range {
-        font-size: 13px;
-    }
-
-    .hex-map.painted .hex-yield.range {
-        font-size: 11px; /* inside the seal */
     }
 
     .hex-map .hex-note {
@@ -964,12 +957,22 @@ tr.you td {
         scroll-margin-top: 3.5rem; /* below the sticky top bar */
     }
 
-/* The stances: a 2×2 grid of short plates */
+/* The stances: one plate a row */
 .stances {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr; /* one stance a row, its options under it */
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+}
+
+    .stance-options {
+        margin: -0.25rem 0 0.5rem 1.6rem;
+    }
+
+/* What the next tap on the map is for */
+.pick-prompt {
+    color: var(--school);
+    font-style: italic;
 }
 
     .stances .choice {
@@ -1136,15 +1139,139 @@ tr.you td {
         box-shadow: inset 0 3px 0 var(--school);
     }
 
-/* The key to the map's type symbols */
-.tile-key {
+/* A new round (MatchPage): a banner, "+N" rising from each held tile, and the mana it brought you. Each plays once,
+   when it is first drawn, and stays invisible after; nothing moves for phones set to reduce motion. */
+.round-banner {
+    position: fixed;
+    top: 4.25rem;
+    left: 1rem;
+    right: 1rem;
+    z-index: 20;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.15rem 1rem;
-    margin: -0.25rem 0 0.75rem;
-    color: var(--ink-soft);
-    font-size: 0.85rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(var(--plate-top), var(--plate-bot));
+    border: 1px solid var(--paper-edge);
+    border-bottom: 2px solid var(--school);
+    box-shadow: 0 8px 24px var(--shadow);
+    pointer-events: none;
+    opacity: 0;
+    animation: round-banner 2.8s ease-out forwards;
 }
+
+    .round-banner b {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 400;
+    }
+
+    .round-banner span {
+        color: var(--ink-soft);
+    }
+
+@keyframes round-banner {
+    0% { opacity: 0; transform: translateY(-0.75rem); }
+    12% { opacity: 1; transform: none; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.hex-map .hex-gain {
+    opacity: 0;
+    animation: hex-gain 2.4s ease-out 0.4s forwards;
+}
+
+    .hex-map .hex-gain rect {
+        fill: var(--paper);
+        stroke: var(--school);
+        stroke-width: 1.5;
+    }
+
+    .hex-map .hex-gain text {
+        font-size: 14px;
+        font-weight: 700;
+        fill: var(--on-ink);
+    }
+
+    .hex-map .hex-gain.none text {
+        fill: var(--ink-faint);
+    }
+
+    .hex-map .hex-gain.none rect {
+        stroke: var(--paper-edge);
+    }
+
+@keyframes hex-gain {
+    0% { opacity: 0; transform: translateY(6px); }
+    15% { opacity: 1; transform: translateY(0); }
+    75% { opacity: 1; transform: translateY(-12px); }
+    100% { opacity: 0; transform: translateY(-16px); }
+}
+
+.mana-gain {
+    color: var(--school);
+    font-weight: 700;
+    opacity: 0;
+    animation: mana-gain 2.6s ease-out 0.2s forwards;
+}
+
+@keyframes mana-gain {
+    0% { opacity: 0; }
+    15%, 80% { opacity: 1; font-size: 1em; }
+    100% { opacity: 0; font-size: 0; } /* and gives its room back */
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .round-banner, .hex-map .hex-gain, .mana-gain {
+        display: none;
+    }
+}
+
+/* The match page's top line: your colour, where the match is, your mana, and the way to the help page */
+.match-top {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.25rem 0 0.75rem;
+    font-size: 1.05rem;
+}
+
+    .match-top .match-mana {
+        flex: 1;
+        color: var(--ink-soft);
+    }
+
+.ink-dot {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 3px;
+    background: var(--seat);
+    box-shadow: 0 0 0 2px var(--paper-edge);
+}
+
+.help-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--paper-edge);
+    border-radius: 50%;
+    color: var(--ink);
+    font-family: var(--font-label);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.help-list {
+    padding-left: 1.1rem;
+}
+
+    .help-list li {
+        margin-bottom: 0.35rem;
+    }
 
 .tile-mark {
     color: var(--ink);

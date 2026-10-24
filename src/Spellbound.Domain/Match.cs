@@ -17,6 +17,7 @@ public sealed partial class Match
 {
     private readonly List<Seat> seats;
     private readonly List<Hex> onAuction = [];
+    private readonly HashSet<int> unveilWinners = [];
 
     private Match(GameRules rules, GameMap map, List<Seat> seats)
     {
@@ -37,7 +38,8 @@ public sealed partial class Match
     /// opening is over.</summary>
     public int OpeningUnveil { get; private set; }
 
-    /// <summary>The tiles up for auction in the current opening Unveil.</summary>
+    /// <summary>The tiles of the current opening Unveil still to be handed out, in the order they go up (by name: row,
+    /// then place in the row). The first is the one being bid on.</summary>
     public IReadOnlyList<Hex> OnAuction => onAuction;
 
     /// <summary>The seat holding a tile, or null if it is unowned.</summary>
@@ -56,10 +58,11 @@ public sealed partial class Match
     }
 
     /// <summary>
-    /// Settles the current opening auction with every seat's sealed bid (docs/game-design.md, "The Unveil auction"):
-    /// the highest bid on a tile wins it and pays; a tie at the top wins nobody the tile; losing bidders don't pay.
-    /// Everyone who didn't win gets one of the tiles nobody won, at random, for free. Then the next Unveil is laid out,
-    /// or after the last one the rounds begin. Fails, changing nothing, unless there is exactly one valid bid per seat.
+    /// Settles the bidding on the current tile (docs/game-design.md, "The Unveil auction"): every seat still bidding in
+    /// this Unveil bids secretly or passes. The highest bid wins the tile and pays; a tie at the top is settled at
+    /// random among the tied; if nobody bids, a seat still bidding gets it free, at random. The winner sits out the rest
+    /// of the Unveil, and the last tile goes free to the one seat left. Then the next Unveil is laid out, or after the
+    /// last one the rounds begin. Fails, changing nothing, unless there is exactly one valid bid per seat still bidding.
     /// </summary>
     public Report Auction(IReadOnlyCollection<Bid> bids, IRandomSource random)
     {
@@ -76,30 +79,38 @@ public sealed partial class Match
         }
 
         var lines = new ReportLines();
-        var winners = new Dictionary<int, Hex>();
-        foreach (var tile in onAuction)
+        var tile = onAuction[0];
+        // Every bid is revealed once the tile is settled (owner's choice, 24 Oct 2026), so players learn how rivals value land.
+        lines.Add($"Bids on {Describe(tile)}: {string.Join(", ", bids.OrderBy(b => b.Seat).Select(b => b.Tile is null ? $"Seat {b.Seat + 1} passes" : $"Seat {b.Seat + 1} {b.Amount}"))}.");
+        var top = bids.Where(b => b.Tile == tile).GroupBy(b => b.Amount).MaxBy(g => g.Key)?.OrderBy(b => b.Seat).ToList();
+        if (top is { Count: > 0 })
         {
-            var top = bids.Where(b => b.Tile == tile).GroupBy(b => b.Amount).MaxBy(g => g.Key)?.ToList();
-            if (top is [var winner])
+            var winner = top[top.Count == 1 ? 0 : random.Next(top.Count)];
+            if (top.Count > 1)
             {
-                winners[winner.Seat] = tile;
-                seats[winner.Seat].Mana -= winner.Amount;
-                seats[winner.Seat].Take(tile);
-                lines.Add($"Seat {winner.Seat + 1} wins {Describe(tile)} for {winner.Amount} mana.");
+                lines.Add($"A tie for {Describe(tile)} at {winner.Amount} mana: {string.Join(" and ", top.Select(b => $"Seat {b.Seat + 1}"))} bid it, and Seat {winner.Seat + 1} is drawn.");
             }
-            else if (top is { Count: > 1 })
-            {
-                lines.Add($"A tie for {Describe(tile)} at {top[0].Amount} mana: nobody gets it.");
-            }
+
+            seats[winner.Seat].Mana -= winner.Amount;
+            Hand(tile, winner.Seat, lines, $"Seat {winner.Seat + 1} wins {Describe(tile)} for {winner.Amount} mana.");
+        }
+        else
+        {
+            var bidders = Bidders.ToList();
+            var lucky = bidders[random.Next(bidders.Count)];
+            Hand(tile, lucky, lines, $"Nobody bids on {Describe(tile)}: Seat {lucky + 1} gets it for free, drawn at random.");
         }
 
-        var leftovers = onAuction.Where(t => !winners.ContainsValue(t)).ToList();
-        foreach (var seat in seats.Where(s => !winners.ContainsKey(s.Index)))
+        if (onAuction.Count == 1)
         {
-            var i = random.Next(leftovers.Count);
-            seat.Take(leftovers[i]);
-            lines.Add($"Seat {seat.Index + 1} gets {Describe(leftovers[i])} for free.");
-            leftovers.RemoveAt(i);
+            var last = Bidders.Single();
+            var leftover = onAuction[0];
+            Hand(leftover, last, lines, $"Seat {last + 1} gets the last tile, {Describe(leftover)}, for free.");
+        }
+
+        if (onAuction.Count > 0)
+        {
+            return lines.ToReport();
         }
 
         if (OpeningUnveil < Rules.OpeningUnveils)
@@ -108,10 +119,10 @@ public sealed partial class Match
         }
         else
         {
-            onAuction.Clear();
             OpeningUnveil = 0;
             Phase = MatchPhase.Rounds;
             lines.Add("The opening is over. The rounds begin.");
+            RevealFreeTiles(random, lines);
             SettleTraits(lines);
             lines.Append(StartRound(random));
         }
@@ -119,12 +130,29 @@ public sealed partial class Match
         return lines.ToReport();
     }
 
+    /// <summary>The seats still bidding in this opening Unveil: everyone who hasn't got a tile from it yet.</summary>
+    public IEnumerable<int> Bidders => Phase == MatchPhase.Opening
+        ? seats.Where(s => !unveilWinners.Contains(s.Index)).Select(s => s.Index)
+        : [];
+
+    /// <summary>Which of this Unveil's tiles is up now, counting from 1.</summary>
+    public int AuctionTile => seats.Count - onAuction.Count + 1;
+
+    /// <summary>Gives a tile from the auction to a seat, which then sits out the rest of the Unveil.</summary>
+    private void Hand(Hex tile, int seat, ReportLines lines, string line)
+    {
+        seats[seat].Take(tile);
+        unveilWinners.Add(seat);
+        onAuction.Remove(tile);
+        lines.Add(line);
+    }
+
     private string? BidProblem(IReadOnlyCollection<Bid> bids)
     {
-        if (bids.Count != seats.Count || bids.Select(b => b.Seat).Distinct().Count() != seats.Count
-            || bids.Any(b => b.Seat < 0 || b.Seat >= seats.Count))
+        var bidders = Bidders.ToHashSet();
+        if (bids.Count != bidders.Count || !bids.Select(b => b.Seat).ToHashSet().SetEquals(bidders))
         {
-            return "Every seat needs exactly one bid or pass.";
+            return "Every seat still bidding needs exactly one bid or pass.";
         }
 
         return bids.Select(OneBidProblem).FirstOrDefault(p => p is not null);
@@ -150,25 +178,30 @@ public sealed partial class Match
         }
 
         return bid.Tile is not { } tile
-            ? new Report(true, ["Pass: you pay nothing and get one of the tiles nobody wins, at random."])
+            ? new Report(true, ["Pass: you pay nothing and bid again on the next tile. Whoever wins none gets the last one free."])
             : new Report(true,
             [
                 $"Bid {bid.Amount} mana on {Describe(tile)}.",
-                $"If yours is the only highest bid, you pay {bid.Amount} and keep {seats[bid.Seat].Mana - bid.Amount} mana.",
-                "If you're outbid or tied, you pay nothing and get one of the tiles nobody wins, at random.",
+                $"If yours is the highest bid, you pay {bid.Amount} and keep {seats[bid.Seat].Mana - bid.Amount} mana. A tie is drawn at random.",
+                "If you're outbid, you pay nothing and bid again on the next tile. Whoever wins none gets the last one free.",
             ]);
     }
 
     private string? OneBidProblem(Bid bid)
     {
+        if (unveilWinners.Contains(bid.Seat))
+        {
+            return $"Seat {bid.Seat + 1} already has a tile from this Unveil.";
+        }
+
         if (bid.Tile is not { } tile)
         {
             return null;
         }
 
-        if (!onAuction.Contains(tile))
+        if (onAuction.Count == 0 || onAuction[0] != tile)
         {
-            return $"Seat {bid.Seat + 1} bid on {tile}, which isn't up for auction.";
+            return $"Seat {bid.Seat + 1} bid on {tile}, which isn't the tile up for auction now.";
         }
 
         if (bid.Amount < Rules.MinBid || bid.Amount > seats[bid.Seat].Mana)
@@ -181,24 +214,41 @@ public sealed partial class Match
         return null;
     }
 
-    /// <summary>Reveals the next opening Unveil: one tile per seat to auction, then the free ones, all from the dark
-    /// tiles at random.</summary>
+    /// <summary>Reveals the next opening Unveil: one tile per seat, from the dark tiles at random, to go up one at a
+    /// time by name.</summary>
     private void NextOpeningUnveil(IRandomSource random)
     {
         OpeningUnveil++;
         onAuction.Clear();
+        unveilWinners.Clear();
+        onAuction.AddRange(RevealDark(seats.Count, random).OrderBy(h => h.R).ThenBy(h => h.Q));
+    }
+
+    /// <summary>As the rounds begin, the free tiles are revealed: unowned, for anyone to attune (the opening itself is
+    /// only auctions; owner's choice, 24 Oct 2026).</summary>
+    private void RevealFreeTiles(IRandomSource random, ReportLines lines)
+    {
+        var free = RevealDark(Rules.FreeTilesWhenRoundsBegin, random).OrderBy(h => h.R).ThenBy(h => h.Q).ToList();
+        if (free.Count > 0)
+        {
+            lines.Add($"Free to attune: {string.Join("; ", free.Select(Describe))}.");
+        }
+    }
+
+    /// <summary>Turns over this many dark tiles, picked at random (never guarded: only later Unveils have monsters).</summary>
+    private List<Hex> RevealDark(int count, IRandomSource random)
+    {
         var dark = Map.Dark.Select(t => t.Hex).OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
-        for (var i = 0; i < seats.Count + Rules.OpeningFreeTilesPerUnveil; i++)
+        var revealed = new List<Hex>();
+        for (var i = 0; i < count && dark.Count > 0; i++)
         {
             var pick = random.Next(dark.Count);
             Map.Unveil(dark[pick], Rules, random);
-            if (i < seats.Count)
-            {
-                onAuction.Add(dark[pick]);
-            }
-
+            revealed.Add(dark[pick]);
             dark.RemoveAt(pick);
         }
+
+        return revealed;
     }
 
     private string Describe(Hex hex) =>

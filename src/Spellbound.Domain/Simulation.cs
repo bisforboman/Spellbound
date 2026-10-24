@@ -79,7 +79,7 @@ public static partial class Simulation
 
         while (match.Phase == MatchPhase.Opening)
         {
-            var bids = match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random, PlanOf(s.Index))).ToList();
+            var bids = match.Bidders.Select(s => Bot.ChooseBid(match, s, random, PlanOf(s))).ToList();
             report.Bids.AddRange(bids.Where(b => b.Tile is not null).Select(b => b.Amount));
             report.Passes += bids.Count(b => b.Tile is null);
             var lines = Resolved(match.Auction(bids, random));
@@ -203,8 +203,6 @@ public static partial class Simulation
             stats.Wins += match.Winners.Contains(seat) ? 1 : 0;
             stats.GoalPoints += seat.TraitPoints;
             stats.MaxedOut += seat.TraitPoints == match.Rules.TraitGoalCap ? 1 : 0;
-            report.Guesses += seat.Guesses.Count;
-            report.RightGuesses += seat.Guesses.Count(g => match.Seats[g.Key].Trait == g.Value);
         }
     }
 
@@ -247,9 +245,6 @@ public sealed class SimulationReport(int players, int games, int seed, int round
 
     public Dictionary<Trait, TraitStats> Traits { get; } = [];
 
-    /// <summary>Guesses at rivals' traits made, and how many were right.</summary>
-    public int Guesses { get; internal set; }
-    public int RightGuesses { get; internal set; }
 
     public sealed class PlanStats
     {
@@ -354,11 +349,6 @@ public sealed class SimulationReport(int players, int games, int seed, int round
             md.AppendLine(c, $"| {trait} | {t.Seats} | {Share(t.Wins)} | {((double)t.GoalPoints / t.Seats).ToString("0.0", c)} | {Share(t.MaxedOut)} |");
         }
 
-        if (Guesses > 0)
-        {
-            md.AppendLine();
-            md.AppendLine(c, $"Guesses at rivals' traits: {Guesses}, {(100.0 * RightGuesses / Guesses).ToString("0", c)}% right.");
-        }
 
         return md.ToString();
     }

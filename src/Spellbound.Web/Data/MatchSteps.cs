@@ -28,10 +28,10 @@ public static class MatchSteps
             }
 
             return (match.Auction(
-                [.. match.Seats.Select(s =>
-                    committed.TryGetValue(s.Index, out var bid) ? MatchJson.Deserialize<Bid>(bid) with { Seat = s.Index }
-                    : holding.Contains(s.Index) ? new Bid(s.Index, null, 0)
-                    : Bot.ChooseBid(match, s.Index, random))],
+                [.. match.Bidders.Select(s =>
+                    committed.TryGetValue(s, out var bid) ? MatchJson.Deserialize<Bid>(bid) with { Seat = s }
+                    : holding.Contains(s) ? new Bid(s, null, 0)
+                    : Bot.ChooseBid(match, s, random))],
                 random), new HashSet<int>());
         }
 
