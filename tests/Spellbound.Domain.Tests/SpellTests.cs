@@ -151,8 +151,6 @@ public class SpellTests
         Assert.Contains(report.Lines, l => l.Contains("Seat 1 casts Ward", StringComparison.Ordinal));
         Assert.Contains(Spell.Ward, match.Seats[0].SpellsCast);
         Assert.Equal(mana - 3, match.Seats[0].Mana - match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value));
-        Assert.Equal(0, match.FavourOf(Stance.Cast)); // Cast never gets cheaper
-        Assert.DoesNotContain(Stance.Cast, Match.FavouredStances);
     }
 
     [Fact]

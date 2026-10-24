@@ -128,11 +128,11 @@ In turn (owner's choice, 24 Oct 2026; it replaced an auction, tile by tile, that
   - **Summon:** spend mana to summon units (see *Units*).
   - **Build:** spend mana on an upgrade for one of your tiles (see *Upgrades*).
   - **Cast:** spend mana on one spell (see *Spells*).
-- **Unpicked stances get cheaper** (decided 21 Oct 2026; Puerto Rico's doubloons on unpicked roles, the owner's
-  idea, `discussions/shared-stances.md`): an Attune, Summon or Build that nobody chose in a round costs **1 mana
-  less** the next round, 1 more for each round it waits, **at most 3 less**. Attack and Cast never get cheaper (spells
-  cost 3, so a discount of 3 would make them free; owner's choice, 24 Oct 2026). As soon as anyone chooses it, it goes
-  back to full price. The stance picker shows the discount, and the report says when a stance gets cheaper.
+- **Stances cost the same every round.** *(Unpicked stances getting cheaper, Puerto Rico's doubloons, decided
+  21 Oct 2026, was removed on 24 Oct 2026, the owner's choice: an Attune, Summon or Build nobody chose had cost 1 mana
+  less a round, up to 3. Measured on removal, 2,000 bot games with 3 players: unspent mana at the end fell from 28.3 to
+  25.4 a seat (bots spend the same mana on fewer, full-price purchases, so they buy a little more), and the plans'
+  win rates moved by at most 2 points.)*
 - Alongside the stance, players can **move units** freely (see *Units*).
 - A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon, no spell): only the moves happen. A player is never forced to spend.
 - More stances (for example a defensive Hold, or Scry to peek at hidden things) can be added after the first playtest.
@@ -273,7 +273,7 @@ yields, prices or income. Costs are flat and small.
   2026); it was dropped the same day in favour of scoring mana produced at 1 per 10, so income pays, not hoarding.*
 - **Measured as a stance** (24 Oct 2026, 2,000 bot games, 3 players; bots cast when they have a purposeful spell and
   nothing better: the everyday bot in rounds where it would otherwise summon, a Spellweaver or Hexer once land is no
-  longer cheap): unspent mana at the end rises from about **11 to 28** a seat (with `--plans`, 12 to 32), spells
+  longer cheap): unspent mana at the end rises from about **11 to 28** a seat (with `--plans`, 12 to 32; 25 and 30 once the unpicked-stance discount was also removed), spells
   cast fall from about 19 a game to **2** (Blight 1.3, Ward 0.8), and mana spent on spells from 19 to 2 a seat. The
   surplus is back, as in the first stance version. Spellweaver wins **6%** (was 29%) and Hexer **12%** (34%): a
   whole round for a 3-mana spell rarely beats an Attune, a Build or a summon. The plans: Expander 57% (was 50%),

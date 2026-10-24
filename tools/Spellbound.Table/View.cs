@@ -85,9 +85,7 @@ internal static class View
             ? match.Picker == seat
                 ? "Your move: pick one of the tiles to pick, e.g. {\"pick\": \"q,r\"}."
                 : $"Seat {match.Picker + 1} picks now; wait for your turn."
-            : "Your move: this round's orders (see `rules` for the format)."
-              + string.Concat(Match.FavouredStances.Where(s => match.FavourOf(s) > 0)
-                  .Select(s => $" {s} costs {match.FavourOf(s)} mana less this round (nobody chose it lately)."));
+            : "Your move: this round's orders (see `rules` for the format).";
     }
 
     private static string Phase(Match match) => match.Phase switch
@@ -180,9 +178,6 @@ internal static class View
 
         FOG OF WAR: you see rivals' units only on tiles next to your land, and rivals' mana only at the end. Who holds
         each tile, yields, upgrades and scores are seen by all. The report shows only what you could see.
-
-        UNPICKED STANCES GET CHEAPER: attune, summon or build (not cast or attack) that nobody chose in a round costs {{r.FavourPerRound}} mana less
-        the next round, more each round it waits (at most {{r.FavourCap}} less). Choosing it resets it.
 
         TRAITS ARE SECRET until the end. No trait is offered to two players, so a rival never has one you were offered.
 

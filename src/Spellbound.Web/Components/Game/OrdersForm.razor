@@ -12,7 +12,7 @@
         var s = choice;
         <label class="choice">
             <input type="radio" name="stance" checked="@(stance == s.Key)" @onchange="() => ChooseStance(s.Key)" />
-            <span><b>@s.Key</b>: @s.Value@if (Favour(s.Key) is > 0 and var f) {<text> (<span class="text-nowrap">@f <ManaIcon /></span> off)</text>}</span>
+            <span><b>@s.Key</b>: @s.Value</span>
         </label>
         @if (stance == s.Key)
         {
@@ -381,9 +381,6 @@ else
             <p class="pick-prompt mt-2">@(pick == Pick.None ? Prompt() : StanceTargets().Any() ? "Then tap the stance's tile on the map." : NoTarget())</p>
         }
     };
-
-    /// <summary>How much less a stance costs this round because nobody chose it lately.</summary>
-    private int Favour(string choice) => Enum.TryParse<Stance>(choice, out var s) ? Match.FavourOf(s) : 0;
 
     protected override void OnParametersSet()
     {

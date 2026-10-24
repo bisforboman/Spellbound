@@ -91,11 +91,6 @@ public sealed record GameRules
 
     // Reinforcing (docs/game-design.md, Rounds and stances): a small summon alongside an attack.
 
-    /// <summary>How much cheaper Attune, Summon or Build gets for each round nobody chooses it, and the most it can
-    /// get (Puerto Rico's doubloons on unpicked roles).</summary>
-    public int FavourPerRound { get; init; } = 1;
-    public int FavourCap { get; init; } = 3;
-
     /// <summary>The most power an attack's reinforcement can summon.</summary>
     public int ReinforceMaxPower { get; init; } = 3;
 
