@@ -292,7 +292,11 @@ namespace Spellbound.Playtest
                 await Expect(page, "Up now:");
                 await page.FillAsync("#amount", "5"); // more than a bot bids, so it wins and the bots settle the rest
                 await Expect(page, "If yours is the highest bid");
-                await page.ClickAsync("button:has-text('Bid 5 mana')");
+                if (await page.Locator(".match-top .mana-icon, button:has-text('Bid 5') .mana-icon").CountAsync() < 2)
+                {
+                    throw new PlaytestException("The mana icon is missing from the top line or the bid button.");
+                }
+                await page.ClickAsync("button:has-text('Bid 5')");
                 // The auction plays back one line at a time: each tile's bids, then who got it.
                 await page.Locator("#playback").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 await Expect(page, "Bids on the");
