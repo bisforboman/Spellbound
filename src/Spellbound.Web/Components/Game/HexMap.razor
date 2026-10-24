@@ -15,7 +15,7 @@
     {
         var hex = tile.Hex;
         var (x, y) = Center(hex);
-        var owner = Match.OwnerOf(hex);
+        var owner = Unowned?.Contains(hex) == true ? null : Match.OwnerOf(hex);
         var units = You is { } viewer ? Match.UnitsSeenBy(viewer, hex) : Match.UnitsOn(hex); // null: hidden by the fog
         var classes = "hex" + (tile.IsUnveiled ? "" : " dark") + (Highlight?.Contains(hex) == true ? " marked" : "")
                       + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "");
@@ -114,6 +114,10 @@
 
     [Parameter]
     public EventCallback<Hex> OnSelect { get; set; }
+
+    /// <summary>Tiles to draw as unowned for now (an auction playing back hasn't handed them out yet).</summary>
+    [Parameter]
+    public IReadOnlySet<Hex>? Unowned { get; set; }
 
     /// <summary>Whether the hexes show their names; the opening leaves them out (only the tile up now matters).</summary>
     [Parameter]

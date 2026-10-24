@@ -33,6 +33,14 @@ public static partial class TileNames
         });
     }
 
+    /// <summary>The tiles a line names by coordinates, in order.</summary>
+    public static IEnumerable<Hex> Of(string line)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        return Coordinates().Matches(line).Select(m =>
+            new Hex(int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture), int.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture)));
+    }
+
     private static IReadOnlyDictionary<Hex, string> All(GameMap map)
     {
         ArgumentNullException.ThrowIfNull(map);

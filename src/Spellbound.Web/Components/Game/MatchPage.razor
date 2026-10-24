@@ -3,6 +3,8 @@
 @inject MatchPlay Play
 @inject TimeProvider Time
 @inject NavigationManager Nav
+@implements IDisposable
+@inject IConfiguration Config
 
 <PageTitle>Match @Id</PageTitle>
 
@@ -23,7 +25,7 @@ else
     // The start of a match in steps: a welcome, the trait (the map stays dark), then the map and the first auction.
     var drafting = playing && match.Phase == MatchPhase.Opening && me.Offer.Count > 0 && me.Trait is null && !view.Committed.Contains(you);
     // A round that began while the page was open plays a short animation: a banner and what each tile paid.
-    var fresh = newRound == match.CurrentRound && match.Phase == MatchPhase.Rounds;
+    var fresh = newRound == match.CurrentRound && match.Phase == MatchPhase.Rounds && replay is null; // after any auction playback
     // Tiles go by name from the rounds on; in the opening the map marks the tile up now, and names are only clutter.
     var named = match.Phase != MatchPhase.Opening;
     <div class="match-page">
@@ -52,7 +54,8 @@ else
     @if (!drafting)
     {
         <section id="map">
-        <HexMap Match="match" You="you" Owners="view.Owners" Selected="selected" Highlight="auction" OnSelect="Select" ShowNames="named"
+        <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is null ? auction : null)" OnSelect="Select" ShowNames="named"
+                Unowned="@ReplayPending"
                 Gains="@(fresh ? match.Seats.SelectMany(s => s.Tiles).ToDictionary(h => h, match.IncomeOf) : null)" />
 
         @if (selected is { } tile)
@@ -62,6 +65,22 @@ else
         </section>
     }
 
+    @if (replay is { } beats)
+    {
+        // The auction plays back one line at a time, so the player sees each tile's bids, then who got it.
+        <section id="playback">
+        <h2 class="h4">The auction</h2>
+        <div class="match-report playback">
+            @for (var b = 0; b < replayBeat && b < beats.Count; b++)
+            {
+                <p class="@(b == replayBeat - 1 ? "beat-now" : "")" @key="b">@Seats.Phrase(TileNames.In(match.Map, beats[b], named), view.Owners, you)</p>
+            }
+        </div>
+        <button type="button" class="btn btn-link" @onclick="SkipReplay">Skip</button>
+        </section>
+    }
+    else
+    {
     <section id="orders">
     @if (status is not null)
     {
@@ -196,9 +215,10 @@ else
         <p>After @match.Rules.Rounds rounds, the most points wins; ties go to the most tiles, then the most mana.</p>
     }
     </section>
+    }
 
     @{ var lastReport = view.LastReportFor(you); }
-    @if (lastReport.Count > 0)
+    @if (lastReport.Count > 0 && replay is null)
     {
         <section id="report">
         <h2 class="h4 mt-4">What just happened</h2>
@@ -342,6 +362,12 @@ else
     private bool showStandings;
     private bool scrollToStandings;
     private int? seenRound;
+    private string? seenReport;
+    private IReadOnlyList<string>? replay;
+    private int replayBeat;
+    private CancellationTokenSource? replayStop;
+    /// <summary>The pause between the playback's lines: Match:ReplayDelayMs in configuration, 1.5 s by default.</summary>
+    private TimeSpan ReplayDelay => TimeSpan.FromMilliseconds(Config.GetValue("Match:ReplayDelayMs", 1500));
     private int? newRound;
 
     protected override async Task OnParametersSetAsync()
@@ -354,6 +380,13 @@ else
     private async Task LoadAsync()
     {
         view = await Play.ViewAsync(Id, ownerId);
+        var report = string.Join('\n', view?.LastReport ?? []);
+        if (seenReport is not null && report != seenReport && view is not null)
+        {
+            StartReplay(view.LastReportFor(you));
+        }
+
+        seenReport = report;
         if (seenRound is { } seen && view?.Match.CurrentRound > seen)
         {
             newRound = view.Match.CurrentRound; // it began while the page was open
@@ -378,6 +411,75 @@ else
     }
 
     private void Select(Hex hex) => selected = hex;
+
+    /// <summary>
+    /// Plays an auction's report back a line at a time, <see cref="ReplayDelay"/> apart: each tile's bids, then who got
+    /// it, with the tile marked and its owner's ring only appearing then. Only the auction's lines play; whatever
+    /// follows (the rounds beginning) shows once it is done. Skip ends it at once.
+    /// </summary>
+    private void StartReplay(IReadOnlyList<string> report)
+    {
+        var beats = report.TakeWhile(IsAuctionLine).ToList();
+        if (beats.Count == 0)
+        {
+            return;
+        }
+
+        replayStop?.Cancel();
+        replayStop = new CancellationTokenSource();
+        replay = beats;
+        replayBeat = 1;
+        _ = ReplayAsync(replayStop.Token);
+    }
+
+    private static bool IsAuctionLine(string line) =>
+        line.StartsWith("Bids on ", StringComparison.Ordinal) || line.StartsWith("A tie for ", StringComparison.Ordinal)
+        || line.StartsWith("Nobody bids on ", StringComparison.Ordinal) || System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (wins|gets) ");
+
+    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^(Seat \d+ (wins|gets) |Nobody bids on )");
+
+    private async Task ReplayAsync(CancellationToken stop)
+    {
+        try
+        {
+            while (replay is { } beats && replayBeat < beats.Count)
+            {
+                await Task.Delay(ReplayDelay, stop);
+                await InvokeAsync(() =>
+                {
+                    replayBeat++;
+                    StateHasChanged();
+                });
+            }
+
+            await Task.Delay(ReplayDelay, stop);
+            await InvokeAsync(() =>
+            {
+                replay = null;
+                StateHasChanged();
+            });
+        }
+        catch (TaskCanceledException)
+        {
+            // skipped, or the page closed
+        }
+    }
+
+    private void SkipReplay()
+    {
+        replayStop?.Cancel();
+        replay = null;
+    }
+
+    /// <summary>The tile the playback is on, marked on the map.</summary>
+    private Hex? ReplayTile => replay is { } beats && replayBeat > 0 ? TileNames.Of(beats[replayBeat - 1]).Cast<Hex?>().FirstOrDefault() : null;
+
+    /// <summary>The tiles the playback hasn't handed out yet, shown without their new owner until it does.</summary>
+    private IReadOnlySet<Hex>? ReplayPending => replay is { } beats
+        ? beats.Skip(replayBeat).Where(Hands).SelectMany(l => TileNames.Of(l).Take(1)).ToHashSet()
+        : null;
+
+    public void Dispose() => replayStop?.Cancel();
 
     /// <summary>The bottom tab: opens the standings, then (once they are on the page) scrolls to them.</summary>
     private void OpenStandings()

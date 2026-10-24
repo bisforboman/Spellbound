@@ -98,6 +98,7 @@ Tile by tile (owner's choice, 24 Oct 2026; it replaced one sealed bid per player
 - Each opening Unveil reveals **as many tiles as there are players**. They go up **one at a time, in name order** (A1 before B2).
 - For the tile up now, every player **still bidding** secretly bids **mana** on it, or passes.
 - The **highest bid wins** the tile and pays. **Losing bidders don't pay.** A **tie** at the top is drawn at random among the tied; only the winner pays.
+- Once a tile is settled, **every bid on it is revealed** (owner's choice, 24 Oct 2026), so players learn how rivals value land.
 - The winner **sits out** the rest of the Unveil. If **nobody bids**, the tile goes free to a player still bidding, drawn at random.
 - The **last tile** goes **free** to the one player who won none. So everyone ends each Unveil with exactly one new tile.
 - The smallest bid is **1 mana**; to spend nothing, pass. So bidding always costs something if you win, and passing keeps its meaning.

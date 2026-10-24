@@ -90,6 +90,8 @@ static Process StartApp(Options options)
         ["RateLimits__AccountPosts"] = "1000",
         ["RateLimits__ConnectionRequestsPerMinute"] = "10000",
         ["RateLimits__RequestsPerMinute"] = "10000",
+        // The auction plays back quickly here, so steps don't wait on it.
+        ["Match__ReplayDelayMs"] = "300",
         ["Logging__LogLevel__Default"] = "Information",
     };
     foreach (var (key, value) in environment)
@@ -291,6 +293,10 @@ namespace Spellbound.Playtest
                 await page.FillAsync("#amount", "5"); // more than a bot bids, so it wins and the bots settle the rest
                 await Expect(page, "If yours is the highest bid");
                 await page.ClickAsync("button:has-text('Bid 5 mana')");
+                // The auction plays back one line at a time: each tile's bids, then who got it.
+                await page.Locator("#playback").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
+                await Expect(page, "Bids on the");
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "auction-playback-screen.png"), FullPage = true });
                 await Expect(page, "Opening auction 2 of 3");
                 await Expect(page, "What just happened");
             });
