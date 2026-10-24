@@ -24,6 +24,7 @@ else
     {
         <h2 class="h4">Your trait: @trait</h2>
         <p>@Capitalised(match.GoalText(trait).TrimEnd('.')). Rivals learn it only when the match ends, and you learn theirs.</p>
+        <p>Your @(match.SpellsOf(me.Index).Count == 1 ? "spell" : "spells"): @string.Join(", ", match.SpellsOf(me.Index)).</p>
     }
 
     <h2 class="h4">Tiles</h2>
@@ -55,10 +56,20 @@ else
             @match.Rules.GolemPower, @match.Rules.GolemCost mana, upkeep @match.Rules.GolemUpkeep) on one of your tiles.</li>
         <li><b>Attack</b>: send units at a rival's or a monster's tile next to them.</li>
         <li><b>Build</b>: an upgrade on one of your tiles.</li>
+        <li><b>Cast</b>: your trait's spell (below).</li>
         <li><b>Hold</b>: do nothing.</li>
     </ul>
-    <p>Units can also step between your neighbouring tiles first, and one spell a round goes alongside the stance. A
-        stance nobody chose gets cheaper the next round.</p>
+    <p>Units can also step between your neighbouring tiles first.</p>
+
+    <h2 class="h4">Spells</h2>
+    <p>Each trait gives its player a spell (a Spellweaver gets them all), so a spell hints at a rival's trait. Ward,
+        Blight and Lure can go on several tiles in one Cast, each paid for.</p>
+    <ul class="help-list">
+        @foreach (var s in GameRules.AllSpells)
+        {
+            <li><b>@s</b> (@match.SpellCostText(s)): @match.SpellEffect(s).</li>
+        }
+    </ul>
 
     <h2 class="h4">Scoring</h2>
     <p>Every round you bank points for your land and your mana income, and for tiles you take. At the end, upgrades and
@@ -68,7 +79,7 @@ else
     <ul class="help-list">
         @foreach (var t in Enum.GetValues<Trait>())
         {
-            <li><b>@t</b>: @match.GoalText(t)</li>
+            <li><b>@t</b> (@string.Join(", ", match.Rules.TraitSpells.GetValueOrDefault(t) ?? [])): @match.GoalText(t)</li>
         }
     </ul>
     <p><a href="match/@Id">Back to the match</a></p>

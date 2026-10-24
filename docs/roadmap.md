@@ -40,6 +40,9 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   its playtest step
 - [x] Cast is a stance again (owner's choice, 24 Oct 2026): one spell a Cast round, at the same costs, Rally removed; a Cast row on the orders form replaces the "Spell (optional)" fold; bots and the simulator
   updated (unspent mana at the end rose from 11 to 28 a seat: a fix is proposed to the owner, not built)
+- [x] Each trait gives a spell (owner's choice, 24 Oct 2026): one spell per trait, shared by two (Spellweaver all
+  five); Ward, Blight and Lure go on several tiles in one Cast; Hexer counts rounds of Blight; the form, help page,
+  bots, table tool and playtest follow
 - [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [x] Domain: a round's submission (one stance + moves) and its validation (`Orders`, `Match.Check`)
 - [x] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles

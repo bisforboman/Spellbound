@@ -7,7 +7,7 @@ public class UpgradeTests
 {
     private static Hex Home(Match match, int seat) => match.Seats[seat].Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).First();
 
-    private static Match Rich(int players = 3) => FirstWhere(m => Border(m, 0, 1) is not null, GameRules.Default with { StartingMana = 30 }, players);
+    private static Match Rich(int players = 3) => FirstWhere(m => Border(m, 0, 1) is not null, AnySpell(GameRules.Default with { StartingMana = 30 }), players);
 
     [Fact]
     public void Building_costs_its_price_and_puts_the_upgrade_on_the_tile()

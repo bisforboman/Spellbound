@@ -4,7 +4,10 @@ namespace Spellbound.Domain.Tests;
 
 public class SpellTests
 {
-    private static Match Bordering(GameRules? rules = null) => FirstWhere(m => Border(m, 0, 1) is not null, rules);
+    private static Match Bordering(GameRules? rules = null) => Where(m => Border(m, 0, 1) is not null, rules);
+
+    /// <summary>The first seeded match where the condition holds, with every trait able to cast every spell.</summary>
+    private static Match Where(Func<Match, bool> condition, GameRules? rules = null) => FirstWhere(condition, AnySpell(rules));
 
     [Fact]
     public void Scorch_burns_power_weakest_first_and_charges_for_what_burns()
@@ -41,7 +44,7 @@ public class SpellTests
     [Fact]
     public void Leyline_moves_units_across_a_gap_and_not_units_that_already_stepped()
     {
-        var match = FirstWhere(m => m.Seats[0].Tiles.Any(a => m.Seats[0].Tiles.Any(b => a != b && !a.IsNextTo(b))));
+        var match = Where(m => m.Seats[0].Tiles.Any(a => m.Seats[0].Tiles.Any(b => a != b && !a.IsNextTo(b))));
         var tiles = match.Seats[0].Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
         var (from, to) = tiles.SelectMany(a => tiles.Where(b => a != b && !a.IsNextTo(b)).Select(b => (a, b))).First();
         Play(match, Orders.Summon(0, from, UnitKind.Imp, 3));
@@ -62,7 +65,7 @@ public class SpellTests
     [Fact]
     public void Blight_leaves_a_rivals_tile_out_of_their_next_income()
     {
-        var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Map[b.Theirs].Type == TileType.Steady);
+        var match = Where(m => Border(m, 0, 1) is { } b && m.Map[b.Theirs].Type == TileType.Steady);
         var (_, theirs) = Border(match, 0, 1)!.Value;
         var before = match.Seats[1].Mana;
 
@@ -82,7 +85,7 @@ public class SpellTests
     [Fact]
     public void A_tile_cant_be_blighted_two_rounds_running_even_after_a_save()
     {
-        var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Map[b.Theirs].Yield > 0);
+        var match = Where(m => Border(m, 0, 1) is { } b && m.Map[b.Theirs].Yield > 0);
         var (_, theirs) = Border(match, 0, 1)!.Value;
         Play(match, Orders.Cast(0, Spell.Blight, theirs));
         match = Match.Load(match.Save(), match.Rules);
@@ -107,7 +110,7 @@ public class SpellTests
         var rules = GameRules.Default with { GuardedFaces = 6 };
         Hex? Guarded(Match m) => m.Map.Tiles.Where(t => t.IsGuarded && m.Seats[0].Tiles.Any(t.Hex.IsNextTo))
             .Select(t => t.Hex).OrderBy(h => h.Q).ThenBy(h => h.R).Cast<Hex?>().FirstOrDefault();
-        var match = FirstWhere(m => { Play(m); return Guarded(m) is not null; }, rules);
+        var match = Where(m => { Play(m); return Guarded(m) is not null; }, rules);
         Play(match);
         var monster = Guarded(match)!.Value;
 
@@ -122,7 +125,7 @@ public class SpellTests
     [Fact]
     public void An_attack_goes_with_the_units_a_rivals_Scorch_left()
     {
-        var match = FirstWhere(m => m.Seats[0].Tiles.Any(a => m.Seats[1].Tiles.Any(a.IsNextTo) && m.Seats[2].Tiles.Any(a.IsNextTo)));
+        var match = Where(m => m.Seats[0].Tiles.Any(a => m.Seats[1].Tiles.Any(a.IsNextTo) && m.Seats[2].Tiles.Any(a.IsNextTo)));
         var from = match.Seats[0].Tiles.First(a => match.Seats[1].Tiles.Any(a.IsNextTo) && match.Seats[2].Tiles.Any(a.IsNextTo));
         var target = match.Seats[1].Tiles.First(from.IsNextTo);
         Play(match, Orders.Summon(0, from, UnitKind.Imp, 4));
@@ -154,6 +157,83 @@ public class SpellTests
     }
 
     [Fact]
+    public void A_seat_casts_only_its_traits_spell()
+    {
+        // Default rules: a Hearthkeeper's spell is Ward, and nothing else.
+        var match = FirstWhere(m => m.Seats[0].Trait == Trait.Hearthkeeper && Border(m, 0, 1) is not null);
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        var before = Snapshot(match);
+
+        var blight = match.Resolve([Orders.Cast(0, Spell.Blight, theirs), Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+
+        Assert.Equal([Spell.Ward], match.SpellsOf(0));
+        Assert.False(blight.Succeeded);
+        Assert.Contains("Blight isn't one of your spells; yours: Ward", Assert.Single(blight.Lines), StringComparison.Ordinal);
+        Assert.Equal(before, Snapshot(match));
+        Assert.True(match.Check(Orders.Cast(0, Spell.Ward, mine)).Succeeded);
+    }
+
+    [Fact]
+    public void A_Ward_goes_on_several_tiles_each_paid_and_counts_as_one_cast()
+    {
+        var match = Bordering();
+        var tiles = match.Seats[0].Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).Take(2).ToList();
+        var mana = match.Seats[0].Mana;
+        var orders = Orders.CastOn(0, Spell.Ward, tiles);
+
+        var check = match.Check(orders);
+        var report = Play(match, orders);
+
+        Assert.Contains(check.Lines, l => l.StartsWith($"All together: Ward on 2 tiles for 6 mana, leaving {mana - 6}", StringComparison.Ordinal));
+        Assert.Equal(6, match.CostOf(orders));
+        Assert.Equal(2, report.Lines.Count(l => l.Contains("Seat 1 casts Ward", StringComparison.Ordinal)));
+        Assert.Equal(1, match.Seats[0].RoundsCast); // one Cast, however many tiles
+        Assert.Equal(mana - 6, match.Seats[0].Mana - match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value));
+    }
+
+    public static TheoryData<string, string> BadMultiCasts => new()
+    {
+        { "scorch on two tiles", "Only Ward, Blight and Lure go on several tiles" },
+        { "the same tile twice", "Each tile takes Ward once" },
+        { "one tile not yours", "Ward needs one of your tiles" },
+        { "too dear together", "Ward on 2 tiles costs 8 mana; you have" },
+    };
+
+    [Theory]
+    [MemberData(nameof(BadMultiCasts))]
+    public void A_spell_on_several_tiles_that_doesnt_check_changes_nothing(string problem, string reason)
+    {
+        // "too dear together": one Ward fits seat 0's mana after the first round, two don't.
+        static void Setup(Match m) => Play(m, Orders.Summon(1, Border(m, 0, 1)!.Value.Theirs, UnitKind.Imp, 2));
+        var match = problem == "too dear together"
+            ? Where(m => Border(m, 0, 1) is not null && Mana(m) is >= 4 and < 8, GameRules.Default with { WardCost = 4, StartingMana = 2 })
+            : Bordering();
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        var other = match.Seats[0].Tiles.First(h => h != mine);
+        Setup(match);
+        var orders = problem switch
+        {
+            "scorch on two tiles" => Orders.Cast(0, Spell.Scorch, theirs, 1) with { MoreTiles = [mine] },
+            "the same tile twice" => Orders.CastOn(0, Spell.Ward, [mine, mine]),
+            "one tile not yours" => Orders.CastOn(0, Spell.Ward, [mine, theirs]),
+            _ => Orders.CastOn(0, Spell.Ward, [mine, other]),
+        };
+        var before = Snapshot(match);
+
+        var report = match.Resolve([orders, Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+
+        Assert.False(report.Succeeded);
+        Assert.Contains(reason, Assert.Single(report.Lines), StringComparison.Ordinal);
+        Assert.Equal(before, Snapshot(match));
+
+        static int Mana(Match m)
+        {
+            Setup(m);
+            return m.Seats[0].Mana;
+        }
+    }
+
+    [Fact]
     public void A_Cast_with_no_spell_to_afford_changes_nothing()
     {
         var match = Bordering(GameRules.Default with { BlightCost = 1000 });
@@ -170,7 +250,7 @@ public class SpellTests
     [Fact]
     public void Scorch_charges_nothing_for_units_that_moved_away_first()
     {
-        var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Seats[1].Tiles.Any(t => t != b.Theirs && t.IsNextTo(b.Theirs)));
+        var match = Where(m => Border(m, 0, 1) is { } b && m.Seats[1].Tiles.Any(t => t != b.Theirs && t.IsNextTo(b.Theirs)));
         var (_, theirs) = Border(match, 0, 1)!.Value;
         var away = match.Seats[1].Tiles.First(t => t != theirs && t.IsNextTo(theirs));
         Play(match, Orders.Summon(1, theirs, UnitKind.Imp, 3));
@@ -187,7 +267,7 @@ public class SpellTests
     [Fact]
     public void A_Scorch_that_would_burn_nothing_is_refused_and_one_that_burns_nothing_doesnt_count_for_traits()
     {
-        var match = FirstWhere(m => Border(m, 0, 1) is { } b && m.Seats[1].Tiles.Any(t => t != b.Theirs && t.IsNextTo(b.Theirs)));
+        var match = Where(m => Border(m, 0, 1) is { } b && m.Seats[1].Tiles.Any(t => t != b.Theirs && t.IsNextTo(b.Theirs)));
         var (_, theirs) = Border(match, 0, 1)!.Value;
         var away = match.Seats[1].Tiles.First(t => t != theirs && t.IsNextTo(theirs));
         Play(match, Orders.Summon(1, theirs, UnitKind.Golem, 1));

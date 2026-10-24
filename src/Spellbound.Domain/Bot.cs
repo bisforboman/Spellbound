@@ -139,26 +139,37 @@ public static class Bot
     /// <summary>The mana a bot keeps after an attack before it also brings reinforcements.</summary>
     private const int SpareMana = 6;
 
-    /// <summary>Casts with a purpose, as the plan orders them: a Warlord scorches and lures first (its next attack), an
-    /// Economist only wards and blights (income, its own and its rivals'), and a Spellcaster or a Spellweaver tries a
-    /// spell it hasn't cast yet first.</summary>
+    /// <summary>Casts with a purpose, among the seat's own spells, as the plan orders them: a Warlord scorches and lures
+    /// first (its next attack), an Economist wards and blights first (income, its own and its rivals'), and a
+    /// Spellcaster or a Spellweaver tries a spell it hasn't cast yet first. A Ward, Blight or Lure goes on every tile
+    /// with a purpose at once, else on the first.</summary>
     private static IEnumerable<Orders> Casts(Match match, int seat, Plan plan)
     {
         var me = match.Seats[seat];
-        var casts = Spells(match, seat);
-        casts = plan switch
+        var mine = match.SpellsOf(seat);
+        var casts = Spells(match, seat).Where(c => mine.Contains(c.Spell)).ToList();
+        IEnumerable<Orders> ordered = plan switch
         {
             Plan.Warlord => casts.OrderBy(c => c.Spell is not (Spell.Scorch or Spell.Lure)),
-            Plan.Economist => casts.Where(c => c.Spell is Spell.Ward or Spell.Blight),
+            Plan.Economist => casts.OrderBy(c => c.Spell is not (Spell.Ward or Spell.Blight)),
             Plan.Spellcaster => casts.OrderBy(c => me.SpellsCast.Contains(c.Spell)),
             _ => casts,
         };
         if (me.Trait == Trait.Spellweaver)
         {
-            casts = casts.OrderBy(c => me.SpellsCast.Contains(c.Spell));
+            ordered = ordered.OrderBy(c => me.SpellsCast.Contains(c.Spell));
         }
 
-        return casts;
+        foreach (var cast in ordered)
+        {
+            var more = casts.Where(c => c.Spell == cast.Spell && c.Target != cast.Target).Select(c => c.Target!.Value).Distinct().ToList();
+            if (Match.GoesOnSeveralTiles(cast.Spell) && more.Count > 0)
+            {
+                yield return cast with { MoreTiles = more };
+            }
+
+            yield return cast;
+        }
     }
 
     /// <summary>Spells with a purpose, most urgent first: Ward a threatened tile; Lure or Scorch a target its units

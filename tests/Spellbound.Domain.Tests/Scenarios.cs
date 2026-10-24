@@ -19,6 +19,12 @@ internal static class Scenarios
     public static Match FirstWhere(Func<Match, bool> condition, GameRules? rules = null, int players = 3) =>
         Opened(Enumerable.Range(1, 2000).First(seed => condition(Opened(seed, rules, players))), rules, players);
 
+    /// <summary>Rules where every trait can cast every spell, for tests of how a spell works rather than who may cast it.</summary>
+    public static GameRules AnySpell(GameRules? rules = null) => (rules ?? GameRules.Default) with
+    {
+        TraitSpells = Enum.GetValues<Trait>().ToDictionary(t => t, IReadOnlyList<Spell> (_) => GameRules.AllSpells),
+    };
+
     /// <summary>Plays a round: these orders, and every other seat holds.</summary>
     public static Report Play(Match match, params Orders[] orders)
     {

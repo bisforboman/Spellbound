@@ -57,7 +57,7 @@ public sealed class Seat
     /// <summary>Rounds in which a spell was cast (and, for Scorch, burned something).</summary>
     public int RoundsCast { get; internal set; }
 
-    /// <summary>Scorches and Blights cast.</summary>
+    /// <summary>Casts of Scorch (that burned something) and of Blight, once a Cast however many tiles it goes on.</summary>
     public int HexesCast { get; internal set; }
 
     private readonly HashSet<Spell> spellsCast = [];

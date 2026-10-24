@@ -13,6 +13,14 @@ surplus this page's first build ran into, and it came back: in 2,000 bot games (
 went from about 11 to 28 a seat, spells cast from 19 a game to 2, and Spellweaver's win rate from 29% to 6% (Hexer
 34% to 12%). Fixes are proposed to the owner, not built: see the PR that made the change.
 
+**24 Oct 2026: each trait gives a spell.** The owner's idea: instead of everyone choosing from five spells, each
+trait gives its player one, shared with another trait so no new spells are needed (Hearthkeeper and Warden Ward,
+Wanderer and Weaver Leyline, Beastbane and Golemwright Lure, Wildheart and Hexer Blight, Warbrand Scorch; Spellweaver
+all five). It makes a trait something to build around, shortens the Cast row to one choice, and gives rivals a tell
+(a Ward means Hearthkeeper or Warden). To give the stance somewhere to put mana, Ward, Blight and Lure can go on
+several tiles in one Cast, each paid for. Measured: unspent mana fell only a little (25 to 24 a seat), and the
+spell traits still win least with bots.
+
 ## The problem they solve
 
 Mana piles up. Bots finish a match with 50–60 mana unspent and sit on 25–30 by round 4; the simulator never sees a

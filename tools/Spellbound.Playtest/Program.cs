@@ -512,22 +512,49 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Commit:')");
                 await Expect(page, "Round 4 of 8");
             });
-            // A Ward on one of Merlin's tiles, the Cast stance: every seat has a tile, and Ward is among the cheapest spells.
+            // The Cast stance: Merlin's trait decides his spells (one, or all five for a Spellweaver). He takes the first,
+            // taps its tile, and for a Ward, Blight or Lure adds a second tile when there is one.
             await StepAsync(merlin, "spell-pick", async page =>
             {
                 await page.ClickAsync("label:has-text('Cast:')");
-                await Expect(page, "Choose a spell");
-                await page.ClickAsync("label:has-text('Ward (')");
-                await Expect(page, "Tap the tile for Ward");
-                await page.Locator(".hex-map .hex.marked").First.ClickAsync();
-                await Expect(page, "On ");
-                await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
+                await Expect(page, "Your trait decides your spells");
+                var spells = page.Locator(".stance-options input[name='spell']");
+                if (await spells.CountAsync() > 1)
+                {
+                    await Expect(page, "Choose a spell");
+                    await spells.First.CheckAsync();
+                }
+
+                var tiles = page.Locator(".hex-map .hex.marked");
+                if (await tiles.CountAsync() > 0)
+                {
+                    await tiles.First.ClickAsync();
+                    await Expect(page, "On ");
+                    await page.Locator("text=/Cast \\w+ for|Then choose where the units arrive|costs/").First.WaitForAsync(); // settled
+                    if (await page.Locator("button:has-text('Add another tile')").CountAsync() > 0)
+                    {
+                        await page.ClickAsync("button:has-text('Add another tile')");
+                        await Expect(page, "Tap another tile for");
+                        await page.Locator(".hex-map .hex.marked:not(.selected)").First.ClickAsync();
+                        await Expect(page, "Also on");
+                    }
+
+                    if (await page.Locator("button:has-text('Choose where they arrive')").CountAsync() > 0)
+                    {
+                        await page.ClickAsync("button:has-text('Choose where they arrive')"); // a Leyline's second tile
+                        await Expect(page, "Tap another tile of yours for the units to arrive at");
+                        await page.Locator(".hex-map .hex.marked").First.ClickAsync();
+                        await Expect(page, "They arrive at");
+                    }
+
+                    await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
+                }
             });
             await StepAsync(merlin, "spell-commit", async page =>
             {
-                if (await page.Locator("button:has-text('Commit: Cast Ward'):not([disabled])").CountAsync() == 0)
+                if (await page.Locator("button:has-text('Commit: Cast '):not([disabled])").CountAsync() == 0)
                 {
-                    await page.ClickAsync("label:has-text('Hold:')"); // too little mana this run
+                    await page.ClickAsync("label:has-text('Hold:')"); // no tile for his spell, or too little mana this run
                 }
 
                 await page.ClickAsync("button:has-text('Commit:')");

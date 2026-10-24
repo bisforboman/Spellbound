@@ -79,6 +79,33 @@ public sealed record GameRules
     public int BlightCost { get; init; } = 3;
     public int LureCost { get; init; } = 3;
 
+    /// <summary>The spells each trait lets its player cast (owner's choice, 24 Oct 2026): one each, shared by two
+    /// traits, and the whole book for a Spellweaver. A seat without a trait can cast any spell. Kept in trait order, so
+    /// the rules save the same however they were read (the database's jsonb reorders keys).</summary>
+    public IReadOnlyDictionary<Trait, IReadOnlyList<Spell>> TraitSpells
+    {
+        get => traitSpells;
+        init => traitSpells = new SortedDictionary<Trait, IReadOnlyList<Spell>>(
+            (value ?? throw new ArgumentNullException(nameof(value))).ToDictionary(p => p.Key, p => p.Value));
+    }
+
+    private readonly SortedDictionary<Trait, IReadOnlyList<Spell>> traitSpells = new()
+    {
+        [Trait.Hearthkeeper] = [Spell.Ward],
+        [Trait.Warden] = [Spell.Ward],
+        [Trait.Wanderer] = [Spell.Leyline],
+        [Trait.Weaver] = [Spell.Leyline],
+        [Trait.Beastbane] = [Spell.Lure],
+        [Trait.Golemwright] = [Spell.Lure],
+        [Trait.Wildheart] = [Spell.Blight],
+        [Trait.Hexer] = [Spell.Blight],
+        [Trait.Warbrand] = [Spell.Scorch],
+        [Trait.Spellweaver] = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure],
+    };
+
+    /// <summary>Every spell a seat can cast with no trait in the way (Rally, removed, isn't one).</summary>
+    public static IReadOnlyList<Spell> AllSpells { get; } = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure];
+
     /// <summary>How much a Lure weakens a monster guard, for good; a guard never drops below <see cref="MinGuard"/>.</summary>
     public int LurePower { get; init; } = 1;
     public int MinGuard { get; init; } = 1;
@@ -152,7 +179,7 @@ public sealed record GameRules
     /// <summary>Golemwright: one point per this many Golems at the end.</summary>
     public int GolemsPerTraitPoint { get; init; } = 3;
 
-    /// <summary>Hexer: one point per this many Scorches and Blights cast.</summary>
+    /// <summary>Hexer: one point per this many rounds it casts Blight (or Scorch, if its spells include it).</summary>
     public int HexesPerTraitPoint { get; init; } = 1;
 
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.

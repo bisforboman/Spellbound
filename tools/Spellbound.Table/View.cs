@@ -163,7 +163,8 @@ internal static class View
         loser is wiped out. Scorch burns the same way. A tie wipes out both and the tile stays (against monsters a tie takes it).
         A player's last tile can't be taken. Several attackers on one tile fight the defender together, then each other.
 
-        SPELLS (the cast stance, one a round):
+        SPELLS (the cast stance, one a round). Your trait decides your spell: {{string.Join("; ", r.TraitSpells.Select(t => $"{t.Key} {string.Join("/", t.Value)}"))}}.
+        Ward, Blight and Lure can go on several tiles in one cast ("also"), each paid for.
           scorch ({{r.ScorchManaPerPower}} mana per power that burns): burn power on a rival's tile next to yours, weakest
             first; you pay only for what burns.
           ward ({{r.WardCost}} mana): one of your tiles defends with {{r.WardPower}} more power this round.
@@ -189,6 +190,7 @@ internal static class View
           {"stance": "attack", "target": "1,0", "send": [{"from": "0,0", "imps": 3, "golems": 1}]}
           {"stance": "build", "target": "0,1", "upgrade": "tower"}
           {"stance": "cast", "spell": "scorch", "target": "1,0", "count": 2}
+          {"stance": "cast", "spell": "ward", "target": "0,0", "also": ["0,1"]}
           {"stance": "cast", "spell": "leyline", "target": "0,0", "to": "2,-1", "imps": 2, "golems": 0}
           {"stance": "hold"}
         Any stance can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
