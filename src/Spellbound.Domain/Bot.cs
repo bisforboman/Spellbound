@@ -24,7 +24,7 @@ public enum Plan
 }
 
 /// <summary>
-/// A simple computer player (docs/roadmap.md, M1): a bid rule for the opening and an orders rule for the rounds. It
+/// A simple computer player (docs/roadmap.md, M1): a pick rule for the opening and an orders rule for the rounds. It
 /// only ever gives orders that <see cref="Match.Check"/> accepts: it tries a few candidates in order and keeps the
 /// first that checks, else it holds. Any variety comes from the injected random source, so games replay exactly.
 /// </summary>
@@ -39,31 +39,21 @@ public static class Bot
         return offer.Count == 0 ? null : offer[random.Next(offer.Count)];
     }
 
-    /// <summary>Bids on the tile up now if it is one of the best still to come in this Unveil (within 1 of the best):
-    /// about its average yield in mana, give or take one, never more than half its mana; otherwise it waits for a
-    /// better one. A trait about land makes its tiles worth <see cref="TraitLean"/> more. Passes when it can't afford
-    /// the smallest bid, or already has its tile from this Unveil.</summary>
-    public static Bid ChooseBid(Match match, int seat, IRandomSource random, Plan plan = Plan.Balanced)
+    /// <summary>Picks the tile worth most to it: its average yield, and <see cref="TraitLean"/> more for a tile its
+    /// trait wants; a tie is drawn at random. Null when it isn't the seat's turn.</summary>
+    public static Pick? ChoosePick(Match match, int seat, IRandomSource random)
     {
         ArgumentNullException.ThrowIfNull(match);
         ArgumentNullException.ThrowIfNull(random);
-        var mana = match.Seats[seat].Mana;
-
-        if (match.OnAuction.Count == 0 || mana < match.Rules.MinBid || !match.Bidders.Contains(seat))
+        if (match.Picker != seat || match.ToPick.Count == 0)
         {
-            return Bid.Pass(seat);
+            return null;
         }
 
         var me = match.Seats[seat];
         int Value(Hex h) => Worth(match, h) + (Suits(match, me, h) ? TraitLean : 0);
-        var up = match.OnAuction[0];
-        if (Value(up) < match.OnAuction.Max(Value) - 1)
-        {
-            return Bid.Pass(seat);
-        }
-
-        var amount = Math.Clamp(Value(up) + random.Next(3) - 2, match.Rules.MinBid, Math.Max(match.Rules.MinBid, mana / 2));
-        return new Bid(seat, up, amount);
+        var best = match.ToPick.Where(h => Value(h) == match.ToPick.Max(Value)).ToList();
+        return new Pick(seat, best[random.Next(best.Count)]);
     }
 
     /// <summary>In order: attack a weaker rival or monster tile next to its units; attune the best free tile next to
@@ -143,10 +133,10 @@ public static class Bot
     /// <summary>How much more a tile that suits the bot's trait is worth to it, in yield.</summary>
     private const int TraitLean = 2;
 
-    /// <summary>Whether a tile suits the seat's trait, which is what its bids give away (docs/discussions/traits.md,
+    /// <summary>Whether a tile suits the seat's trait, which is what its picks give away (docs/discussions/traits.md,
     /// the opening tells): its type; next to its land or away from it; next to rivals; next to the dark land where
     /// monsters will appear; or a rich yield to pay Golems' upkeep. A Hexer gives nothing away: land next to rivals
-    /// gets it attacked, and it won least when it bid there.</summary>
+    /// gets it attacked, and it won least when it took land there.</summary>
     private static bool Suits(Match match, Seat me, Hex hex) => Suits(match, me, me.Trait, hex);
 
     private static bool Suits(Match match, Seat me, Trait? trait, Hex hex)

@@ -38,9 +38,9 @@ public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match M
     public IEnumerable<int> People => Owners.Select((owner, seat) => (owner, seat))
         .Where(s => s.owner is not null && !Away.Contains(s.seat)).Select(s => s.seat);
 
-    /// <summary>The people the current step waits on: in the opening, those still bidding in this Unveil (whoever has
-    /// won a tile from it sits out the rest), and in the rounds, everyone.</summary>
-    public IEnumerable<int> InStep => People.Where(s => Match.Phase != MatchPhase.Opening || Match.Bidders.Contains(s));
+    /// <summary>The people the current step waits on: in the opening, the one whose turn it is to pick (if a person),
+    /// and in the rounds, everyone.</summary>
+    public IEnumerable<int> InStep => People.Where(s => Match.Phase != MatchPhase.Opening || Match.Picker == s);
 
     /// <summary>The seat this account sits in, or null.</summary>
     public int? SeatOf(string ownerId)
@@ -143,7 +143,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
         var report = action(loaded.Match, StepRandom(loaded.Seed, loaded.Match.Match));
         if (report.Succeeded)
         {
-            // Only a step that resolves (an auction or a round) becomes the match's last report; a trait pick is the
+            // Only a step that resolves (a pick or a round) becomes the match's last report; a trait pick is the
             // picker's alone.
             await db.SaveGameStateAsync(id, MatchJson.Serialize(isStep
                 ? new StoredMatch(loaded.Seed, loaded.Match.Match.Save(), report.Lines, report.Tags)
@@ -160,7 +160,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
     }
 
     /// <summary>
-    /// A person commits their part of the current step (a bid, or a round's orders) and waits for the others. With the
+    /// A person commits their part of the current step (a pick, or a round's orders) and waits for the others. With the
     /// match locked: <paramref name="check"/> says whether the commitment is valid, and if so it is stored on the
     /// person's seat. When every person has committed, the step resolves (<see cref="MatchSteps"/>) and is saved as the
     /// last report. Returns what happened and whether the step resolved; null if there is no such match.
@@ -325,7 +325,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
     /// Resolves the current step in the caller's transaction (the match locked): the people's commitments, holds for
     /// <paramref name="holding"/>, bots for the rest. If it succeeds it is saved as the last report, the commitments
     /// are cleared, misses are counted (a bot takes a seat at <see cref="MissesBeforeBot"/>), and the next step gets its
-    /// deadline. In the opening, the tiles that only bots are still bidding on then go too. Nothing is written if it
+    /// deadline. In the opening, the bots whose turn comes next then pick too. Nothing is written if it
     /// fails. Returns the notifications to send once the caller has committed.
     /// </summary>
     private static async Task<(Report Report, IReadOnlyList<PushMessage> Notices)> ResolveAsync(DbSession db, long id, int seed,
@@ -345,7 +345,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
             return (report, []);
         }
 
-        // An opening tile only bots are still bidding on goes now: no person has anything to commit for it.
+        // In the opening, bots pick at once until it is a person's turn (or the opening is over).
         var after = loaded with { Away = loaded.Away.Union(nowAway).ToHashSet() };
         while (after.Match.Phase == MatchPhase.Opening && !after.InStep.Any())
         {
@@ -426,9 +426,9 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
         return changed > 0;
     }
 
-    /// <summary>Which step of a match a commitment is for: one tile of an opening auction, or a round.</summary>
+    /// <summary>Which step of a match a commitment is for: one pick of an opening draft, or a round.</summary>
     public static string StepKey(Match match) =>
-        match.Phase == MatchPhase.Opening ? $"opening-{match.OpeningUnveil}-{match.AuctionTile}" : $"round-{match.CurrentRound}";
+        match.Phase == MatchPhase.Opening ? $"opening-{match.OpeningUnveil}-{match.PickNumber}" : $"round-{match.CurrentRound}";
 
     /// <summary>The matches a player sits in, newest first.</summary>
     public async Task<IReadOnlyList<PlayerMatch>> ListForAsync(string ownerId)
@@ -455,16 +455,16 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
     {
         (_, MatchPhase.Ended) => $"Over after {match.Rules.Rounds} rounds",
         (false, _) => "Ended early by an admin",
-        (_, MatchPhase.Opening) => $"Opening auction {match.OpeningUnveil} of {match.Rules.OpeningUnveils}, tile {match.AuctionTile} of {match.Seats.Count}",
+        (_, MatchPhase.Opening) => $"Opening draft {match.OpeningUnveil} of {match.Rules.OpeningUnveils}, pick {match.PickNumber} of {match.Seats.Count}",
         _ => $"Round {match.CurrentRound} of {match.Rules.Rounds}",
     };
 
-    /// <summary>The randomness for a match's next step, from its seed and where it is: each opening auction and each
+    /// <summary>The randomness for a match's next step, from its seed and where it is: each opening pick and each
     /// round gets its own, so a step never depends on how often the match was saved before it. Not HashCode, which
     /// changes from one run of the server to the next.</summary>
     public static IRandomSource StepRandom(int seed, Match match) => new SeededRandom(unchecked(match.Phase switch
     {
-        MatchPhase.Opening => seed + (10 * match.OpeningUnveil) + match.AuctionTile,
+        MatchPhase.Opening => seed + (10 * match.OpeningUnveil) + match.PickNumber,
         _ => seed + 100 + match.CurrentRound,
     }));
 

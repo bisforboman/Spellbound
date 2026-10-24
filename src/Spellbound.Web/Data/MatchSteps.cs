@@ -3,12 +3,13 @@ using Spellbound.Domain;
 namespace Spellbound.Web.Data;
 
 /// <summary>
-/// How a step resolves (docs/discussions/playing-with-friends.md): every person's commitment, a hold (a pass, in the
-/// opening) for each person who let the deadline go by, and the bots' choices for the rest, with the step's randomness.
+/// How a step resolves (docs/discussions/playing-with-friends.md): every person's commitment, a hold for each person who
+/// let the deadline go by (in the opening, a bot picks for them), and the bots' choices for the rest, with the step's
+/// randomness.
 /// </summary>
 public static class MatchSteps
 {
-    /// <param name="committed">Each committing seat's bid or orders, as stored (JSON).</param>
+    /// <param name="committed">Each committing seat's pick or orders, as stored (JSON).</param>
     /// <param name="holding">The seats of people who missed the deadline.</param>
     /// <returns>What happened, and the seats whose land was attacked by someone else (for their notification).</returns>
     public static (Report Report, IReadOnlySet<int> Attacked) Resolve(Match match, IReadOnlyDictionary<int, string> committed, IReadOnlySet<int> holding, IRandomSource random)
@@ -18,21 +19,17 @@ public static class MatchSteps
         ArgumentNullException.ThrowIfNull(holding);
         if (match.Phase == MatchPhase.Opening)
         {
-            // A seat with no trait yet gets one now, in secret: the bots', and a person's who let the deadline go by.
-            foreach (var seat in match.Seats.Where(s => s.Trait is null && !committed.ContainsKey(s.Index)))
+            // The picker gets a trait now, in secret, if it has none and didn't commit: a bot, or a person who let the
+            // deadline go by. A seat that never picks before the rounds gets one as the opening ends.
+            var picker = match.Picker!.Value;
+            if (match.Seats[picker].Trait is null && !committed.ContainsKey(picker) && Bot.ChooseTrait(match, picker, random) is { } trait)
             {
-                if (Bot.ChooseTrait(match, seat.Index, random) is { } trait)
-                {
-                    match.ChooseTrait(seat.Index, trait);
-                }
+                match.ChooseTrait(picker, trait);
             }
 
-            return (match.Auction(
-                [.. match.Bidders.Select(s =>
-                    committed.TryGetValue(s, out var bid) ? MatchJson.Deserialize<Bid>(bid) with { Seat = s }
-                    : holding.Contains(s) ? new Bid(s, null, 0)
-                    : Bot.ChooseBid(match, s, random))],
-                random), new HashSet<int>());
+            var pick = committed.TryGetValue(picker, out var mine) ? MatchJson.Deserialize<Pick>(mine) with { Seat = picker }
+                : Bot.ChoosePick(match, picker, random)!;
+            return (match.Draft(pick, random), new HashSet<int>());
         }
 
         List<Orders> all = [.. match.Seats.Select(s =>

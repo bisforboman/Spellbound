@@ -8,7 +8,7 @@ public class AttackTests
         var match = Match.Start(players, rules ?? GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         return match;
@@ -320,7 +320,7 @@ public class AttackTests
         while (match.Phase != MatchPhase.Ended)
         {
             var report = match.Phase == MatchPhase.Opening
-                ? match.Auction([.. match.Bidders.Select(s => Bot.ChooseBid(match, s, random))], random)
+                ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
                 : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random))], random);
             Assert.True(report.Succeeded, string.Join('\n', report.Lines));
             lines.AddRange(report.Lines);

@@ -10,14 +10,13 @@ public sealed record MatchState(
     MatchPhase Phase,
     int OpeningUnveil,
     int CurrentRound,
-    IReadOnlyList<Hex> OnAuction,
+    IReadOnlyList<Hex> OnAuction, // the tiles to draft, named for the auction the draft replaced (saved matches keep the name)
     IReadOnlyList<TileState> Tiles,
     IReadOnlyList<SeatState> Seats,
     IReadOnlyList<UnitsState> Units,
     IReadOnlyList<UpgradeState>? Upgrades = null,
     IReadOnlyList<Hex>? Blighted = null,
-    IReadOnlyList<FavourState>? Favour = null,
-    IReadOnlyList<int>? UnveilWinners = null)
+    IReadOnlyList<FavourState>? Favour = null)
 {
     public const int CurrentVersion = 1;
 }

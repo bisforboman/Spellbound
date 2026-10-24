@@ -9,7 +9,7 @@ internal static class Scenarios
         var match = Match.Start(players, rules ?? GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Bidders.Select(Bid.Pass)], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         return match;

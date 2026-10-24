@@ -56,7 +56,7 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
         Assert.Contains("Round 2 of 8", page, StringComparison.Ordinal);
         Assert.Contains($"You summon 2 Imps at {TileNames.Of(saved.Match.Map, home)}", page, StringComparison.Ordinal); // in your words, by tile name
         Assert.Contains($"href=\"match/{id}/help\"", page, StringComparison.Ordinal); // the trait's goal and the rules
-        Assert.Contains($"href=\"match/{id}#report\"", page, StringComparison.Ordinal); // the jump bar
+        Assert.Contains($"href=\"match/{id}#report\"", page, StringComparison.Ordinal); // the view tabs
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
         var id = await Play.StartAsync(merlinId, 3, GameRules.Default);
         var offer = (await Play.ViewAsync(id, merlinId))!.Match.Seats[0].Offer;
         Assert.True((await Play.TraitAsync(id, merlinId, offer[0])).Succeeded);
-        await Opening.PassAsync(Play, id, merlinId);
+        await Opening.PickAsync(Play, id, merlinId);
 
         Assert.Equal(MatchPhase.Rounds, (await Play.ViewAsync(id, merlinId))!.Match.Phase);
         return id;

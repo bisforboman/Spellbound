@@ -5,14 +5,25 @@
    selected tile shows its name (A1: row, then place in the row; TileNames). Each type has its painted
    image when all three are there (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol; the
    key to the types is on the help page (MatchHelp). The map is the only way to choose a tile: the orders form says
-   what to tap, and the tiles it can use are marked. *@
+   what to tap, and the tiles it can use are marked. The tiles are raised, like pieces on a board: each stands on a
+   dark copy of itself a little lower (its thickness), and an unveiled tile has a light bevel on its top-left edges and
+   a dark one on its bottom-right, all plain polygons (a CSS drop-shadow filter is too slow on phones). In the
+   candlelit-table look the board sits on a felt tray (app.css). *@
 @inject TileArt Art
 
+<div class="board-tray">
 <svg class="hex-map@(Art.Paths is null ? "" : " painted")" viewBox="@ViewBox" role="group" aria-label="The map">
     @if (Art.Paths is not null)
     {
         <defs><clipPath id="hex-clip"><polygon points="@Points(0, 0)" /></clipPath></defs>
     }
+    <g class="hex-depth" aria-hidden="true">
+        @foreach (var tile in Match.Map.Tiles)
+        {
+            var (x, y) = Center(tile.Hex);
+            <polygon points="@Points(x, y + Depth)" />
+        }
+    </g>
     @foreach (var tile in Match.Map.Tiles.OrderBy(t => t.Hex.R).ThenBy(t => t.Hex.Q))
     {
         var hex = tile.Hex;
@@ -32,6 +43,12 @@
             <polygon class="rim" points="@Points(x, y)" />
             @if (tile.IsUnveiled)
             {
+                var corners = Corners(x, y, inset: 1.2);
+                <polyline class="bevel-light" points="@string.Join(' ', corners[3], corners[4], corners[5], corners[0])" />
+                <polyline class="bevel-dark" points="@string.Join(' ', corners[0], corners[1], corners[2], corners[3])" />
+            }
+            @if (tile.IsUnveiled)
+            {
                 @if (ShowNames && hex == Selected)
                 {
                     @Label(x, y - 18, "hex-name", TileNames.Of(Match.Map, hex))
@@ -44,8 +61,9 @@
                 @if (owner is not null && Match.Phase != MatchPhase.Opening)
                 {
                     // What the tile paid its holder this round: a small hint, the type's range is in the key.
-                    <circle class="hex-seal" cx="@F(x)" cy="@F(y + 1)" r="8" />
-                    @Label(x, y + 1, "hex-income", $"+{Match.IncomeOf(hex)}")
+                    <rect class="hex-seal" x="@F(x - 12)" y="@F(y - 7)" width="24" height="16" rx="8" />
+                    @Label(x - 3, y + 1, "hex-income", $"+{Match.IncomeOf(hex)}")
+                    <g transform="translate(@F(x + 3) @F(y - 3))"><ManaIcon Size="8" /></g>
                 }
                 @if (tile.IsGuarded)
                 {
@@ -64,8 +82,9 @@
                 {
                     <g @key="@($"gain {Round} {hex}")" transform="translate(@F(x) @F(y - 4))">
                         <g class="hex-gain@(gain == 0 ? " none" : "")">
-                            <rect x="-13" y="-10" width="26" height="20" rx="10" />
-                            @Label(0, 1, "", $"+{gain}")
+                            <rect x="-18" y="-10" width="36" height="20" rx="10" />
+                            @Label(-4, 1, "", $"+{gain}")
+                            <g transform="translate(3 -5.5)"><ManaIcon Size="11" /></g>
                         </g>
                     </g>
                 }
@@ -82,14 +101,18 @@
             }
 
             var (x, y) = Center(tile.Hex);
-            var inset = o == You ? 2.25 : 1.5; // half the stroke, so the border sits just inside the edge
+            var inset = o == You ? 1.125 : 0.75; // half the stroke, so the border sits just inside the edge
             <path class="@(o == You ? "zone yours" : "zone")" style="stroke: @Seats.Ink(o)" d="@ZoneEdges(tile.Hex, o, x, y, inset)" />
         }
     </g>
 </svg>
+</div>
 
 @code {
     private const double Size = 30;
+
+    /// <summary>How far below a tile its thickness shows.</summary>
+    private const double Depth = 5;
     private static readonly double Root3 = Math.Sqrt(3);
 
     [Parameter, EditorRequired]
@@ -105,14 +128,14 @@
     [Parameter]
     public Hex? Selected { get; set; }
 
-    /// <summary>Tiles to mark, for example the ones on auction.</summary>
+    /// <summary>Tiles to mark, for example the ones to pick in the draft.</summary>
     [Parameter]
     public IReadOnlySet<Hex>? Highlight { get; set; }
 
     [Parameter]
     public EventCallback<Hex> OnSelect { get; set; }
 
-    /// <summary>Tiles to draw as unowned for now (an auction playing back hasn't handed them out yet).</summary>
+    /// <summary>Tiles to draw as unowned for now (a draft playing back hasn't handed them out yet).</summary>
     [Parameter]
     public IReadOnlySet<Hex>? Unowned { get; set; }
 
@@ -134,15 +157,24 @@
             var centers = Match.Map.Tiles.Select(t => Center(t.Hex)).ToList();
             var (w, h) = (Size * Root3 / 2 + 2, Size + 2);
             var (minX, minY) = (centers.Min(c => c.X) - w, centers.Min(c => c.Y) - h);
-            return $"{F(minX)} {F(minY)} {F(centers.Max(c => c.X) + w - minX)} {F(centers.Max(c => c.Y) + h - minY)}";
+            return $"{F(minX)} {F(minY)} {F(centers.Max(c => c.X) + w - minX)} {F(centers.Max(c => c.Y) + h + Depth - minY)}";
         }
     }
 
     private static (double X, double Y) Center(Hex hex) => (Size * Root3 * (hex.Q + hex.R / 2.0), Size * 1.5 * hex.R);
 
     /// <summary>A hex's corners.</summary>
-    private static string Points(double x, double y) =>
-        string.Join(' ', Enumerable.Range(0, 6).Select(i => Corner(x, y, i, 0)).Select(c => $"{F(c.X)},{F(c.Y)}"));
+    private static string Points(double x, double y) => string.Join(' ', Corners(x, y, 0));
+
+    /// <summary>The corners one by one, clockwise from the upper right (0) through the bottom (2) to the top (5).</summary>
+    private static string[] Corners(double x, double y, double inset) =>
+        Enumerable.Range(0, 6).Select(i => Corner(x, y, i, inset)).Select(c => $"{F(c.X)},{F(c.Y)}").ToArray();
+
+    private static (double X, double Y) Corner(double x, double y, int i, double inset)
+    {
+        var angle = Math.PI / 180 * (60 * i - 30);
+        return (x + (Size - 0.5 - inset) * Math.Cos(angle), y + (Size - 0.5 - inset) * Math.Sin(angle));
+    }
 
     /// <summary>Who holds a tile as drawn: nobody if it is dark or <see cref="Unowned"/> for now.</summary>
     private int? OwnerAt(Hex hex) =>
@@ -169,12 +201,6 @@
 
     /// <summary>The neighbour across each edge: edge i runs from corner i to corner i + 1, facing 60 × i degrees.</summary>
     private static readonly Hex[] EdgeNeighbour = [new(1, 0), new(0, 1), new(-1, 1), new(-1, 0), new(0, -1), new(1, -1)];
-
-    private static (double X, double Y) Corner(double x, double y, int i, double inset)
-    {
-        var angle = Math.PI / 180 * (60 * i - 30);
-        return (x + (Size - 1 - inset) * Math.Cos(angle), y + (Size - 1 - inset) * Math.Sin(angle));
-    }
 
     private static string UnitText(Army army) =>
         string.Join(' ', new[] { army.Imps > 0 ? $"{army.Imps}i" : null, army.Golems > 0 ? $"{army.Golems}g" : null }.OfType<string>());

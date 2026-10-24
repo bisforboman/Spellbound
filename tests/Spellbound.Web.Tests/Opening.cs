@@ -3,29 +3,22 @@ using Spellbound.Web.Data;
 
 namespace Spellbound.Web.Tests;
 
-/// <summary>Getting a match through its opening in tests: the tiles go up one at a time, so how many steps it takes
-/// depends on who wins what.</summary>
+/// <summary>Getting a match through its opening in tests: whoever's turn it is picks the first tile left, until the
+/// rounds begin (the bots pick theirs as they come up).</summary>
 internal static class Opening
 {
-    /// <summary>Every one of these people passes on every tile they are still bidding on, until the rounds begin.</summary>
-    public static async Task PassAsync(MatchPlay play, long id, params string[] owners)
+    public static async Task PickAsync(MatchPlay play, long id, params string[] owners)
     {
         for (var step = 0; step < 100; step++)
         {
-            if ((await play.ViewAsync(id, owners[0]))!.Match.Phase != MatchPhase.Opening)
+            var view = (await play.ViewAsync(id, owners[0]))!;
+            if (view.Match.Phase != MatchPhase.Opening)
             {
                 return;
             }
 
-            foreach (var owner in owners)
-            {
-                var view = (await play.ViewAsync(id, owner))!;
-                if (view.Match.Phase == MatchPhase.Opening && view.SeatOf(owner) is { } seat
-                    && view.InStep.Contains(seat) && !view.Committed.Contains(seat))
-                {
-                    await play.BidAsync(id, owner, null, 0);
-                }
-            }
+            var owner = view.Owners[view.Match.Picker!.Value] ?? throw new InvalidOperationException("A bot's turn waits on nobody.");
+            Assert.True((await play.PickAsync(id, owner, view.Match.ToPick[0])).Succeeded);
         }
 
         throw new InvalidOperationException("The opening didn't end.");

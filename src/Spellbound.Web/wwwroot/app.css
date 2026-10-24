@@ -260,7 +260,7 @@ html, body {
 }
 
 /* A link inside a sentence gets a taller tap area (44 px) without moving the text around it */
-p a:not(.btn), li > a:not(.btn):not(.rank-row) {
+p a:not(.btn), li > a:not(.btn):not(.rank-row):not(.look-option) {
     display: inline-block;
     min-width: 44px;
     padding-block: 12px;
@@ -285,6 +285,12 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row) {
 /* Red text on the dark grey: the lighter shade, so small text stays readable */
 .text-danger {
     color: var(--bs-danger-text-emphasis) !important;
+}
+
+/* Mana's crystal shard (ManaIcon.razor) after a number, in cold blue, in text and on the map */
+.mana-icon {
+    vertical-align: -0.125em;
+    color: var(--tidal-ink);
 }
 
 /* Symbols before labels (Glyph.razor): stone grey, with dull brass for gold */
@@ -396,8 +402,90 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row) {
 body {
     background-color: var(--paper);
     background-image: var(--grain), radial-gradient(ellipse at 50% 30%, transparent 40%, var(--shadow) 120%), var(--soot);
-    background-attachment: fixed;
     font-variant-numeric: lining-nums proportional-nums;
+}
+
+/* The looks (docs/theme.md): the player picks one on the account page (Components/Looks.cs), kept in a cookie per
+   device and set as data-look on <html>. Grimoire is the rule above; each other one swaps the page's background and the
+   tokens of its cards, frames and plates. None is fixed to the viewport: Android repaints it on every scroll, and iOS
+   ignores it. */
+:root[data-look="sigil"], :root[data-look="dust"] {
+    --grain-cool: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.6 0 0 0 0 0.68 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --paper-deep: #17161f;
+    --paper-edge: #37334a;
+    --bs-border-color: #37334a;
+    --plate-top: #22202c;
+    --plate-bot: #13121a;
+    --rivet: #3f3a52;
+}
+
+/* Sigil night: indigo vellum, a faint summoning circle behind the board and a soft glow */
+[data-look="sigil"] body {
+    background-color: #0f0e15;
+    background-image:
+        var(--grain-cool),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -100 200 200' fill='none' stroke='%23d6ccff' stroke-opacity='.13' stroke-width='.6'%3E%3Ccircle r='96'/%3E%3Ccircle r='90' stroke-dasharray='1.5 5' stroke-width='3'/%3E%3Ccircle r='84'/%3E%3Ccircle r='58'/%3E%3Cpath d='M0-84L72.7 42H-72.7Z M0 84L-72.7-42H72.7Z'/%3E%3Cpath d='M0-58L50.2-29V29L0 58L-50.2 29V-29Z'/%3E%3Ccircle r='20'/%3E%3C/svg%3E"),
+        radial-gradient(ellipse 90% 45% at 50% 38%, rgba(98, 88, 150, 0.26), transparent 70%),
+        radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(0, 0, 0, 0.65) 110%);
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+    background-position: 0 0, 50% 150px, 0 0, 0 0;
+    background-size: auto, 400px 400px, auto, auto;
+}
+
+/* Candlelit table: a warm pool of light on dark wood, and the map on a brass-rimmed felt tray */
+[data-look="table"] body {
+    background-color: #0b0907;
+    background-image:
+        radial-gradient(ellipse 110% 55% at 50% 22%, rgba(255, 186, 110, 0.13), transparent 68%),
+        repeating-linear-gradient(91deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 6px, rgba(255, 225, 180, 0.025) 6px 8px, transparent 8px 19px),
+        linear-gradient(#1f1711, #0c0a08);
+}
+
+    [data-look="table"] .board-tray {
+        max-width: calc(30rem + 12px);
+        margin: 0.25rem max(-4px, (100% - 30rem - 12px) / 2) 0.75rem;
+        padding: 10px 6px;
+        border-radius: 16px;
+        background: radial-gradient(ellipse at 50% 40%, #1c1922, #0e0d12 80%);
+        border: 2px solid #4a3c2c;
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.8), 0 10px 18px rgba(0, 0, 0, 0.7), inset 0 0 0 5px #120f0c, inset 0 0 0 6px rgba(196, 154, 62, 0.35);
+    }
+
+    [data-look="table"] .board-tray .hex-map {
+        margin: 0 auto;
+    }
+
+/* Arcane dust: star and ember motes over a faint nebula */
+[data-look="dust"] body {
+    background-color: #0a0a10;
+    background-image:
+        radial-gradient(circle at 23% 37%, rgba(235, 230, 255, 0.6) 0 0.7px, transparent 1.3px),
+        radial-gradient(circle at 71% 63%, rgba(190, 225, 235, 0.45) 0 0.6px, transparent 1.2px),
+        radial-gradient(circle at 45% 12%, rgba(255, 225, 190, 0.4) 0 1px, transparent 1.7px),
+        radial-gradient(ellipse 75% 35% at 15% 22%, rgba(55, 80, 105, 0.32), transparent 70%),
+        radial-gradient(ellipse 65% 40% at 90% 68%, rgba(75, 60, 95, 0.28), transparent 70%),
+        radial-gradient(ellipse at 50% 40%, transparent 50%, rgba(0, 0, 0, 0.6) 110%);
+    background-size: 97px 89px, 151px 137px, 211px 233px, auto, auto, auto;
+}
+
+/* Painted rune-slate: one painted backdrop (wwwroot/backdrops, 34 KB), fetched only by this look. It covers the first
+   screen at its own size (720 x 1260 px) and fades into the stone colour below, rather than stretching over a long page. */
+:root[data-look="slate"] {
+    --paper-deep: #15181d;
+    --paper-edge: #313840;
+    --bs-border-color: #313840;
+    --plate-top: #20252b;
+    --plate-bot: #111418;
+}
+
+[data-look="slate"] body {
+    background-color: #0b0d10;
+    background-image:
+        linear-gradient(rgba(8, 9, 12, 0.1), rgba(8, 9, 12, 0.35) 75%, #0b0d10),
+        url("backdrops/rune-slate.webp");
+    background-repeat: no-repeat;
+    background-position: 50% 0;
+    background-size: max(100vw, 430px) max(175vw, 753px);
 }
 
 a, .btn-link {
@@ -774,9 +862,40 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     }
 }
 
+/* The account page's looks: one row each, a swatch of its colours, the one in use edged in ink */
+.look-list {
+    list-style: none;
+    padding: 0;
+}
+
+    .look-option {
+        align-items: center;
+        color: inherit;
+        text-decoration: none;
+    }
+
+        .look-option.current {
+            border-color: var(--ink);
+            background: var(--paper-deep);
+        }
+
+    .look-swatch {
+        flex: none;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.35rem;
+        border: 1px solid var(--bs-border-color);
+    }
+
+    .look-swatch[data-swatch="grimoire"] { background: radial-gradient(circle at 50% 35%, #2a241e, #14110e 70%); }
+    .look-swatch[data-swatch="sigil"] { background: radial-gradient(circle at 50% 40%, #3a3560, #0f0e15 70%); }
+    .look-swatch[data-swatch="table"] { background: radial-gradient(circle at 50% 30%, #5a3c22, #0b0907 75%); }
+    .look-swatch[data-swatch="dust"] { background: radial-gradient(circle at 30% 30%, #d8d4f0 0 1px, transparent 2px), radial-gradient(circle at 70% 65%, #2f3f55, #0a0a10 70%); }
+    .look-swatch[data-swatch="slate"] { background: radial-gradient(circle at 50% 40%, #33404a, #0b0d10 75%); }
+
 /* The match map (Components/Game/HexMap.razor): soot hexes for dark land, charred leather (or the painted tile art)
-   once unveiled, and a ring inside the edge in the owner's ink. Marked tiles (on auction) get a dashed bone edge; the
-   chosen one a solid edge in the page's ink. The ring and the edge are separate, so a held tile can be both. */
+   once unveiled, and a held tile's edge in its owner's ink, left out between tiles of the same owner (one zone).
+   Marked tiles (to pick) get a dashed bone edge; the chosen one a solid edge in the page's ink, over its zone. */
 .hex-map {
     display: block;
     width: 100%;
@@ -793,7 +912,7 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     .hex-map .rim {
         fill: var(--paper-deep);
         stroke: var(--paper-edge);
-        stroke-width: 1.5;
+        stroke-width: 0.75;
     }
 
     .hex-map.painted .hex:not(.dark) .rim {
@@ -803,6 +922,28 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     .hex-map .dark .rim {
         fill: #0d0b09;
         stroke: #2a231c;
+    }
+
+    /* The raised board: each tile's thickness below it, and its bevel */
+    .hex-map .hex-depth polygon {
+        fill: #050403;
+        stroke: #000;
+        stroke-width: 1;
+    }
+
+    .hex-map .bevel-light, .hex-map .bevel-dark {
+        fill: none;
+        pointer-events: none;
+    }
+
+    .hex-map .bevel-light {
+        stroke: rgba(255, 240, 215, 0.32);
+        stroke-width: 1.1;
+    }
+
+    .hex-map .bevel-dark {
+        stroke: rgba(0, 0, 0, 0.55);
+        stroke-width: 1.4;
     }
 
     /* A held tile's one border is its zone edge (below), not the plain rim */
@@ -816,12 +957,12 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
 
     .hex-map .zone {
         fill: none;
-        stroke-width: 3;
+        stroke-width: 1.5;
         stroke-linecap: round;
     }
 
     .hex-map .zone.yours {
-        stroke-width: 4.5;
+        stroke-width: 2.25;
     }
 
     .hex-map .marked .rim {
@@ -1060,7 +1201,7 @@ tr.you td {
             flex: 1;
         }
 
-/* The jump bar: Map, Orders, Report, Standings */
+/* The view tabs: Board, Report, Standings. The current one is lit; a dot marks a report not yet read. */
 .match-tabs {
     position: fixed;
     bottom: 0;
@@ -1089,10 +1230,23 @@ tr.you td {
         letter-spacing: 0.1em;
     }
 
-        .match-tabs a:active, .match-tabs a:focus-visible {
+        .match-tabs a:active, .match-tabs a:focus-visible, .match-tabs a[aria-current] {
             color: var(--ink);
             box-shadow: inset 0 3px 0 var(--school);
         }
+
+        .match-tabs a.unread::after {
+            content: "";
+            width: 0.45rem;
+            height: 0.45rem;
+            margin-left: 0.35rem;
+            border-radius: 50%;
+            background: var(--school);
+        }
+
+.standings-sum {
+    color: var(--ink-soft);
+}
 
 /* The start of a match: three numbered steps, the current one in the school's colour */
 .start-steps {
@@ -1130,24 +1284,6 @@ tr.you td {
 .start-plan li {
     margin-bottom: 0.4rem;
 }
-
-.match-tabs button {
-    flex: 1;
-    min-height: 3.25rem;
-    background: none;
-    border: 0;
-    color: var(--ink-soft);
-    font-family: var(--font-label);
-    font-weight: 600;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-}
-
-    .match-tabs button:active, .match-tabs button:focus-visible {
-        color: var(--ink);
-        box-shadow: inset 0 3px 0 var(--school);
-    }
 
 /* A new round (MatchPage): a banner, "+N" rising from each held tile, and the mana it brought you. Each plays once,
    when it is first drawn, and stays invisible after; nothing moves for phones set to reduce motion. */

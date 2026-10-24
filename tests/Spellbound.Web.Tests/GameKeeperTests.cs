@@ -74,7 +74,7 @@ public sealed class GameKeeperTests : TestDatabase
 
         var match = (await Matches.LoadAsync(id))!;
         Assert.Equal(2, match.Match.OpeningUnveil);
-        Assert.Equal(new Dictionary<int, int> { [0] = 1, [1] = 1 }, match.Missed);
+        Assert.Equal(new Dictionary<int, int> { [0] = 1 }, match.Missed); // alice's pick was due; bob got the last tile
     }
 
     public override void Dispose()
