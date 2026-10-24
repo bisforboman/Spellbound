@@ -361,9 +361,18 @@ namespace Spellbound.Playtest
             await StepAsync(merlin, "summon", async page =>
             {
                 await page.ClickAsync("label:has-text('Summon:')");
-                await Expect(page, "Tap one of your tiles");
-                await page.Locator("input[name='target']").First.CheckAsync();
+                await Expect(page, "Tap one of your tiles to summon on");
+                // Tiles are chosen on the map only: a tile the stance can't use just shows what it is.
+                var other = page.Locator(".hex-map .hex:not(.marked):not(.dark)");
+                if (await other.CountAsync() > 0)
+                {
+                    await other.First.ClickAsync();
+                    await page.Locator(".tile-panel").WaitForAsync();
+                }
+
+                await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                 await page.FillAsync("#count", "3");
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "stances-screen.png"), FullPage = true });
                 await Expect(page, "Summon 3 Imps");
                 await page.ClickAsync("button:has-text('Commit: Summon')");
                 await Expect(page, "Round 2 of 8");
@@ -410,10 +419,13 @@ namespace Spellbound.Playtest
                 // A move if two of Merlin's tiles touch (the match isn't seeded, so not every run can).
                 await page.ClickAsync("button:has-text('Moves (optional)')");
                 await Expect(page, "Units step to a neighbouring tile");
-                if (await page.Locator("#move-from option").CountAsync() > 1)
+                if (await page.Locator("button:has-text('Add a move')").CountAsync() > 0)
                 {
-                    await page.SelectOptionAsync("#move-from", new SelectOptionValue { Index = 1 });
-                    await page.SelectOptionAsync("#move-to", new SelectOptionValue { Index = 1 });
+                    await page.ClickAsync("button:has-text('Add a move')");
+                    await Expect(page, "Tap one of your tiles with units");
+                    await page.Locator(".hex-map .hex.marked").First.ClickAsync(); // from
+                    await Expect(page, "Tap a neighbouring tile of yours");
+                    await page.Locator(".hex-map .hex.marked").First.ClickAsync(); // to
                     await page.ClickAsync("button:has-text('Add this move')");
                     await Expect(page, "Remove");
                 }
@@ -422,14 +434,14 @@ namespace Spellbound.Playtest
             {
                 await page.ClickAsync("label:has-text('Attune:')");
                 await Expect(page, "Tap a free tile next to your land"); // the stance's own choices, not the last one's
-                var free = page.Locator("input[name='target']");
+                var free = page.Locator(".hex-map .hex.marked");
                 if (await free.CountAsync() == 0)
                 {
                     await page.ClickAsync("label:has-text('Hold:')");
                 }
                 else
                 {
-                    await free.First.CheckAsync();
+                    await free.First.ClickAsync();
                 }
 
                 await Expect(page, "mana");
@@ -441,14 +453,16 @@ namespace Spellbound.Playtest
             await StepAsync(merlin, "attack-pick", async page =>
             {
                 await page.ClickAsync("label:has-text('Attack:')");
-                await Expect(page, "Tap a rival's tile");
-                var targets = page.Locator("input[name='target']");
+                await Expect(page, "Tap a rival's or a monster's tile");
+                var targets = page.Locator(".hex-map .hex.marked");
                 if (await targets.CountAsync() > 0)
                 {
-                    await targets.First.CheckAsync();
+                    await targets.First.ClickAsync();
                     await Expect(page, "Send from");
-                    // Reinforcements guard home while the army is away.
-                    await page.SelectOptionAsync("#reinforce-at", new SelectOptionValue { Index = 1 });
+                    // Reinforcements guard home while the army is away: a second tap, on one of Merlin's tiles.
+                    await page.ClickAsync("button:has-text('Guard home')");
+                    await Expect(page, "Tap one of your tiles to guard");
+                    await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                     await page.WaitForSelectorAsync("#reinforce-imps");
                     await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
                 }
@@ -471,8 +485,9 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("label:has-text('Rally')"); // goes only with an attack, and says so
                 await Expect(page, "Rally goes with an attack");
                 await page.ClickAsync("label:has-text('Ward')");
-                await Expect(page, "Choose where Ward goes");
-                await page.SelectOptionAsync("#spell-target", new SelectOptionValue { Index = 1 });
+                await Expect(page, "Tap the tile for Ward");
+                await page.Locator(".hex-map .hex.marked").First.ClickAsync();
+                await Expect(page, "On ");
                 await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
             });
             await StepAsync(merlin, "spell-commit", async page =>
@@ -489,12 +504,12 @@ namespace Spellbound.Playtest
             {
                 // A Tower on one of Merlin's tiles, if he can afford it (the match isn't seeded).
                 await page.ClickAsync("label:has-text('Build:')");
-                await Expect(page, "Tap one of your tiles without an upgrade");
-                var spots = page.Locator("input[name='target']");
+                await page.ClickAsync("label:has-text('Tower:')");
+                var spots = page.Locator(".hex-map .hex.marked");
                 if (await spots.CountAsync() > 0)
                 {
-                    await spots.First.CheckAsync();
-                    await page.ClickAsync("label:has-text('Tower:')");
+                    await Expect(page, "Tap one of your tiles without an upgrade");
+                    await spots.First.ClickAsync();
                     await Expect(page, "Build a Tower", optional: true);
                 }
 

@@ -2,7 +2,8 @@
    their name (A1: row, then place in the row; TileNames), what a held tile paid this round ("+3"), and units and
    monster guards; a held tile has an inner ring in its owner's ink (heavier for yours). Each type has its painted
    image when all three are there (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol; the
-   key to the types is on the help page (MatchHelp). *@
+   key to the types is on the help page (MatchHelp). The map is the only way to choose a tile: the orders form says
+   what to tap, and the tiles it can use are marked. *@
 @inject TileArt Art
 
 <svg class="hex-map@(Art.Paths is null ? "" : " painted")" viewBox="@ViewBox" role="group" aria-label="The map">
