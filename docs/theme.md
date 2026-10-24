@@ -118,6 +118,16 @@ The match page's report brands each battle the player fought with a stamp after 
 `.stamp` CSS): **Conquered** (you took the tile) or **Repelled** / **Thwarted** (your attack failed or took nothing)
 when you attacked, **Held** or **Lost** when you defended. Battles between others stay plain lines.
 
+## The mana icon
+
+Mana is a crystal shard, its right face in shadow (`ManaIcon.razor`, owner's pick of 24 Oct 2026 over a drop, a
+rune-marked coin and a swirl). It is inline SVG on a 24-unit grid, always in cold brine (`--tidal-ink`, the `.mana-icon`
+CSS) so mana stands apart from other numbers, and 1em high so it follows the text size. It goes after the number it
+counts ("9 ◆"), with the word "mana" as its label, so screen readers still hear "9 mana". It stands in for the word
+where a number means mana: the top line, the bid button, unit, upgrade and Scorch costs, the standings' column and the
+"+3" on each held hex (8 px there, and 11 px in the chip that rises as a round begins). Sentences keep the word: the
+report, the ledger, the help page's text and the tile descriptions. The help page says what the icon is.
+
 ## Sigils, the turn moon, the mana vial, battle stamps
 
 Built for the old game and removed with it; they are in the git history at `b171e46`: `SigilGenerator.cs` (a mage's

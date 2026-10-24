@@ -64,8 +64,9 @@
                 @if (owner is not null && Match.Phase != MatchPhase.Opening)
                 {
                     // What the tile paid its holder this round: a small hint, the type's range is in the key.
-                    <circle class="hex-seal" cx="@F(x)" cy="@F(y + 1)" r="8" />
-                    @Label(x, y + 1, "hex-income", $"+{Match.IncomeOf(hex)}")
+                    <rect class="hex-seal" x="@F(x - 12)" y="@F(y - 7)" width="24" height="16" rx="8" />
+                    @Label(x - 3, y + 1, "hex-income", $"+{Match.IncomeOf(hex)}")
+                    <g transform="translate(@F(x + 3) @F(y - 3))"><ManaIcon Size="8" /></g>
                 }
                 @if (tile.IsGuarded)
                 {
@@ -84,8 +85,9 @@
                 {
                     <g @key="@($"gain {Round} {hex}")" transform="translate(@F(x) @F(y - 4))">
                         <g class="hex-gain@(gain == 0 ? " none" : "")">
-                            <rect x="-13" y="-10" width="26" height="20" rx="10" />
-                            @Label(0, 1, "", $"+{gain}")
+                            <rect x="-18" y="-10" width="36" height="20" rx="10" />
+                            @Label(-4, 1, "", $"+{gain}")
+                            <g transform="translate(3 -5.5)"><ManaIcon Size="11" /></g>
                         </g>
                     </g>
                 }
@@ -158,7 +160,7 @@
         Enumerable.Range(0, 6).Select(i =>
         {
             var angle = Math.PI / 180 * (60 * i - 30);
-            return $"{F(x + (Size - 1 - inset) * Math.Cos(angle))},{F(y + (Size - 1 - inset) * Math.Sin(angle))}";
+            return $"{F(x + (Size - 0.5 - inset) * Math.Cos(angle))},{F(y + (Size - 0.5 - inset) * Math.Sin(angle))}";
         }).ToArray();
 
     private static string UnitText(Army army) =>

@@ -293,13 +293,17 @@ namespace Spellbound.Playtest
                 await Expect(page, "Up now:");
                 await page.FillAsync("#amount", "5"); // more than a bot bids, so it wins and the bots settle the rest
                 await Expect(page, "If yours is the highest bid");
-                await page.ClickAsync("button:has-text('Bid 5 mana')");
+                if (await page.Locator(".match-top .mana-icon, button:has-text('Bid 5') .mana-icon").CountAsync() < 2)
+                {
+                    throw new PlaytestException("The mana icon is missing from the top line or the bid button.");
+                }
+                await page.ClickAsync("button:has-text('Bid 5')");
                 // The auction plays back one line at a time: each tile's bids, then who got it.
                 await page.Locator("#playback").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 await Expect(page, "Bids on the");
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "auction-playback-screen.png"), FullPage = true });
                 await Expect(page, "Opening auction 2 of 3");
-                await Expect(page, "What just happened");
+                await page.Locator(".match-tabs a.unread:has-text('Report')").WaitForAsync(); // the report is a tab away, marked new
             });
             await StepAsync(merlin, "pass-to-the-rounds", async page =>
             {
@@ -323,6 +327,7 @@ namespace Spellbound.Playtest
                 }
 
                 await Expect(page, "Round 1 of 8");
+                await page.ClickAsync(".match-tabs a:has-text('Report')");
                 await Expect(page, "The rounds begin");
                 // The fog of war: a rival's income is its mana, so nobody else reads it.
                 await page.ClickAsync("button.report-toggle:has-text('Everything that happened')");
@@ -331,16 +336,18 @@ namespace Spellbound.Playtest
                 {
                     throw new InvalidOperationException("A rival's income shows through the fog.");
                 }
+
+                await page.ClickAsync(".match-tabs a:has-text('Board')");
             });
             await StepAsync(merlin, "standings", async page =>
             {
-                // Folded during the rounds; the bottom tab opens it.
+                // A view of their own, opened by the bottom tab.
                 if (await page.Locator("table.standings").CountAsync() > 0)
                 {
                     throw new PlaytestException("The standings are open before anyone asked for them.");
                 }
 
-                await page.ClickAsync(".match-tabs button:has-text('Standings')");
+                await page.ClickAsync(".match-tabs a:has-text('Standings')");
                 await page.Locator("table.standings").WaitForAsync();
                 await Expect(page, "Rivals' traits are secret until the end");
                 await page.WaitForFunctionAsync(
@@ -377,8 +384,7 @@ namespace Spellbound.Playtest
                 await Expect(page, "Summon 3 Imps");
                 await page.ClickAsync("button:has-text('Commit: Summon')");
                 await Expect(page, "Round 2 of 8");
-                await Expect(page, "mana off)"); // nobody builds in round 1, so Build is cheaper now
-                await Expect(page, "You summon 3 Imps");
+                await Expect(page, " off)"); // nobody builds in round 1, so Build is cheaper now
                 // A round that begins while the page is open plays once: a banner, and "+N" rising from every held tile.
                 await page.Locator(".round-banner").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 if (await page.Locator(".hex-map .hex-gain").CountAsync() < 3)
@@ -389,14 +395,21 @@ namespace Spellbound.Playtest
                 await page.WaitForTimeoutAsync(900); // mid-animation: the banner is up and the gains are rising
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "new-round-screen.png") });
             });
-            await StepAsync(merlin, "jump-to-report", async page =>
+            await StepAsync(merlin, "views", async page =>
             {
-                // The bottom bar jumps to the report: its heading must end up on screen, not just on the page.
+                // The round's report came in on the board: the Report tab is marked until it is opened.
+                await page.Locator(".match-tabs a.unread:has-text('Report')").WaitForAsync();
                 await page.ClickAsync(".match-tabs a:has-text('Report')");
+                await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("#report$"));
+                await Expect(page, "You summon 3 Imps");
                 await page.WaitForFunctionAsync(
                     "() => { const r = document.querySelector('#report h2').getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; }",
                     null, new PageWaitForFunctionOptions { Timeout = 5_000 });
-                await Expect(page, "What just happened");
+                if (await page.Locator(".match-tabs a.unread").CountAsync() > 0 || await page.Locator(".hex-map").IsVisibleAsync())
+                {
+                    throw new PlaytestException("The report view still shows the map, or its tab still says new.");
+                }
+
                 var barTop = await page.EvaluateAsync<double>("() => document.querySelector('.top-bar').getBoundingClientRect().top");
                 if (Math.Abs(barTop) > 1)
                 {
@@ -404,16 +417,38 @@ namespace Spellbound.Playtest
                 }
 
                 // What a phone shows, bars and all (the step's own screenshot is the whole page).
-                await page.WaitForTimeoutAsync(1000);
-                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "jump-to-report-screen.png") });
-                await page.ClickAsync(".match-tabs a:has-text('Orders')");
                 await page.WaitForTimeoutAsync(500);
-                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "orders-screen.png") });
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "report-view-screen.png") });
                 if (await page.Locator("button:has-text('Everything that happened')").CountAsync() > 0)
                 {
                     await page.ClickAsync("button:has-text('Everything that happened')");
                     await Expect(page, "Only what concerns you");
                 }
+
+                // The view is in the URL: back returns to it, and a summon half given on the board survives the trip.
+                await page.ClickAsync(".match-tabs a:has-text('Standings')");
+                await page.Locator("table.standings").WaitForAsync();
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "standings-view-screen.png") });
+                await page.GoBackAsync();
+                await Expect(page, "What just happened");
+                await page.ClickAsync(".match-tabs a:has-text('Board')");
+                await page.Locator(".hex-map").WaitForAsync();
+                if (await page.Locator("#report").IsVisibleAsync())
+                {
+                    throw new PlaytestException("The board still shows the report.");
+                }
+
+                await page.ClickAsync("label:has-text('Summon:')");
+                await page.FillAsync("#count", "2");
+                await page.ClickAsync(".match-tabs a:has-text('Report')");
+                await page.ClickAsync(".match-tabs a:has-text('Board')");
+                if (await page.InputValueAsync("#count") != "2")
+                {
+                    throw new PlaytestException("A look at the report lost the orders given on the board.");
+                }
+
+                await page.WaitForTimeoutAsync(500);
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "board-view-screen.png") });
             });
             await StepAsync(merlin, "move", async page =>
             {
@@ -528,12 +563,15 @@ namespace Spellbound.Playtest
                 {
                     await page.ClickAsync("label:has-text('Hold:')");
                     await page.ClickAsync("button:has-text('Commit: Hold')");
-                    await Expect(page, round < 8 ? $"Round {round + 1} of 8" : "The match is over");
+                    await Expect(page, round < 8 ? $"Round {round + 1} of 8" : "Rivals' traits:");
                 }
 
+                await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("#standings$"));
+                await page.ClickAsync(".match-tabs a:has-text('Board')");
                 await Expect(page, "The match is over");
+                await page.ClickAsync("a:has-text('See the standings')");
                 await page.Locator("table.standings").WaitForAsync(); // open by itself at the end
-                await page.Locator(".fold-sum", new PageLocatorOptions { HasTextRegex = new System.Text.RegularExpressions.Regex(" wins?, ") }).WaitForAsync();
+                await page.Locator(".standings-sum", new PageLocatorOptions { HasTextRegex = new System.Text.RegularExpressions.Regex(" wins?, ") }).WaitForAsync();
             });
             var invite = string.Empty;
             var friendMatch = string.Empty;

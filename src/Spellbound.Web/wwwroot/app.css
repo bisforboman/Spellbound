@@ -287,6 +287,12 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row):not(.look-option) {
     color: var(--bs-danger-text-emphasis) !important;
 }
 
+/* Mana's crystal shard (ManaIcon.razor) after a number, in cold blue, in text and on the map */
+.mana-icon {
+    vertical-align: -0.125em;
+    color: var(--tidal-ink);
+}
+
 /* Symbols before labels (Glyph.razor): stone grey, with dull brass for gold */
 .glyph {
     display: inline-block;
@@ -906,7 +912,7 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     .hex-map .rim {
         fill: var(--paper-deep);
         stroke: var(--paper-edge);
-        stroke-width: 1.5;
+        stroke-width: 0.75;
     }
 
     .hex-map.painted .hex:not(.dark) .rim {
@@ -1185,7 +1191,7 @@ tr.you td {
             flex: 1;
         }
 
-/* The jump bar: Map, Orders, Report, Standings */
+/* The view tabs: Board, Report, Standings. The current one is lit; a dot marks a report not yet read. */
 .match-tabs {
     position: fixed;
     bottom: 0;
@@ -1214,10 +1220,23 @@ tr.you td {
         letter-spacing: 0.1em;
     }
 
-        .match-tabs a:active, .match-tabs a:focus-visible {
+        .match-tabs a:active, .match-tabs a:focus-visible, .match-tabs a[aria-current] {
             color: var(--ink);
             box-shadow: inset 0 3px 0 var(--school);
         }
+
+        .match-tabs a.unread::after {
+            content: "";
+            width: 0.45rem;
+            height: 0.45rem;
+            margin-left: 0.35rem;
+            border-radius: 50%;
+            background: var(--school);
+        }
+
+.standings-sum {
+    color: var(--ink-soft);
+}
 
 /* The start of a match: three numbered steps, the current one in the school's colour */
 .start-steps {
@@ -1255,24 +1274,6 @@ tr.you td {
 .start-plan li {
     margin-bottom: 0.4rem;
 }
-
-.match-tabs button {
-    flex: 1;
-    min-height: 3.25rem;
-    background: none;
-    border: 0;
-    color: var(--ink-soft);
-    font-family: var(--font-label);
-    font-weight: 600;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-}
-
-    .match-tabs button:active, .match-tabs button:focus-visible {
-        color: var(--ink);
-        box-shadow: inset 0 3px 0 var(--school);
-    }
 
 /* A new round (MatchPage): a banner, "+N" rising from each held tile, and the mana it brought you. Each plays once,
    when it is first drawn, and stays invisible after; nothing moves for phones set to reduce motion. */
