@@ -33,7 +33,7 @@ game has five looks to swap between, and the owner chooses by playing in them. E
 | Sigil night | `sigil` | indigo-black #0f0e15, a cool grain, a faint summoning circle (inline SVG) behind the board, a soft violet glow | about 1.5 KB of CSS |
 | Candlelit table | `table` | a warm pool of light on dark wood grain (gradients); the map sits on a brass-rimmed felt tray (`.board-tray`) | about 1 KB of CSS |
 | Arcane dust | `dust` | blue-black #0a0a10, the cool grain, three tiled layers of star and ember motes over a faint nebula | about 1.3 KB of CSS |
-| Painted rune-slate | `slate` | the painted backdrop `wwwroot/backdrops/rune-slate.webp`, fading into #0b0d10 below it | 27 KB, once |
+| Painted rune-slate | `slate` | the painted backdrop `wwwroot/backdrops/rune-slate.webp`, fading into #0b0d10 below it | 34 KB, once |
 
 All five blocks are in `app.css`, so every player downloads their CSS (about 5 KB before compression). The rune-slate
 image is referenced only inside the `slate` selector, so only players who pick it fetch it; the browser's cache keeps
@@ -62,11 +62,12 @@ cookie from the request and sets `data-look` on `<html>`, so a page is drawn in 
 unknown or missing cookie gives the grimoire. The links skip Blazor's enhanced navigation, so the whole page is loaded
 again in the new look.
 
-**The backdrop.** `rune-slate.webp` (720 px wide, 27 KB) was painted with SDXL base 1.0 on a local ComfyUI by
-`tools/tile-art/backdrop.py` and finished by `backdrop.py --finish` ([tile art](tile-art.md)). It is dedicated to the
-public domain (CC0 1.0); its seed and settings are in `wwwroot/backdrops/LICENSE.md`. It is a trial: it has faux-text
-blocks near the top and bottom, which a re-roll (another seed, on the owner's ComfyUI) or a centre crop would remove
-if the look is kept.
+**The backdrop.** `rune-slate.webp` (720 px wide, 34 KB) is a carved slate slab with a summoning circle, painted with
+SDXL base 1.0 by `tools/tile-art/backdrop.py --cpu` (on the CPU, so a cloud session can re-roll it) and finished by
+`backdrop.py --finish` ([tile art](tile-art.md)). It is dedicated to the public domain (CC0 1.0); its seed and
+settings are in `wwwroot/backdrops/LICENSE.md`. It replaced a first trial from the owner's ComfyUI (24 Oct 2026),
+whose prompt asked for a "board game table" and got faux-text panels, like a rulebook's, at the top and bottom; the
+prompt now asks for a bare slab and its negative names every kind of writing.
 
 ## The raised board
 

@@ -72,9 +72,10 @@ grids and parchment) and ask for a top-down landscape instead; and Wild's negati
 no glow at all, so it comes out magenta and `finish.py` desaturates it to ash-violet. The seeds and settings of the
 images in use are in `wwwroot/tiles/LICENSE.md`.
 
-The same ComfyUI makes the page backdrop of the painted rune-slate look ([theme](theme.md), "Looks"):
-`tools/tile-art/backdrop.py` asks for 768×1344 candidates of a dark engraved slate table, and `backdrop.py --finish`
-turns the chosen one into the 720 px WebP in `wwwroot/backdrops/`. Its seed and settings are in
+The page backdrop of the painted rune-slate look ([theme](theme.md), "Looks") comes from
+`tools/tile-art/backdrop.py`: 768×1344 candidates of a dark engraved slate slab, from the same ComfyUI or, with
+`--cpu`, from SDXL base 1.0 on the CPU with diffusers (about 6 minutes an image, so a cloud session can do it; the one
+in use was made that way). `backdrop.py --finish` turns the chosen one into the 720 px WebP in `wwwroot/backdrops/`. Its seed and settings are in
 `wwwroot/backdrops/LICENSE.md`.
 
 ## Trying it

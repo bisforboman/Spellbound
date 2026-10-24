@@ -18,7 +18,7 @@ public static class Looks
         new("sigil", "Sigil night", "Indigo-black, a faint summoning circle behind the board, a soft glow.", "About 1.5 KB of CSS"),
         new("table", "Candlelit table", "A pool of warm light on dark wood, the board on a brass-rimmed felt tray.", "About 1 KB of CSS"),
         new("dust", "Arcane dust", "Star and ember motes over a faint nebula.", "About 1 KB of CSS"),
-        new("slate", "Painted rune-slate", "A painted slate table with engraved runes.", "A 27 KB image, once"),
+        new("slate", "Painted rune-slate", "A painted slate table with engraved runes.", "A 34 KB image, once"),
     ];
 
     public static Look Default => All[0];

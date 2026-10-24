@@ -468,7 +468,7 @@ body {
     background-size: 97px 89px, 151px 137px, 211px 233px, auto, auto, auto;
 }
 
-/* Painted rune-slate: one painted backdrop (wwwroot/backdrops, 27 KB), fetched only by this look. It covers the first
+/* Painted rune-slate: one painted backdrop (wwwroot/backdrops, 34 KB), fetched only by this look. It covers the first
    screen at its own size (720 x 1260 px) and fades into the stone colour below, rather than stretching over a long page. */
 :root[data-look="slate"] {
     --paper-deep: #15181d;
