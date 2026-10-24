@@ -24,6 +24,23 @@
     <p class="text-muted">Your email comes from your sign-in and updates each time you sign in.</p>
 }
 
+<h2 class="h4 mt-4">Look</h2>
+<p>How the pages look on this phone or computer. Each device keeps its own.</p>
+<ul class="look-list">
+    @foreach (var look in Looks.All)
+    {
+        var current = look == Looks.Of(HttpContext);
+        <li>
+            @* A full load, not Blazor's enhanced navigation, so the page is drawn again in the new look *@
+            <a class="choice look-option@(current ? " current" : "")" href="look/@look.Name?back=/Account/Manage" data-enhance-nav="false"
+               aria-current="@(current ? "true" : null)">
+                <span class="look-swatch" data-swatch="@look.Name" aria-hidden="true"></span>
+                <span><b>@look.Title</b>@(current ? " (in use)" : "")<br />@look.Line <span class="text-muted">@look.Cost.</span></span>
+            </a>
+        </li>
+    }
+</ul>
+
 <h2 class="h4 mt-4">Notifications</h2>
 <p>
     Turn on notifications on this phone or computer, separately on each device, and send yourself a test one. In matches

@@ -226,6 +226,7 @@ namespace Spellbound.Playtest
             var ada = await PlayerAsync("Ada", AdminEmail);
             var merlin = await PlayerAsync("Merlin", "merlin@playtest.local");
             var morgana = await PlayerAsync("Morgana", "morgana@playtest.local");
+            string? bigMap = null; // the 5-player match, for the looks
 
             foreach (var player in new[] { ada, merlin, morgana })
             {
@@ -292,6 +293,10 @@ namespace Spellbound.Playtest
                 await Expect(page, "Your pick");
                 await page.Locator(".hex-map .hex.marked").Nth(1).ClickAsync(); // a tile to pick, chosen on the map
                 await Expect(page, "It costs nothing");
+                if (await page.Locator(".match-top .mana-icon").CountAsync() < 1)
+                {
+                    throw new PlaytestException("The mana icon is missing from the top line.");
+                }
                 await page.ClickAsync("button:has-text('Pick '):not([disabled])");
                 // The bots pick at once, until it is Merlin's turn again; the draft plays back a pick at a time.
                 await page.Locator("#playback").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
@@ -378,7 +383,7 @@ namespace Spellbound.Playtest
                 await Expect(page, "Summon 3 Imps");
                 await page.ClickAsync("button:has-text('Commit: Summon')");
                 await Expect(page, "Round 2 of 8");
-                await Expect(page, "mana off)"); // nobody builds in round 1, so Build is cheaper now
+                await Expect(page, " off)"); // nobody builds in round 1, so Build is cheaper now
                 // A round that begins while the page is open plays once: a banner, and "+N" rising from every held tile.
                 await page.Locator(".round-banner").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 if (await page.Locator(".hex-map .hex-gain").CountAsync() < 3)
@@ -657,7 +662,31 @@ namespace Spellbound.Playtest
                 await Expect(page, "Opening draft 1 of 3");
                 await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                 await Expect(page, "to pick");
+                bigMap = new Uri(page.Url).PathAndQuery;
             });
+            // Every look (docs/theme.md), picked on the account page, then the 37-tile map in it; the default last, so
+            // the steps after these are in it again.
+            foreach (var look in new[] { "sigil", "table", "dust", "slate", "grimoire" })
+            {
+                await StepAsync(morgana, $"look-{look}", async page =>
+                {
+                    await GoAsync(page, "/Account/Manage");
+                    await page.ClickAsync($".look-option[href^='look/{look}?']");
+                    await page.WaitForURLAsync(url => url.Contains("/Account/Manage", StringComparison.Ordinal));
+                    var set = await page.GetAttributeAsync("html", "data-look");
+                    if (set != look)
+                    {
+                        throw new PlaytestException($"Picking the {look} look left data-look at \"{set}\".");
+                    }
+
+                    await Expect(page, "(in use)");
+                    await page.Locator(".look-list").ScrollIntoViewIfNeededAsync();
+                    await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, $"look-{look}-account.png") });
+                    await GoAsync(page, bigMap ?? "/");
+                    await page.Locator(".hex-map").First.WaitForAsync();
+                    await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, $"look-{look}-screen.png") });
+                });
+            }
             await StepAsync(morgana, "privacy", async page =>
             {
                 // The notice is in folds: one tap opens a section.

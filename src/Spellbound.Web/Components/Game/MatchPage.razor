@@ -44,7 +44,7 @@ else
     <div class="match-top">
         <span class="ink-dot" style="--seat: @Seats.Ink(you)" role="img" aria-label="Your colour"></span>
         <b class="match-step">@ShortStep(match, view.IsRunning)</b>
-        <span class="match-mana">@($"{me.Mana} mana")@if (fresh)
+        <span class="match-mana text-nowrap">@me.Mana <ManaIcon />@if (fresh)
             {
                 <span class="mana-gain" @key="newRound" aria-hidden="true"> +@me.ProducedThisRound</span>
             }</span>
@@ -287,7 +287,7 @@ else
     <h2 class="h4">Standings</h2>
     <p class="standings-sum">@Capitalised(Leaders(match)).</p>
     <table class="table standings">
-        <thead><tr><th>Seat</th><th>Points</th><th>Tiles</th><th>Mana</th></tr></thead>
+        <thead><tr><th>Seat</th><th>Points</th><th>Tiles</th><th><ManaIcon /></th></tr></thead>
         <tbody>
             @foreach (var seat in match.Standings)
             {
