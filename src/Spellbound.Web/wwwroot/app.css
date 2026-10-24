@@ -793,7 +793,7 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     .hex-map .rim {
         fill: var(--paper-deep);
         stroke: var(--paper-edge);
-        stroke-width: 1.5;
+        stroke-width: 0.75;
     }
 
     .hex-map.painted .hex:not(.dark) .rim {
