@@ -1,4 +1,5 @@
-@* The board as inline SVG (docs/theme.md): pointy-top hexes, each a button. Dark tiles are soot; unveiled ones show
+@* The board as inline SVG (docs/theme.md): pointy-top hexes, each a button. Dark tiles are soot under a faint mist (the fog of war, also over a rival's
+   tile whose units you can't see); unveiled ones show
    what a held tile paid this round ("+3"), and units and
    monster guards. A held tile has one border, its own edge in its owner's ink (heavier for yours), drawn only
    where the next tile isn't theirs, so a player's tiles together form one zone. Only the
@@ -18,7 +19,7 @@
         {
             <clipPath id="hex-clip"><polygon points="@Points(0, 0)" /></clipPath>
         }
-        @* The fog of war over a rival's tile whose units you can't see: a pale mist, lighter at its heart. *@
+        @* The fog of war over a dark tile, and over a rival's tile whose units you can't see: a pale mist, lighter at its heart. *@
         <radialGradient id="fog-mist" cx="40%" cy="35%" r="75%">
             <stop offset="0%" stop-color="#c9cfdc" stop-opacity="0.62" />
             <stop offset="55%" stop-color="#9aa1b4" stop-opacity="0.42" />
@@ -50,7 +51,11 @@
                 </g>
             }
             <polygon class="rim" points="@Points(x, y)" />
-            @if (unveiled && units is null && owner is not null)
+            @if (!unveiled)
+            {
+                <polygon class="fog unknown" points="@Points(x, y)" fill="url(#fog-mist)" /> @* nobody knows what's there yet *@
+            }
+            else if (units is null && owner is not null)
             {
                 <polygon class="fog" points="@Points(x, y)" fill="url(#fog-mist)" /> @* its units are hidden: the tile's label says so *@
             }

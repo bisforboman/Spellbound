@@ -1556,15 +1556,27 @@ tr.you td {
         font-size: 0.9rem;
     }
 
-/* The fog of war: a mist drifting over a rival's tile whose units you can't see */
+/* The fog of war: a mist drifting over a rival's tile whose units you can't see, and fainter over the dark tiles,
+   so they stay darker than any tile you know */
 .hex-map .fog {
     pointer-events: none; /* its fill is on the element: a url(#…) in this file would look for the gradient here */
     animation: fog-drift 7s ease-in-out infinite alternate;
 }
 
+    .hex-map .fog.unknown {
+        opacity: 0.28; /* also when motion is reduced and the drift is off */
+        animation-name: fog-drift-dark;
+        animation-duration: 9s;
+    }
+
 @keyframes fog-drift {
     from { opacity: 0.8; }
     to { opacity: 1; }
+}
+
+@keyframes fog-drift-dark {
+    from { opacity: 0.22; }
+    to { opacity: 0.34; }
 }
 
 /* The effects: one play each, as a playback beat appears (BeatEffects) */
