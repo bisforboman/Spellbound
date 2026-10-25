@@ -46,11 +46,12 @@ public static class Seats
         return Regex.Replace(line, @"(^|[.:!?] )(you|your)\b", m => m.Groups[1].Value + char.ToUpperInvariant(m.Groups[2].Value[0]) + m.Groups[2].Value[1..]);
     }
 
-    /// <summary>A tile type's symbol, on the map and before a tile in the lists: ◆ Steady, ≈ Shifting, ✶ Wild.</summary>
+    /// <summary>A tile type's symbol, on the map and before a tile in the lists: ◆ Steady, ≈ Shifting, ✶ Wild, ○ Barren.</summary>
     public static string Mark(TileType type) => type switch
     {
         TileType.Steady => "◆",
         TileType.Shifting => "≈",
+        TileType.Barren => "○",
         _ => "✶",
     };
 

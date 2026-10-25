@@ -1,8 +1,8 @@
 namespace Spellbound.Domain;
 
 /// <summary>
-/// The hex board (docs/game-design.md, Map and Tiles): a round board, dark at the start, with roughly equal thirds of
-/// each tile type spread at random. Everything about it comes from the injected random source, so a seed always deals
+/// The hex board (docs/game-design.md, Map and Tiles): a round board, dark at the start, with a few Barren tiles and
+/// roughly equal thirds of the other types spread at random. Everything about it comes from the injected random source, so a seed always deals
 /// the same map.
 /// </summary>
 public sealed class GameMap
@@ -15,13 +15,16 @@ public sealed class GameMap
 
     public int Count => tiles.Count;
 
-    /// <summary>Deals a dark map for this many players: the board's size from the rules, and the types shuffled.</summary>
+    /// <summary>Deals a dark map for this many players: the board's size from the rules, its Barren tiles, and the
+    /// types shuffled.</summary>
     public static GameMap Create(int players, GameRules rules, IRandomSource random)
     {
         ArgumentNullException.ThrowIfNull(rules);
         ArgumentNullException.ThrowIfNull(random);
         var hexes = Hex.Within(rules.MapRadius(players));
-        var types = TypeMix(hexes.Count);
+        var barren = rules.BarrenTiles(players);
+        var types = TypeMix(hexes.Count - barren);
+        types.AddRange(Enumerable.Repeat(TileType.Barren, barren));
         Shuffle(types, random);
         return new GameMap(hexes.Select((hex, i) => new Tile(hex, types[i])).ToDictionary(t => t.Hex));
     }
@@ -29,11 +32,11 @@ public sealed class GameMap
     /// <summary>A map as it was saved, tile by tile.</summary>
     internal static GameMap FromTiles(IEnumerable<Tile> tiles) => new(tiles.ToDictionary(t => t.Hex));
 
-    /// <summary>The types for a board of <paramref name="count"/> tiles: equal thirds, any remainder going to Steady,
+    /// <summary>The yielding types for <paramref name="count"/> tiles: equal thirds, any remainder going to Steady,
     /// then Shifting (19 tiles: 7 Steady, 6 Shifting, 6 Wild).</summary>
     public static List<TileType> TypeMix(int count)
     {
-        var all = Enum.GetValues<TileType>();
+        TileType[] all = [TileType.Steady, TileType.Shifting, TileType.Wild];
         return [.. all.SelectMany((type, i) => Enumerable.Repeat(type, (count / all.Length) + (i < count % all.Length ? 1 : 0)))];
     }
 

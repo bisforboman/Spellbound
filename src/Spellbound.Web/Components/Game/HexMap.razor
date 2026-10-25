@@ -4,7 +4,8 @@
    monster guards. A held tile has one border, its own edge in its owner's ink (heavier for yours), drawn only
    where the next tile isn't theirs, so a player's tiles together form one zone. Only the
    selected tile shows its name (A1: row, then place in the row; TileNames). Each type has its painted
-   image when all three are there (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol; the
+   image when all three are there (TileArt, docs/tile-art.md), and otherwise a plain tile with the type's symbol (a
+   Barren tile is plain ash with its symbol until it has an image of its own); the
    key to the types is on the help page (MatchHelp). The map is the only way to choose a tile: the orders form says
    what to tap, and the tiles it can use are marked. The tiles are raised, like pieces on a board: each stands on a
    dark copy of itself a little lower (its thickness), and an unveiled tile has a light bevel on its top-left edges and
@@ -40,14 +41,16 @@
         var unveiled = tile.IsUnveiled && Dark?.Contains(hex) != true;
         var owner = Unowned?.Contains(hex) == true ? null : Match.OwnerOf(hex);
         var units = You is { } viewer ? Match.UnitsSeenBy(viewer, hex) : Match.UnitsOn(hex); // null: hidden by the fog
+        var image = unveiled && Art.Paths is { } art && art.TryGetValue(tile.Type, out var path) ? path : null;
         var classes = "hex" + (unveiled ? "" : " dark") + (Highlight?.Contains(hex) == true ? " marked" : "")
-                      + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "") + (owner is null ? "" : " held");
+                      + (hex == Selected ? " selected" : "") + (owner == You ? " yours" : "") + (owner is null ? "" : " held")
+                      + (image is null && unveiled && tile.Type == TileType.Barren ? " barren" : ""); // plain ash until it has art
         <g class="@classes" role="button" tabindex="0" aria-label="@Seats.Describe(Match, hex, You, Owners, mark: false, named: ShowNames)"
            @onclick="() => OnSelect.InvokeAsync(hex)" @onkeydown="e => KeyAsync(e, hex)">
-            @if (unveiled && Art.Paths is { } art)
+            @if (image is not null)
             {
                 <g transform="translate(@F(x) @F(y))" clip-path="url(#hex-clip)">
-                    <image href="@Assets[art[tile.Type]]" x="-30" y="-30" width="60" height="60" preserveAspectRatio="xMidYMid slice" />
+                    <image href="@Assets[image]" x="-30" y="-30" width="60" height="60" preserveAspectRatio="xMidYMid slice" />
                 </g>
             }
             <polygon class="rim" points="@Points(x, y)" />
@@ -71,7 +74,7 @@
                 {
                     @Label(x, y - 18, "hex-name", TileNames.Of(Match.Map, hex))
                 }
-                @if (Art.Paths is null)
+                @if (image is null)
                 {
                     @Label(x, y - 2, $"hex-type {tile.Type.ToString().ToLowerInvariant()}", Seats.Mark(tile.Type))
                 }

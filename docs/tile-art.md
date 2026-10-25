@@ -62,6 +62,9 @@ A starting point for a generator; adjust to taste. Use the same style sentence f
 - **Shifting:** "…of restless dunes and marsh: rippling sand, a still pool and a few reeds, slate and ash greys."
 - **Wild:** "…of untamed wild land: twisted thorns around a faintly glowing rift, scattered sparks of magic, deep
   ashen violet-black (not bright purple)."
+- **Barren** (optional; added 25 Oct 2026): "…of dead, barren land: cracked grey ash and bare stone, a single burnt
+  stump, no water and nothing growing, cold flat greys." Save it as `wwwroot/tiles/barren.webp`. Until it is there, the
+  map draws a Barren tile as plain ash with its symbol (○), even when the other three are painted.
 
 ## How the current images were made
 

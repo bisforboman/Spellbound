@@ -1016,6 +1016,11 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         font-size: 11px; /* ◆ is drawn larger than ≈ and ✶ at the same size */
     }
 
+    /* Barren land: plain grey ash, on the painted map too until it has art of its own */
+    .hex-map .barren .rim, .hex-map.painted .hex.barren .rim {
+        fill: #3a3631;
+    }
+
     /* A held tile's income this round, small on its seal */
     .hex-map .hex-income {
         font-size: 10px;

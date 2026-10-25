@@ -49,6 +49,10 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   a spell); mock-ups in `tools/mockups/board-first.html`
 - [x] Attune by a rolled price (owner's choice, 25 Oct 2026): any free tile, a base by realm size + 1 a step + a die;
   the price is shown, then paid or declined (`Match.Settle`), on the page as Pay / Decline; bots pay when they can
+- [x] Barren land (owner's choice, 25 Oct 2026): a fourth tile type that yields nothing, only in the later Unveils and
+  never guarded, still land for points and Attune prices; one per 2 players (`PlayersPerBarrenTile`), plain ash on the
+  map until it has art (prompt in `tile-art.md`); measured in `game-design.md`, Tiles
+- [x] The fog of war's mist over the dark tiles too (owner's choice, 25 Oct 2026), fainter than over a rival's hidden units
 - [ ] Retune after the stance draft: the Warbrand's goal (maxed in 98% of games) and the point scale; play the bots'
   turns back one at a time on the board
   updated (unspent mana at the end rose from 11 to 28 a seat: a fix is proposed to the owner, not built)
