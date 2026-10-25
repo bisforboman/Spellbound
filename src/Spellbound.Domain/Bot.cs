@@ -86,6 +86,24 @@ public static class Bot
         return orders;
     }
 
+    /// <summary>A bot's whole turn: its orders, then, if they rolled an Attune price, paying it when it can (else
+    /// declining), which ends the turn.</summary>
+    public static Report PlayTurn(Match match, int seat, IRandomSource random, Plan plan = Plan.Balanced)
+    {
+        ArgumentNullException.ThrowIfNull(match);
+        var report = match.Take(ChooseOrders(match, seat, random, plan), random);
+        return report.Succeeded && match.Offer is { } offer && offer.Seat == seat
+            ? report.Then(match.Settle(seat, Pays(match, seat), random))
+            : report;
+    }
+
+    /// <summary>Whether a bot pays its rolled Attune price: whenever it has the mana.</summary>
+    public static bool Pays(Match match, int seat)
+    {
+        ArgumentNullException.ThrowIfNull(match);
+        return match.Offer is { } offer && offer.Seat == seat && offer.Price <= match.Seats[seat].Mana;
+    }
+
     /// <summary>An upgrade on its best-yielding open tile, if it has room for one; null if not.</summary>
     private static Orders? LastUpgrade(Match match, int seat)
     {

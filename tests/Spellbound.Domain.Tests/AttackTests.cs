@@ -292,7 +292,7 @@ public class AttackTests
         {
             var report = match.Phase == MatchPhase.Opening
                 ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
-                : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random))], random);
+                : Bot.PlayTurn(match, match.Actor!.Value, random);
             Assert.True(report.Succeeded, string.Join('\n', report.Lines));
             lines.AddRange(report.Lines);
         }

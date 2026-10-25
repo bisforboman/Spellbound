@@ -499,7 +499,7 @@ namespace Spellbound.Playtest
             {
                 await Diagnosed(page, "attune", () => UntilAsync(page, "Attune"));
                 // The stance's own choices, not the last one's (the map isn't seeded, so there may be no free tile to tap).
-                await page.Locator("text=/Tap a free tile next to your land|No free tile next to your land/").First.WaitForAsync();
+                await page.Locator("text=/Tap a free tile: near your land is cheapest|No free tile on the map/").First.WaitForAsync();
                 var free = page.Locator(".hex-map .hex.marked");
                 if (await free.CountAsync() == 0)
                 {
@@ -508,8 +508,19 @@ namespace Spellbound.Playtest
                 }
 
                 await free.First.ClickAsync();
-                await Expect(page, "mana");
-                await CommitOrGiveUpAsync(page);
+                await Expect(page, "+ a die, so"); // the price's range, before the roll
+                if (await page.Locator("#orders .action-row .btn-primary:not([disabled])").CountAsync() == 0)
+                {
+                    await GiveUpAsync(page);
+                    return;
+                }
+
+                // The die rolls the price; Merlin sees it, then pays it if he can, else declines.
+                await TakeTurnAsync(page, "#orders .action-row .btn-primary");
+                await page.Locator("text=The die says").WaitForAsync();
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "attune-price-screen.png"), FullPage = true });
+                var pay = page.Locator("#orders .action-row button:has-text('Pay '):not([disabled])");
+                await TakeTurnAsync(page, await pay.CountAsync() > 0 ? "#orders .action-row button:has-text('Pay ')" : "#orders .action-row button:has-text('Decline')");
             });
             // An attack if the map offers one (a rival or monsters next to the Imps), else a pass: the match isn't seeded,
             // so which it is varies from run to run.
@@ -979,6 +990,12 @@ namespace Spellbound.Playtest
             if (await page.Locator("button:has-text('Pass')").CountAsync() > 0)
             {
                 await TakeTurnAsync(page, "button:has-text('Pass')");
+                return;
+            }
+
+            if (await page.Locator("#orders .action-row button:has-text('Decline')").CountAsync() > 0)
+            {
+                await TakeTurnAsync(page, "#orders .action-row button:has-text('Decline')"); // a rolled Attune price waits
                 return;
             }
 

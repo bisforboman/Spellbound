@@ -85,6 +85,7 @@ internal static class View
             ? match.Picker == seat
                 ? "Your move: pick one of the tiles to pick, e.g. {\"pick\": \"q,r\"}."
                 : $"Seat {match.Picker + 1} picks now; wait for your turn."
+            : match.Offer is { } offer && offer.Seat == seat ? $"Your move: the die says {offer.Price} mana for the tile at {Key(offer.Tile)}. Pay it ({{\"pay\": true}}) or decline ({{\"pay\": false}})."
             : match.Actor != seat ? $"Seat {match.Actor + 1}'s turn; wait for yours."
             : match.OpenStance is { } open ? $"Your move: Seat {match.Picks[^1].Seat + 1} picked {open}. Take it too, or pass ({{\"stance\": \"{open.ToString().ToLowerInvariant()}\"}} with no target)."
             : $"Your move: pick a stance nobody has picked this round ({string.Join(", ", match.Unpicked).ToLowerInvariant()}).";
@@ -146,8 +147,10 @@ internal static class View
         stances in turn, one each, none twice in a round; the first picker moves one seat each round. When you pick a
         stance you take it first, {{r.PickerDiscount}} mana cheaper, with any moves; then every other player in turn may take it
         too (at full price, no moves) or pass. Then the next player picks.
-          attune: claim a free, unguarded tile next to yours. Costs {{r.AttuneBasePrice}} + {{r.AttunePricePerTile}} for
-            each of the first {{r.AttuneCheapTiles}} tiles you hold, + {{r.AttunePricePerTileBeyond}} for each tile beyond them.
+          attune: claim any free, unguarded tile. Its base price is {{r.AttuneBasePrice}} + {{r.AttunePricePerTile}} for
+            each of the first {{r.AttuneCheapTiles}} tiles you hold, + {{r.AttunePricePerTileBeyond}} for each tile beyond them,
+            + {{r.AttuneDistanceCost}} for each step beyond the first from your nearest tile. Taking it rolls a die
+            (1-{{r.AttuneDieFaces}}) onto the base; you see the price, then pay it ({"pay": true}) or decline ({"pay": false}).
           summon: units on one of your tiles. Imp: power {{r.ImpPower}}, {{r.ImpCost}} mana. Golem: power
             {{r.GolemPower}}, {{r.GolemCost}} mana, upkeep {{r.GolemUpkeep}}.
           attack: a rival's tile or a monster tile next to your units; say how many units go from each of your tiles next

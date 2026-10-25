@@ -179,6 +179,21 @@ public class StanceDraftTests
     }
 
     [Fact]
+    public void A_rolled_price_waits_through_a_save()
+    {
+        var match = Opened();
+        var free = match.Seats[0].Tiles.SelectMany(match.Map.NeighboursOf)
+            .First(h => match.Map[h].IsUnveiled && !match.Map[h].IsGuarded && match.OwnerOf(h) is null);
+        Take(match, Orders.Attune(0, free));
+
+        var loaded = Match.Load(match.Save(), match.Rules);
+
+        Assert.Equal(match.Offer, loaded.Offer);
+        Assert.True(loaded.Settle(0, pay: true, new SeededRandom(3)).Succeeded);
+        Assert.Equal(0, loaded.OwnerOf(free));
+    }
+
+    [Fact]
     public void Several_casts_in_one_round_count_as_one_round_of_casting()
     {
         var match = Opened(Scenarios.AnySpell(GameRules.Default with { StartingMana = 30 }));

@@ -9,6 +9,14 @@ public sealed record Report(bool Succeeded, IReadOnlyList<string> Lines, IReadOn
 
     /// <summary>The tag of line <paramref name="index"/>, or null if it is for everyone.</summary>
     public LineTag? TagOf(int index) => Tags is { } tags && index < tags.Count ? tags[index] : null;
+
+    /// <summary>This report followed by <paramref name="next"/>, their tags kept; it succeeded if the last one did.</summary>
+    public Report Then(Report next)
+    {
+        ArgumentNullException.ThrowIfNull(next);
+        return new Report(next.Succeeded, [.. Lines, .. next.Lines],
+            [.. Lines.Select((_, i) => TagOf(i)), .. next.Lines.Select((_, i) => next.TagOf(i))]);
+    }
 }
 
 /// <summary>Whom a report line concerns: the seat that did it (who always sees it), and the tiles it happened on

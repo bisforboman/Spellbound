@@ -435,7 +435,7 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
     /// <summary>Which step of a match a commitment is for: one pick of an opening draft, or a round.</summary>
     public static string StepKey(Match match) =>
         match.Phase == MatchPhase.Opening ? $"opening-{match.OpeningUnveil}-{match.PickNumber}"
-            : $"round-{match.CurrentRound}-{match.Picks.Count}-{match.OpenStance?.ToString() ?? "pick"}-{match.Actor}";
+            : $"round-{match.CurrentRound}-{match.Picks.Count}-{match.OpenStance?.ToString() ?? "pick"}-{match.Actor}{(match.Offer is null ? "" : "-price")}";
 
     /// <summary>The matches a player sits in, newest first.</summary>
     public async Task<IReadOnlyList<PlayerMatch>> ListForAsync(string ownerId)
@@ -473,7 +473,8 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
     public static IRandomSource StepRandom(int seed, Match match) => new SeededRandom(unchecked(match.Phase switch
     {
         MatchPhase.Opening => seed + (10 * match.OpeningUnveil) + match.PickNumber,
-        _ => seed + 100 + (1000 * match.CurrentRound) + (20 * match.Picks.Count) + (match.OpenStance is null ? 0 : 10) + (match.Actor ?? 0),
+        _ => seed + 100 + (1000 * match.CurrentRound) + (20 * match.Picks.Count) + (match.OpenStance is null ? 0 : 10) + (match.Actor ?? 0)
+             + (match.Offer is null ? 0 : 7),
     }));
 
     /// <summary>A match in an open transaction, with its seed and whether its game still runs; null if the game isn't

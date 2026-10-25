@@ -47,6 +47,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   (picked tokens in their picker's colour, the stance going round pulsing, free ones glowing on your pick and dimmed
   otherwise), a bubble for what's next, and effects on the map as the turns play back (summon, attack, a tile taken,
   a spell); mock-ups in `tools/mockups/board-first.html`
+- [x] Attune by a rolled price (owner's choice, 25 Oct 2026): any free tile, a base by realm size + 1 a step + a die;
+  the price is shown, then paid or declined (`Match.Settle`), on the page as Pay / Decline; bots pay when they can
 - [ ] Retune after the stance draft: the Warbrand's goal (maxed in 98% of games) and the point scale; play the bots'
   turns back one at a time on the board
   updated (unspent mana at the end rose from 11 to 28 a seat: a fix is proposed to the owner, not built)
