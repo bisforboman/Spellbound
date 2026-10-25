@@ -9,6 +9,9 @@ namespace Spellbound.Web.Data;
 /// </summary>
 public static class MatchSteps
 {
+    /// <summary>A person's answer to their rolled Attune price, as stored while it waits.</summary>
+    public sealed record AttuneChoice(bool Pay);
+
     /// <param name="committed">Each committing seat's pick or orders, as stored (JSON).</param>
     /// <param name="holding">The seats of people who missed the deadline.</param>
     /// <returns>What happened, and the seats whose land was attacked by someone else (for their notification).</returns>
@@ -32,8 +35,17 @@ public static class MatchSteps
             return (match.Draft(pick, random), new HashSet<int>());
         }
 
-        // A round's turn: the person's orders, else Channel or a pass for a person who let the deadline go by, else the bot's.
+        // A rolled Attune price waits for its seat: the person's choice, else a decline for a person who let the
+        // deadline go by, else the bot's.
         var actor = match.Actor!.Value;
+        if (match.Offer is { } offer && offer.Seat == actor)
+        {
+            var pay = committed.TryGetValue(actor, out var choice) ? MatchJson.Deserialize<AttuneChoice>(choice).Pay
+                : !holding.Contains(actor) && Bot.Pays(match, actor);
+            return (match.Settle(actor, pay, random), new HashSet<int>());
+        }
+
+        // A round's turn: the person's orders, else Channel or a pass for a person who let the deadline go by, else the bot's.
         var orders = committed.TryGetValue(actor, out var given) ? MatchJson.Deserialize<Orders>(given) with { Seat = actor }
             : holding.Contains(actor) ? match.Passing(actor)
             : Bot.ChooseOrders(match, actor, random);

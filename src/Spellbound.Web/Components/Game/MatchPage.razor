@@ -65,7 +65,7 @@ else
     @if (!drafting)
     {
         <section id="map" hidden="@(tab != MatchTab.Board)">
-        <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is not null ? null : match.Phase == MatchPhase.Rounds && playing ? ordersForm?.Pickable : toPick)" OnSelect="Select" ShowNames="named"
+        <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? match.Offer?.Tile ?? selected)" Highlight="@(replay is not null || match.Offer is not null ? null : match.Phase == MatchPhase.Rounds && playing ? ordersForm?.Pickable : toPick)" OnSelect="Select" ShowNames="named"
                 Unowned="@ReplayPending" Dark="@ReplayDark" Effects="@ReplayEffects" EffectsKey="replayBeat"
                 Gains="@(fresh ? match.Seats.SelectMany(s => s.Tiles).ToDictionary(h => h, match.IncomeOf) : null)" />
 
@@ -213,7 +213,23 @@ else
     }
     else if (playing && match.Phase == MatchPhase.Rounds)
     {
-        @if (match.Actor == you)
+        @if (match.Offer is { } offer && offer.Seat == you)
+        {
+            @* The die has rolled your Attune price: pay it and take the tile, or decline. Either ends your turn. *@
+            <StanceTray Match="match" Owners="view.Owners" You="you" />
+            <div class="bubble">
+                <p><b>The die says @offer.Roll.</b> @TileNames.Of(match.Map, offer.Tile) costs <b>@offer.Price mana</b>. Pay it, or
+                    decline: your turn ends either way.</p>
+                <p class="bubble-sub">You have @me.Mana mana.</p>
+            </div>
+            <div class="action-bar">
+                <div class="action-row">
+                    <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="() => SettleAsync(false)">Decline</button>
+                    <button type="button" class="btn btn-primary btn-lg" disabled="@(busy || offer.Price > me.Mana)" @onclick="() => SettleAsync(true)">Pay @offer.Price</button>
+                </div>
+            </div>
+        }
+        else if (match.Actor == you)
         {
             <OrdersForm @ref="ordersForm" Match="match" You="you" Owners="view.Owners" Selected="selected" OnCommit="CommitAsync"
                         OnChanged="OrdersChanged" Busy="busy" />
@@ -663,6 +679,8 @@ else
     private Task PickAsync() => selected is { } tile ? ActAsync(() => Play.PickAsync(Id, ownerId, tile)) : Task.CompletedTask;
 
     private Task CommitAsync(Orders orders) => ActAsync(() => Play.OrdersAsync(Id, ownerId, orders));
+
+    private Task SettleAsync(bool pay) => ActAsync(() => Play.SettleAsync(Id, ownerId, pay));
 
     private static string Capitalised(string text) => text.Length == 0 ? text : char.ToUpperInvariant(text[0]) + text[1..];
 
