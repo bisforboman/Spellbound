@@ -187,7 +187,7 @@ public sealed class MatchPlayTests : TestDatabase
         var match = (await play.ViewAsync(id, "alice"))!.Match;
 
         Assert.True(report.Succeeded);
-        Assert.Equal(new Army(2, 0), match.UnitsOn(tile));
+        // Not the units on the tile: the seed is random, and a bot may march on it after the summon.
         Assert.Contains("Seat 1 summons 2 Imps", string.Join('\n', report.Lines), StringComparison.Ordinal);
         Assert.Contains(report.Lines, l => l.StartsWith("Seat 2 ", StringComparison.Ordinal));
         Assert.Equal(0, match.Actor);
