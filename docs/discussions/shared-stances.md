@@ -148,3 +148,31 @@ playtest with people (`../skirmish-paper-prototype.md`), not for the app.
 **Measured** (`--plans`, 2,000 games): the bots barely change (Warlord 45% to 43%, Balanced 21% to 23%), because they
 don't choose stances by price. Bots spend a little less and end with about 2 mana more. People choosing by price is
 what this is for, so the next AI-taste session or the first people judge it.
+
+## The stance draft (25 Oct 2026)
+
+The owner chose to try Puerto Rico in turn after all, reversing the choice above. Their words: each player chooses a
+stance for the round, and then each player is allowed to act on it; a stance can't be chosen twice in a round, and
+they reset when everyone has chosen. It replaces the secret, simultaneous round, and supersedes follow orders (they
+failed because nobody varied their stance; an exclusive pick forces the variety they needed).
+
+What the owner settled, asked one point at a time:
+- **Everyone takes the stance just picked, in turn and in public**, the picker first. (Offered instead: the pick in
+  public, then everyone committing their action on it in secret at once, which would have kept part of principle 2 and
+  cost fewer waits with friends.)
+- **The picker pays 1 mana less** for their own action.
+- **No bonus for stances nobody picked** (Puerto Rico's doubloons stay out).
+- **A sixth stance, Channel:** gain 2 mana, its picker's alone, so the last to pick always has a useful choice
+  (Puerto Rico's Prospector). Chosen over Trap (a hidden reaction when a tile is attacked), Scry (see something hidden)
+  and Raid (strike without taking the tile).
+- **The first picker rotates**, continuing the opening draft's rotation; moves go with a player's own pick; a player
+  who misses a turn with friends channels on a pick and passes on a follow.
+
+What it costs, against `../design-principles.md`: principle 2 (secret, simultaneous orders) and principle 3 (one stance
+a round) give way, and principle 1 (a few minutes a round) is at risk: each seat now takes 2–4 actions a round, and with
+friends every turn waits on one player.
+
+**Measured** (2,000 bot games each, `--plans`; the numbers are in `../game-design.md`, Rounds and stances): mana is
+spent (3 left at the end instead of 26), every stance is picked, conquest rises from 7% of a score to about 30%, and
+the plans and traits stay within a fair band. The scale grows by about half, and the Warbrand's goal is too easy now;
+both are left to retune from play.

@@ -28,11 +28,14 @@ weighed less (owner, 21 Oct 2026).
 
 ## Principles
 
-1. **One phone, one hand, a few minutes a round.** Text-first pages, a stance is one tap, 8 rounds. (design;
-   `CLAUDE.md` UI rules)
-2. **Secret, simultaneous orders.** Everyone commits, then everything resolves together. This is where reading
-   rivals happens, and all six AI tastes named it the best part. (design; every AI taste, both sessions)
-3. **One stance a round.** Every round is a choice between growing, arming, fighting and building. (design)
+1. **One phone, one hand, a few minutes a round.** Text-first pages, a turn is one tap, 8 rounds. With the stance
+   draft a seat takes 2–4 turns a round: to watch in play. (design; `CLAUDE.md` UI rules)
+2. **Read your rivals' next move.** *(Was: secret, simultaneous orders, which all six AI tastes named the best part.
+   It gave way on 25 Oct 2026, the owner's choice, to the stance draft: turns are now in public, and the reading is in
+   what a rival will pick, and which stance they leave you; `discussions/shared-stances.md`, "The stance draft".)*
+   (design; owner)
+3. **A stance is a choice for everyone.** Every pick decides what all players may do next, and which stances are left.
+   *(Was: one stance a round; it gave way to the same draft.)* (design; owner)
 4. **See the cost before you commit.** Every order shows what it costs and what it will do (the ledger, `check`).
    Hidden information is about rivals, never about the rules. (design; praised by the Euro-gamer, 4X fan and Casual
    player)

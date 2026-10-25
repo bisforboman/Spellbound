@@ -12,7 +12,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 1. **Setup.** The map lies dark. Each player starts with **4 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening draft puts them.
 2. **The opening Unveils.** Before the first round, three Unveils each reveal **one tile per player**, and the players take **one each in turn**, for free: the first draft starts with seat 1, each next one a seat later, and the last to pick gets the tile left over. Traits are still hidden, so nobody knows for sure why a rival picked a tile. As the rounds begin, **3 more tiles** are revealed, unowned, for anyone to attune. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
-3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end. Each round, every player secretly picks one **stance** (Attack, Attune, Summon, Build or Cast) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
+3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end. Each round the players pick **stances** in turn (Attack, Attune, Summon, Build, Cast or Channel), none twice, and everyone may take each stance picked, the picker first and a little cheaper; each turn happens at once, in the open. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
 5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no draft). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
 6. **The second half.** Rounds 5–8: with the map fully revealed and free land running out, growth turns into competition. Attuning gets more expensive as realms grow, so attacking rivals becomes the cheaper way to gain land. A player's last tile can never be taken.
@@ -120,26 +120,50 @@ In turn (owner's choice, 24 Oct 2026; it replaced an auction, tile by tile, that
 
 ## Rounds and stances
 
-- Each round, every player secretly picks **one stance**. Then all stances resolve together.
-- A stance should be **one button** on a phone: the round's main decision is a single tap.
-- **Five stances**:
+Decided 25 Oct 2026, the owner's choice: a **stance draft, as in Puerto Rico** (its roles). It replaced one stance a
+round, committed in secret by everyone at once and resolved together. The reasoning is in
+`discussions/shared-stances.md`, "The stance draft (25 Oct 2026)".
+
+- **Players pick stances in turn**, one each a round, and **no stance twice in a round**; every round starts with all
+  of them free again. The **first picker moves one seat each round**, carrying on the opening draft's rotation (its
+  three drafts start with seats 1, 2 and 3), so over a match the first picks spread as evenly as they can.
+- **Everyone takes the stance just picked:** the picker first, then each other player in turn, going once round the
+  table. Each may take it (aimed at a tile, as below) or **pass**. Then the next player picks.
+- **The picker's privilege:** their own action costs **1 mana less** (never below nothing). The others pay full price.
+- **Moves come with your own pick only:** units step before the stance (see *Units*). Taking another player's stance
+  has no moves.
+- **Each turn happens at once**, in the open: the next player sees the board as it now is. There is no secret
+  commitment in the rounds any more; reading rivals is about what they will pick and when.
+- **A pick needn't be used:** a player may pick a stance and aim it at nothing, which keeps it from the others this
+  round. A player is never forced to spend.
+- A stance should be **one button** on a phone: a turn is one tap, plus its tile on the map.
+- **Six stances**:
   - **Attack:** attack a rival's or a monster-guarded tile with units (see *Battles*). An attack may also bring
     **reinforcements**: up to 3 power of units summoned on one of your tiles, at 1 mana more each than a summon
-    (an Imp costs 2). They guard that tile this round and can't join the attack. (Decided 21 Oct 2026. The Wargamer
+    (an Imp costs 2). They guard that tile and can't join the attack. (Decided 21 Oct 2026. The Wargamer
     asked for it in the third and fourth AI-taste sessions, and the Bluffer in the first. All four target tastes said
     one stance a round left mana piling up and home undefended.)
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
   - **Build:** spend mana on an upgrade for one of your tiles (see *Upgrades*).
   - **Cast:** spend mana on one spell (see *Spells*).
+  - **Channel:** gain **2 mana**. Only its picker takes it; nobody else does (Puerto Rico's Prospector). It is the
+    pick that is never wasted, so the last player to pick always has something worth taking. A flat gain, not a
+    multiplier, so it doesn't let a lead snowball (`design-principles.md`, principle 7).
 - **Stances cost the same every round.** *(Unpicked stances getting cheaper, Puerto Rico's doubloons, decided
-  21 Oct 2026, was removed on 24 Oct 2026, the owner's choice: an Attune, Summon or Build nobody chose had cost 1 mana
-  less a round, up to 3. Measured on removal, 2,000 bot games with 3 players: unspent mana at the end fell from 28.3 to
-  25.4 a seat (bots spend the same mana on fewer, full-price purchases, so they buy a little more), and the plans'
-  win rates moved by at most 2 points.)*
-- Alongside the stance, players can **move units** freely (see *Units*).
-- A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon, no spell): only the moves happen. A player is never forced to spend.
-- More stances (for example a defensive Hold, or Scry to peek at hidden things) can be added after the first playtest.
+  21 Oct 2026, was removed on 24 Oct 2026, the owner's choice; on 25 Oct 2026 the owner chose not to bring it back with
+  the draft.)*
+- **With friends**, each turn waits on its player for **24 hours**; a player who lets it go by channels on a pick (or
+  takes the first stance still free, aimed at nothing, once Channel is gone) and passes on another player's stance.
+  After two misses in a row, a bot plays that seat (see `discussions/playing-with-friends.md`).
+- **Measured** (2,000 bot games each, `--plans`, against the rounds before the draft): with 5 players, mana left at
+  the end fell from 26 a seat to 3, conquest points rose from 1.5 a seat to 9.7, and final scores from 20 to 32
+  (first minus last 10 to 17). Every stance is picked: per game, Attack 8.0, Summon 8.0, Channel 7.4, Attune 6.3,
+  Build 5.8, Cast 4.6. Plans win 17–23% (a fair share is 20%; 14–29% before) and traits 14–24% (10–29%). Each seat
+  takes about 3.5 actions a round at 5 players and 2.5 at 3 (one before), and passes about once. With 3 players the
+  plans win 25–41% (a fair share is 33%). *To retune: the Warbrand's goal is maxed in 98% of games, and the point
+  scale has grown about half again (see Scale).* (Bots pick the first of their wishes that is still free; a Builder or
+  an Economist never picks Attack but joins one when it can win.)
 
 ### Round order
 
@@ -147,16 +171,11 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 
 1. **Income:** every held Shifting and Wild tile rolls its yield (see *Tiles*); every player collects the yield of each tile they hold.
 2. **Upkeep:** pay 1 mana per Golem; a Golem that can't be paid for dissolves.
-3. **Commit:** every player secretly commits one stance plus any moves. When all have committed, everything is revealed. Until then a player can take their orders back and commit again; everyone sees who has committed, never what. With friends, a round that has waited **24 hours** resolves anyway: whoever hasn't committed holds (in the opening, passes). After two misses in a row, a bot plays that seat (see `discussions/playing-with-friends.md`).
-4. **Moves** resolve. Defenders can reinforce a threatened tile in the same round; attackers can't be sure what they'll meet.
-5. **Attune, Summon and Build** resolve, then **spells**. New tiles exist, new units can defend, and spells take effect before
-   attacks (Blight waits for the next round's income).
-6. **Attacks** resolve.
-   - Units sent to attack **have left** their tile: they don't defend it if it's attacked in the same round.
-   - If **several players attack the same tile**, all of them fight the defender together in **one battle**; if the attackers win, the surviving attackers then fight each other for the tile.
-   - Units that moved this round can attack: moves resolve first.
-   - Each attacked tile has one battle, and the battles are fought in board order (this decides whether a tile is still its owner's last when its battle comes).
-7. **Scoring:** points are banked (see *Scoring and winning*).
+3. **The draft:** the players pick in turn, and each stance goes round the table, as above. A turn's moves come first,
+   then its stance: an Attune, a Summon or a Build, a spell, or an attack, all at once.
+   - Units sent to attack **have left** their tile: they don't defend it against the attacks that come after.
+   - A Ward or a spell that lasts the round lasts until the round ends, so it covers every later turn.
+4. **Scoring:** when every player has picked and the last stance has gone round, points are banked (see *Scoring and winning*).
 
 ## Units
 
@@ -173,7 +192,7 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 
 - Because weak units die first in battle and shield strong ones, strong units must cost more per point of power over time; the upkeep is what does that.
 - Upkeep is paid **after** the round's mana income. If a player still **can't pay upkeep** for a Golem, that Golem **dissolves**. When only some can be paid for, the unpaid ones dissolve from the player's tiles in board order (a fixed order, so the result is always the same).
-- **Moving units is possible every round**, regardless of stance, with **no limit** on the number of moves (to be tuned if visits get long).
+- **Moving units is possible every round**, with your own pick (whatever stance you pick), with **no limit** on the number of moves (to be tuned if visits get long).
 - Units can only move **between your own tiles**, one step to an **adjacent** tile. Reaching beyond your borders takes the **Attack** stance.
 - **One step per round:** a unit that moved this round can't move again until the next, so units cross a group one tile per round.
 - Imps can pile up without limit. This is accepted for now; if playtests show a cheap horde is too strong, add a limit then (per-tile cap, Imps fading after a few rounds, or weaker Imps).
@@ -344,6 +363,8 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
   for conquest, and about 1 from trait goals: still about 18 in all. Since the strategy retune (21 Oct 2026: Attune
   1 + 1 per tile to 3 tiles then + 3, 2 points per conquest, mana 1 per 10) a seat ends around 21: about 10 for land, 5 for mana, 4 for
   conquest, 1 from its trait and 1–2 from upgrades.*
+  *Since the stance draft (25 Oct 2026) a seat ends around 31 with 3 players: about 12 for land, 7 for mana, 9 for
+  conquest, 1 from its trait and 2 from upgrades. Conquest is now near a third of a score; to retune from play.*
 
 ## Fog of war
 
