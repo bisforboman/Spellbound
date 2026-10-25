@@ -85,13 +85,16 @@ internal static class View
             ? match.Picker == seat
                 ? "Your move: pick one of the tiles to pick, e.g. {\"pick\": \"q,r\"}."
                 : $"Seat {match.Picker + 1} picks now; wait for your turn."
-            : "Your move: this round's orders (see `rules` for the format).";
+            : match.Actor != seat ? $"Seat {match.Actor + 1}'s turn; wait for yours."
+            : match.OpenStance is { } open ? $"Your move: Seat {match.Picks[^1].Seat + 1} picked {open}. Take it too, or pass ({{\"stance\": \"{open.ToString().ToLowerInvariant()}\"}} with no target)."
+            : $"Your move: pick a stance nobody has picked this round ({string.Join(", ", match.Unpicked).ToLowerInvariant()}).";
     }
 
     private static string Phase(Match match) => match.Phase switch
     {
         MatchPhase.Opening => $"Opening draft {match.OpeningUnveil} of {match.Rules.OpeningUnveils}, pick {match.PickNumber}.",
-        MatchPhase.Rounds => $"Round {match.CurrentRound} of {match.Rules.Rounds}.",
+        MatchPhase.Rounds => $"Round {match.CurrentRound} of {match.Rules.Rounds}. Picked so far: "
+                             + (match.Picks.Count == 0 ? "nothing." : string.Join(", ", match.Picks.Select(p => $"{p.Stance} (Seat {p.Seat + 1})")) + "."),
         _ => "The match is over.",
     };
 
@@ -129,7 +132,7 @@ internal static class View
     private static string RulesText(GameRules r) => $$"""
         SPELLBOUND IN BRIEF
         A hex map starts dark. Up to {{r.Rounds}} rounds after an opening; the most points at the end wins (ties: most
-        tiles, then most mana). Everyone acts in secret at the same time; then everything resolves together.
+        tiles, then most mana). Players take turns, in the open, like Puerto Rico's roles.
 
         TILES: Steady (always yields 2), Shifting (1-3), Wild (0-4). Each round you collect your tiles' yield in mana.
         Later Unveils (rounds {{string.Join(" and ", r.LaterUnveilRounds)}}) reveal the rest of the map; some new tiles are
@@ -139,10 +142,12 @@ internal static class View
         each reveals one tile per player, and players take one each in turn, for free ({"pick": "q,r"} on your turn).
         The first draft starts with seat 1, each next one a seat later; the last to pick gets the tile left over.
 
-        A ROUND: income, then Golem upkeep ({{r.GolemUpkeep}} mana each; unpaid Golems dissolve). Then each player picks
-        ONE stance, plus any moves:
+        A ROUND: income, then Golem upkeep ({{r.GolemUpkeep}} mana each; unpaid Golems dissolve). Then the players pick
+        stances in turn, one each, none twice in a round; the first picker moves one seat each round. When you pick a
+        stance you take it first, {{r.PickerDiscount}} mana cheaper, with any moves; then every other player in turn may take it
+        too (at full price, no moves) or pass. Then the next player picks.
           attune: claim a free, unguarded tile next to yours. Costs {{r.AttuneBasePrice}} + {{r.AttunePricePerTile}} for
-            each of the first {{r.AttuneCheapTiles}} tiles you hold, + {{r.AttunePricePerTileBeyond}} for each tile beyond them. Two players attuning the same tile: nobody gets it, nobody pays.
+            each of the first {{r.AttuneCheapTiles}} tiles you hold, + {{r.AttunePricePerTileBeyond}} for each tile beyond them.
           summon: units on one of your tiles. Imp: power {{r.ImpPower}}, {{r.ImpCost}} mana. Golem: power
             {{r.GolemPower}}, {{r.GolemCost}} mana, upkeep {{r.GolemUpkeep}}.
           attack: a rival's tile or a monster tile next to your units; say how many units go from each of your tiles next
@@ -154,14 +159,14 @@ internal static class View
             Sanctum: your spells aimed at it or next to it cost {{r.SanctumDiscount}} less. An upgrade passes with the
             tile when it's taken, and is worth {{r.PointsPerUpgrade}} point at the end to whoever holds it.
           cast: one spell (below).
-          hold: none of the above.
-          moves: units step once a round to a neighbouring tile of yours. Moves happen first, so moved units can attack.
-        Order: moves, attunes, summons and builds, spells, attacks, then points.
+          channel: gain {{r.ChannelMana}} mana. Only its picker takes it.
+          moves: with your own pick only; units step once to a neighbouring tile of yours, before the stance.
+        Each turn happens at once; points are banked when the round's last stance has gone round.
 
         BATTLES: total power against total power. Higher wins; both sides lose power equal to the smaller total (weakest
         units first, stopping before a unit that would go past it: losing 2 power can't kill a Golem of power 3); the
         loser is wiped out. Scorch burns the same way. A tie wipes out both and the tile stays (against monsters a tie takes it).
-        A player's last tile can't be taken. Several attackers on one tile fight the defender together, then each other.
+        A player's last tile can't be taken.
 
         SPELLS (the cast stance, one a round). Your trait decides your spell: {{string.Join("; ", r.TraitSpells.Select(t => $"{t.Key} {string.Join("/", t.Value)}"))}}.
         Ward, Blight and Lure can go on several tiles in one cast ("also"), each paid for.
@@ -192,9 +197,10 @@ internal static class View
           {"stance": "cast", "spell": "scorch", "target": "1,0", "count": 2}
           {"stance": "cast", "spell": "ward", "target": "0,0", "also": ["0,1"]}
           {"stance": "cast", "spell": "leyline", "target": "0,0", "to": "2,-1", "imps": 2, "golems": 0}
-          {"stance": "hold"}
-        Any stance can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
+          {"stance": "channel"}
+          {"stance": "attack"}               (a stance with no target: pass on it, or pick it to keep it from the others)
+        Your pick can add "moves": [{"from": "0,0", "to": "0,1", "imps": 2, "golems": 0}]
         An attack can add "reinforce": {"target": "0,0", "kind": "imp", "count": 3}
-        `check` shows what an action would cost and do, changing nothing. `act` commits it and waits for the others.
+        `check` shows what an action would cost and do, changing nothing. `act` takes your turn and waits for your next.
         """;
 }

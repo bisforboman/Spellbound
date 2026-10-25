@@ -1305,6 +1305,7 @@ tr.you td {
     pointer-events: none;
     opacity: 0;
     animation: round-banner 2.8s ease-out forwards;
+    pointer-events: none; /* faded out, it stays in place: taps go through to the page */
 }
 
     .round-banner b {

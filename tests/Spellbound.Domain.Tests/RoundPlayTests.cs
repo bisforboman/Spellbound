@@ -2,11 +2,12 @@ namespace Spellbound.Domain.Tests;
 
 public class RoundPlayTests
 {
-    /// <summary>A match past its opening (everyone passed), at the start of round 1.</summary>
+    /// <summary>A match past its opening (everyone passed), at the start of round 1; without a picker's discount, so
+    /// an action costs its price whoever picks it (StanceDraftTests covers the discount).</summary>
     private static Match Opened(int players = 3, int seed = 1, GameRules? rules = null)
     {
         var random = new SeededRandom(seed);
-        var match = Match.Start(players, rules ?? GameRules.Default, random);
+        var match = Match.Start(players, (rules ?? GameRules.Default) with { PickerDiscount = 0 }, random);
         while (match.Phase == MatchPhase.Opening)
         {
             match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
@@ -16,7 +17,7 @@ public class RoundPlayTests
     }
 
     private static List<Orders> HoldAll(Match match, params Orders[] orders) =>
-        [.. orders, .. match.Seats.Where(s => orders.All(o => o.Seat != s.Index)).Select(s => Orders.Hold(s.Index))];
+        [.. orders, .. match.Seats.Where(s => orders.All(o => o.Seat != s.Index)).Select(s => Scenarios.Hold(s.Index))];
 
     private static IEnumerable<Hex> FreeNeighbours(Match match, int seat) =>
         match.Seats[seat].Tiles.SelectMany(match.Map.NeighboursOf).Distinct()
@@ -138,18 +139,21 @@ public class RoundPlayTests
     }
 
     [Fact]
-    public void Two_seats_attuning_the_same_tile_get_nothing_and_pay_nothing()
+    public void A_tile_attuned_earlier_in_the_turn_order_is_gone_for_the_seats_after()
     {
         var match = FirstWhere(m => FreeNeighbours(m, 0).Intersect(FreeNeighbours(m, 1)).Any());
         var target = FreeNeighbours(match, 0).Intersect(FreeNeighbours(match, 1)).First();
-        var mana = match.Seats[0].Mana;
+        var mana = match.Seats[1].Mana;
 
-        var report = match.Resolve(HoldAll(match, Orders.Attune(0, target), Orders.Attune(1, target)), new SeededRandom(7));
+        Assert.True(match.Take(Orders.Attune(0, target), new SeededRandom(7)).Succeeded);
+        var before = Snapshot(match);
+        var late = match.Take(Orders.Attune(1, target), new SeededRandom(7));
 
-        Assert.True(report.Succeeded);
-        Assert.Null(match.OwnerOf(target));
-        Assert.Contains(report.Lines, l => l.Contains("nobody gets it", StringComparison.Ordinal));
-        Assert.Equal(mana + match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value), match.Seats[0].Mana); // only the next round's income
+        Assert.False(late.Succeeded);
+        Assert.Contains("Only a free, unveiled tile", late.Lines[0], StringComparison.Ordinal);
+        Assert.Equal(before, Snapshot(match));
+        Assert.Equal(0, match.OwnerOf(target));
+        Assert.Equal(mana, match.Seats[1].Mana);
     }
 
     [Fact]
@@ -161,7 +165,7 @@ public class RoundPlayTests
         match.Resolve(HoldAll(match, Orders.Summon(0, home, UnitKind.Imp, 3)), new SeededRandom(7));
         match.Resolve(HoldAll(match, Orders.Attune(0, target)), new SeededRandom(7));
 
-        var report = match.Resolve(HoldAll(match, Orders.Hold(0, new Move(home, target, new Army(2, 0)))), new SeededRandom(7));
+        var report = match.Resolve(HoldAll(match, Scenarios.Hold(0, new Move(home, target, new Army(2, 0)))), new SeededRandom(7));
 
         Assert.True(report.Succeeded, string.Join('\n', report.Lines));
         Assert.Equal(new Army(1, 0), match.UnitsOn(home));
@@ -180,7 +184,7 @@ public class RoundPlayTests
 
         var there = new Move(home, target, new Army(2, 0));
         var back = new Move(target, home, new Army(2, 0));
-        var report = match.Resolve(HoldAll(match, Orders.Hold(0, there, back)), new SeededRandom(7));
+        var report = match.Resolve(HoldAll(match, Scenarios.Hold(0, there, back)), new SeededRandom(7));
 
         Assert.False(report.Succeeded);
         Assert.Equal(before, Snapshot(match));
@@ -196,9 +200,7 @@ public class RoundPlayTests
         { "move off your land", "only move between your own tiles" },
         { "move units you don't have", "There aren't 1 Imp" },
         { "move two steps", "aren't next to each other" },
-        { "a seat missing", "exactly one set of orders" },
-        { "a seat twice", "exactly one set of orders" },
-        { "no such seat", "There is no seat 4" },
+        { "out of turn", "It's Seat 1's turn, not Seat 2's" },
     };
 
     [Theory]
@@ -225,16 +227,16 @@ public class RoundPlayTests
             "attune an owned tile" => HoldAll(match, Orders.Attune(0, rival)),
             "attune far away" => HoldAll(match, Orders.Attune(0, lonely)),
             "attune too dear" => HoldAll(match, Orders.Attune(0, free)),
-            "move off your land" => HoldAll(match, Orders.Hold(0, new Move(mine[0], rival, new Army(1, 0)))),
-            "move units you don't have" => HoldAll(match, Orders.Hold(0, new Move(near.a, near.b, new Army(1, 0)))),
-            "move two steps" => HoldAll(match, Orders.Hold(0, new Move(far.a, far.b, new Army(1, 0)))),
-            "a seat missing" => [Orders.Hold(0), Orders.Hold(1)],
-            "a seat twice" => [Orders.Hold(0), Orders.Hold(1), Orders.Hold(1)],
-            _ => [Orders.Hold(0), Orders.Hold(1), Orders.Hold(3)],
+            "move off your land" => HoldAll(match, Scenarios.Hold(0, new Move(mine[0], rival, new Army(1, 0)))),
+            "move units you don't have" => HoldAll(match, Scenarios.Hold(0, new Move(near.a, near.b, new Army(1, 0)))),
+            "move two steps" => HoldAll(match, Scenarios.Hold(0, new Move(far.a, far.b, new Army(1, 0)))),
+            _ => [],
         };
         var before = Snapshot(match);
 
-        var report = match.Resolve(orders, new SeededRandom(7));
+        var report = problem == "out of turn"
+            ? match.Take(Orders.Summon(1, match.Seats[1].Tiles.First(), UnitKind.Imp, 1), new SeededRandom(7))
+            : match.Resolve(orders, new SeededRandom(7));
 
         Assert.False(report.Succeeded);
         Assert.Contains(reason, Assert.Single(report.Lines), StringComparison.Ordinal);
@@ -308,8 +310,8 @@ public class RoundPlayTests
     {
         var match = Match.Start(2, GameRules.Default, new SeededRandom(1));
 
-        Assert.False(match.Resolve([Orders.Hold(0), Orders.Hold(1)], new SeededRandom(7)).Succeeded);
-        Assert.False(match.Check(Orders.Hold(0)).Succeeded);
+        Assert.False(match.Resolve([Scenarios.Hold(0), Scenarios.Hold(1)], new SeededRandom(7)).Succeeded);
+        Assert.False(match.Check(Scenarios.Hold(0)).Succeeded);
     }
 
     [Fact]

@@ -33,7 +33,7 @@ public sealed class MatchStoreTests : TestDatabase
         var match = loaded.Match;
         return match.Phase == MatchPhase.Opening
             ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
-            : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random))], random);
+            : match.Take(Bot.ChooseOrders(match, match.Actor!.Value, random), random);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class MatchStoreTests : TestDatabase
             steps++;
         }
 
-        Assert.Equal((3 * 2) + 8, steps); // each opening draft has two picks (the third tile is the leftover)
+        Assert.True(steps >= (3 * 2) + (8 * 3)); // each opening draft has two picks (the third tile is the leftover), then every turn
         Assert.Equal(Now, (await WithDbAsync(db => db.LoadGameAsync(id)))!.EndedAt); // its game ended with it
         Assert.Equal(MatchJson.Serialize(memory.Save()), MatchJson.Serialize((await store.LoadAsync(id))!.Match.Save()));
     }

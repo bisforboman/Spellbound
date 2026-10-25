@@ -39,6 +39,12 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Pages: a "Spell (optional)" section on the orders form (a spell, its target and how much, with the preview), and
   its playtest step
 - [x] Cast is a stance again (owner's choice, 24 Oct 2026): one spell a Cast round, at the same costs, Rally removed; a Cast row on the orders form replaces the "Spell (optional)" fold; bots and the simulator
+- [x] The stance draft, as in Puerto Rico (owner's choice, 25 Oct 2026): picks in turn, no stance twice a round, everyone
+  takes each stance (the picker first, 1 mana less), a sixth stance Channel, Hold removed; turns in the domain
+  (`Match.Take`), bots, the simulator, the table tool, the server's steps (one turn at a time), the orders form (pick,
+  or take or pass) and a playtest that plays a round turn by turn; measured (`game-design.md`, Rounds and stances)
+- [ ] Retune after the stance draft: the Warbrand's goal (maxed in 98% of games) and the point scale; play the bots'
+  turns back one at a time on the board
   updated (unspent mana at the end rose from 11 to 28 a seat: a fix is proposed to the owner, not built)
 - [x] Each trait gives a spell (owner's choice, 24 Oct 2026): one spell per trait, shared by two (Spellweaver all
   five); Ward, Blight and Lure go on several tiles in one Cast; Hexer counts rounds of Blight; the form, help page,

@@ -42,7 +42,7 @@ public class BotTests
             match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
-        Assert.Equal(Orders.Hold(0).Target, Bot.ChooseOrders(match, 0, random).Target);
+        Assert.Equal(Orders.Channel(0), Bot.ChooseOrders(match, 0, random)); // nothing it can afford: it channels
     }
 
     [Theory]
@@ -106,7 +106,7 @@ public class BotTests
             {
                 var report = match.Phase == MatchPhase.Opening
                     ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
-                    : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random, plan))], random);
+                    : match.Take(Bot.ChooseOrders(match, match.Actor!.Value, random, plan), random);
                 Assert.True(report.Succeeded, string.Join('\n', report.Lines));
                 lines.AddRange(report.Lines);
             }

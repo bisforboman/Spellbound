@@ -93,19 +93,11 @@ else
     }
     else if (view.IsRunning && view.People.Count() > 1 && match.Phase != MatchPhase.Ended)
     {
-        @if (match.Phase == MatchPhase.Rounds)
-        {
-            <p class="commit-line">@(view.Committed.Contains(you)
-                ? "Everyone gives orders in secret; the step resolves when all players have committed. Until then you can take yours back."
-                : view.Committed.Count > 0
-                    ? $"{string.Join(" and ", view.Committed.Order().Select(p => $"Seat {p + 1}"))} committed and {(view.Committed.Count == 1 ? "waits" : "wait")} on you."
-                    : "Everyone gives orders in secret; the step resolves when all players have committed.")</p>
-        }
         @if (view.DueAt is { } due)
         {
             <p class="commit-line">Due in <b>@Until(due)</b>: @(match.Phase == MatchPhase.Opening
                 ? "if the pick isn't made by then, a bot makes it."
-                : "whoever hasn't committed by then holds.")
+                : "if the turn isn't taken by then, it channels (on a pick) or passes.")
                 @(view.Missed.GetValueOrDefault(you) > 0 ? "You missed the last deadline: miss this one too and a bot takes your seat." : "")</p>
         }
     }
@@ -130,8 +122,8 @@ else
             <li><b>Choose your trait</b>: a secret goal, scored at the end.</li>
             <li><b>The opening</b>: @match.Rules.OpeningUnveils drafts reveal the map, a tile for each player at a time,
                 and everyone takes one in turn, for free.</li>
-            <li><b>@match.Rules.Rounds rounds</b>: each round, attack, attune or summon. Points are banked every round,
-                and the most points wins.</li>
+            <li><b>@match.Rules.Rounds rounds</b>: each round, players pick stances in turn (attack, attune, summon and
+                more), and everyone may take each one. Points are banked every round, and the most points wins.</li>
         </ol>
         <div class="action-bar">
             <p class="action-sum">First, your trait.</p>
@@ -204,8 +196,27 @@ else
     }
     else if (playing && match.Phase == MatchPhase.Rounds)
     {
-        <OrdersForm @ref="ordersForm" Match="match" You="you" Owners="view.Owners" Selected="selected" OnCommit="CommitAsync"
-                    OnChanged="OrdersChanged" Busy="busy" />
+        @if (match.Picks.Count > 0)
+        {
+            <p class="commit-line">Picked this round: @string.Join(", ", match.Picks.Select(p => $"{p.Stance} ({Seats.Name(view, p.Seat, you)})")).</p>
+        }
+        @if (match.Actor == you)
+        {
+            <OrdersForm @ref="ordersForm" Match="match" You="you" Owners="view.Owners" Selected="selected" OnCommit="CommitAsync"
+                        OnChanged="OrdersChanged" Busy="busy" />
+        }
+        else
+        {
+            <h2 class="h4">Round @match.CurrentRound of @match.Rules.Rounds</h2>
+            <div class="action-bar">
+                <p class="action-sum">@(match.OpenStance is { } open
+                    ? $"{Seats.Name(view, match.Picks[^1].Seat, you)} picked {open}; {Seats.Name(view, match.Actor!.Value, you)} takes it or passes."
+                    : $"{Seats.Name(view, match.Actor!.Value, you)} picks next.") Wait for your turn.</p>
+                <div class="action-row">
+                    <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="LoadAsync">Refresh</button>
+                </div>
+            </div>
+        }
     }
     else if (match.Phase == MatchPhase.Ended)
     {
@@ -491,7 +502,8 @@ else
         _ = ReplayAsync(replayStop.Token);
     }
 
-    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (picks|gets the last tile)\b");
+    // An opening pick hands out a tile ("Seat 2 picks the Wild tile at…"); a round's pick names a stance ("Seat 2 picks Summon.").
+    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (picks the|gets the last tile)\b");
 
     private async Task ReplayAsync(CancellationToken stop)
     {

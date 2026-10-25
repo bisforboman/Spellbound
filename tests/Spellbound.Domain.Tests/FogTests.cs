@@ -32,7 +32,7 @@ public class FogTests
     }
 
     private static Report Play(Match match, params Orders[] orders) =>
-        match.Resolve([.. orders, .. match.Seats.Where(s => orders.All(o => o.Seat != s.Index)).Select(s => Orders.Hold(s.Index))],
+        match.Resolve([.. orders, .. match.Seats.Where(s => orders.All(o => o.Seat != s.Index)).Select(s => Scenarios.Hold(s.Index))],
             new SeededRandom(match.CurrentRound));
 
     [Fact]

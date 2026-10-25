@@ -60,12 +60,20 @@ public sealed class Seat
     /// <summary>Casts of Scorch (that burned something) and of Blight, once a Cast however many tiles it goes on.</summary>
     public int HexesCast { get; internal set; }
 
+    /// <summary>The last round a spell was cast in, so a round with several casts counts once in <see cref="RoundsCast"/>.</summary>
+    public int LastRoundCast { get; internal set; }
+
     private readonly HashSet<Spell> spellsCast = [];
 
 
-    internal void Cast(Spell spell)
+    internal void Cast(Spell spell, int round)
     {
-        RoundsCast++;
+        if (round != LastRoundCast)
+        {
+            RoundsCast++;
+            LastRoundCast = round;
+        }
+
         spellsCast.Add(spell);
         if (spell is Spell.Scorch or Spell.Blight)
         {

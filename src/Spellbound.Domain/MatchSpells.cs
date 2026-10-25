@@ -4,8 +4,8 @@ namespace Spellbound.Domain;
 /// and Builds, in seat order, and before attacks; Blight lands in the next round's income.</summary>
 public sealed partial class Match
 {
-    // This round's Wards (extra defence by tile) and Blights (tiles that yield nothing in the next income). Both are
-    // used up within the Resolve that makes them, so they are never saved.
+    // This round's Wards (extra defence by tile) and Blights (tiles that yield nothing in the next income). Both last
+    // until the round ends, so they are saved while it is under way.
     private readonly Dictionary<Hex, int> wards = [];
     private readonly HashSet<Hex> blights = [];
 
@@ -269,7 +269,7 @@ public sealed partial class Match
             seat.Mana -= order.Spell == Spell.Scorch ? 0 : SpellCostOf(order);
             if (order.Spell != Spell.Scorch)
             {
-                seat.Cast(order.Spell); // once a Cast, however many tiles it goes on
+                seat.Cast(order.Spell, CurrentRound); // once a Cast, however many tiles it goes on
             }
 
             foreach (var target in order.SpellTiles)
@@ -285,7 +285,7 @@ public sealed partial class Match
                         seat.Mana -= paid;
                         if (!burned.IsEmpty)
                         {
-                            seat.Cast(Spell.Scorch); // only a Scorch that burns counts for Hexer and Spellweaver
+                            seat.Cast(Spell.Scorch, CurrentRound); // only a Scorch that burns counts for Hexer and Spellweaver
                         }
 
                         lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {burned} burn, for {paid} mana.", seat.Index, target);

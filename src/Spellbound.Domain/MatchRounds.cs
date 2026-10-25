@@ -1,7 +1,7 @@
 namespace Spellbound.Domain;
 
-/// <summary>The rounds after the opening (docs/game-design.md, Rounds and stances): income and upkeep, then every
-/// seat's secret orders resolve together, then points are banked.</summary>
+/// <summary>The rounds after the opening (docs/game-design.md, Rounds and stances): income and upkeep, then the seats
+/// pick stances in turn and everyone takes each one, then points are banked.</summary>
 public sealed partial class Match
 {
     private readonly Dictionary<Hex, Army> units = [];
@@ -20,7 +20,7 @@ public sealed partial class Match
     public IReadOnlyList<Seat> Winners => Phase != MatchPhase.Ended ? [] :
         [.. Standings.TakeWhile(s => (s.Score, s.Tiles.Count, s.Mana) == (Standings[0].Score, Standings[0].Tiles.Count, Standings[0].Mana))];
 
-    /// <summary>What one seat's orders would cost and do, or why they can't be given. Changes nothing.</summary>
+    /// <summary>What one seat's turn would cost and do, or why it can't be taken. Changes nothing.</summary>
     public Report Check(Orders orders)
     {
         ArgumentNullException.ThrowIfNull(orders);
@@ -34,70 +34,121 @@ public sealed partial class Match
             return Report.Fail($"There is no seat {orders.Seat + 1}.");
         }
 
-        var lines = new List<string>();
-        var positions = new Dictionary<Hex, Army>();
-        if ((MovesProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions) ?? ReinforceProblem(orders, lines)) is { } problem)
+        if (TurnProblem(orders) is { } turn)
         {
-            return Report.Fail(problem);
+            return Report.Fail(turn);
         }
 
-        var mana = seats[orders.Seat].Mana;
-        if (orders.Reinforce is not null && CostOf(orders) > mana)
+        // The picker's discount, counted as mana in hand while the orders are checked (and taken back after).
+        var seat = seats[orders.Seat];
+        var discount = DiscountFor(orders);
+        seat.Mana += discount;
+        try
         {
-            return Report.Fail($"Your orders cost {CostOf(orders)} mana together; you have {mana}.");
-        }
+            var lines = new List<string>();
+            var positions = new Dictionary<Hex, Army>();
+            if ((MovesProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions) ?? ReinforceProblem(orders, lines)) is { } problem)
+            {
+                return Report.Fail(problem);
+            }
 
-        if (orders.Reinforce is not null)
+            if (orders.Reinforce is not null && CostOf(orders) > seat.Mana)
+            {
+                return Report.Fail($"Your orders cost {CostOf(orders)} mana together; you have {seat.Mana}.");
+            }
+
+            if (orders.Reinforce is not null)
+            {
+                lines.Add($"All together: {CostOf(orders)} mana, leaving {seat.Mana - CostOf(orders)}.");
+            }
+
+            if (discount > 0 && orders.Target is not null)
+            {
+                lines.Add($"As its picker you pay {discount} less: {Math.Max(0, CostOf(orders) - discount)} mana in all.");
+            }
+
+            return new Report(true, lines);
+        }
+        finally
         {
-            lines.Add($"All together: {CostOf(orders)} mana, leaving {mana - CostOf(orders)}.");
+            seat.Mana -= discount;
         }
-
-        return new Report(true, lines);
     }
 
     /// <summary>
-    /// Resolves the round with every seat's orders: moves, then Attunes, Summons and Builds, then spells, then attacks,
-    /// then points are banked (docs/game-design.md, Round order). Then the next round starts (with a later Unveil in rounds 2 and 4,
-    /// then income and upkeep), or after the last round the match ends. Fails, changing nothing, unless every seat has
-    /// exactly one set of orders and all of them check.
+    /// Takes one seat's turn (docs/game-design.md, Rounds and stances): with no stance open, it picks a stance nobody
+    /// has picked this round and takes it first, a little cheaper, with any moves; then every other seat in turn takes
+    /// that stance too, or passes. Channel is only its picker's. When every seat has picked and the last stance has
+    /// gone round, points are banked and the next round starts (with a later Unveil in rounds 2 and 4, then income and
+    /// upkeep), or after the last round the match ends. Fails, changing nothing, unless the orders check.
     /// </summary>
-    public Report Resolve(IReadOnlyCollection<Orders> orders, IRandomSource random)
+    public Report Take(Orders orders, IRandomSource random)
     {
         ArgumentNullException.ThrowIfNull(orders);
         ArgumentNullException.ThrowIfNull(random);
-        if (Phase != MatchPhase.Rounds)
+        if (Phase == MatchPhase.Rounds && orders.Seat >= 0 && orders.Seat < seats.Count && Actor != orders.Seat)
         {
-            return Report.Fail("Orders are only given during the rounds.");
+            return Report.Fail($"It's Seat {Actor + 1}'s turn, not Seat {orders.Seat + 1}'s.");
         }
 
-        if (orders.Count != seats.Count || orders.Select(o => o.Seat).Distinct().Count() != seats.Count)
+        if (Check(orders) is { Succeeded: false } failed)
         {
-            return Report.Fail("Every seat needs exactly one set of orders.");
+            return failed;
         }
 
-        foreach (var order in orders.OrderBy(o => o.Seat))
+        var seat = seats[orders.Seat];
+        var lines = new ReportLines();
+        var discount = DiscountFor(orders);
+        if (OpenStance is null)
         {
-            if (Check(order) is { Succeeded: false } failed)
-            {
-                return failed;
-            }
+            picks.Add(new StancePick(orders.Stance, orders.Seat));
+            acted = 0;
+            lines.Add($"Seat {seat.Index + 1} picks {orders.Stance}.");
         }
 
-        var lines = new ReportLines($"Round {CurrentRound}.");
-        var byseat = orders.OrderBy(o => o.Seat).ToList();
-        foreach (var move in byseat.SelectMany(o => o.Moves))
+        seat.Mana += discount;
+        var before = seat.Mana;
+        Act(orders, lines);
+        seat.Mana -= discount - Math.Clamp(before - seat.Mana, 0, discount); // only what the action cost comes off
+        acted++;
+        if (OpenStance is null && picks.Count == seats.Count)
+        {
+            EndRound(lines, random);
+        }
+
+        return lines.ToReport();
+    }
+
+    /// <summary>One seat's action: its moves, then its stance.</summary>
+    private void Act(Orders order, ReportLines lines)
+    {
+        foreach (var move in order.Moves)
         {
             units[move.From] = UnitsOn(move.From) - move.Units;
             units[move.To] = UnitsOn(move.To) + move.Units;
         }
 
-        foreach (var order in byseat.Where(o => o.Moves.Count > 0))
+        if (order.Moves.Count > 0)
         {
             lines.Add($"Seat {order.Seat + 1} moves {Plural(order.Moves.Count, "group")} of units.", order.Seat, [.. order.Moves.Select(m => m.To)]);
         }
 
-        ResolveAttunes(byseat.Where(o => o.Stance == Stance.Attune && o.Target is not null).ToList(), lines);
-        foreach (var order in byseat.Where(o => o.Stance == Stance.Summon && o.Target is not null && o.Count > 0))
+        if (order.Stance == Stance.Channel)
+        {
+            seats[order.Seat].Mana += Rules.ChannelMana;
+            lines.Add($"Seat {order.Seat + 1} channels {Rules.ChannelMana} mana.", order.Seat);
+            return;
+        }
+
+        if (order.Target is null)
+        {
+            lines.Add($"Seat {order.Seat + 1} passes.");
+            return;
+        }
+
+        List<Orders> one = [order];
+        ResolveAttunes([.. one.Where(o => o.Stance == Stance.Attune)], lines);
+        if (order is { Stance: Stance.Summon, Count: > 0 })
         {
             var hex = order.Target!.Value;
             var army = Army.Of(order.Kind, order.Count);
@@ -106,18 +157,22 @@ public sealed partial class Match
             lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.", order.Seat, hex);
         }
 
-        foreach (var order in byseat.Where(o => o.Reinforce is not null))
+        if (order.Reinforce is { } r)
         {
-            var r = order.Reinforce!;
             var army = Army.Of(r.Kind, r.Count);
             seats[order.Seat].Mana -= Rules.ReinforceCostOf(r.Kind, r.Count);
             units[r.Tile] = UnitsOn(r.Tile) + army;
             lines.Add($"Seat {order.Seat + 1} reinforces {r.Tile} with {army}.", order.Seat, r.Tile);
         }
 
-        ResolveBuilds(byseat, lines);
-        ResolveCasts(byseat, lines);
-        ResolveAttacks(byseat.Where(o => o.Stance == Stance.Attack && o.Target is not null).ToList(), lines);
+        ResolveBuilds(one, lines);
+        ResolveCasts(one, lines);
+        ResolveAttacks([.. one.Where(o => o.Stance == Stance.Attack)], lines);
+    }
+
+    /// <summary>The round is over: points are banked, then the next round starts or the match ends.</summary>
+    private void EndRound(ReportLines lines, IRandomSource random)
+    {
         BankPoints(lines);
         if (CurrentRound < Rules.Rounds)
         {
@@ -133,7 +188,8 @@ public sealed partial class Match
         }
 
         ClearRoundSpells();
-        return lines.ToReport();
+        picks.Clear();
+        acted = 0;
     }
 
     /// <summary>Every held Shifting and Wild tile rolls its yield for this round's income, in board order. The rolls
@@ -270,9 +326,20 @@ public sealed partial class Match
     private string? StanceProblem(Orders orders, List<string> lines, Dictionary<Hex, Army> positions)
     {
         var seat = seats[orders.Seat];
+        if (orders.Stance == Stance.Channel)
+        {
+            if (orders.Target is not null)
+            {
+                return "Channel isn't aimed at a tile.";
+            }
+
+            lines.Add($"Channel: gain {Rules.ChannelMana} mana, leaving you {seat.Mana + Rules.ChannelMana}.");
+            return null;
+        }
+
         if (orders.Target is not { } target)
         {
-            lines.Add("Nothing to spend this round: only the moves happen.");
+            lines.Add(orders.Moves.Count > 0 ? $"Take {orders.Stance} but aim it at nothing: only the moves happen." : $"Pass on {orders.Stance}.");
             return null;
         }
 
@@ -306,7 +373,7 @@ public sealed partial class Match
                     return $"Attuning costs {price} mana; you have {seat.Mana}.";
                 }
 
-                lines.Add($"Attune {Describe(target)} for {price} mana, leaving {seat.Mana - price}. If a rival attunes it too, nobody gets it.");
+                lines.Add($"Attune {Describe(target)} for {price} mana, leaving {seat.Mana - price}.");
                 return null;
             }
 

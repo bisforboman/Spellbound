@@ -102,7 +102,7 @@ public class TraitTests
     }
 
     private static Report Hold(Match match, Orders? first = null) =>
-        match.Resolve([first ?? Orders.Hold(0), .. match.Seats.Skip(1).Select(s => Orders.Hold(s.Index))], new SeededRandom(match.CurrentRound));
+        match.Resolve([first ?? Scenarios.Hold(0), .. match.Seats.Skip(1).Select(s => Scenarios.Hold(s.Index))], new SeededRandom(match.CurrentRound));
 
     [Fact]
     public void A_goal_is_scored_once_at_the_end_and_capped()

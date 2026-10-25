@@ -60,9 +60,18 @@ internal abstract record Action
     private static Orders OrdersOf(JsonElement root, string stance, int seat)
     {
         var moves = Get(root, "moves") is { } m ? m.EnumerateArray().Select(MoveOf).ToList() : [];
+        if (stance.Equals("channel", StringComparison.OrdinalIgnoreCase))
+        {
+            return Orders.Channel(seat, moves);
+        }
+
+        if (Get(root, "target") is null && Enum.TryParse<Stance>(stance, ignoreCase: true, out var passing))
+        {
+            return Orders.Pass(seat, passing, moves); // the stance taken, aimed at nothing
+        }
+
         var orders = stance.ToLowerInvariant() switch
         {
-            "hold" => Orders.Hold(seat, moves),
             "attune" => Orders.Attune(seat, HexOf(Need(root, "target")), moves),
             "summon" => Orders.Summon(seat, HexOf(Need(root, "target")),
                 Enum.Parse<UnitKind>(Need(root, "kind").GetString()!, ignoreCase: true), Int(root, "count"), moves),
@@ -72,7 +81,7 @@ internal abstract record Action
                 [.. Need(root, "send").EnumerateArray().Select(s => new Move(HexOf(Need(s, "from")), HexOf(Need(root, "target")), ArmyOf(s)))],
                 moves),
             "cast" => CastOf(root, seat, moves),
-            _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build, cast or hold."),
+            _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build, cast or channel."),
         };
 
         if (Get(root, "reinforce") is { ValueKind: JsonValueKind.Object } reinforce)

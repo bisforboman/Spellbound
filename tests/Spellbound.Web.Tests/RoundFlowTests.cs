@@ -50,10 +50,10 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
         var saved = (await Play.ViewAsync(id, merlinId))!;
 
         Assert.True(report.Succeeded, string.Join('\n', report.Lines));
-        Assert.Equal(2, saved.Match.CurrentRound);
         Assert.Equal(new Army(2, 0), saved.Match.UnitsOn(home));
+        Assert.Equal(0, saved.Match.Actor); // the bots took their turns, and it's merlin's again
         Assert.Equal(report.Lines, saved.LastReport);
-        Assert.Contains("Round 2 of 8", page, StringComparison.Ordinal);
+        Assert.Contains("Picked this round: Summon (You)", page, StringComparison.Ordinal);
         Assert.Contains($"You summon 2 Imps at {TileNames.Of(saved.Match.Map, home)}", page, StringComparison.Ordinal); // in your words, by tile name
         Assert.Contains($"href=\"match/{id}#help\"", page, StringComparison.Ordinal); // the Help view: the trait's goal and the rules
         Assert.Contains($"href=\"match/{id}#report\"", page, StringComparison.Ordinal); // the view tabs
@@ -72,17 +72,17 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
     }
 
     [Fact]
-    public async Task A_double_tap_waits_for_the_first_and_each_tap_is_a_whole_round()
+    public async Task A_double_tap_waits_for_the_first_and_the_second_finds_Channel_taken()
     {
         var id = await ToTheRoundsAsync();
 
-        var taps = await Task.WhenAll(Play.OrdersAsync(id, merlinId, Orders.Hold(0)), Play.OrdersAsync(id, merlinId, Orders.Hold(0)));
+        var taps = await Task.WhenAll(Play.OrdersAsync(id, merlinId, Orders.Channel(0)), Play.OrdersAsync(id, merlinId, Orders.Channel(0)));
         var saved = (await Play.ViewAsync(id, merlinId))!;
 
-        // The player's row is locked, so the second tap waits and plays the next round; neither sees half a round.
-        Assert.All(taps, t => Assert.True(t.Succeeded));
-        Assert.Equal(3, saved.Match.CurrentRound);
-        Assert.Equal(["Round 1.", "Round 2."], taps.Select(t => t.Lines[0]).Order());
+        // The player's row is locked, so the second tap waits for the first, then sees Channel picked; neither sees half a turn.
+        Assert.Single(taps, t => t.Succeeded);
+        Assert.Single(taps, t => !t.Succeeded);
+        Assert.Contains(saved.Match.Picks, p => p == new StancePick(Stance.Channel, 0));
     }
 
     [Fact]
@@ -92,14 +92,14 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
         await SignInAsync(merlin, Merlin);
         var id = await ToTheRoundsAsync();
 
-        for (var round = 1; round <= GameRules.Default.Rounds; round++)
+        while ((await Play.ViewAsync(id, merlinId))!.Match is { Phase: MatchPhase.Rounds } playing)
         {
-            Assert.True((await Play.OrdersAsync(id, merlinId, Orders.Hold(0))).Succeeded);
+            Assert.True((await Play.OrdersAsync(id, merlinId, playing.Passing(0))).Succeeded);
         }
 
         var game = await WithDbAsync(db => db.LoadGameAsync(id));
         var page = await merlin.GetStringAsync(new Uri($"/match/{id}", UriKind.Relative));
-        var after = await Play.OrdersAsync(id, merlinId, Orders.Hold(0));
+        var after = await Play.OrdersAsync(id, merlinId, Orders.Channel(0));
 
         Assert.NotNull(game!.EndedAt);
         Assert.Contains("The match is over", page, StringComparison.Ordinal);

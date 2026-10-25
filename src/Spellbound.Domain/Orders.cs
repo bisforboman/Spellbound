@@ -1,6 +1,7 @@
 namespace Spellbound.Domain;
 
-/// <summary>The one decision a player makes each round (docs/game-design.md, Rounds and stances).</summary>
+/// <summary>The stances (docs/game-design.md, Rounds and stances). Each round the players pick them in turn, one each,
+/// none twice; everyone may then take the stance just picked, the picker first and a little cheaper.</summary>
 public enum Stance
 {
     /// <summary>Send units against a rival's tile or a monster-guarded tile next to your land.</summary>
@@ -17,6 +18,9 @@ public enum Stance
 
     /// <summary>Spend mana to cast one spell.</summary>
     Cast,
+
+    /// <summary>Gain a little mana; only its picker takes it.</summary>
+    Channel,
 }
 
 /// <summary>The spells (docs/game-design.md, Spells). Each lasts this round, except Lure, which weakens monsters for
@@ -50,8 +54,8 @@ public sealed record Reinforcement(Hex Tile, UnitKind Kind, int Count);
 public sealed record Move(Hex From, Hex To, Army Units);
 
 /// <summary>
-/// A seat's secret commitment for a round: one stance, what it aims at, and any moves. A stance with no target does
-/// nothing (a player can always hold back). For Summon, <see cref="Kind"/> and <see cref="Count"/> say what to summon;
+/// A seat's turn in a round: the stance it picks or takes, what it aims at, and, for a pick, any moves. A stance with
+/// no target does nothing (a player can always pass). For Summon, <see cref="Kind"/> and <see cref="Count"/> say what to summon;
 /// for Attack, <see cref="Attackers"/> says which units go, from which of the seat's tiles next to the target. For
 /// Cast, <see cref="Spell"/> says which spell, <see cref="Count"/> how much power a Scorch burns, and
 /// <see cref="Transfer"/> what a Leyline moves (the target is where its units leave from).
@@ -109,6 +113,9 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
             Transfer = transfer,
         };
 
-    /// <summary>Picks a stance but aims it at nothing: only the moves happen.</summary>
-    public static Orders Hold(int seat, params IReadOnlyList<Move> moves) => new(seat, Stance.Summon, null, moves);
+    /// <summary>Takes a stance but aims it at nothing: only a pick's moves happen.</summary>
+    public static Orders Pass(int seat, Stance stance, params IReadOnlyList<Move> moves) => new(seat, stance, null, moves);
+
+    /// <summary>Picks Channel: its picker gains mana.</summary>
+    public static Orders Channel(int seat, params IReadOnlyList<Move> moves) => new(seat, Stance.Channel, null, moves);
 }

@@ -2,8 +2,8 @@
 
 A text-first multiplayer game for phones. It is a hobby project.
 
-- **Gameplay:** a clean-slate design ([game design](docs/game-design.md)): a dark hex map, an opening draft, one
-  stance per round, Imps and Golems, 8 rounds. The platform it runs on is built: sign-in, accounts, rounds, the admin
+- **Gameplay:** a clean-slate design ([game design](docs/game-design.md)): a dark hex map, an opening draft, a
+  stance draft each round, Imps and Golems, 8 rounds. The platform it runs on is built: sign-in, accounts, rounds, the admin
   page, backups and notifications. The old game is in the git history (see the roadmap).
 - **Stack:** .NET 10, Blazor Server (interactive server rendering), PostgreSQL (plain Npgsql), sign-in with Google.
 - **Hosting plan:** one small VPS running Docker Compose with Caddy, installable on phones as a PWA.

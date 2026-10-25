@@ -36,6 +36,13 @@ public sealed record GameRules
     /// <summary>How many rounds a match lasts after the opening.</summary>
     public int Rounds { get; init; } = 8;
 
+    /// <summary>What a stance's picker saves on their own action (docs/game-design.md, Rounds and stances): this much
+    /// off what it costs, never below nothing.</summary>
+    public int PickerDiscount { get; init; } = 1;
+
+    /// <summary>The mana Channel gives its picker; nobody else takes Channel.</summary>
+    public int ChannelMana { get; init; } = 2;
+
     public int ImpPower { get; init; } = 1;
     public int ImpCost { get; init; } = 1;
     public int GolemPower { get; init; } = 3;
