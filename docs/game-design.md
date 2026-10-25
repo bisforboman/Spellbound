@@ -205,7 +205,8 @@ A revealed, unowned tile is taken in one of two ways, depending on whether it is
   - Attuning extends where your units can go: it is how you grow your presence and join scattered groups together.
   - One Attune takes **one tile**.
   - **Price: 1 mana + 1 mana for each of your first 3 tiles, + 3 mana for each tile beyond them.** With 3 tiles an Attune costs 4, with 4 tiles 7, with 5 tiles 10: cheap for a small realm, dear for a big one. (The owner's choice, 21 Oct 2026. It was 1 + 1 per tile, then 1 + 2 and 1 + 3, each proposed by Claude from the strategy bots, while the always-attune Expander bot won too often. At 1 + 3, four of six AI tastes (Euro-gamer, 4X fan, Combo player, Casual player) couldn't grow after round 1. See `discussions/strategies.md` and `playtests/ai-feedback.md`.) The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 7).
-  - **Clash:** if two players attune the same tile in the same round, nobody gets it and nobody pays.
+  - Turns come one at a time, so a tile attuned earlier in the round is gone for the players after. *(Until the stance
+    draft, 25 Oct 2026, two players attuning the same tile in the same round both got nothing.)*
 - **Guarded tiles:** some unowned tiles are **guarded by monsters**. They can't be attuned; you need units to defeat the guards first.
   - Guard strength is **visible**.
   - Guarded tiles are cleared with the **Attack** stance, the same way as a rival's tile.
@@ -235,11 +236,9 @@ Kept simple for now, to be extended later.
 - Battles against monsters use the same rules, with the guards as the defender.
 - **No defender bonus** for now: ties already go to the defender, so an attacker needs strictly more power. A bonus (from a stance, terrain or units that stay put) can be added later.
 - **A rival's last tile:** if an attack on it wins, the defending units die, but the tile **stays with the defender** (empty). The attacker's units stay where they were, and **no conquest points** are scored. The surviving attackers go back to the tile they attacked from (the first in board order, if they came from several); if that tile was lost in the same round, they dissolve.
-- **Several attackers** (decided 19 Oct 2026):
-  - Together they lose power to the defender **weakest units first, across all of them**, seat order deciding between equal units.
-  - If they win, the **strongest survivor takes the tile** and loses power equal to the next strongest's total (weakest first, as always); the other survivors are wiped out.
-  - A **tie at the top** wipes out all the survivors and nobody takes the tile: it stays with the defender (empty), or for a monster tile it stays free, its guards gone.
-  - A tie against monsters gives the tile to the attacker who sent the most power; if that's a tie too, nobody gets it.
+- **One attacker a battle:** each attack happens on its own turn, against the tile as the turns before left it. *(Until
+  the stance draft, 25 Oct 2026, several players attacking one tile in a round fought the defender together, then each
+  other.)*
 - **Monster guards** fight as one unit of their power, so a weaker attack never wears them down.
 
 ## Resources
@@ -270,8 +269,8 @@ yields, prices or income. Costs are flat and small.
 | Blight | 3 mana a tile | rivals' tiles next to yours | It yields nothing in the next round's income. A tile blighted last round can't be blighted again this round. |
 | Lure | 3 mana a tile | monster tiles next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
 
-- **How spells resolve:** in seat order, after Attunes and Summons and before attacks. Two Wards on one tile add up, and
-  two Scorches both burn.
+- **How spells resolve:** at once, on the caster's turn. Two Wards on one tile add up, and two Scorches both burn; a
+  Ward lasts until the round ends, so it covers the attacks of every later turn.
 - **Ward takes the blows first:** when a warded tile holds, its defenders lose only the attack power the Ward didn't
   absorb.
 - **An attack goes with what's left:** if a rival's Scorch burns units on the tile an attack leaves from, the attack

@@ -42,7 +42,7 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 
 ## Architecture rules
 
-The first group held for the old game and still fits the new design (simultaneous, secret rounds resolved from a
+The first group held for the old game and still fits the new design (rounds played in turn, resolved from a
 seed); revisit it as M1 is built, and don't assume the old game's turns or mages exist.
 
 - **All game rules live in `Spellbound.Domain`.** It is pure C#. It has no database, ASP.NET or I/O references,
