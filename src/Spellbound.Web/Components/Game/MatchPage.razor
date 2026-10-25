@@ -66,13 +66,18 @@ else
 
     @if (replay is { } beats)
     {
-        // The draft plays back one pick at a time, so the player sees who took which tile.
+        // The draft plays back one pick at a time, and a round one turn at a time, so the player sees what each seat did.
         <section id="playback" hidden="@(tab != MatchTab.Board)">
-        <h2 class="h4">The draft</h2>
+        <h2 class="h4">@(match.Phase == MatchPhase.Opening || beats.All(Hands) ? "The draft" : "The turns since yours")</h2>
         <div class="match-report playback">
             @for (var b = 0; b < replayBeat && b < beats.Count; b++)
             {
-                <p class="@(b == replayBeat - 1 ? "beat-now" : "")" @key="b">@Seats.Phrase(TileNames.In(match.Map, beats[b], named), view.Owners, you)</p>
+                <div class="@(b == replayBeat - 1 ? "beat-now" : "")" @key="b">
+                    @foreach (var line in beats[b].Split('\n'))
+                    {
+                        <p>@Seats.Phrase(TileNames.In(match.Map, line, named), view.Owners, you)</p>
+                    }
+                </div>
             }
         </div>
         <button type="button" class="btn btn-link" @onclick="SkipReplay">Skip</button>
@@ -230,7 +235,7 @@ else
     @{ var lastReport = view.LastReportFor(you); }
     @if (tab == MatchTab.Report && (lastReport.Count == 0 || replay is not null))
     {
-        <p class="text-muted">@(replay is null ? "Nothing has happened yet." : "The draft is playing back on the board.")</p>
+        <p class="text-muted">@(replay is null ? "Nothing has happened yet." : "It is playing back on the board.")</p>
     }
     else if (lastReport.Count > 0 && replay is null)
     {
@@ -381,7 +386,8 @@ else
     private int replayBeat;
     private CancellationTokenSource? replayStop;
     /// <summary>The pause between the playback's lines: Match:ReplayDelayMs in configuration, 1.5 s by default.</summary>
-    private TimeSpan ReplayDelay => TimeSpan.FromMilliseconds(Config.GetValue("Match:ReplayDelayMs", 1500));
+    private TimeSpan ReplayDelay => TimeSpan.FromMilliseconds(Config.GetValue("Match:ReplayDelayMs", 1500)
+                                                               / (replay is { } beats && !beats.All(Hands) ? 2 : 1)); // a round's turns go faster
     private int? newRound;
 
     private enum MatchTab { Board, Report, Standings, Help }
@@ -483,16 +489,22 @@ else
     };
 
     /// <summary>
-    /// Plays a draft's report back a pick at a time, <see cref="ReplayDelay"/> apart, with the tile marked and its
-    /// owner's ring only appearing then. Only the picks play; whatever follows (the rounds beginning) shows once they
-    /// are done. Skip ends it at once.
+    /// Plays a report back a beat at a time, <see cref="ReplayDelay"/> apart, with the beat's tile marked. In the
+    /// opening a beat is a pick, its tile's owner's ring only appearing then; only the picks play, and whatever follows
+    /// (the rounds beginning) shows once they are done. In the rounds a beat is a turn (<see cref="Turns"/>); the map
+    /// shows the board as it is now. Skip ends it at once.
     /// </summary>
     private void StartReplay(IReadOnlyList<string> report)
     {
-        var beats = report.TakeWhile(Hands).ToList();
-        if (beats.Count == 0)
+        List<string> beats = [.. report.TakeWhile(Hands)];
+        if (beats.Count == 0 && !report.Any(Hands))
         {
-            return;
+            beats = Turns(report);
+        }
+
+        if (beats.Count < 2 && !(beats.Count == 1 && Hands(beats[0])))
+        {
+            return; // a single turn, the player's own: nothing to play back
         }
 
         replayStop?.Cancel();
@@ -504,6 +516,38 @@ else
 
     // An opening pick hands out a tile ("Seat 2 picks the Wild tile at…"); a round's pick names a stance ("Seat 2 picks Summon.").
     private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (picks the|gets the last tile)\b");
+
+    /// <summary>
+    /// A round's report as turns, one beat each (its lines joined by new lines): a beat starts with a stance picked, or
+    /// with a line by another seat ("Seat 3 summons…"); a line that names no seat at its start (a battle's result, say)
+    /// belongs to the turn before it. Passes in a row make one beat, and the round's end (points banked, the next round
+    /// beginning, income) another.
+    /// </summary>
+    private static List<string> Turns(IReadOnlyList<string> report)
+    {
+        var beats = new List<List<string>>();
+        string? key = null;
+        foreach (var line in report)
+        {
+            var seat = System.Text.RegularExpressions.Regex.Match(line, @"^Seat (\d+) ");
+            var next = RoundEnd(line) ? "end" : seat.Success ? (Passes(line) ? "pass" : $"seat {seat.Groups[1].Value}") : key ?? "end";
+            var picks = System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ picks [A-Z]");
+            if (beats.Count == 0 || next != key || picks)
+            {
+                beats.Add([]);
+                key = next;
+            }
+
+            beats[^1].Add(line);
+        }
+
+        return [.. beats.Select(b => string.Join('\n', b))];
+    }
+
+    private static bool Passes(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ passes\.$");
+
+    private static bool RoundEnd(string line) => System.Text.RegularExpressions.Regex.IsMatch(line,
+        @"^(Seat \d+ (banks|collects|pays|can't pay)|Round \d+ of \d+ begins|This round's rolls|The match is over)");
 
     private async Task ReplayAsync(CancellationToken stop)
     {

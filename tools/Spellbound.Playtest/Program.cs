@@ -385,8 +385,12 @@ namespace Spellbound.Playtest
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "stances-screen.png"), FullPage = true });
                 await Expect(page, "Summon 3 Imps");
                 await Expect(page, "As its picker you pay 1 less"); // the picker's discount, in the ledger
-                await TakeTurnAsync(page, "button:has-text('Pick Summon')");
-                // The bots take Summon too or pass, and pick in turn, until it is Merlin's turn again.
+                await TakeTurnAsync(page, "#orders .action-row button:has-text('Pick Summon')"); // not the link that picks it without using it
+                // The bots take Summon too or pass, and pick in turn, until it is Merlin's turn again; their turns play
+                // back on the board one at a time.
+                await page.Locator("#playback:has-text('The turns since yours')").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
+                await Expect(page, "You summon 3 Imps");
+                await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "turns-playback-screen.png"), FullPage = true });
                 await Expect(page, "Picked this round: Summon (You)");
             });
             await StepAsync(merlin, "new-round", async page =>

@@ -28,7 +28,7 @@ else
     var isIn = lobby.Members.Contains(ownerId);
     <h1>Invite to a match</h1>
     <p>A match for <b>@lobby.Seats players</b>, on a map of @Hex.Within(Rules.MapRadius(lobby.Seats)).Count tiles.
-        Everyone gives orders in secret, and each round resolves when everyone has committed.</p>
+        Players take turns, and each turn waits for its player (up to a day).</p>
 
     <ol class="lobby-seats">
         @for (var seat = 0; seat < lobby.Seats; seat++)
