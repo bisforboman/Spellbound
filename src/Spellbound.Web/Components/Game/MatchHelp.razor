@@ -12,8 +12,8 @@
 
     @if (me.Trait is { } trait)
     {
-        <h2 class="h4">Your trait: @trait</h2>
-        <p>@Capitalised(match.GoalText(trait).TrimEnd('.')). Rivals learn it only when the match ends, and you learn theirs.</p>
+        <h2 class="h4">Your trait: <span class="trait-name"><TraitIcon Trait="trait" /> @trait</span></h2>
+        <p>@Capitalised(match.GoalText(trait).TrimEnd('.')). Everyone sees every trait from the first round.</p>
         <p>Your @(match.SpellsOf(me.Index).Count == 1 ? "spell" : "spells"): @string.Join(", ", match.SpellsOf(me.Index)).</p>
     }
 
@@ -57,8 +57,8 @@
     <p>With your own pick, units can also step between your neighbouring tiles first.</p>
 
     <h2 class="h4">Spells</h2>
-    <p>Each trait gives its player a spell (a Spellweaver gets them all), so a spell hints at a rival's trait. Ward,
-        Blight and Lure can go on several tiles in one Cast, each paid for.</p>
+    <p>Each trait gives its player a spell (a Spellweaver gets them all). Ward, Blight and Lure can go on several tiles
+        in one Cast, each paid for.</p>
     <ul class="help-list">
         @foreach (var s in GameRules.AllSpells)
         {
@@ -74,7 +74,7 @@
     <ul class="help-list">
         @foreach (var t in Enum.GetValues<Trait>())
         {
-            <li><b>@t</b> (@string.Join(", ", match.Rules.TraitSpells.GetValueOrDefault(t) ?? [])): @match.GoalText(t)</li>
+            <li><span class="trait-name"><TraitIcon Trait="t" /> <b>@t</b></span> (@string.Join(", ", match.Rules.TraitSpells.GetValueOrDefault(t) ?? [])): @match.GoalText(t)</li>
         }
     </ul>
     </div>

@@ -51,13 +51,17 @@ else
     </div>
     @if (match.Phase == MatchPhase.Rounds && view.IsRunning)
     {
-        @* Whose turn it is: a token per seat, the one taking its turn pulsing (not while the playback runs). *@
+        @* Whose turn it is: a token per seat with its trait's icon (traits are open), the one taking its turn pulsing
+           (not while the playback runs). *@
         <div class="seat-row" role="list" aria-label="Whose turn">
             @foreach (var seat in match.Seats)
             {
                 var now = replay is null && match.Actor == seat.Index;
                 <span class="seat-chip@(now ? " now" : "")" role="listitem" style="--c: @Seats.Ink(seat.Index)">
-                    <i></i>@(now && seat.Index == you ? "Your turn" : now ? $"{Seats.Name(view, seat.Index, you)}'s turn" : Seats.Name(view, seat.Index, you))</span>
+                    <i></i>@(now && seat.Index == you ? "Your turn" : now ? $"{Seats.Name(view, seat.Index, you)}'s turn" : Seats.Name(view, seat.Index, you))@if (seat.Trait is { } st)
+                    {
+                        <TraitIcon Trait="st" Size="16" />
+                    }</span>
             }
         </div>
     }
@@ -136,7 +140,7 @@ else
         <p>You play seat @(you + 1) against @string.Join(" and ", match.Seats.Where(s => s.Index != you).Select(s => Seats.Name(view, s.Index, you))).
             The map lies dark; this is how the match goes:</p>
         <ol class="start-plan">
-            <li><b>Choose your trait</b>: a secret goal, scored at the end.</li>
+            <li><b>Choose your trait</b>: a goal, scored at the end. Everyone sees every trait once the rounds begin.</li>
             <li><b>The opening</b>: @match.Rules.OpeningUnveils drafts reveal the map, a tile for each player at a time,
                 and everyone takes one in turn, for free.</li>
             <li><b>@match.Rules.Rounds rounds</b>: each round, players pick stances in turn (attack, attune, summon and
@@ -153,15 +157,15 @@ else
     {
         <StartSteps Step="2" />
         <h2 class="h4">Choose your trait</h2>
-        <p>Your trait gives you a goal, scored at the end. Nobody else was offered these, and rivals never learn which
-            you chose until the match ends. The map is revealed once you have chosen.</p>
+        <p>Your trait gives you a goal, scored at the end, and your spell. Nobody else was offered these; once the rounds
+            begin, everyone sees which one you chose, and you see theirs. The map is revealed once you have chosen.</p>
         <fieldset class="traits">
             @foreach (var offered in me.Offer)
             {
                 var t = offered;
                 <label class="choice">
                     <input type="radio" name="trait" checked="@(trait == t)" @onchange="() => trait = t" />
-                    <span><b>@t</b>: @Capitalised(match.GoalText(t))</span>
+                    <span><span class="trait-name"><TraitIcon Trait="t" /> <b>@t</b></span>: @Capitalised(match.GoalText(t))</span>
                 </label>
             }
         </fieldset>
@@ -333,7 +337,10 @@ else
             @foreach (var seat in match.Standings)
             {
                 <tr class="@(seat.Index == you ? "you" : "")">
-                    <td><span class="seat-ink" style="--seat: @Seats.Ink(seat.Index)">@Seats.Name(view, seat.Index, you)</span></td>
+                    <td><span class="seat-ink" style="--seat: @Seats.Ink(seat.Index)">@Seats.Name(view, seat.Index, you)</span>@if (seat.Trait is { } st && match.Phase != MatchPhase.Opening)
+                        {
+                            @(" ")<TraitIcon Trait="st" Size="18" />
+                        }</td>
                     <td>@seat.Score</td>
                     <td>@seat.Tiles.Count</td>
                     <td>@(match.ManaSeenBy(you, seat.Index)?.ToString() ?? "?")</td>
@@ -341,14 +348,16 @@ else
             }
         </tbody>
     </table>
-    @if (match.Phase == MatchPhase.Ended && match.Seats.Any(s => s.Index != you && s.Trait is not null))
+    @if (match.Phase != MatchPhase.Opening && match.Seats.Any(s => s.Index != you && s.Trait is not null))
     {
-        <p class="trait-line">Rivals' traits: @string.Join(", ", match.Seats.Where(s => s.Index != you && s.Trait is not null)
-            .Select(s => $"{Seats.Name(view, s.Index, you)} had {s.Trait}")).</p>
-    }
-    else if (match.Phase == MatchPhase.Rounds && match.Seats.Any(s => s.Index != you && s.Trait is not null))
-    {
-        <p class="trait-line">Rivals' traits are secret until the end.</p>
+        @* Traits are open from the first round (owner's choice, 25 Oct 2026); their goals are in the Help view. *@
+        var rivals = match.Seats.Where(s => s.Index != you && s.Trait is not null).ToList();
+        <p class="trait-line">Rivals' traits:
+            @for (var i = 0; i < rivals.Count; i++)
+            {
+                var rival = rivals[i];
+                @(i > 0 ? ", " : "")@Seats.Name(view, rival.Index, you)@(" ")<span class="trait-name"><TraitIcon Trait="rival.Trait!.Value" /> @rival.Trait</span>
+            }.</p>
     }
     @if (match.Phase == MatchPhase.Ended && match.Winners.Count > 0)
     {

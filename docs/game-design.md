@@ -10,13 +10,13 @@ Decided discussions (background and the angles that were considered):
 
 A walkthrough of one game from start to finish, kept up to date as rules are settled.
 
-1. **Setup.** The map lies dark. Each player starts with **4 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening draft puts them.
+1. **Setup.** The map lies dark. Each player starts with **4 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1; the choice is private during the opening, and every trait is shown as the rounds begin. There are no fixed starting positions: players start wherever the opening draft puts them.
 2. **The opening Unveils.** Before the first round, three Unveils each reveal **one tile per player**, and the players take **one each in turn**, for free: the first draft starts with seat 1, each next one a seat later, and the last to pick gets the tile left over. Traits are still hidden, so nobody knows for sure why a rival picked a tile. As the rounds begin, **3 more tiles** are revealed, unowned, for anyone to attune. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
-3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end. Each round the players pick **stances** in turn (Attack, Attune, Summon, Build, Cast or Channel), none twice, and everyone may take each stance picked, the picker first and a little cheaper; each turn happens at once, in the open. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
+3. **The rounds.** The game lasts **8 rounds**. Every player's trait is open from round 1. Each round the players pick **stances** in turn (Attack, Attune, Summon, Build, Cast or Channel), none twice, and everyone may take each stance picked, the picker first and a little cheaper; each turn happens at once, in the open. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
 5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no draft). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
 6. **The second half.** Rounds 5–8: with the map fully revealed and free land running out, growth turns into competition. Attuning gets more expensive as realms grow, so attacking rivals becomes the cheaper way to gain land. A player's last tile can never be taken.
-7. **The end.** After round 8, the player with the most points wins. Points are banked every round, so what you earned early can't be taken away. Trait-goal points are hidden until the end.
+7. **The end.** After round 8, the player with the most points wins. Points are banked every round, so what you earned early can't be taken away. Trait-goal points are counted only at the end.
 
 ## Traits
 
@@ -25,7 +25,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   "the same 3 for everyone"). The pool of 10 covers 5 players. A player who hasn't drafted when the opening ends gets
   the first trait of their offer.
 - A trait is something to **build around**: it should pull a player towards a strategy (certain tiles, a way of expanding, a style of play), not just add a small bonus.
-- Traits are **secret until the end of the match** (decided 21 Oct 2026, reversing "revealed when the rounds start"; asked for by the Bluffer, `discussions/reading-rivals.md`). Players can only guess at each other's traits: from what they pick in the opening, and from everything they do after.
+- Traits are **open from the first round** (owner's choice, 25 Oct 2026): as the rounds begin, every seat's trait is shown to everyone, with its icon by the seat's name. This reverses "secret until the end" (21 Oct 2026, asked for by the Bluffer, `discussions/reading-rivals.md`); trait guessing was removed on 24 Oct 2026, and an open trait is easier to read and plan around. The choice itself stays private while the opening is drafted.
 - **No guessing** (owner's choice, 24 Oct 2026; it removed a guess at each rival's trait, worth a point at the end): players read rivals from what they do, for nothing but their own plans.
 - Traits give **trait goals**: their own way to score (see *Scoring and winning*). Every goal is scored once, at the
   end, hidden until then, and capped at **3 points**.
@@ -348,7 +348,7 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
   - **Mana produced:** points for the mana your land produces.
   - **Conquest:** points for rival tiles taken and monster tiles cleared.
   - **Trait goals:** each trait can add its own way to score.
-- **Visibility:** the main score is **visible** to everyone during the game; **traits and trait-goal points are hidden** until the end, and so is rivals' mana (see *Fog of war*).
+- **Visibility:** the main score is **visible** to everyone during the game; every trait is open from round 1, its goal's points are counted at the end, and rivals' mana is hidden (see *Fog of war*).
 - **Point values**, banked at the end of every round:
 
 | Source | Points |

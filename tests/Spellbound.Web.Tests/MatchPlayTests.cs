@@ -84,7 +84,7 @@ public sealed class MatchPlayTests : TestDatabase
         Assert.True((await play.PickAsync(id, "alice", drafted.ToPick[0])).Succeeded);
         var picked = (await play.ViewAsync(id, "alice"))!;
         Assert.All(picked.Match.Seats, s => Assert.Contains(s.Trait!.Value, s.Offer));
-        Assert.DoesNotContain(picked.LastReport, l => l.Contains("trait", StringComparison.OrdinalIgnoreCase)); // theirs stay secret
+        Assert.DoesNotContain(picked.LastReport, l => l.Contains("trait", StringComparison.OrdinalIgnoreCase)); // theirs show only as the rounds begin
     }
 
     [Fact]

@@ -157,6 +157,16 @@ where a number means mana: the top line, the bid button, unit, upgrade and Scorc
 "+3" on each held hex (8 px there, and 11 px in the chip that rises as a round begins). Sentences keep the word: the
 report, the ledger, the Help view's text and the tile descriptions. The Help view says what the icon is.
 
+## Trait icons (the new game)
+
+Each trait has its own mark (`Components/Game/TraitIcon.razor`, drawn for this game, no icon set): a bold woodcut
+shape on a 24-unit grid, filled in `currentColor` so it takes the text's ink or any seat ink, and named by a `<title>`
+and `aria-label`. Wildheart a flame, Hearthkeeper a house with a fire in its door, Weaver three joined hexes, Wanderer
+three far-apart hexes on a dotted trail, Beastbane a skull, Warbrand a sword, Golemwright a stone fist, Spellweaver a
+four-pointed star with two sparks, Warden a shield with a cross, Hexer an evil eye weeping blight. They are drawn to
+read at 16–24 px (22 by default). Traits are open from round 1, so each seat's icon sits by its name on the turn chips
+and in the standings; the trait's name stays beside its icon in the draft, the rivals' line and Help.
+
 ## Sigils, the turn moon, the mana vial, battle stamps
 
 Built for the old game and removed with it; they are in the git history at `b171e46`: `SigilGenerator.cs` (a mage's
