@@ -39,7 +39,9 @@
         first draft starts with seat 1, the next one seat later, and so on; the last to pick gets the tile left over.</p>
 
     <h2 class="h4">A round</h2>
-    <p>Everyone picks one stance in secret, then all resolve together:</p>
+    <p>Players pick stances in turn, one each, none twice in a round; the first picker moves one seat each round. When
+        you pick a stance you take it first, @match.Rules.PickerDiscount mana cheaper; then every other player in turn may
+        take it too, or pass. Each turn happens at once, for everyone to see.</p>
     <ul class="help-list">
         <li><b>Attune</b>: claim a free tile next to your land.</li>
         <li><b>Summon</b>: put Imps (power @match.Rules.ImpPower, @match.Rules.ImpCost mana) or Golems (power
@@ -47,9 +49,9 @@
         <li><b>Attack</b>: send units at a rival's or a monster's tile next to them.</li>
         <li><b>Build</b>: an upgrade on one of your tiles.</li>
         <li><b>Cast</b>: your trait's spell (below).</li>
-        <li><b>Hold</b>: do nothing.</li>
+        <li><b>Channel</b>: gain @match.Rules.ChannelMana mana. Only its picker takes it.</li>
     </ul>
-    <p>Units can also step between your neighbouring tiles first.</p>
+    <p>With your own pick, units can also step between your neighbouring tiles first.</p>
 
     <h2 class="h4">Spells</h2>
     <p>Each trait gives its player a spell (a Spellweaver gets them all), so a spell hints at a rival's trait. Ward,

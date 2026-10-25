@@ -190,6 +190,12 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
             return (Report.Fail("A bot plays your seat now."), false);
         }
 
+        if (!loaded.Match.InStep.Contains(seat))
+        {
+            var turn = loaded.Match.Match.Phase == MatchPhase.Opening ? loaded.Match.Match.Picker : loaded.Match.Match.Actor;
+            return (Report.Fail($"It's Seat {turn + 1}'s turn, not yours."), false);
+        }
+
         var checkedReport = check(loaded.Match, seat);
         if (!checkedReport.Succeeded)
         {

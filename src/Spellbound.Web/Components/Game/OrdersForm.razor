@@ -1,10 +1,21 @@
-@* A round's orders (docs/game-design.md, Rounds and stances): one stance, what it aims at, and for an attack the units
+@* A turn in a round (docs/game-design.md, Rounds and stances): on your pick, a stance nobody has picked this round,
+   what it aims at and any moves; when another seat's pick goes round, that stance or a pass. For an attack, the units
    that go. Every tile is chosen on the map (owner's choice, 24 Oct 2026): the match page hands each tap to Tap(), which
    takes it for the pick under way (where a move starts or ends, where a Leyline's units arrive, where to guard home)
    and otherwise leaves it as the stance's tile (for Cast, the spell's). Pickable says which tiles a tap can choose now, for the map to outline, and Prompt
    says what the next tap is for. The preview is Match.Check's own lines. *@
 
-<h2 class="h4">Round @Match.CurrentRound of @Match.Rules.Rounds: your stance</h2>
+@if (Picking)
+{
+    <h2 class="h4">Round @Match.CurrentRound of @Match.Rules.Rounds: your pick</h2>
+    <p class="text-muted">Pick a stance nobody has picked this round. You take it first, @Match.Rules.PickerDiscount <ManaIcon /> cheaper;
+        then everyone else may take it too, in turn.</p>
+}
+else
+{
+    <h2 class="h4">Round @Match.CurrentRound: @(Owners?[Match.Picks[^1].Seat] is null ? "Bot" : "Seat") @(Match.Picks[^1].Seat + 1) picked @Match.OpenStance</h2>
+    <p class="text-muted">Take it too, at full price, or pass.</p>
+}
 
 <fieldset class="stances">
     @foreach (var choice in Choices)
@@ -21,6 +32,8 @@
     }
 </fieldset>
 
+@if (Picking)
+{
 <button type="button" class="fold-head" aria-expanded="@showMoves" @onclick="() => showMoves = !showMoves">
     <span class="fold-title">Moves (optional) @(showMoves ? "▾" : "▸")</span>
     <span class="fold-sum">@(moves.Count == 0 ? "none" : $"{moves.Count} planned")</span>
@@ -28,7 +41,7 @@
 @if (showMoves)
 {
 <div class="fold-body">
-<p class="text-muted">Units step to a neighbouring tile of yours, once a round. Moves happen first, so moved units can attack.</p>
+<p class="text-muted">With your pick, units step to a neighbouring tile of yours, once a round. Moves happen first, so moved units can attack.</p>
 @foreach (var move in moves.ToList())
 {
     var m = move;
@@ -71,6 +84,7 @@ else
 }
 </div>
 }
+}
 
 @{
     var orders = Build();
@@ -88,21 +102,35 @@ else
 <div class="action-bar">
     <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@TileNames.In(Match.Map, ActionSummary(check))</p>
     <div class="action-row">
+        @if (!Picking)
+        {
+            <button type="button" class="btn btn-outline-primary btn-lg" disabled="@Busy"
+                    @onclick="() => OnCommit.InvokeAsync(Orders.Pass(You, Match.OpenStance!.Value))">Pass</button>
+        }
         <button type="button" class="btn btn-primary btn-lg" disabled="@(Busy || check is not { Succeeded: true })"
-                @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance@(orders is { Stance: Stance.Cast } cast ? $" {cast.Spell}" : "")</button>
+                @onclick="() => OnCommit.InvokeAsync(orders!)">@(Picking ? "Pick" : "Take") @stance@(orders is { Stance: Stance.Cast } cast ? $" {cast.Spell}" : "")</button>
     </div>
 </div>
 
 @code {
-    private static readonly IReadOnlyDictionary<string, string> Choices = new Dictionary<string, string>
+    private static readonly IReadOnlyDictionary<string, string> AllChoices = new Dictionary<string, string>
     {
         ["Attune"] = "claim a free tile next to your land",
         ["Summon"] = "spend mana on units",
         ["Attack"] = "send units at a rival's or a monster's tile",
         ["Build"] = "an upgrade on one of your tiles",
         ["Cast"] = "your trait's spell",
-        ["Hold"] = "do nothing this round",
+        ["Channel"] = "gain mana; only you take it",
     };
+
+    /// <summary>The stances to choose from now: on your pick, those nobody has picked this round; else the one going round.</summary>
+    private IEnumerable<KeyValuePair<string, string>> Choices => AllChoices.Where(c => Picking
+        ? Match.Unpicked.Any(s => s.ToString() == c.Key)
+        : Match.OpenStance?.ToString() == c.Key)
+        .Select(c => c.Key == "Channel" ? new KeyValuePair<string, string>(c.Key, $"gain {Match.Rules.ChannelMana} mana; only you take it") : c);
+
+    /// <summary>Whether this turn is your pick (rather than taking the stance another seat picked).</summary>
+    private bool Picking => Match.OpenStance is null;
 
     /// <summary>What the next tap on the map is for, besides the stance's own tile.</summary>
     private enum Pick
@@ -149,7 +177,7 @@ else
     private Hex? moveTo;
     private int moveImps;
     private int moveGolems;
-    private int round;
+    private string? turn; // the turn the form was set up for: a new one starts afresh
     private bool showMoves;
     private Hex? reinforceAt;
     private int reinforceImps = 3;
@@ -217,7 +245,7 @@ else
         Pick.MoreTiles => $"Tap another tile for {spell}.",
         _ => stance switch
         {
-            "Hold" => "Hold: spend nothing this round.",
+            "Channel" => $"Channel: gain {Match.Rules.ChannelMana} mana.",
             _ when !StanceTargets().Any() => NoTarget(),
             "Attune" => "Tap a free tile next to your land.",
             "Summon" => "Tap one of your tiles to summon on.",
@@ -412,9 +440,11 @@ else
 
     protected override void OnParametersSet()
     {
-        if (round != Match.CurrentRound)
+        var now = $"{Match.CurrentRound}-{Match.Picks.Count}-{Match.OpenStance}";
+        if (turn != now)
         {
-            round = Match.CurrentRound;
+            turn = now;
+            stance = (Match.OpenStance ?? Match.Unpicked.FirstOrDefault(s => s != Stance.Channel, Stance.Channel)).ToString();
             sends.Clear();
             moves.Clear();
             count = 1;
@@ -499,7 +529,7 @@ else
 
     private Orders? BuildStance() => (stance, StanceTarget) switch
     {
-        ("Hold", _) => Orders.Hold(You, [.. moves]),
+        ("Channel", _) => Orders.Channel(You, [.. moves]),
         (_, null) => null,
         ("Attune", { } t) => Orders.Attune(You, t, [.. moves]),
         ("Build", { } t) => Orders.Build(You, t, upgrade, [.. moves]),

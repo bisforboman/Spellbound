@@ -50,8 +50,13 @@ public sealed class MatchNoticeTests : TestDatabase
         await store.CommitAsync(id, ownerId, now, MatchJson.Serialize(new Pick(0, tile)), (loaded, seat) => loaded.Match.CheckPick(new Pick(seat, tile)));
     }
 
-    private Task HoldAsync(long id, string ownerId) =>
-        store.CommitAsync(id, ownerId, Start, MatchJson.Serialize(Scenarios.Hold(0)), (loaded, seat) => loaded.Match.Check(Scenarios.Hold(seat)));
+    /// <summary>The person lets their turn go by: Channel on a pick, a pass on a stance going round.</summary>
+    private async Task PassAsync(long id, string ownerId)
+    {
+        var loaded = (await store.LoadAsync(id))!;
+        var orders = loaded.Match.Passing(loaded.SeatOf(ownerId)!.Value);
+        await store.CommitAsync(id, ownerId, Start, MatchJson.Serialize(orders), (l, seat) => l.Match.Check(orders with { Seat = seat }));
+    }
 
     /// <summary>Everyone picks in turn until the rounds begin.</summary>
     private async Task ThroughTheOpeningAsync(long id)
@@ -63,23 +68,18 @@ public sealed class MatchNoticeTests : TestDatabase
     }
 
     [Fact]
-    public async Task The_last_one_left_hears_that_the_others_are_waiting()
+    public async Task A_turn_in_a_round_tells_only_whoever_takes_the_next()
     {
         var id = await store.CreateAsync(["alice", "bob", "carol"], GameRules.Default, Start);
         await ThroughTheOpeningAsync(id);
         Sent();
 
-        await HoldAsync(id, "alice");
-        Assert.Empty(Sent()); // two still choosing
+        await PassAsync(id, "alice"); // round 1 starts with alice: she channels, and bob picks next
 
-        await HoldAsync(id, "bob");
-        var waiting = Assert.Single(Sent());
-        Assert.Equal("carol", waiting.OwnerId);
-        Assert.Equal($"Match {id}: they're waiting on you", waiting.Title);
-        Assert.Equal($"match/{id}", waiting.Url);
-
-        await HoldAsync(id, "bob"); // a change of mind
-        Assert.Empty(Sent());
+        var notice = Assert.Single(Sent());
+        Assert.Equal("bob", notice.OwnerId);
+        Assert.Equal($"Match {id}: Round 1, pick 1 resolved", notice.Title);
+        Assert.Equal($"match/{id}", notice.Url);
     }
 
     [Fact]
@@ -173,7 +173,8 @@ public sealed class MatchNoticeTests : TestDatabase
         Assert.StartsWith("In round 3. ", bob.Body, StringComparison.Ordinal);
     }
 
-    /// <summary>A three-seat match in its first round where seat 0 has 2 Imps on a tile next to seat 1's, or null.</summary>
+    /// <summary>A three-seat match in its first round where seat 0 has 2 Imps on a tile next to seat 1's and may take the
+    /// Attack going round, or null.</summary>
     private static (Match Match, Hex Mine, Hex Theirs)? Bordered(int seed)
     {
         var random = new SeededRandom(seed);
@@ -187,8 +188,10 @@ public sealed class MatchNoticeTests : TestDatabase
         {
             if (match.Seats[1].Tiles.FirstOrDefault(mine.IsNextTo) is var theirs && match.Seats[1].Tiles.Any(mine.IsNextTo))
             {
-                var summon = match.Resolve([Orders.Summon(0, mine, UnitKind.Imp, 2), Scenarios.Hold(1), Scenarios.Hold(2)], random);
-                return summon.Succeeded ? (match, mine, theirs) : null;
+                // Seat 1 summons on its pick; then Seat 2 picks Attack without using it, and it goes round to Seat 1.
+                var turns = new[] { Orders.Summon(0, mine, UnitKind.Imp, 2), Orders.Pass(1, Stance.Summon), Orders.Pass(2, Stance.Summon),
+                    Orders.Pass(1, Stance.Attack), Orders.Pass(2, Stance.Attack) };
+                return turns.All(t => match.Take(t, random).Succeeded) ? (match, mine, theirs) : null;
             }
         }
 
