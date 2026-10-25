@@ -106,7 +106,7 @@ public class BotTests
             {
                 var report = match.Phase == MatchPhase.Opening
                     ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
-                    : match.Take(Bot.ChooseOrders(match, match.Actor!.Value, random, plan), random);
+                    : Bot.PlayTurn(match, match.Actor!.Value, random, plan);
                 Assert.True(report.Succeeded, string.Join('\n', report.Lines));
                 lines.AddRange(report.Lines);
             }

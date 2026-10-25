@@ -14,6 +14,9 @@ internal abstract record Action
 
     public sealed record GiveOrders(Orders Orders) : Action;
 
+    /// <summary>Pay a rolled Attune price, or decline it.</summary>
+    public sealed record Settle(bool Pay) : Action;
+
     /// <summary>Reads an action, or says what's wrong with it in one line.</summary>
     public static (Action? Action, string? Problem) Parse(string json, int seat)
     {
@@ -26,7 +29,7 @@ internal abstract record Action
                 return (null, "Send one JSON object.");
             }
 
-            var kinds = new[] { "trait", "pick", "stance" }.Count(k => Get(root, k) is not null);
+            var kinds = new[] { "trait", "pick", "stance", "pay" }.Count(k => Get(root, k) is not null);
             if (kinds > 1)
             {
                 return (null, "One action at a time: a trait, a pick or a stance.");
@@ -42,6 +45,11 @@ internal abstract record Action
             if (Get(root, "pick") is { } pick)
             {
                 return (new PickTile(new Pick(seat, HexOf(pick))), null);
+            }
+
+            if (Get(root, "pay") is { } pay)
+            {
+                return (new Settle(pay.ValueKind == JsonValueKind.True), null);
             }
 
             if (Get(root, "stance") is { } stance)

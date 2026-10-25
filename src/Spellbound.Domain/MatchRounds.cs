@@ -64,7 +64,9 @@ public sealed partial class Match
 
             if (discount > 0 && orders.Target is not null)
             {
-                lines.Add($"As its picker you pay {discount} less: {Math.Max(0, CostOf(orders) - discount)} mana in all.");
+                lines.Add(orders.Stance == Stance.Attune
+                    ? $"As its picker you pay {discount} less than the roll."
+                    : $"As its picker you pay {discount} less: {Math.Max(0, CostOf(orders) - discount)} mana in all.");
             }
 
             return new Report(true, lines);
@@ -108,19 +110,28 @@ public sealed partial class Match
 
         seat.Mana += discount;
         var before = seat.Mana;
-        Act(orders, lines);
+        Act(orders, discount, random, lines);
         seat.Mana -= discount - Math.Clamp(before - seat.Mana, 0, discount); // only what the action cost comes off
-        acted++;
-        if (OpenStance is null && picks.Count == seats.Count)
+        if (offer is null)
         {
-            EndRound(lines, random);
+            EndTurn(lines, random); // an Attune's turn ends when its price is paid or declined (Settle)
         }
 
         return lines.ToReport();
     }
 
-    /// <summary>One seat's action: its moves, then its stance.</summary>
-    private void Act(Orders order, ReportLines lines)
+    /// <summary>A seat's turn is over: the next seat's comes, or after the round's last turn the round ends.</summary>
+    private void EndTurn(ReportLines lines, IRandomSource random)
+    {
+        acted++;
+        if (OpenStance is null && picks.Count == seats.Count)
+        {
+            EndRound(lines, random);
+        }
+    }
+
+    /// <summary>One seat's action: its moves, then its stance (an Attune rolls its price, to pay or decline).</summary>
+    private void Act(Orders order, int discount, IRandomSource random, ReportLines lines)
     {
         foreach (var move in order.Moves)
         {
@@ -147,7 +158,12 @@ public sealed partial class Match
         }
 
         List<Orders> one = [order];
-        ResolveAttunes([.. one.Where(o => o.Stance == Stance.Attune)], lines);
+        if (order.Stance == Stance.Attune)
+        {
+            RollAttune(order, discount, random, lines);
+            return;
+        }
+
         if (order is { Stance: Stance.Summon, Count: > 0 })
         {
             var hex = order.Target!.Value;
@@ -249,26 +265,6 @@ public sealed partial class Match
         return lines;
     }
 
-    /// <summary>Each seat claims the free tile it attuned and pays for it, unless another seat attuned the same tile:
-    /// then nobody gets it and nobody pays.</summary>
-    private void ResolveAttunes(List<Orders> attunes, ReportLines lines)
-    {
-        var prices = attunes.ToDictionary(o => o.Seat, o => Rules.AttunePrice(seats[o.Seat].Tiles.Count));
-        foreach (var claim in attunes.GroupBy(o => o.Target!.Value))
-        {
-            if (claim.Count() > 1)
-            {
-                lines.Add($"{string.Join(" and ", claim.Select(o => $"Seat {o.Seat + 1}"))} {(claim.Count() == 2 ? "both" : "all")} attune {Describe(claim.Key)}: nobody gets it.");
-                continue;
-            }
-
-            var seat = seats[claim.Single().Seat];
-            seat.Mana -= prices[seat.Index];
-            seat.Take(claim.Key);
-            lines.Add($"Seat {seat.Index + 1} attunes {Describe(claim.Key)} for {prices[seat.Index]} mana.");
-        }
-    }
-
     /// <summary>Banks the round's points: for land held and for mana produced (the remainder carries over).</summary>
     private void BankPoints(ReportLines lines)
     {
@@ -351,31 +347,7 @@ public sealed partial class Match
         switch (orders.Stance)
         {
             case Stance.Attune:
-            {
-                if (!Map[target].IsUnveiled || OwnerOf(target) is not null)
-                {
-                    return $"Only a free, unveiled tile can be attuned; {target} isn't one.";
-                }
-
-                if (Map[target].IsGuarded)
-                {
-                    return $"{target} is guarded by monsters: clear it with an attack.";
-                }
-
-                if (!seat.Tiles.Any(h => h.IsNextTo(target)))
-                {
-                    return $"{target} isn't next to any of your tiles.";
-                }
-
-                var price = Rules.AttunePrice(seat.Tiles.Count);
-                if (price > seat.Mana)
-                {
-                    return $"Attuning costs {price} mana; you have {seat.Mana}.";
-                }
-
-                lines.Add($"Attune {Describe(target)} for {price} mana, leaving {seat.Mana - price}.");
-                return null;
-            }
+                return AttuneProblem(orders, target, lines);
 
             case Stance.Summon:
             {

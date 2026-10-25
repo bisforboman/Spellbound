@@ -23,7 +23,8 @@ public sealed partial class Match
         [.. picks],
         acted,
         [.. wards.OrderBy(w => w.Key.Q).ThenBy(w => w.Key.R).Select(w => new WardState(w.Key, w.Value))],
-        [.. blights.OrderBy(h => h.Q).ThenBy(h => h.R)]);
+        [.. blights.OrderBy(h => h.Q).ThenBy(h => h.R)],
+        offer);
 
     /// <summary>A saved match, to play on under the rules it was saved with.</summary>
     public static Match Load(MatchState state, GameRules rules)
@@ -93,6 +94,7 @@ public sealed partial class Match
         }
 
         match.blights.UnionWith(state.Blights ?? []);
+        match.offer = state.Offer;
 
         return match;
     }

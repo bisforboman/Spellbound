@@ -77,6 +77,11 @@ internal static class Scenarios
             }
 
             var report = match.Take(turn, random);
+            if (report.Succeeded && match.Offer is { } offer && offer.Seat == seat)
+            {
+                report = report.Then(match.Settle(seat, offer.Price <= match.Seats[seat].Mana, random)); // pays when it can
+            }
+
             if (!report.Succeeded)
             {
                 return report;
