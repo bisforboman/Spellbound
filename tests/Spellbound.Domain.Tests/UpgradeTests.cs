@@ -36,7 +36,7 @@ public class UpgradeTests
 
         Assert.Contains("isn't yours", match.Check(Orders.Build(0, theirs, Upgrade.Shrine)).Lines[0], StringComparison.Ordinal);
         Assert.Contains("already has a Shrine", match.Check(Orders.Build(0, home, Upgrade.Tower)).Lines[0], StringComparison.Ordinal);
-        Assert.False(match.Resolve([Orders.Build(0, theirs, Upgrade.Shrine), Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1)).Succeeded);
+        Assert.False(match.Resolve([Orders.Build(0, theirs, Upgrade.Shrine), Scenarios.Hold(1), Scenarios.Hold(2)], new SeededRandom(1)).Succeeded);
         Assert.Equal(before, Snapshot(match));
 
         var poor = Opened(1, GameRules.Default with { UpgradeCost = 1000 });

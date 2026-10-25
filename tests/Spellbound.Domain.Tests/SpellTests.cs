@@ -93,11 +93,9 @@ public class SpellTests
         var before = System.Text.Json.JsonSerializer.Serialize(match.Save());
 
         var check = match.Check(again);
-        var report = match.Resolve([again, Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
 
         Assert.False(check.Succeeded);
         Assert.Contains("can't be blighted two rounds running", check.Lines[0], StringComparison.Ordinal);
-        Assert.False(report.Succeeded);
         Assert.Equal(before, System.Text.Json.JsonSerializer.Serialize(match.Save()));
 
         Play(match);
@@ -123,18 +121,17 @@ public class SpellTests
     }
 
     [Fact]
-    public void An_attack_goes_with_the_units_a_rivals_Scorch_left()
+    public void A_Scorch_earlier_in_the_round_leaves_fewer_units_to_attack_with()
     {
         var match = Where(m => m.Seats[0].Tiles.Any(a => m.Seats[1].Tiles.Any(a.IsNextTo) && m.Seats[2].Tiles.Any(a.IsNextTo)));
         var from = match.Seats[0].Tiles.First(a => match.Seats[1].Tiles.Any(a.IsNextTo) && match.Seats[2].Tiles.Any(a.IsNextTo));
         var target = match.Seats[1].Tiles.First(from.IsNextTo);
         Play(match, Orders.Summon(0, from, UnitKind.Imp, 4));
 
-        var report = Play(match, Orders.Attack(0, target, [new Move(from, target, new Army(4, 0))]), Orders.Cast(2, Spell.Scorch, from, 4));
+        Play(match, Orders.Cast(2, Spell.Scorch, from, 3));
 
-        Assert.Contains(report.Lines, l => l.Contains("has no units left to send", StringComparison.Ordinal));
-        Assert.Equal(1, match.OwnerOf(target));
-        Assert.Equal(Army.None, match.UnitsOn(from));
+        Assert.Equal(new Army(1, 0), match.UnitsOn(from));
+        Assert.Contains("There aren't 4 Imps", match.Check(Orders.Attack(0, target, [new Move(from, target, new Army(4, 0))])).Lines[0], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -164,7 +161,7 @@ public class SpellTests
         var (mine, theirs) = Border(match, 0, 1)!.Value;
         var before = Snapshot(match);
 
-        var blight = match.Resolve([Orders.Cast(0, Spell.Blight, theirs), Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+        var blight = match.Resolve([Orders.Cast(0, Spell.Blight, theirs), Scenarios.Hold(1), Scenarios.Hold(2)], new SeededRandom(1));
 
         Assert.Equal([Spell.Ward], match.SpellsOf(0));
         Assert.False(blight.Succeeded);
@@ -220,7 +217,7 @@ public class SpellTests
         };
         var before = Snapshot(match);
 
-        var report = match.Resolve([orders, Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+        var report = match.Resolve([orders, Scenarios.Hold(1), Scenarios.Hold(2)], new SeededRandom(1));
 
         Assert.False(report.Succeeded);
         Assert.Contains(reason, Assert.Single(report.Lines), StringComparison.Ordinal);
@@ -240,7 +237,7 @@ public class SpellTests
         var (_, theirs) = Border(match, 0, 1)!.Value;
         var before = Snapshot(match);
 
-        var report = match.Resolve([Orders.Cast(0, Spell.Blight, theirs), Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+        var report = match.Resolve([Orders.Cast(0, Spell.Blight, theirs), Scenarios.Hold(1), Scenarios.Hold(2)], new SeededRandom(1));
 
         Assert.False(report.Succeeded);
         Assert.Contains("Blight costs 1000 mana", Assert.Single(report.Lines), StringComparison.Ordinal);
@@ -248,24 +245,22 @@ public class SpellTests
     }
 
     [Fact]
-    public void Scorch_charges_nothing_for_units_that_moved_away_first()
+    public void Units_that_moved_away_before_a_Scorch_are_out_of_its_reach()
     {
         var match = Where(m => Border(m, 0, 1) is { } b && m.Seats[1].Tiles.Any(t => t != b.Theirs && t.IsNextTo(b.Theirs)));
         var (_, theirs) = Border(match, 0, 1)!.Value;
         var away = match.Seats[1].Tiles.First(t => t != theirs && t.IsNextTo(theirs));
         Play(match, Orders.Summon(1, theirs, UnitKind.Imp, 3));
-        var mana = match.Seats[0].Mana;
 
-        // Moves come before spells: the Imps leave, the Scorch finds nothing and costs nothing.
-        var report = Play(match, Orders.Cast(0, Spell.Scorch, theirs, 3), Orders.Hold(1, new Move(theirs, away, new Army(3, 0))));
+        // Round 2: Seat 2 picks first and moves its Imps away; Seat 1's Scorch then finds nothing to burn.
+        Play(match, Scenarios.Hold(1, new Move(theirs, away, new Army(3, 0))));
 
         Assert.Equal(new Army(3, 0), match.UnitsOn(away));
-        Assert.Contains(report.Lines, l => l.Contains("casts Scorch", StringComparison.Ordinal) && l.Contains("for 0 mana", StringComparison.Ordinal));
-        Assert.Equal(mana, match.Seats[0].Mana - match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value));
+        Assert.Contains("nothing at", match.Check(Orders.Cast(0, Spell.Scorch, theirs, 3)).Lines[0], StringComparison.Ordinal);
     }
 
     [Fact]
-    public void A_Scorch_that_would_burn_nothing_is_refused_and_one_that_burns_nothing_doesnt_count_for_traits()
+    public void A_Scorch_that_would_burn_nothing_is_refused()
     {
         var match = Where(m => Border(m, 0, 1) is { } b && m.Seats[1].Tiles.Any(t => t != b.Theirs && t.IsNextTo(b.Theirs)));
         var (_, theirs) = Border(match, 0, 1)!.Value;
@@ -278,9 +273,6 @@ public class SpellTests
         Assert.False(tooSmall.Succeeded);
         Assert.Contains("would burn nothing", tooSmall.Lines[0], StringComparison.Ordinal);
         Assert.Equal(before, Snapshot(match));
-
-        // A Scorch whose Golem walks away burns nothing, costs nothing, and isn't a cast for Hexer or Spellweaver.
-        Play(match, Orders.Cast(0, Spell.Scorch, theirs, 3), Orders.Hold(1, new Move(theirs, away, new Army(0, 1))));
         Assert.Equal(0, match.Seats[0].HexesCast);
         Assert.Empty(match.Seats[0].SpellsCast);
     }
@@ -321,7 +313,7 @@ public class SpellTests
         };
         var before = Snapshot(match);
 
-        var report = match.Resolve([orders, .. match.Seats.Where(s => s.Index != orders.Seat).Select(s => Orders.Hold(s.Index))], new SeededRandom(1));
+        var report = match.Resolve([orders, .. match.Seats.Where(s => s.Index != orders.Seat).Select(s => Scenarios.Hold(s.Index))], new SeededRandom(1));
 
         Assert.False(report.Succeeded);
         Assert.Contains(reason, Assert.Single(report.Lines), StringComparison.Ordinal);

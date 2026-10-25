@@ -56,8 +56,10 @@ public static class Bot
         return new Pick(seat, best[random.Next(best.Count)]);
     }
 
-    /// <summary>In order: attack a weaker rival or monster tile next to its units; attune the best free tile next to
-    /// its land; cast a spell with a purpose, or summon on a tile at its border; else hold.</summary>
+    /// <summary>Its turn, picking or taking the open stance: the first of its wishes that checks, in order (attack a
+    /// weaker rival or monster tile next to its units; attune the best free tile next to its land; cast a spell with a
+    /// purpose, or summon on a tile at its border), so a picker picks the stance of its first wish still free and a
+    /// follower takes the open stance if it wishes for it; else Channel, or a pass.</summary>
     public static Orders ChooseOrders(Match match, int seat, IRandomSource random, Plan plan = Plan.Balanced)
     {
         ArgumentNullException.ThrowIfNull(match);
@@ -70,7 +72,7 @@ public static class Bot
             candidates = new[] { BestAttack(match, seat, match.Seats[seat]), LastUpgrade(match, seat) }.OfType<Orders>().Concat(candidates);
         }
 
-        var orders = candidates.FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+        var orders = candidates.FirstOrDefault(o => match.Check(o).Succeeded) ?? match.Passing(seat);
         if (orders is { Stance: Stance.Attack, Attackers: [var first, ..] })
         {
             // The army leaves its tile empty: with mana to spare, a few Imps guard it.
