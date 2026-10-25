@@ -22,12 +22,14 @@
         @foreach (var type in Enum.GetValues<TileType>())
         {
             <li>
-                @if (Art.Paths is { } art)
+                @if (Art.Paths is { } art && art.TryGetValue(type, out var image))
                 {
-                    <img class="tile-swatch" src="@Assets[art[type]]" alt="" />
+                    <img class="tile-swatch" src="@Assets[image]" alt="" />
                 }
                 <span class="tile-mark">@Seats.Mark(type)</span>
-                <b>@type</b>: @(match.Rules.Varies(type) ? $"rolls {match.Rules.YieldRange(type)} mana each round" : $"yields {match.Rules.YieldRange(type)} mana every round").
+                <b>@type</b>: @(type == TileType.Barren
+                    ? "yields no mana. It turns up only in the later Unveils, never guarded, and still counts as land"
+                    : match.Rules.Varies(type) ? $"rolls {match.Rules.YieldRange(type)} mana each round" : $"yields {match.Rules.YieldRange(type)} mana every round").
             </li>
         }
     </ul>

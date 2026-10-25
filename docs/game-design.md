@@ -71,17 +71,20 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 ## Tiles
 
 - Tiles **mainly produce** mana; holding land also scores points (see *Scoring and winning*).
-- Start with **3 tile types**; more can be added later. All three produce **mana**; they differ in how much it varies:
+- **3 tile types produce mana**; they differ in how much it varies. A fourth, **Barren**, produces none:
 
 | Type | Mana | Average |
 |---|---|---|
 | Steady | 2 | 2 |
 | Shifting | 1–3 | 2 |
 | Wild | 0–4 | 2 |
+| Barren | 0 | 0 |
+
+- **Barren** land (owner's choice, 25 Oct 2026) turns up **only in the later Unveils**: never in the draft or among the free tiles, and it is **never guarded**. It still counts as land: for land points, for a realm's size in Attune prices, and for reaching other tiles. So it is a cheap stepping stone or a buffer, not a prize. The map has **one Barren tile per 2 players, rounded up** (3 players: 2), in `GameRules.PlayersPerBarrenTile`. Measured (3 bots, 2,000 games, against none): average final score 29.2 → 28.9, unspent mana unchanged at 3.5 a seat, no strategy plan's win rate moved by more than 2 points.
 
 - A tile's yield is **rolled every round** (owner's choice, 24 Oct 2026; it replaced a yield fixed once, when the tile was unveiled): at the start of each round, every held Shifting and Wild tile rolls its yield from its type's range, and its owner collects that roll. Steady tiles always yield 2. The map and the draft show each type's range ("0–4"), so players pick a risk, not a number. The rolls are public: the round's report lists every one.
 - **The odds** are the paper prototype's die: Shifting yields 1, 2 or 3 with equal chance; Wild yields 0 or 4 one time in six each, 1 or 3 one time in six each, and 2 two times in six.
-- **Mix:** roughly **equal thirds** of each type (19 hexes: 7 Steady, 6 Shifting, 6 Wild).
+- **Mix:** the Barren tiles, then roughly **equal thirds** of the other three types (19 hexes for 3 players: 2 Barren, 6 Steady, 6 Shifting, 5 Wild).
 
 ## Unveil
 
@@ -95,7 +98,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | 4 | 37 | 15 | 12 | 3 | 22 |
 | 5 | 37 | 18 | 15 | 3 | 19 |
 - **The later Unveils:** in **rounds 2 and 4**. The tiles still dark after the opening are **split evenly** between them (an odd one goes to round 2). They have **no draft**: the tiles stay unowned until someone takes them. After round 4 the whole map is revealed.
-- About **1 in 3** tiles revealed in a later Unveil is **guarded by monsters** (decided at random). The opening Unveils never reveal guarded tiles.
+- About **1 in 3** tiles revealed in a later Unveil is **guarded by monsters** (decided at random; a Barren tile never is). The opening Unveils never reveal guarded tiles, or Barren ones.
 
 ### The opening draft
 

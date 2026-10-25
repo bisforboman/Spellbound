@@ -1,6 +1,7 @@
 namespace Spellbound.Domain;
 
-/// <summary>The kinds of land (docs/game-design.md, Tiles). All produce mana; they differ in how much it varies.</summary>
+/// <summary>The kinds of land (docs/game-design.md, Tiles). The first three produce mana and differ in how much it
+/// varies; Barren land produces none.</summary>
 public enum TileType
 {
     /// <summary>Always the same yield.</summary>
@@ -11,6 +12,10 @@ public enum TileType
 
     /// <summary>A yield in a wide range.</summary>
     Wild,
+
+    /// <summary>No yield at all (owner's choice, 25 Oct 2026): only ever revealed in a later Unveil, never guarded. It
+    /// still counts as land, for points, borders and Attune prices.</summary>
+    Barren,
 }
 
 /// <summary>
