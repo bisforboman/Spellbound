@@ -366,9 +366,11 @@ namespace Spellbound.Playtest
                 await page.ClickAsync(".match-tabs a:has-text('Board')");
                 await Expect(page, "Round 1 of 8");
             });
+            // Round 1 starts with Merlin's pick (the opening's rotation goes on), so every stance is still free.
             await StepAsync(merlin, "summon", async page =>
             {
-                await page.ClickAsync("label:has-text('Summon:')");
+                await Expect(page, "your pick");
+                await UntilAsync(page, "Summon");
                 await Expect(page, "Tap one of your tiles to summon on");
                 // Tiles are chosen on the map only: a tile the stance can't use just shows what it is.
                 var other = page.Locator(".hex-map .hex:not(.marked):not(.dark)");
@@ -382,8 +384,14 @@ namespace Spellbound.Playtest
                 await page.FillAsync("#count", "3");
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "stances-screen.png"), FullPage = true });
                 await Expect(page, "Summon 3 Imps");
-                await page.ClickAsync("button:has-text('Commit: Summon')");
-                await Expect(page, "Round 2 of 8");
+                await Expect(page, "As its picker you pay 1 less"); // the picker's discount, in the ledger
+                await TakeTurnAsync(page, "button:has-text('Pick Summon')");
+                // The bots take Summon too or pass, and pick in turn, until it is Merlin's turn again.
+                await Expect(page, "Picked this round: Summon (You)");
+            });
+            await StepAsync(merlin, "new-round", async page =>
+            {
+                await ToRoundAsync(page, 2);
                 // A round that begins while the page is open plays once: a banner, and "+N" rising from every held tile.
                 await page.Locator(".round-banner").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 if (await page.Locator(".hex-map .hex-gain").CountAsync() < 3)
@@ -396,11 +404,11 @@ namespace Spellbound.Playtest
             });
             await StepAsync(merlin, "views", async page =>
             {
-                // The round's report came in on the board: the Report tab is marked until it is opened.
+                // The last turns' report came in on the board: the Report tab is marked until it is opened.
                 await page.Locator(".match-tabs a.unread:has-text('Report')").WaitForAsync();
                 await page.ClickAsync(".match-tabs a:has-text('Report')");
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("#report$"));
-                await Expect(page, "You summon 3 Imps");
+                await Expect(page, "What just happened");
                 await page.WaitForFunctionAsync(
                     "() => { const r = document.querySelector('#report h2').getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; }",
                     null, new PageWaitForFunctionOptions { Timeout = 5_000 });
@@ -424,7 +432,7 @@ namespace Spellbound.Playtest
                     await Expect(page, "Only what concerns you");
                 }
 
-                // The view is in the URL: back returns to it, and a summon half given on the board survives the trip.
+                // The view is in the URL: back returns to it, and a turn half given on the board survives the trip.
                 await page.ClickAsync(".match-tabs a:has-text('Standings')");
                 await page.Locator("table.standings").WaitForAsync();
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "standings-view-screen.png") });
@@ -437,21 +445,38 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("The board still shows the report.");
                 }
 
-                await page.ClickAsync("label:has-text('Summon:')");
-                await page.FillAsync("#count", "2");
+                var stances = page.Locator("label.choice:has(input[name='stance'])");
+                await stances.Last.ClickAsync();
+                var chosen = await stances.Last.InnerTextAsync();
                 await page.ClickAsync(".match-tabs a:has-text('Report')");
                 await page.ClickAsync(".match-tabs a:has-text('Board')");
-                if (await page.InputValueAsync("#count") != "2")
+                if (!await stances.Last.Locator("input").IsCheckedAsync())
                 {
-                    throw new PlaytestException("A look at the report lost the orders given on the board.");
+                    throw new PlaytestException($"A look at the report lost the stance chosen on the board ({chosen}).");
                 }
 
                 await page.WaitForTimeoutAsync(500);
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "board-view-screen.png") });
             });
+            await StepAsync(merlin, "follow", async page =>
+            {
+                // Round 2 starts with a bot's pick: Merlin may take it too, or pass. Moves only come with his own pick.
+                if (await page.Locator("button:has-text('Pass')").CountAsync() > 0)
+                {
+                    await Expect(page, "Take it too, at full price, or pass");
+                    if (await page.Locator("button:has-text('Moves (optional)')").CountAsync() > 0)
+                    {
+                        throw new PlaytestException("Moves are offered on a turn that isn't Merlin's pick.");
+                    }
+
+                    await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "follow-screen.png"), FullPage = true });
+                    await TakeTurnAsync(page, "button:has-text('Pass')");
+                }
+            });
             await StepAsync(merlin, "move", async page =>
             {
-                // A move if two of Merlin's tiles touch (the match isn't seeded, so not every run can).
+                // A move if two of Merlin's tiles touch (the match isn't seeded, so not every run can). Moves come with a pick.
+                await ToMyPickAsync(page);
                 await page.ClickAsync("button:has-text('Moves (optional)')");
                 await Expect(page, "Units step to a neighbouring tile");
                 if (await page.Locator("button:has-text('Add a move')").CountAsync() > 0)
@@ -467,31 +492,28 @@ namespace Spellbound.Playtest
             });
             await StepAsync(merlin, "attune", async page =>
             {
-                await page.ClickAsync("label:has-text('Attune:')");
+                await Diagnosed(page, "attune", () => UntilAsync(page, "Attune"));
                 // The stance's own choices, not the last one's (the map isn't seeded, so there may be no free tile to tap).
                 await page.Locator("text=/Tap a free tile next to your land|No free tile next to your land/").First.WaitForAsync();
                 var free = page.Locator(".hex-map .hex.marked");
                 if (await free.CountAsync() == 0)
                 {
-                    await page.ClickAsync("label:has-text('Hold:')");
-                }
-                else
-                {
-                    await free.First.ClickAsync();
+                    await GiveUpAsync(page);
+                    return;
                 }
 
+                await free.First.ClickAsync();
                 await Expect(page, "mana");
-                await page.ClickAsync("button:has-text('Commit:')");
-                await Expect(page, "Round 3 of 8");
+                await CommitOrGiveUpAsync(page);
             });
-            // An attack if the map offers one (a rival or monsters next to the Imps), else a hold: the match isn't seeded,
+            // An attack if the map offers one (a rival or monsters next to the Imps), else a pass: the match isn't seeded,
             // so which it is varies from run to run.
             await StepAsync(merlin, "attack-pick", async page =>
             {
-                await page.ClickAsync("label:has-text('Attack:')");
-                await Expect(page, "Tap a rival's or a monster's tile");
+                await UntilAsync(page, "Attack");
+                await page.Locator("text=/Tap a rival's or a monster's tile|Nothing to attack next to your units/").First.WaitForAsync();
                 var targets = page.Locator(".hex-map .hex.marked");
-                if (await targets.CountAsync() > 0)
+                if (await page.Locator("text=Nothing to attack next to your units").CountAsync() == 0)
                 {
                     await targets.First.ClickAsync();
                     await Expect(page, "Send from");
@@ -503,21 +525,12 @@ namespace Spellbound.Playtest
                     await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
                 }
             });
-            await StepAsync(merlin, "attack-commit", async page =>
-            {
-                if (await page.Locator("button:has-text('Commit:'):not([disabled])").CountAsync() == 0)
-                {
-                    await page.ClickAsync("label:has-text('Hold:')");
-                }
-
-                await page.ClickAsync("button:has-text('Commit:')");
-                await Expect(page, "Round 4 of 8");
-            });
+            await StepAsync(merlin, "attack-commit", CommitOrGiveUpAsync);
             // The Cast stance: Merlin's trait decides his spells (one, or all five for a Spellweaver). He takes the first,
             // taps its tile, and for a Ward, Blight or Lure adds a second tile when there is one.
             await StepAsync(merlin, "spell-pick", async page =>
             {
-                await page.ClickAsync("label:has-text('Cast:')");
+                await UntilAsync(page, "Cast");
                 await Expect(page, "Your trait decides your spells");
                 var spells = page.Locator(".stance-options input[name='spell']");
                 if (await spells.CountAsync() > 1)
@@ -551,20 +564,11 @@ namespace Spellbound.Playtest
                     await page.WaitForSelectorAsync(".ledger"); // the preview, or the problem if mana is short
                 }
             });
-            await StepAsync(merlin, "spell-commit", async page =>
-            {
-                if (await page.Locator("button:has-text('Commit: Cast '):not([disabled])").CountAsync() == 0)
-                {
-                    await page.ClickAsync("label:has-text('Hold:')"); // no tile for his spell, or too little mana this run
-                }
-
-                await page.ClickAsync("button:has-text('Commit:')");
-                await Expect(page, "Round 5 of 8");
-            });
+            await StepAsync(merlin, "spell-commit", CommitOrGiveUpAsync);
             await StepAsync(merlin, "build", async page =>
             {
                 // A Tower on one of Merlin's tiles, if he can afford it (the match isn't seeded).
-                await page.ClickAsync("label:has-text('Build:')");
+                await UntilAsync(page, "Build");
                 await page.ClickAsync("label:has-text('Tower:')");
                 var spots = page.Locator(".hex-map .hex.marked");
                 if (await spots.CountAsync() > 0)
@@ -574,24 +578,18 @@ namespace Spellbound.Playtest
                     await Expect(page, "Build a Tower", optional: true);
                 }
 
-                if (await page.Locator("button:has-text('Commit: Build'):not([disabled])").CountAsync() == 0)
-                {
-                    await page.ClickAsync("label:has-text('Hold:')");
-                }
-
-                await page.ClickAsync("button:has-text('Commit:')");
-                await Expect(page, "Round 6 of 8");
+                await CommitOrGiveUpAsync(page);
             });
             await StepAsync(merlin, "to-the-end", async page =>
             {
-                for (var round = 6; round <= 8; round++)
+                // Every turn let go by until the match ends: Channel on a pick while it's free, a pass on the rest.
+                for (var turn = 0; turn < 200 && !page.Url.EndsWith("#standings", StringComparison.Ordinal); turn++)
                 {
-                    await page.ClickAsync("label:has-text('Hold:')");
-                    await page.ClickAsync("button:has-text('Commit: Hold')");
-                    await Expect(page, round < 8 ? $"Round {round + 1} of 8" : "Rivals' traits:");
+                    await Diagnosed(page, $"turn {turn}", () => PassTurnAsync(page));
                 }
 
                 await page.WaitForURLAsync(new System.Text.RegularExpressions.Regex("#standings$"));
+                await Expect(page, "Rivals' traits:");
                 await page.ClickAsync(".match-tabs a:has-text('Board')");
                 await Expect(page, "The match is over");
                 await page.ClickAsync("a:has-text('See the standings')");
@@ -664,13 +662,13 @@ namespace Spellbound.Playtest
                 await Expect(page, "A bot plays seat 2 from now on");
                 await page.Locator("label.choice:has(input[name='pick'])").First.ClickAsync();
                 await page.ClickAsync("button:has-text('Pick '):not([disabled])");
-                await Expect(page, "Round 1 of 8"); // the bot got the last tile
+                await Expect(page, "Round 1"); // the bot got the last tile
             });
             await StepAsync(morgana, "watching", async page =>
             {
                 await GoAsync(page, friendMatch);
                 await Expect(page, "A bot plays your seat now");
-                if (await page.Locator("button:has-text('Commit')").CountAsync() > 0)
+                if (await page.Locator("#orders .action-row .btn-primary").CountAsync() > 0)
                 {
                     throw new PlaytestException("A player whose seat a bot plays can still give orders.");
                 }
@@ -867,6 +865,149 @@ namespace Spellbound.Playtest
         }
 
         /// <summary>Runs one step, then checks the page and screenshots it. A failed step is recorded and the run goes on.</summary>
+        /// <summary>
+        /// Plays Merlin's turns until he can take <paramref name="stance"/>, and chooses it: on another stance going round
+        /// he passes, and on his own pick, if it is gone, he picks Channel while it's free (else the first stance left,
+        /// without using it). The bots take their turns in between.
+        /// </summary>
+        private static async Task UntilAsync(IPage page, string stance)
+        {
+            for (var turn = 0; turn < 60; turn++)
+            {
+                await MyTurnAsync(page);
+                var label = page.Locator($"label.choice:has(input[name='stance']):has-text('{stance}:')");
+                if (await label.CountAsync() > 0)
+                {
+                    await label.ClickAsync();
+                    return;
+                }
+
+                await PassTurnAsync(page);
+            }
+
+            throw new PlaytestException($"Merlin never got to take {stance}.");
+        }
+
+        /// <summary>Lets turns go by until Merlin's own pick (where moves can be given).</summary>
+        private static async Task ToMyPickAsync(IPage page)
+        {
+            for (var turn = 0; turn < 60; turn++)
+            {
+                await MyTurnAsync(page);
+                if (await page.Locator("button:has-text('Pass')").CountAsync() == 0)
+                {
+                    return;
+                }
+
+                await TakeTurnAsync(page, "button:has-text('Pass')");
+            }
+
+            throw new PlaytestException("Merlin's pick never came.");
+        }
+
+        /// <summary>Lets turns go by until the round begins.</summary>
+        private static async Task ToRoundAsync(IPage page, int round)
+        {
+            for (var turn = 0; turn < 60 && !(await page.InnerTextAsync(".match-top")).Contains($"Round {round}/", StringComparison.Ordinal); turn++)
+            {
+                await PassTurnAsync(page);
+            }
+
+            await Expect(page, $"Round {round} of 8");
+        }
+
+        /// <summary>Runs a step's action, and if it times out says what the turn form read then.</summary>
+        private static async Task Diagnosed(IPage page, string what, Func<Task> action)
+        {
+            try
+            {
+                await action();
+            }
+            catch (TimeoutException e)
+            {
+                var orders = await page.EvaluateAsync<string>("() => document.querySelector('#orders')?.innerText ?? '(no #orders)'");
+                throw new PlaytestException($"{what} stalled: {string.Join(" | ", e.Message.Split('\n').Take(14))} The page read: {orders.Replace('\n', ' ')}");
+            }
+        }
+
+        /// <summary>Waits until it is Merlin's turn (his form is up) or the match is over.</summary>
+        private static Task MyTurnAsync(IPage page) =>
+            page.Locator("#orders .action-row .btn-primary, #orders h2:has-text('The match is over')").First
+                .WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached }); // at the end the view moves to the standings
+
+        /// <summary>Lets Merlin's turn go by: a pass on a stance going round; on his pick, Channel while it's free, else
+        /// the first stance left, without using it.</summary>
+        private static async Task PassTurnAsync(IPage page)
+        {
+            // The page may still be catching up with the last turn (a form replaced as it renders): look again and retry.
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    await PassTurnOnceAsync(page);
+                    return;
+                }
+                catch (TimeoutException) when (attempt < 5)
+                {
+                    await page.WaitForTimeoutAsync(500);
+                }
+            }
+        }
+
+        private static async Task PassTurnOnceAsync(IPage page)
+        {
+            var quick = new LocatorClickOptions { Timeout = 5_000 };
+            await MyTurnAsync(page);
+            if (await page.Locator("#orders h2:has-text('The match is over')").CountAsync() > 0)
+            {
+                return;
+            }
+
+            if (await page.Locator("button:has-text('Pass')").CountAsync() > 0)
+            {
+                await TakeTurnAsync(page, "button:has-text('Pass')");
+                return;
+            }
+
+            var channel = page.Locator("label.choice:has-text('Channel:')");
+            if (await channel.CountAsync() > 0)
+            {
+                await channel.ClickAsync(quick);
+                await TakeTurnAsync(page, "button:has-text('Pick Channel')");
+                return;
+            }
+
+            await page.Locator("label.choice:has(input[name='stance'])").First.ClickAsync(quick);
+            await TakeTurnAsync(page, "button:has-text('without using it')");
+        }
+
+        /// <summary>Takes the turn as given if it checks, else lets it go: a pass, or the pick without using it.</summary>
+        private static async Task CommitOrGiveUpAsync(IPage page)
+        {
+            if (await page.Locator("#orders .action-row .btn-primary:not([disabled])").CountAsync() > 0)
+            {
+                await TakeTurnAsync(page, "#orders .action-row .btn-primary");
+            }
+            else
+            {
+                await GiveUpAsync(page);
+            }
+        }
+
+        private static Task GiveUpAsync(IPage page) => TakeTurnAsync(page, "button:has-text('Pass'), button:has-text('without using it')");
+
+        /// <summary>Clicks the button that takes Merlin's turn and waits for the page to move on (the bots' turns come back
+        /// with it).</summary>
+        private static async Task TakeTurnAsync(IPage page, string button)
+        {
+            var before = await page.InnerTextAsync("#orders");
+            await page.Locator(button).First.ClickAsync(new LocatorClickOptions { Timeout = 5_000 });
+            // Moved on: the text changed and the page isn't busy any more (no button left disabled by the action under way).
+            await page.WaitForFunctionAsync(
+                "b => (document.querySelector('#orders')?.innerText ?? '') !== b && !document.querySelector('#orders .action-row button.btn-outline-primary[disabled]')",
+                before, new PageWaitForFunctionOptions { Timeout = 15_000 });
+        }
+
         private async Task StepAsync(Player player, string name, Func<IPage, Task> action)
         {
             var number = steps.Count + 1;

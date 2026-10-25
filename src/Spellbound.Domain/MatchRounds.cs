@@ -64,7 +64,7 @@ public sealed partial class Match
 
             if (discount > 0 && orders.Target is not null)
             {
-                lines.Add($"As its picker you get {discount} mana off: counted above.");
+                lines.Add($"As its picker you pay {discount} less: {Math.Max(0, CostOf(orders) - discount)} mana in all.");
             }
 
             return new Report(true, lines);

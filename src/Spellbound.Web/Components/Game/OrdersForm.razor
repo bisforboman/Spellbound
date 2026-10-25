@@ -31,6 +31,12 @@ else
         }
     }
 </fieldset>
+@if (Picking && stance != "Channel")
+{
+    @* A pick needn't be used: taking a stance keeps it from the others this round. *@
+    <button type="button" class="btn btn-link" disabled="@Busy"
+            @onclick="() => OnCommit.InvokeAsync(Orders.Pass(You, Enum.Parse<Stance>(stance), [.. moves]))">Pick @stance without using it</button>
+}
 
 @if (Picking)
 {

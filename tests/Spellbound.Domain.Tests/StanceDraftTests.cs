@@ -72,7 +72,7 @@ public class StanceDraftTests
         Take(match, Orders.Summon(0, Home(match, 0), UnitKind.Imp, 3));
         Take(match, Orders.Summon(1, Home(match, 1), UnitKind.Imp, 3));
 
-        Assert.Contains(check.Lines, l => l.Contains("1 mana off", StringComparison.Ordinal));
+        Assert.Contains(check.Lines, l => l.Contains("you pay 1 less: 2 mana in all", StringComparison.Ordinal));
         Assert.Equal(picker - 2, match.Seats[0].Mana);
         Assert.Equal(follower - 3, match.Seats[1].Mana);
     }

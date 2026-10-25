@@ -502,7 +502,8 @@ else
         _ = ReplayAsync(replayStop.Token);
     }
 
-    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (picks|gets the last tile)\b");
+    // An opening pick hands out a tile ("Seat 2 picks the Wild tile at…"); a round's pick names a stance ("Seat 2 picks Summon.").
+    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (picks the|gets the last tile)\b");
 
     private async Task ReplayAsync(CancellationToken stop)
     {
