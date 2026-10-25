@@ -1,13 +1,18 @@
 namespace Spellbound.Domain;
 
 /// <summary>Spells, cast with the Cast stance (docs/game-design.md, Spells). They resolve after moves, Attunes, Summons
-/// and Builds, in seat order, and before attacks; Blight lands in the next round's income.</summary>
+/// and Builds, in seat order, and before attacks; Blight lands in the next round's income, and Pacify holds back the
+/// units it finds from attacking for the rest of the round.</summary>
 public sealed partial class Match
 {
     // This round's Wards (extra defence by tile) and Blights (tiles that yield nothing in the next income). Both last
     // until the round ends, so they are saved while it is under way.
     private readonly Dictionary<Hex, int> wards = [];
     private readonly HashSet<Hex> blights = [];
+
+    // This round's pacified units, by the tile they stand on: they can't attack until the round ends, and they carry
+    // it with them when they move. Never more than the units on the tile (see PacifiedOn).
+    private readonly Dictionary<Hex, Army> pacified = [];
 
     // The tiles blighted last round (they yielded nothing this round's income), which can't be blighted again now.
     private readonly HashSet<Hex> blightedLastRound = [];
@@ -46,6 +51,7 @@ public sealed partial class Match
         Spell.Leyline => $"{Rules.LeylineManaPerUnit} mana per unit, at least {Rules.LeylineMinCost}",
         Spell.Blight => $"{Rules.BlightCost} mana a tile",
         Spell.Lure => $"{Rules.LureCost} mana a tile",
+        Spell.Pacify => $"{Rules.PacifyCost} mana a tile",
         _ => "nothing",
     };
 
@@ -57,11 +63,12 @@ public sealed partial class Match
         Spell.Leyline => "send units between any two of your tiles",
         Spell.Blight => "rivals' tiles next to yours yield nothing next round",
         Spell.Lure => $"monster tiles next to yours lose {Rules.LurePower} guard power for good",
+        Spell.Pacify => "the units on rivals' tiles next to yours can't attack this round (they still defend)",
         _ => "nothing",
     };
 
     /// <summary>The spells that can go on several tiles in one Cast; Scorch and Leyline already grow with the mana put in.</summary>
-    public static bool GoesOnSeveralTiles(Spell spell) => spell is Spell.Ward or Spell.Blight or Spell.Lure;
+    public static bool GoesOnSeveralTiles(Spell spell) => spell is Spell.Ward or Spell.Blight or Spell.Lure or Spell.Pacify;
 
     private int SpellCostOn(Orders orders, Hex target)
     {
@@ -73,6 +80,7 @@ public sealed partial class Match
                 Rules.LeylineManaPerUnit * ((orders.Transfer?.Units.Imps ?? 0) + (orders.Transfer?.Units.Golems ?? 0))),
             Spell.Blight => Rules.BlightCost,
             Spell.Lure => Rules.LureCost,
+            Spell.Pacify => Rules.PacifyCost,
             _ => 0,
         } - SanctumDiscount(orders.Seat, target));
     }
@@ -101,7 +109,7 @@ public sealed partial class Match
 
         if (!GoesOnSeveralTiles(orders.Spell))
         {
-            return $"Only Ward, Blight and Lure go on several tiles at once; {orders.Spell} goes on one.";
+            return $"Only Ward, Blight, Lure and Pacify go on several tiles at once; {orders.Spell} goes on one.";
         }
 
         if (tiles.Distinct().Count() != tiles.Count)
@@ -243,6 +251,24 @@ public sealed partial class Match
                 effect = $"the guards at {target} drop to power {Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower)}, for good";
                 break;
 
+            case Spell.Pacify:
+            {
+                if (owner is null || owner == seat.Index || !nextToYou)
+                {
+                    return "Pacify needs a rival's tile next to yours.";
+                }
+
+                var calm = UnitsOn(target) - PacifiedOn(target);
+                if (calm.IsEmpty)
+                {
+                    return PacifiedOn(target).IsEmpty ? $"There are no units at {target} to pacify." : $"The units at {target} are pacified already.";
+                }
+
+                cost = Rules.PacifyCost;
+                effect = $"the {UnitsOn(target)} at {target} can't attack this round, wherever they go (they still defend)";
+                break;
+            }
+
             default:
                 return $"Unknown spell {orders.Spell}.";
         }
@@ -296,6 +322,7 @@ public sealed partial class Match
                         break;
                     case Spell.Leyline:
                         var move = order.Transfer!;
+                        CarryPacified(move);
                         units[move.From] = UnitsOn(move.From) - move.Units;
                         units[move.To] = UnitsOn(move.To) + move.Units;
                         lines.Add($"Seat {seat.Index + 1} casts Leyline: {move.Units} travel from {move.From} to {move.To}.", seat.Index, move.From, move.To);
@@ -308,12 +335,55 @@ public sealed partial class Match
                         Map.SetGuard(target, Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower));
                         lines.Add($"Seat {seat.Index + 1} casts Lure on {target}: its guards drop to power {Map[target].Guard}.", seat.Index, target);
                         break;
+                    case Spell.Pacify:
+                        // Whoever stands there now, not who stood there when the orders were given.
+                        pacified[target] = UnitsOn(target);
+                        lines.Add($"Seat {seat.Index + 1} casts Pacify on {target}: its {UnitsOn(target)} can't attack this round.", seat.Index, target);
+                        break;
                 }
             }
         }
     }
 
     private int Ward(Hex hex) => wards.GetValueOrDefault(hex);
+
+    /// <summary>The units on a tile that a Pacify holds back from attacking this round.</summary>
+    public Army PacifiedOn(Hex hex) => Smaller(pacified.GetValueOrDefault(hex), UnitsOn(hex));
+
+    /// <summary>The units a seat could send to attack from a tile once <paramref name="moves"/> are made: those there,
+    /// less any a Pacify holds back. For the orders form and the bots.</summary>
+    public Army ReadyToAttack(Hex hex, IReadOnlyList<Move> moves)
+    {
+        ArgumentNullException.ThrowIfNull(moves);
+        var (there, calm) = (new Dictionary<Hex, Army>(), new Dictionary<Hex, Army>());
+        Army There(Hex h) => there.TryGetValue(h, out var a) ? a : UnitsOn(h);
+        Army Calm(Hex h) => calm.TryGetValue(h, out var a) ? a : PacifiedOn(h);
+        foreach (var move in moves)
+        {
+            // As CarryPacified does: pacified units go first.
+            var carried = Smaller(move.Units, Calm(move.From));
+            (calm[move.From], calm[move.To]) = (Calm(move.From) - carried, Calm(move.To) + carried);
+            (there[move.From], there[move.To]) = (There(move.From) - move.Units, There(move.To) + move.Units);
+        }
+
+        return There(hex) - Smaller(Calm(hex), There(hex));
+    }
+
+    /// <summary>Pacified units that move take it with them (they go first, so the units that join a tile later stay free).
+    /// Called before the move changes the units.</summary>
+    private void CarryPacified(Move move)
+    {
+        var carried = Smaller(move.Units, PacifiedOn(move.From));
+        if (carried.IsEmpty)
+        {
+            return;
+        }
+
+        pacified[move.From] = PacifiedOn(move.From) - carried;
+        pacified[move.To] = PacifiedOn(move.To) + carried;
+    }
+
+    private static Army Smaller(Army a, Army b) => new(Math.Min(a.Imps, b.Imps), Math.Min(a.Golems, b.Golems));
 
     /// <summary>What a tile paid its holder at the start of this round: its roll and a Shrine's extra, or nothing if it
     /// was blighted. For the page's "+N" on each tile.</summary>
@@ -329,5 +399,6 @@ public sealed partial class Match
         blightedLastRound.UnionWith(blights);
         wards.Clear();
         blights.Clear();
+        pacified.Clear();
     }
 }

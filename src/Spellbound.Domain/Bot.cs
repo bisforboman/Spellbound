@@ -171,7 +171,7 @@ public static class Bot
         IEnumerable<Orders> ordered = plan switch
         {
             Plan.Warlord => casts.OrderBy(c => c.Spell is not (Spell.Scorch or Spell.Lure)),
-            Plan.Economist => casts.OrderBy(c => c.Spell is not (Spell.Ward or Spell.Blight)),
+            Plan.Economist => casts.OrderBy(c => c.Spell is not (Spell.Ward or Spell.Pacify or Spell.Blight)),
             Plan.Spellcaster => casts.OrderBy(c => me.SpellsCast.Contains(c.Spell)),
             _ => casts,
         };
@@ -192,8 +192,9 @@ public static class Bot
         }
     }
 
-    /// <summary>Spells with a purpose, most urgent first: Ward a threatened tile; Lure or Scorch a target its units
-    /// next to it can then beat next round; Blight a rival's best tile next to it.</summary>
+    /// <summary>Spells with a purpose, most urgent first: Ward a threatened tile, or Pacify the rival tile whose units
+    /// threaten it; Lure or Scorch a target its units next to it can then beat next round; Blight a rival's best tile
+    /// next to it.</summary>
     private static IEnumerable<Orders> Spells(Match match, int seat)
     {
         var rules = match.Rules;
@@ -206,6 +207,13 @@ public static class Bot
         foreach (var threatened in mine.Where(h => match.Map.NeighboursOf(h).Any(n => rivals.Contains(n) && Power(n) > Power(h))))
         {
             yield return Orders.Cast(seat, Spell.Ward, threatened);
+        }
+
+        // Rival units that could beat a tile of its own next to them, and are still free to attack.
+        int Free(Hex h) => (match.UnitsOn(h) - match.PacifiedOn(h)).Power(rules);
+        foreach (var threat in rivals.Where(n => Free(n) > 0 && mine.Any(h => h.IsNextTo(n) && Free(n) > Power(h))))
+        {
+            yield return Orders.Cast(seat, Spell.Pacify, threat);
         }
 
         foreach (var monster in mine.SelectMany(match.Map.NeighboursOf).Distinct().OrderBy(h => h.Q).ThenBy(h => h.R)
@@ -312,7 +320,7 @@ public static class Bot
     {
         var rules = match.Rules;
         return (from origin in me.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)
-                let army = match.UnitsOn(origin)
+                let army = match.ReadyToAttack(origin, [])
                 where !army.IsEmpty
                 from target in match.Map.NeighboursOf(origin)
                 let owner = match.OwnerOf(target)
@@ -332,7 +340,7 @@ public static class Bot
         // Attack: the weakest target it can beat, sending everything from one tile.
         var attacks =
             from origin in mine
-            let army = match.UnitsOn(origin)
+            let army = match.ReadyToAttack(origin, [])
             where !army.IsEmpty
             from target in match.Map.NeighboursOf(origin)
             let owner = match.OwnerOf(target)

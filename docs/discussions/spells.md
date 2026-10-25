@@ -16,10 +16,23 @@ went from about 11 to 28 a seat, spells cast from 19 a game to 2, and Spellweave
 **24 Oct 2026: each trait gives a spell.** The owner's idea: instead of everyone choosing from five spells, each
 trait gives its player one, shared with another trait so no new spells are needed (Hearthkeeper and Warden Ward,
 Wanderer and Weaver Leyline, Beastbane and Golemwright Lure, Wildheart and Hexer Blight, Warbrand Scorch; Spellweaver
-all five). It makes a trait something to build around, shortens the Cast row to one choice, and gives rivals a tell
-(a Ward means Hearthkeeper or Warden). To give the stance somewhere to put mana, Ward, Blight and Lure can go on
+all five). It makes a trait something to build around, and shortens the Cast row to one choice. To give the stance somewhere to put mana, Ward, Blight and Lure can go on
 several tiles in one Cast, each paid for. Measured: unspent mana fell only a little (25 to 24 a seat), and the
 spell traits still win least with bots.
+
+**25 Oct 2026: Pacify, a sixth spell.** The owner's choices: 3 mana, flat, on a rival's tile next to yours; the units
+on it can't attack this round, but still defend. It resolves with the other spells, so it holds back whoever stands
+there when it lands; an attack that sends pacified units goes without them, through the path that already sends an
+attack with what a Scorch left ("Seat 2's attack from C3 is pacified"), so there is no refund rule. Warden swaps Ward
+for it (Hearthkeeper keeps Ward), and a Spellweaver has all six.
+
+Two choices made while building it: **it goes on several tiles**, like Ward, Blight and Lure, because it is a flat
+per-tile spell aimed at a border, and a Cast that can cover every threatening stack is somewhere for a round's mana
+to go; and **pacified units stay pacified when they move**, so a player can't step them to the next tile and attack
+from there (when some of a tile's units leave, the pacified ones go first). Measured (2,000 bot games, 3 players):
+bots cast it about 0.8 times a game, mostly in place of Warden's old Wards; spells cast, mana on spells and unspent
+mana (3.5 a seat since the stance draft, not the 24 of the first trait-spell runs) barely move, and trait win rates
+stay within 23–39%.
 
 ## The problem they solve
 

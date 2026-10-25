@@ -172,7 +172,7 @@ else
     private Hex? reinforceAt;
     private int reinforceImps = 3;
     private Spell? spell;
-    private readonly List<Hex> moreTiles = []; // a Ward, Blight or Lure's tiles beyond the first
+    private readonly List<Hex> moreTiles = []; // a Ward, Blight, Lure or Pacify's tiles beyond the first
     private int scorchPower = 1;
     private Hex? leylineTo;
     private Hex? leylineFrom; // the tile the riders' counts were set for
@@ -299,10 +299,10 @@ else
                     @foreach (var from in Sources(target))
                     {
                         var f = from;
-                        var here = AfterMoves(f);
+                        var here = Ready(f);
                         var sent = sends.GetValueOrDefault(f, here);
                         <div class="attack-source">
-                            <span>@Name(f) (@here)</span>
+                            <span>@Name(f) (@here@(AfterMoves(f) != here ? $"; {AfterMoves(f) - here} pacified" : ""))</span>
                             @if (here.Imps > 0)
                             {
                                 <label>Imps <input type="number" class="form-control" min="0" max="@here.Imps" value="@sent.Imps"
@@ -526,7 +526,7 @@ else
         ("Build", { } t) => Orders.Build(You, t, upgrade, [.. moves]),
         ("Summon", { } t) => Orders.Summon(You, t, kind, count, [.. moves]),
         ("Attack", { } t) => Orders.Attack(You, t,
-            [.. Sources(t).Select(f => new Move(f, t, sends.GetValueOrDefault(f, AfterMoves(f)))).Where(m => !m.Units.IsEmpty)],
+            [.. Sources(t).Select(f => new Move(f, t, sends.GetValueOrDefault(f, Ready(f)))).Where(m => !m.Units.IsEmpty)],
             [.. moves]),
         ("Cast", { } t) => spell switch
         {
@@ -545,6 +545,9 @@ else
     /// <summary>The units on a tile once the planned moves are made.</summary>
     private Army AfterMoves(Hex hex) =>
         moves.Aggregate(Match.UnitsOn(hex), (army, m) => m.From == hex ? army - m.Units : m.To == hex ? army + m.Units : army);
+
+    /// <summary>The units on a tile free to attack once the planned moves are made (a rival's Pacify holds some back).</summary>
+    private Army Ready(Hex hex) => Match.ReadyToAttack(hex, [.. moves]);
 
     /// <summary>The units on a tile that can still move: those that started the round there and aren't moving yet.</summary>
     private Army Movable(Hex hex) =>
@@ -645,6 +648,7 @@ else
             Spell.Leyline => Me.Tiles.Count > 1 ? Me.Tiles.Where(h => !Riders(h).IsEmpty) : [],
             Spell.Blight => rivals,
             Spell.Lure => nextToYou.Where(h => Match.OwnerOf(h) is null && Match.Map[h].IsGuarded && Match.Map[h].Guard > Match.Rules.MinGuard),
+            Spell.Pacify => rivals.Where(h => !(Match.UnitsOn(h) - Match.PacifiedOn(h)).IsEmpty),
             _ => [],
         };
     }
@@ -654,11 +658,11 @@ else
         Match.Map.Tiles.Where(t => t.IsUnveiled && !t.IsGuarded && Match.OwnerOf(t.Hex) is null).Select(t => t.Hex);
 
     private IEnumerable<Hex> AttackTargets() =>
-        Me.Tiles.Where(h => !AfterMoves(h).IsEmpty).SelectMany(Match.Map.NeighboursOf).Distinct()
+        Me.Tiles.Where(h => !Ready(h).IsEmpty).SelectMany(Match.Map.NeighboursOf).Distinct()
             .Where(h => Match.OwnerOf(h) is { } o ? o != You : Match.Map[h].IsGuarded);
 
     private IEnumerable<Hex> Sources(Hex target) =>
-        Me.Tiles.Where(h => h.IsNextTo(target) && !AfterMoves(h).IsEmpty).OrderBy(h => h.Q).ThenBy(h => h.R);
+        Me.Tiles.Where(h => h.IsNextTo(target) && !Ready(h).IsEmpty).OrderBy(h => h.Q).ThenBy(h => h.R);
 
     private void Send(Hex from, Army army) => sends[from] = army;
 

@@ -135,6 +135,7 @@ public sealed partial class Match
     {
         foreach (var move in order.Moves)
         {
+            CarryPacified(move);
             units[move.From] = UnitsOn(move.From) - move.Units;
             units[move.To] = UnitsOn(move.To) + move.Units;
         }

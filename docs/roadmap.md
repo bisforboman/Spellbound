@@ -62,6 +62,10 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Each trait gives a spell (owner's choice, 24 Oct 2026): one spell per trait, shared by two (Spellweaver all
   five); Ward, Blight and Lure go on several tiles in one Cast; Hexer counts rounds of Blight; the form, help page,
   bots, table tool and playtest follow
+- [x] Pacify (owner's choices, 24–25 Oct 2026): 3 mana a tile, on rivals' tiles next to yours, several tiles in one
+  Cast; the units it finds can't attack this round, even if they move; an attack that sends them goes without them.
+  Warden's spell (it was Ward), Spellweaver's sixth; bots pacify a rival tile that threatens theirs; the form, help
+  page, table tool and playtest follow
 - [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [x] Domain: a round's submission (one stance + moves) and its validation (`Orders`, `Match.Check`)
 - [x] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles

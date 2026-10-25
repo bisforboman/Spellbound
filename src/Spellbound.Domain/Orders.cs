@@ -24,7 +24,7 @@ public enum Stance
 }
 
 /// <summary>The spells (docs/game-design.md, Spells). Each lasts this round, except Lure, which weakens monsters for
-/// good.</summary>
+/// good. New spells go at the end, after Rally.</summary>
 public enum Spell
 {
     /// <summary>Burn units' power on a rival's tile next to yours, weakest first.</summary>
@@ -45,6 +45,9 @@ public enum Spell
     /// <summary>No longer cast (removed 24 Oct 2026, when Cast became a stance and a round could no longer cast and
     /// attack). Kept so saved matches that cast it still load; it still counts as a spell cast for Spellweaver.</summary>
     Rally,
+
+    /// <summary>The units on a rival's tile next to yours can't attack this round; they still defend.</summary>
+    Pacify,
 }
 
 /// <summary>Units summoned on one of a seat's own tiles alongside an attack, to guard it while the army is away.</summary>
@@ -73,7 +76,7 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
     /// <summary>For a Leyline: the units it moves, and between which tiles.</summary>
     public Move? Transfer { get; init; }
 
-    /// <summary>For a Ward, Blight or Lure: more tiles beyond <see cref="Target"/> that take the same spell, each
+    /// <summary>For a Ward, Blight, Lure or Pacify: more tiles beyond <see cref="Target"/> that take the same spell, each
     /// paid for.</summary>
     public IReadOnlyList<Hex> MoreTiles { get; init; } = [];
 
@@ -101,7 +104,7 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
     public static Orders Cast(int seat, Spell spell, Hex tile, int count = 0, params IReadOnlyList<Move> moves) =>
         new(seat, Stance.Cast, tile, moves, Count: count) { Spell = spell };
 
-    /// <summary>Casts a Ward, Blight or Lure on several tiles at once, each paid for.</summary>
+    /// <summary>Casts a Ward, Blight, Lure or Pacify on several tiles at once, each paid for.</summary>
     public static Orders CastOn(int seat, Spell spell, IReadOnlyList<Hex> tiles, params IReadOnlyList<Move> moves) =>
         new(seat, Stance.Cast, (tiles ?? throw new ArgumentNullException(nameof(tiles)))[0], moves) { Spell = spell, MoreTiles = [.. tiles.Skip(1)] };
 

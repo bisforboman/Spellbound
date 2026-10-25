@@ -374,6 +374,7 @@ namespace Spellbound.Playtest
                 await Expect(page, "How to play");
                 await Expect(page, "Your trait:");
                 await Expect(page, "Every trait");
+                await Expect(page, "Pacify (");
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "help-page.png"), FullPage = true });
                 await page.ClickAsync(".match-tabs a:has-text('Board')");
                 await Expect(page, "Round 1 of 8");
@@ -554,8 +555,8 @@ namespace Spellbound.Playtest
                 }
             });
             await StepAsync(merlin, "attack-commit", CommitOrGiveUpAsync);
-            // The Cast stance: Merlin's trait decides his spells (one, or all five for a Spellweaver). He takes the first,
-            // taps its tile, and for a Ward, Blight or Lure adds a second tile when there is one.
+            // The Cast stance: Merlin's trait decides his spells (one, or all six for a Spellweaver). He takes Pacify if he
+            // has it, else the first, taps its tile, and for a Ward, Blight, Lure or Pacify adds a second tile when there is one.
             await StepAsync(merlin, "spell-pick", async page =>
             {
                 await UntilAsync(page, "Cast");
@@ -564,7 +565,8 @@ namespace Spellbound.Playtest
                 if (await spells.CountAsync() > 1)
                 {
                     await Expect(page, "Choose a spell");
-                    await spells.First.CheckAsync();
+                    var pacify = page.Locator(".stance-options label:has-text('Pacify') input[name='spell']");
+                    await (await pacify.CountAsync() > 0 ? pacify : spells.First).CheckAsync();
                 }
 
                 var tiles = page.Locator(".hex-map .hex.marked");
