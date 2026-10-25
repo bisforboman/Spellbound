@@ -878,8 +878,16 @@ namespace Spellbound.Playtest
                 var label = page.Locator($"label.choice:has(input[name='stance']):has-text('{stance}:')");
                 if (await label.CountAsync() > 0)
                 {
-                    await label.ClickAsync();
-                    return;
+                    try
+                    {
+                        await label.ClickAsync(new LocatorClickOptions { Timeout = 5_000 });
+                        await page.Locator($"label.choice:has(input[name='stance']:checked):has-text('{stance}:')").WaitForAsync(new LocatorWaitForOptions { Timeout = 5_000 });
+                        return;
+                    }
+                    catch (TimeoutException)
+                    {
+                        continue; // the form was replaced as the page caught up: look again
+                    }
                 }
 
                 await PassTurnAsync(page);
