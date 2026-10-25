@@ -5,13 +5,17 @@ several people share a match. The owner made these choices; each one was Claude'
 
 ## Decided
 
-- **Commit-and-wait.** A step (an opening Unveil's bids, or a round's orders) resolves only when every person in the
-  match has committed. Bots still choose at the moment it resolves. Until then a person can **take back** their
+- **Commit-and-wait.** A step (the bids on one opening tile, or a round's orders) resolves only when every person in
+  it has committed: in the opening, only those still bidding in the Unveil (since 24 Oct 2026 its tiles go up one at
+  a time, and a tile only bots still bid on goes at once). Bots still choose at the moment it resolves. Until then a person can **take back** their
   orders and commit again. Everyone sees *who* has committed, never *what*.
 - **Joining: an invite link.** The host makes a match and shares a link; whoever opens it takes a free seat. Bots
   fill the seats nobody took when the host starts.
 - **Deadline: 24 hours, then hold.** A person who hasn't committed 24 hours after a step began *holds*: their units
-  stay put and they pick no stance (in the opening, they pass). It is checked by `GameKeeper`, the one global job,
+  stay put and they pick no stance (in the opening, they pass). *Since the stance draft (25 Oct 2026) every step is one
+  person's turn: a missed pick takes Channel (or the first stance still free, aimed at nothing), and a missed turn on
+  another player's stance passes. A match now has many more steps, so a slow match with friends can outlast the
+  28 days a game may stay open (`MatchStore.OpenFor`).* It is checked by `GameKeeper`, the one global job,
   not a per-player timer.
 - **Notifications, all four:** a round resolved; the others are waiting on you; you were attacked; an invited player
   joined.

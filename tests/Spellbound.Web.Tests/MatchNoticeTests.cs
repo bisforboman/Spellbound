@@ -43,58 +43,73 @@ public sealed class MatchNoticeTests : TestDatabase
         return sent;
     }
 
-    private Task<(Report Report, bool Resolved)?> PassAsync(long id, string ownerId, DateTimeOffset now) =>
-        store.CommitAsync(id, ownerId, now, MatchJson.Serialize(new Bid(0, null, 0)), (loaded, seat) => loaded.Match.CheckBid(new Bid(seat, null, 0)));
-
-    [Fact]
-    public async Task The_last_one_left_hears_that_the_others_are_waiting()
+    /// <summary>The person whose turn it is picks the first tile left.</summary>
+    private async Task PickAsync(long id, string ownerId, DateTimeOffset now)
     {
-        var id = await store.CreateAsync(["alice", "bob", "carol"], GameRules.Default, Start);
+        var tile = (await store.LoadAsync(id))!.Match.ToPick[0];
+        await store.CommitAsync(id, ownerId, now, MatchJson.Serialize(new Pick(0, tile)), (loaded, seat) => loaded.Match.CheckPick(new Pick(seat, tile)));
+    }
 
-        await PassAsync(id, "alice", Start);
-        Assert.Empty(Sent()); // two still choosing
+    /// <summary>The person lets their turn go by: Channel on a pick, a pass on a stance going round.</summary>
+    private async Task PassAsync(long id, string ownerId)
+    {
+        var loaded = (await store.LoadAsync(id))!;
+        var orders = loaded.Match.Passing(loaded.SeatOf(ownerId)!.Value);
+        await store.CommitAsync(id, ownerId, Start, MatchJson.Serialize(orders), (l, seat) => l.Match.Check(orders with { Seat = seat }));
+    }
 
-        await PassAsync(id, "bob", Start);
-        var waiting = Assert.Single(Sent());
-        Assert.Equal("carol", waiting.OwnerId);
-        Assert.Equal($"Match {id}: they're waiting on you", waiting.Title);
-        Assert.Equal($"match/{id}", waiting.Url);
-
-        await PassAsync(id, "bob", Start); // a change of mind
-        Assert.Empty(Sent());
+    /// <summary>Everyone picks in turn until the rounds begin.</summary>
+    private async Task ThroughTheOpeningAsync(long id)
+    {
+        while ((await store.LoadAsync(id))!.Match is { Phase: MatchPhase.Opening } match)
+        {
+            await PickAsync(id, (await store.LoadAsync(id))!.Owners[match.Picker!.Value]!, Start);
+        }
     }
 
     [Fact]
-    public async Task A_resolved_step_tells_everyone_but_whoever_resolved_it()
+    public async Task A_turn_in_a_round_tells_only_whoever_takes_the_next()
     {
-        var id = await store.CreateAsync(["alice", "bob", null], GameRules.Default, Start);
-        await PassAsync(id, "alice", Start);
+        var id = await store.CreateAsync(["alice", "bob", "carol"], GameRules.Default, Start);
+        await ThroughTheOpeningAsync(id);
         Sent();
 
-        await PassAsync(id, "bob", Start);
+        await PassAsync(id, "alice"); // round 1 starts with alice: she channels, and bob picks next
 
         var notice = Assert.Single(Sent());
-        Assert.Equal("alice", notice.OwnerId);
-        Assert.Equal($"Match {id}: Opening auction 1 resolved", notice.Title);
-        Assert.Equal("Opening auction 2 of 3: your move.", notice.Body);
+        Assert.Equal("bob", notice.OwnerId);
+        Assert.Equal($"Match {id}: Round 1, pick 1 resolved", notice.Title);
+        Assert.Equal($"match/{id}", notice.Url);
+    }
+
+    [Fact]
+    public async Task A_pick_tells_only_whoever_picks_next()
+    {
+        var id = await store.CreateAsync(["alice", "bob", "carol", null], GameRules.Default, Start);
+
+        await PickAsync(id, "alice", Start);
+
+        var notice = Assert.Single(Sent()); // alice is looking at the page, and carol's turn hasn't come
+        Assert.Equal("bob", notice.OwnerId);
+        Assert.Equal($"Match {id}: Opening draft 1, pick 1 resolved", notice.Title);
+        Assert.Equal("Opening draft 1 of 3, pick 2 of 4: your move.", notice.Body);
     }
 
     [Fact]
     public async Task A_deadline_tells_everyone_and_a_bot_taking_over_says_so()
     {
         var id = await store.CreateAsync(["alice", "bob"], GameRules.Default, Start);
-        await PassAsync(id, "alice", Start);
+        var late = Start + MatchStore.StepDeadline;
+
+        await store.HoldOverdueAsync(late); // alice lets her pick go: a bot picks for her, and bob picks next
+        Assert.Equal(["bob"], Sent().Select(m => m.OwnerId));
+
+        await PickAsync(id, "bob", late); // the second draft: bob picks, alice gets the last tile, and the third is hers
         Sent();
+        await store.HoldOverdueAsync(late + MatchStore.StepDeadline);
 
-        await store.HoldOverdueAsync(Start + MatchStore.StepDeadline);
-        Assert.Equal(["alice", "bob"], Sent().Select(m => m.OwnerId).Order());
-
-        await PassAsync(id, "alice", Start + MatchStore.StepDeadline);
-        Sent();
-        await store.HoldOverdueAsync(Start + (2 * MatchStore.StepDeadline));
-
-        var bob = Assert.Single(Sent(), m => m.OwnerId == "bob");
-        Assert.Equal($"Match {id}: a bot plays your seat now", bob.Title);
+        var alice = Assert.Single(Sent(), m => m.OwnerId == "alice");
+        Assert.Equal($"Match {id}: a bot plays your seat now", alice.Title);
     }
 
     [Fact]
@@ -142,7 +157,13 @@ public sealed class MatchNoticeTests : TestDatabase
     [Fact]
     public void The_notice_for_an_attacked_seat_says_so_and_the_end_reaches_watchers_too()
     {
-        var match = Match.Start(3, GameRules.Default, new SeededRandom(1));
+        var random = new SeededRandom(1);
+        var match = Match.Start(3, GameRules.Default, random);
+        while (match.Phase == MatchPhase.Opening)
+        {
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
+        }
+
         var loaded = new LoadedMatch(7, ["alice", "bob", "carol"], match) { Away = new HashSet<int> { 2 } };
 
         var notices = MatchNotices.Resolved(loaded, "round 3", new HashSet<int> { 1 }, new HashSet<int>(), actor: 0).ToList();
@@ -152,22 +173,25 @@ public sealed class MatchNoticeTests : TestDatabase
         Assert.StartsWith("In round 3. ", bob.Body, StringComparison.Ordinal);
     }
 
-    /// <summary>A three-seat match in its first round where seat 0 has 2 Imps on a tile next to seat 1's, or null.</summary>
+    /// <summary>A three-seat match in its first round where seat 0 has 2 Imps on a tile next to seat 1's and may take the
+    /// Attack going round, or null.</summary>
     private static (Match Match, Hex Mine, Hex Theirs)? Bordered(int seed)
     {
         var random = new SeededRandom(seed);
         var match = Match.Start(3, GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         foreach (var mine in match.Seats[0].Tiles)
         {
             if (match.Seats[1].Tiles.FirstOrDefault(mine.IsNextTo) is var theirs && match.Seats[1].Tiles.Any(mine.IsNextTo))
             {
-                var summon = match.Resolve([Orders.Summon(0, mine, UnitKind.Imp, 2), Orders.Hold(1), Orders.Hold(2)], random);
-                return summon.Succeeded ? (match, mine, theirs) : null;
+                // Seat 1 summons on its pick; then Seat 2 picks Attack without using it, and it goes round to Seat 1.
+                var turns = new[] { Orders.Summon(0, mine, UnitKind.Imp, 2), Orders.Pass(1, Stance.Summon), Orders.Pass(2, Stance.Summon),
+                    Orders.Pass(1, Stance.Attack), Orders.Pass(2, Stance.Attack) };
+                return turns.All(t => match.Take(t, random).Succeeded) ? (match, mine, theirs) : null;
             }
         }
 

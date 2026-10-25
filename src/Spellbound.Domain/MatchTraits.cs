@@ -74,7 +74,7 @@ public sealed partial class Match
             Trait.Spellweaver => "1 point per " + Each(r.SpellsPerTraitPoint, "different spell", "different spells")
                                  + $" cast, and 1 for casting spells in {r.SpellRoundsForTraitPoint} rounds",
             Trait.Warden => "1 point per tile from your opening you still hold, beyond the first",
-            Trait.Hexer => "1 point per " + Each(r.HexesPerTraitPoint, "Scorch or Blight", "Scorches and Blights") + " cast",
+            Trait.Hexer => "1 point per " + Each(r.HexesPerTraitPoint, "round", "rounds") + " you cast Blight",
             _ => "nothing",
         };
         return $"at the end, {goal}, up to {r.TraitGoalCap}.";
@@ -125,55 +125,6 @@ public sealed partial class Match
         }
     }
 
-    /// <summary>Checks a guess at a rival's trait: a rival, once, in a match with traits.</summary>
-    private string? GuessProblem(Orders orders, List<string> lines)
-    {
-        if (orders.Guess is not { } guess)
-        {
-            return null;
-        }
-
-        var seat = seats[orders.Seat];
-        if (guess.Rival < 0 || guess.Rival >= seats.Count || guess.Rival == orders.Seat)
-        {
-            return $"There is no rival Seat {guess.Rival + 1} to guess.";
-        }
-
-        if (seats[guess.Rival].Trait is null)
-        {
-            return "This match has no traits to guess.";
-        }
-
-        if (seat.Guesses.TryGetValue(guess.Rival, out var made))
-        {
-            return $"You already guessed Seat {guess.Rival + 1}'s trait ({made}); a guess can't be changed.";
-        }
-
-        if (seat.Offer.Contains(guess.Trait))
-        {
-            return $"{guess.Trait} was offered to you, and no trait is offered to two players: Seat {guess.Rival + 1} can't have it.";
-        }
-
-        lines.Add($"Guess that Seat {guess.Rival + 1}'s trait is {guess.Trait}: "
-                  + $"{Plural(Rules.PointsPerTraitGuess, "point")} at the end if you're right. A guess can't be changed.");
-        return null;
-    }
-
-    /// <summary>At the end, after the traits are revealed: each seat's right guesses are worth points, up to the cap.</summary>
-    private void ScoreGuesses(ReportLines lines)
-    {
-        foreach (var seat in seats.Where(s => s.Guesses.Count > 0))
-        {
-            var right = seat.Guesses.Count(g => seats[g.Key].Trait == g.Value);
-            var points = Math.Min(Rules.TraitGuessCap, right * Rules.PointsPerTraitGuess);
-            seat.Score += points;
-            seat.GuessPoints = points;
-            var said = string.Join(", ", seat.Guesses.OrderBy(g => g.Key)
-                .Select(g => $"Seat {g.Key + 1} {g.Value} ({(seats[g.Key].Trait == g.Value ? "right" : "wrong")})"));
-            lines.Add($"Seat {seat.Index + 1}'s guesses: {said}: {Plural(points, "point")}, {seat.Score} in all.");
-        }
-    }
-
     private static string GoalCount(Trait trait, int count) => trait switch
     {
         Trait.Wildheart => Plural(count, "Wild tile"),
@@ -185,7 +136,7 @@ public sealed partial class Match
         Trait.Golemwright => Plural(count, "Golem"),
         Trait.Spellweaver => Plural(count, "different spell"),
         Trait.Warden => Plural(count, "opening tile") + " held",
-        Trait.Hexer => Plural(count, "Scorch or Blight", "Scorches and Blights"),
+        Trait.Hexer => Plural(count, "round") + " of Blight",
         _ => count.ToString(System.Globalization.CultureInfo.InvariantCulture),
     };
 
@@ -205,7 +156,7 @@ public sealed partial class Match
 
         if (seats.Any(s => s.Trait is not null))
         {
-            lines.Add("Every trait stays secret until the end. Guess a rival's alongside your orders, once per rival.");
+            lines.Add("Every trait stays secret until the end.");
         }
     }
 

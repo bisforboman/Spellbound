@@ -46,8 +46,8 @@ public sealed class GameMap
 
     public IEnumerable<Tile> Dark => tiles.Values.Where(t => !t.IsUnveiled);
 
-    /// <summary>Turns a dark tile over and fixes its yield for the rest of the game: one of its type's possible
-    /// yields, at random. A tile that is already unveiled, or off the board, is left as it is.</summary>
+    /// <summary>Turns a dark tile over and rolls its first yield. A tile that is already unveiled, or off the board,
+    /// is left as it is.</summary>
     public bool Unveil(Hex hex, GameRules rules, IRandomSource random)
     {
         ArgumentNullException.ThrowIfNull(rules);
@@ -57,10 +57,13 @@ public sealed class GameMap
             return false;
         }
 
-        var yields = rules.YieldsOf(tile.Type);
-        tiles[hex] = tile with { Yield = yields[random.Next(yields.Count)] };
+        tiles[hex] = tile with { Yield = rules.RollYield(tile.Type, random) };
         return true;
     }
+
+    /// <summary>Rolls an unveiled tile's yield again (each round's income, docs/game-design.md, Tiles).</summary>
+    internal void Roll(Hex hex, GameRules rules, IRandomSource random) =>
+        tiles[hex] = tiles[hex] with { Yield = rules.RollYield(tiles[hex].Type, random) };
 
     /// <summary>Puts monster guards of this power on a tile (0 clears them).</summary>
     internal void SetGuard(Hex hex, int power) => tiles[hex] = tiles[hex] with { Guard = power };

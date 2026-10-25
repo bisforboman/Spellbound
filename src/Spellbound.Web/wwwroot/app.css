@@ -260,7 +260,7 @@ html, body {
 }
 
 /* A link inside a sentence gets a taller tap area (44 px) without moving the text around it */
-p a:not(.btn), li > a:not(.btn):not(.rank-row) {
+p a:not(.btn), li > a:not(.btn):not(.rank-row):not(.look-option) {
     display: inline-block;
     min-width: 44px;
     padding-block: 12px;
@@ -285,6 +285,12 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row) {
 /* Red text on the dark grey: the lighter shade, so small text stays readable */
 .text-danger {
     color: var(--bs-danger-text-emphasis) !important;
+}
+
+/* Mana's crystal shard (ManaIcon.razor) after a number, in cold blue, in text and on the map */
+.mana-icon {
+    vertical-align: -0.125em;
+    color: var(--tidal-ink);
 }
 
 /* Symbols before labels (Glyph.razor): stone grey, with dull brass for gold */
@@ -396,8 +402,90 @@ p a:not(.btn), li > a:not(.btn):not(.rank-row) {
 body {
     background-color: var(--paper);
     background-image: var(--grain), radial-gradient(ellipse at 50% 30%, transparent 40%, var(--shadow) 120%), var(--soot);
-    background-attachment: fixed;
     font-variant-numeric: lining-nums proportional-nums;
+}
+
+/* The looks (docs/theme.md): the player picks one on the account page (Components/Looks.cs), kept in a cookie per
+   device and set as data-look on <html>. Grimoire is the rule above; each other one swaps the page's background and the
+   tokens of its cards, frames and plates. None is fixed to the viewport: Android repaints it on every scroll, and iOS
+   ignores it. */
+:root[data-look="sigil"], :root[data-look="dust"] {
+    --grain-cool: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.6 0 0 0 0 0.68 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --paper-deep: #17161f;
+    --paper-edge: #37334a;
+    --bs-border-color: #37334a;
+    --plate-top: #22202c;
+    --plate-bot: #13121a;
+    --rivet: #3f3a52;
+}
+
+/* Sigil night: indigo vellum, a faint summoning circle behind the board and a soft glow */
+[data-look="sigil"] body {
+    background-color: #0f0e15;
+    background-image:
+        var(--grain-cool),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -100 200 200' fill='none' stroke='%23d6ccff' stroke-opacity='.13' stroke-width='.6'%3E%3Ccircle r='96'/%3E%3Ccircle r='90' stroke-dasharray='1.5 5' stroke-width='3'/%3E%3Ccircle r='84'/%3E%3Ccircle r='58'/%3E%3Cpath d='M0-84L72.7 42H-72.7Z M0 84L-72.7-42H72.7Z'/%3E%3Cpath d='M0-58L50.2-29V29L0 58L-50.2 29V-29Z'/%3E%3Ccircle r='20'/%3E%3C/svg%3E"),
+        radial-gradient(ellipse 90% 45% at 50% 38%, rgba(98, 88, 150, 0.26), transparent 70%),
+        radial-gradient(ellipse at 50% 40%, transparent 45%, rgba(0, 0, 0, 0.65) 110%);
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+    background-position: 0 0, 50% 150px, 0 0, 0 0;
+    background-size: auto, 400px 400px, auto, auto;
+}
+
+/* Candlelit table: a warm pool of light on dark wood, and the map on a brass-rimmed felt tray */
+[data-look="table"] body {
+    background-color: #0b0907;
+    background-image:
+        radial-gradient(ellipse 110% 55% at 50% 22%, rgba(255, 186, 110, 0.13), transparent 68%),
+        repeating-linear-gradient(91deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 6px, rgba(255, 225, 180, 0.025) 6px 8px, transparent 8px 19px),
+        linear-gradient(#1f1711, #0c0a08);
+}
+
+    [data-look="table"] .board-tray {
+        max-width: calc(30rem + 12px);
+        margin: 0.25rem max(-4px, (100% - 30rem - 12px) / 2) 0.75rem;
+        padding: 10px 6px;
+        border-radius: 16px;
+        background: radial-gradient(ellipse at 50% 40%, #1c1922, #0e0d12 80%);
+        border: 2px solid #4a3c2c;
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.8), 0 10px 18px rgba(0, 0, 0, 0.7), inset 0 0 0 5px #120f0c, inset 0 0 0 6px rgba(196, 154, 62, 0.35);
+    }
+
+    [data-look="table"] .board-tray .hex-map {
+        margin: 0 auto;
+    }
+
+/* Arcane dust: star and ember motes over a faint nebula */
+[data-look="dust"] body {
+    background-color: #0a0a10;
+    background-image:
+        radial-gradient(circle at 23% 37%, rgba(235, 230, 255, 0.6) 0 0.7px, transparent 1.3px),
+        radial-gradient(circle at 71% 63%, rgba(190, 225, 235, 0.45) 0 0.6px, transparent 1.2px),
+        radial-gradient(circle at 45% 12%, rgba(255, 225, 190, 0.4) 0 1px, transparent 1.7px),
+        radial-gradient(ellipse 75% 35% at 15% 22%, rgba(55, 80, 105, 0.32), transparent 70%),
+        radial-gradient(ellipse 65% 40% at 90% 68%, rgba(75, 60, 95, 0.28), transparent 70%),
+        radial-gradient(ellipse at 50% 40%, transparent 50%, rgba(0, 0, 0, 0.6) 110%);
+    background-size: 97px 89px, 151px 137px, 211px 233px, auto, auto, auto;
+}
+
+/* Painted rune-slate: one painted backdrop (wwwroot/backdrops, 34 KB), fetched only by this look. It covers the first
+   screen at its own size (720 x 1260 px) and fades into the stone colour below, rather than stretching over a long page. */
+:root[data-look="slate"] {
+    --paper-deep: #15181d;
+    --paper-edge: #313840;
+    --bs-border-color: #313840;
+    --plate-top: #20252b;
+    --plate-bot: #111418;
+}
+
+[data-look="slate"] body {
+    background-color: #0b0d10;
+    background-image:
+        linear-gradient(rgba(8, 9, 12, 0.1), rgba(8, 9, 12, 0.35) 75%, #0b0d10),
+        url("backdrops/rune-slate.webp");
+    background-repeat: no-repeat;
+    background-position: 50% 0;
+    background-size: max(100vw, 430px) max(175vw, 753px);
 }
 
 a, .btn-link {
@@ -774,9 +862,40 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     }
 }
 
+/* The account page's looks: one row each, a swatch of its colours, the one in use edged in ink */
+.look-list {
+    list-style: none;
+    padding: 0;
+}
+
+    .look-option {
+        align-items: center;
+        color: inherit;
+        text-decoration: none;
+    }
+
+        .look-option.current {
+            border-color: var(--ink);
+            background: var(--paper-deep);
+        }
+
+    .look-swatch {
+        flex: none;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.35rem;
+        border: 1px solid var(--bs-border-color);
+    }
+
+    .look-swatch[data-swatch="grimoire"] { background: radial-gradient(circle at 50% 35%, #2a241e, #14110e 70%); }
+    .look-swatch[data-swatch="sigil"] { background: radial-gradient(circle at 50% 40%, #3a3560, #0f0e15 70%); }
+    .look-swatch[data-swatch="table"] { background: radial-gradient(circle at 50% 30%, #5a3c22, #0b0907 75%); }
+    .look-swatch[data-swatch="dust"] { background: radial-gradient(circle at 30% 30%, #d8d4f0 0 1px, transparent 2px), radial-gradient(circle at 70% 65%, #2f3f55, #0a0a10 70%); }
+    .look-swatch[data-swatch="slate"] { background: radial-gradient(circle at 50% 40%, #33404a, #0b0d10 75%); }
+
 /* The match map (Components/Game/HexMap.razor): soot hexes for dark land, charred leather (or the painted tile art)
-   once unveiled, and a ring inside the edge in the owner's ink. Marked tiles (on auction) get a dashed bone edge; the
-   chosen one a solid edge in the page's ink. The ring and the edge are separate, so a held tile can be both. */
+   once unveiled, and a held tile's edge in its owner's ink, left out between tiles of the same owner (one zone).
+   Marked tiles (to pick) get a dashed bone edge; the chosen one a solid edge in the page's ink, over its zone. */
 .hex-map {
     display: block;
     width: 100%;
@@ -793,7 +912,7 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
     .hex-map .rim {
         fill: var(--paper-deep);
         stroke: var(--paper-edge);
-        stroke-width: 1.5;
+        stroke-width: 0.75;
     }
 
     .hex-map.painted .hex:not(.dark) .rim {
@@ -805,13 +924,45 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         stroke: #2a231c;
     }
 
-    .hex-map .held {
-        fill: none;
-        stroke-width: 3;
+    /* The raised board: each tile's thickness below it, and its bevel */
+    .hex-map .hex-depth polygon {
+        fill: #050403;
+        stroke: #000;
+        stroke-width: 1;
     }
 
-    .hex-map .yours .held {
-        stroke-width: 4.5;
+    .hex-map .bevel-light, .hex-map .bevel-dark {
+        fill: none;
+        pointer-events: none;
+    }
+
+    .hex-map .bevel-light {
+        stroke: rgba(255, 240, 215, 0.32);
+        stroke-width: 1.1;
+    }
+
+    .hex-map .bevel-dark {
+        stroke: rgba(0, 0, 0, 0.55);
+        stroke-width: 1.4;
+    }
+
+    /* A held tile's one border is its zone edge (below), not the plain rim */
+    .hex-map .held:not(.selected):not(.marked) .rim {
+        stroke: none;
+    }
+
+    .hex-map .zones {
+        pointer-events: none;
+    }
+
+    .hex-map .zone {
+        fill: none;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+    }
+
+    .hex-map .zone.yours {
+        stroke-width: 2.25;
     }
 
     .hex-map .marked .rim {
@@ -865,8 +1016,9 @@ h5, h6, .h5, .h6, .form-label, legend.form-label, .stats th {
         font-size: 11px; /* ◆ is drawn larger than ≈ and ✶ at the same size */
     }
 
-    .hex-map .hex-yield {
-        font-size: 17px;
+    /* A held tile's income this round, small on its seal */
+    .hex-map .hex-income {
+        font-size: 10px;
         font-weight: 700;
     }
 
@@ -956,12 +1108,22 @@ tr.you td {
         scroll-margin-top: 3.5rem; /* below the sticky top bar */
     }
 
-/* The stances: a 2×2 grid of short plates */
+/* The stances: one plate a row */
 .stances {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr; /* one stance a row, its options under it */
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+}
+
+    .stance-options {
+        margin: 0 0 0.5rem; /* under the tray and the bubble: the chosen stance's choices */
+    }
+
+/* What the next tap on the map is for */
+.pick-prompt {
+    color: var(--school);
+    font-style: italic;
 }
 
     .stances .choice {
@@ -1039,7 +1201,7 @@ tr.you td {
             flex: 1;
         }
 
-/* The jump bar: Map, Orders, Report, Standings */
+/* The view tabs: Board, Report, Standings, Help. The current one is lit; a dot marks a report not yet read. */
 .match-tabs {
     position: fixed;
     bottom: 0;
@@ -1068,10 +1230,23 @@ tr.you td {
         letter-spacing: 0.1em;
     }
 
-        .match-tabs a:active, .match-tabs a:focus-visible {
+        .match-tabs a:active, .match-tabs a:focus-visible, .match-tabs a[aria-current] {
             color: var(--ink);
             box-shadow: inset 0 3px 0 var(--school);
         }
+
+        .match-tabs a.unread::after {
+            content: "";
+            width: 0.45rem;
+            height: 0.45rem;
+            margin-left: 0.35rem;
+            border-radius: 50%;
+            background: var(--school);
+        }
+
+.standings-sum {
+    color: var(--ink-soft);
+}
 
 /* The start of a match: three numbered steps, the current one in the school's colour */
 .start-steps {
@@ -1110,33 +1285,414 @@ tr.you td {
     margin-bottom: 0.4rem;
 }
 
-.match-tabs button {
-    flex: 1;
-    min-height: 3.25rem;
-    background: none;
-    border: 0;
-    color: var(--ink-soft);
-    font-family: var(--font-label);
-    font-weight: 600;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+/* A new round (MatchPage): a banner, "+N" rising from each held tile, and the mana it brought you. Each plays once,
+   when it is first drawn, and stays invisible after; nothing moves for phones set to reduce motion. */
+.round-banner {
+    position: fixed;
+    top: 4.25rem;
+    left: 1rem;
+    right: 1rem;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(var(--plate-top), var(--plate-bot));
+    border: 1px solid var(--paper-edge);
+    border-bottom: 2px solid var(--school);
+    box-shadow: 0 8px 24px var(--shadow);
+    pointer-events: none;
+    opacity: 0;
+    animation: round-banner 2.8s ease-out forwards;
+    pointer-events: none; /* faded out, it stays in place: taps go through to the page */
 }
 
-    .match-tabs button:active, .match-tabs button:focus-visible {
-        color: var(--ink);
-        box-shadow: inset 0 3px 0 var(--school);
+    .round-banner b {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 400;
     }
 
-/* The key to the map's type symbols */
-.tile-key {
+    .round-banner span {
+        color: var(--ink-soft);
+    }
+
+@keyframes round-banner {
+    0% { opacity: 0; transform: translateY(-0.75rem); }
+    12% { opacity: 1; transform: none; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.hex-map .hex-gain {
+    opacity: 0;
+    animation: hex-gain 2.4s ease-out 0.4s forwards;
+}
+
+    .hex-map .hex-gain rect {
+        fill: var(--paper);
+        stroke: var(--school);
+        stroke-width: 1.5;
+    }
+
+    .hex-map .hex-gain text {
+        font-size: 14px;
+        font-weight: 700;
+        fill: var(--on-ink);
+    }
+
+    .hex-map .hex-gain.none text {
+        fill: var(--ink-faint);
+    }
+
+    .hex-map .hex-gain.none rect {
+        stroke: var(--paper-edge);
+    }
+
+@keyframes hex-gain {
+    0% { opacity: 0; transform: translateY(6px); }
+    15% { opacity: 1; transform: translateY(0); }
+    75% { opacity: 1; transform: translateY(-12px); }
+    100% { opacity: 0; transform: translateY(-16px); }
+}
+
+.mana-gain {
+    color: var(--school);
+    font-weight: 700;
+    opacity: 0;
+    animation: mana-gain 2.6s ease-out 0.2s forwards;
+}
+
+@keyframes mana-gain {
+    0% { opacity: 0; }
+    15%, 80% { opacity: 1; font-size: 1em; }
+    100% { opacity: 0; font-size: 0; } /* and gives its room back */
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .round-banner, .hex-map .hex-gain, .mana-gain, .hex-map .effects {
+        display: none;
+    }
+
+}
+
+/* Board first (owner's choice, 25 Oct 2026; docs/theme.md, "The board"): whose turn it is as seat tokens, the round's
+   stances as a tray of tokens under the map, a bubble that says what's next, and small effects that show what just
+   happened. All CSS and inline SVG: nothing to download. */
+.seat-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.15rem 1rem;
-    margin: -0.25rem 0 0.75rem;
-    color: var(--ink-soft);
-    font-size: 0.85rem;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: -0.25rem 0 0.5rem;
 }
+
+.seat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.6rem 0.15rem 0.25rem;
+    border-radius: 99px;
+    border: 1px solid #ffffff14;
+    background: #0007;
+    color: var(--ink-soft);
+    font-family: var(--font-label);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+    .seat-chip i {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background: var(--c);
+        box-shadow: inset 0 0 0 2px #0009;
+    }
+
+    .seat-chip.now {
+        color: var(--ink);
+        border-color: var(--c);
+        animation: turn-pulse 1.6s ease-in-out infinite;
+    }
+
+@keyframes turn-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 60%, transparent); }
+    50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.tray {
+    display: flex;
+    justify-content: center;
+    gap: 0.35rem;
+    margin: 0.25rem 0 0.5rem;
+}
+
+.token {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    width: 3.4rem;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-family: var(--font-label);
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+    .token .stance-icon {
+        width: 3rem;
+        height: 3rem;
+        padding: 0.6rem;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #4a4033, #1e1914 75%);
+        border: 2px solid #6b5b45;
+        box-shadow: 0 4px 6px #000a;
+    }
+
+    .token:disabled {
+        color: var(--ink-soft);
+        opacity: 1;
+    }
+
+    .token.taken .stance-icon {
+        filter: grayscale(0.8) brightness(0.6);
+    }
+
+    .token.taken::after {
+        content: "";
+        position: absolute;
+        top: 2.1rem;
+        right: 0.15rem;
+        width: 1.05rem;
+        height: 1.05rem;
+        border-radius: 50%;
+        background: var(--c);
+        border: 2px solid #000;
+    }
+
+    .token.open .stance-icon {
+        border-color: var(--c);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 45%, transparent), 0 4px 6px #000a;
+    }
+
+    .token.on .stance-icon {
+        border-color: var(--school);
+        background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--school) 45%, #4a4033), #1e1914 75%);
+    }
+
+    .token.on {
+        color: var(--ink);
+    }
+
+    /* Whose choice it is: on your pick the free tokens glow, on anyone else's turn they're dimmed */
+    .tray.your-pick .token:not(:disabled) .stance-icon {
+        border-color: var(--school);
+        animation: pick-glow 1.8s ease-in-out infinite;
+    }
+
+    .tray.not-yours .token:not(.open):not(.taken) .stance-icon {
+        opacity: 0.4;
+    }
+
+    .token.open .stance-icon {
+        animation: open-pulse 1.4s ease-in-out infinite;
+    }
+
+    .token-now {
+        position: absolute;
+        top: -0.45rem;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0 0.35rem;
+        border-radius: 99px;
+        background: var(--c);
+        color: var(--on-ink);
+        font-size: 0.6rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        box-shadow: 0 1px 3px #000a;
+    }
+
+@keyframes pick-glow {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--school) 55%, transparent), 0 4px 6px #000a; }
+    50% { box-shadow: 0 0 0 5px transparent, 0 4px 6px #000a; }
+}
+
+@keyframes open-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 45%, transparent), 0 4px 6px #000a; }
+    50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--c) 15%, transparent), 0 4px 6px #000a; }
+}
+
+.tray-now {
+    margin: -0.25rem 0 0.5rem;
+    text-align: center;
+    color: var(--ink-soft);
+    font-family: var(--font-label);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.bubble {
+    margin: 0 0 0.6rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 12px;
+    border: 1px solid var(--paper-edge);
+    background: #0009;
+}
+
+    .bubble p {
+        margin: 0;
+    }
+
+    .bubble .bubble-sub {
+        margin-top: 0.2rem;
+        color: var(--ink-soft);
+        font-size: 0.9rem;
+    }
+
+/* The fog of war: a mist drifting over a rival's tile whose units you can't see */
+.hex-map .fog {
+    pointer-events: none; /* its fill is on the element: a url(#…) in this file would look for the gradient here */
+    animation: fog-drift 7s ease-in-out infinite alternate;
+}
+
+@keyframes fog-drift {
+    from { opacity: 0.8; }
+    to { opacity: 1; }
+}
+
+/* The effects: one play each, as a playback beat appears (BeatEffects) */
+.hex-map .effects {
+    pointer-events: none;
+}
+
+.hex-map .fx-ring {
+    fill: none;
+    stroke-width: 2;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fx-ring 0.9s ease-out both;
+}
+
+@keyframes fx-ring {
+    from { transform: scale(0.3); opacity: 0.9; }
+    to { transform: scale(1.6); opacity: 0; }
+}
+
+.hex-map .fx-pop {
+    font-size: 15px;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fx-pop 1.2s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes fx-pop {
+    0% { transform: scale(0); opacity: 0; }
+    25% { transform: scale(1.35); opacity: 1; }
+    40% { transform: scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-6px); }
+}
+
+.hex-map .fx-army {
+    animation: fx-slide 0.8s ease-in both;
+}
+
+    .hex-map .fx-army circle {
+        stroke: #000;
+        stroke-width: 1.5;
+    }
+
+@keyframes fx-slide {
+    from { transform: translate(0, 0); }
+    85% { opacity: 1; }
+    to { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
+.hex-map .fx-clash {
+    fill: none;
+    stroke: #ffd27a;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fx-clash 0.5s ease-out 0.75s both;
+}
+
+@keyframes fx-clash {
+    0% { transform: scale(0.2); opacity: 0; }
+    40% { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+.hex-map .fx-wash {
+    animation: fx-wash 0.9s ease-out both;
+}
+
+@keyframes fx-wash {
+    from { stroke-width: 0; fill: var(--c); fill-opacity: 0.55; }
+    to { stroke-width: 2.2; fill: var(--c); fill-opacity: 0; }
+}
+
+.hex-map .fx-glyph {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fx-glyph 1.4s ease-out both;
+}
+
+    .hex-map .fx-glyph circle {
+        fill: none;
+        stroke: #9fd0ff;
+        stroke-width: 1.6;
+        stroke-dasharray: 3 3;
+    }
+
+    .hex-map .fx-glyph path {
+        fill: #9fd0ff;
+        fill-opacity: 0.8;
+    }
+
+@keyframes fx-glyph {
+    0% { transform: scale(0.5) rotate(-40deg); opacity: 0; }
+    30% { opacity: 1; }
+    100% { transform: scale(1.15) rotate(20deg); opacity: 0; }
+}
+
+/* The match page's top line: your colour, where the match is, your mana, and the way to the help page */
+.match-top {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.25rem 0 0.75rem;
+    font-size: 1.05rem;
+}
+
+    .match-top .match-mana {
+        flex: 1;
+        color: var(--ink-soft);
+    }
+
+.ink-dot {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 3px;
+    background: var(--seat);
+    box-shadow: 0 0 0 2px var(--paper-edge);
+}
+
+.help-list {
+    padding-left: 1.1rem;
+}
+
+    .help-list li {
+        margin-bottom: 0.35rem;
+    }
 
 .tile-mark {
     color: var(--ink);
@@ -1204,4 +1760,11 @@ details.fold {
 
 .lobby-seats li {
     min-height: 1.75rem;
+}
+
+/* Last, so it wins over the pulses above: no pulsing for players who reduce motion */
+@media (prefers-reduced-motion: reduce) {
+    .seat-chip.now, .tray.your-pick .token:not(:disabled) .stance-icon, .token.open .stance-icon, .hex-map .fog {
+        animation: none;
+    }
 }

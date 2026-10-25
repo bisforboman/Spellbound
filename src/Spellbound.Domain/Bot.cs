@@ -4,10 +4,10 @@ namespace Spellbound.Domain;
 /// only gives orders that check; they differ in priorities and in how freely they spend.</summary>
 public enum Plan
 {
-    /// <summary>The everyday bot: attack what it can beat, else attune or summon, building and casting with spare mana.</summary>
+    /// <summary>The everyday bot: attack what it can beat, else attune, cast or summon, building with spare mana.</summary>
     Balanced,
 
-    /// <summary>Armies first: summons big and attacks whenever it can win; Scorch before its attacks.</summary>
+    /// <summary>Armies first: summons big and attacks whenever it can win; Scorch or Lure for its next attack.</summary>
     Warlord,
 
     /// <summary>An engine: builds upgrades early, attunes, fights only to defend.</summary>
@@ -24,7 +24,7 @@ public enum Plan
 }
 
 /// <summary>
-/// A simple computer player (docs/roadmap.md, M1): a bid rule for the opening and an orders rule for the rounds. It
+/// A simple computer player (docs/roadmap.md, M1): a pick rule for the opening and an orders rule for the rounds. It
 /// only ever gives orders that <see cref="Match.Check"/> accepts: it tries a few candidates in order and keeps the
 /// first that checks, else it holds. Any variety comes from the injected random source, so games replay exactly.
 /// </summary>
@@ -39,28 +39,27 @@ public static class Bot
         return offer.Count == 0 ? null : offer[random.Next(offer.Count)];
     }
 
-    /// <summary>Bids on one of the best tiles on auction (within 1 of the best, picked at random): about its yield in
-    /// mana, give or take one, never more than half its mana. A trait about land makes its tiles worth
-    /// <see cref="TraitLean"/> more. Passes when it can't afford the smallest bid.</summary>
-    public static Bid ChooseBid(Match match, int seat, IRandomSource random, Plan plan = Plan.Balanced)
+    /// <summary>Picks the tile worth most to it: its average yield, and <see cref="TraitLean"/> more for a tile its
+    /// trait wants; a tie is drawn at random. Null when it isn't the seat's turn.</summary>
+    public static Pick? ChoosePick(Match match, int seat, IRandomSource random)
     {
         ArgumentNullException.ThrowIfNull(match);
         ArgumentNullException.ThrowIfNull(random);
-        var mana = match.Seats[seat].Mana;
-
-        if (match.OnAuction.Count == 0 || mana < match.Rules.MinBid)
+        if (match.Picker != seat || match.ToPick.Count == 0)
         {
-            return Bid.Pass(seat);
+            return null;
         }
 
         var me = match.Seats[seat];
-        var best = PickGood(match.OnAuction, h => match.Map[h].Yield!.Value + (Suits(match, me, h) ? TraitLean : 0), random);
-        var amount = Math.Clamp(match.Map[best].Yield!.Value + random.Next(3) - 1, match.Rules.MinBid, Math.Max(match.Rules.MinBid, mana / 2));
-        return new Bid(seat, best, amount);
+        int Value(Hex h) => Worth(match, h) + (Suits(match, me, h) ? TraitLean : 0);
+        var best = match.ToPick.Where(h => Value(h) == match.ToPick.Max(Value)).ToList();
+        return new Pick(seat, best[random.Next(best.Count)]);
     }
 
-    /// <summary>In order: attack a weaker rival or monster tile next to its units; attune the best free tile next to
-    /// its land; summon on a tile at its border; else hold.</summary>
+    /// <summary>Its turn, picking or taking the open stance: the first of its wishes that checks, in order (attack a
+    /// weaker rival or monster tile next to its units; attune the best free tile next to its land; cast a spell with a
+    /// purpose, or summon on a tile at its border), so a picker picks the stance of its first wish still free and a
+    /// follower takes the open stance if it wishes for it; else Channel, or a pass.</summary>
     public static Orders ChooseOrders(Match match, int seat, IRandomSource random, Plan plan = Plan.Balanced)
     {
         ArgumentNullException.ThrowIfNull(match);
@@ -73,7 +72,7 @@ public static class Bot
             candidates = new[] { BestAttack(match, seat, match.Seats[seat]), LastUpgrade(match, seat) }.OfType<Orders>().Concat(candidates);
         }
 
-        var orders = candidates.FirstOrDefault(o => match.Check(o).Succeeded) ?? Orders.Hold(seat);
+        var orders = candidates.FirstOrDefault(o => match.Check(o).Succeeded) ?? match.Passing(seat);
         if (orders is { Stance: Stance.Attack, Attackers: [var first, ..] })
         {
             // The army leaves its tile empty: with mana to spare, a few Imps guard it.
@@ -84,83 +83,14 @@ public static class Bot
             }
         }
 
-        if (Guess(match, seat, random) is { } guess)
-        {
-            orders = orders with { Guess = guess };
-        }
-
-        // With mana to spare after the stance, a spell alongside it; sooner for a trait that scores spells; in the last
-        // round, with whatever is left.
-        var spare = lastRound ? 0 : plan switch
-        {
-            Plan.Spellcaster => 0,
-            Plan.Warlord => SpareMana / 2,
-            Plan.Builder or Plan.Expander => SpareMana + 4,
-            Plan.Economist => SpareMana + 4,
-            _ => match.Seats[seat].Trait is Trait.Spellweaver or Trait.Hexer ? SpareMana / 2 : SpareMana,
-        };
-        if (match.Seats[seat].Mana - match.CostOf(orders) < spare)
-        {
-            return orders;
-        }
-
-        var casts = Casts(match, seat);
-        if (orders is { Stance: Stance.Attack, Target: { } attacked })
-        {
-            // A Rally first: it saves units (it takes the blows first) and covers defenders summoned this round.
-            casts = casts.Prepend(new SpellCast(Spell.Rally, attacked));
-        }
-
-        casts = plan switch
-        {
-            // A Warlord scorches first; an Economist wards and blights (income, its own and its rivals'); a Spellcaster
-            // tries spells it hasn't cast.
-            Plan.Warlord => casts.OrderBy(c => c.Spell != Spell.Scorch),
-            Plan.Economist => casts.Where(c => c.Spell is Spell.Ward or Spell.Blight or Spell.Rally),
-            Plan.Spellcaster => casts.OrderBy(c => match.Seats[seat].SpellsCast.Contains(c.Spell)),
-            _ => casts,
-        };
-        if (match.Seats[seat].Trait == Trait.Spellweaver)
-        {
-            // A spell it hasn't cast yet first.
-            casts = casts.OrderBy(c => match.Seats[seat].SpellsCast.Contains(c.Spell));
-        }
-
-        return casts.Select(cast => orders with { Cast = cast }).FirstOrDefault(o => match.Check(o).Succeeded) ?? orders;
+        return orders;
     }
-
-    /// <summary>From <see cref="GuessRound"/> on, a guess at one rival's trait a round, from the tiles that rival
-    /// held after the opening: the trait those tiles suit best (one of the best at random), leaving out the traits
-    /// it was offered itself and those it already pinned on another rival.</summary>
-    private static TraitGuess? Guess(Match match, int seat, IRandomSource random)
-    {
-        var me = match.Seats[seat];
-        if (me.Trait is null || match.CurrentRound < GuessRound)
-        {
-            return null;
-        }
-
-        var rival = match.Seats.FirstOrDefault(s => s.Index != seat && !me.Guesses.ContainsKey(s.Index));
-        if (rival is null)
-        {
-            return null;
-        }
-
-        var possible = Enum.GetValues<Trait>().Where(t => !me.Offer.Contains(t) && !me.Guesses.Values.Contains(t)).ToList();
-        int Fit(Trait t) => rival.OpeningTiles.Count(h => Suits(match, rival, t, h));
-        var best = possible.Max(Fit);
-        var good = possible.Where(t => Fit(t) == best).ToList();
-        return new TraitGuess(rival.Index, good[random.Next(good.Count)]);
-    }
-
-    /// <summary>The round from which bots guess, one rival a round.</summary>
-    private const int GuessRound = 4;
 
     /// <summary>An upgrade on its best-yielding open tile, if it has room for one; null if not.</summary>
     private static Orders? LastUpgrade(Match match, int seat)
     {
         var me = match.Seats[seat];
-        var open = me.Tiles.Where(h => match.UpgradeOn(h) is null).OrderByDescending(h => match.Map[h].Yield)
+        var open = me.Tiles.Where(h => match.UpgradeOn(h) is null).OrderByDescending(h => Worth(match, h))
             .ThenBy(h => h.Q).ThenBy(h => h.R).ToList();
         return open.Count == 0 || match.UpgradesOf(me) >= match.Rules.UpgradeCap ? null : Orders.Build(seat, open[0], Upgrade.Shrine);
     }
@@ -168,10 +98,10 @@ public static class Bot
     /// <summary>How much more a tile that suits the bot's trait is worth to it, in yield.</summary>
     private const int TraitLean = 2;
 
-    /// <summary>Whether a tile suits the seat's trait, which is what its bids give away (docs/discussions/traits.md,
+    /// <summary>Whether a tile suits the seat's trait, which is what its picks give away (docs/discussions/traits.md,
     /// the opening tells): its type; next to its land or away from it; next to rivals; next to the dark land where
     /// monsters will appear; or a rich yield to pay Golems' upkeep. A Hexer gives nothing away: land next to rivals
-    /// gets it attacked, and it won least when it bid there.</summary>
+    /// gets it attacked, and it won least when it took land there.</summary>
     private static bool Suits(Match match, Seat me, Hex hex) => Suits(match, me, me.Trait, hex);
 
     private static bool Suits(Match match, Seat me, Trait? trait, Hex hex)
@@ -185,12 +115,19 @@ public static class Bot
             Trait.Wanderer => me.Tiles.Count > 0 && !me.Tiles.Any(hex.IsNextTo),
             Trait.Warbrand or Trait.Spellweaver => neighbours.Any(n => match.OwnerOf(n) is { } o && o != me.Index),
             Trait.Beastbane => neighbours.Any(n => match.Map[n].IsGuarded) || neighbours.Count(n => !match.Map[n].IsUnveiled) >= 3,
-            Trait.Golemwright => match.Map[hex].Yield >= 3,
+            Trait.Golemwright => match.Map[hex].Type == TileType.Steady, // a sure yield for the upkeep
             _ => false,
         };
     }
 
     /// <summary>One of the hexes scoring within 1 of the best, at random, so bots don't all reach for the same one.</summary>
+    /// <summary>What a tile yields on average: the bots weigh tiles by it, since a tile rolls its yield each round.</summary>
+    private static int Worth(Match match, Hex hex) => (int)Math.Round(match.Rules.AverageYield(match.Map[hex].Type));
+
+    /// <summary>A tile's average income, a Shrine's included.</summary>
+    private static int Income(Match match, Hex hex) =>
+        Worth(match, hex) + (match.UpgradeOn(hex) == Upgrade.Shrine ? match.Rules.ShrineYield : 0);
+
     private static Hex PickGood(IReadOnlyCollection<Hex> hexes, Func<Hex, int> score, IRandomSource random)
     {
         var best = hexes.Max(score);
@@ -201,12 +138,45 @@ public static class Bot
     /// <summary>The mana a bot keeps beyond an upgrade's price before it builds one.</summary>
     private const int BuildSpare = 6;
 
-    /// <summary>The mana a bot keeps after its stance before it also casts a spell.</summary>
+    /// <summary>The mana a bot keeps after an attack before it also brings reinforcements.</summary>
     private const int SpareMana = 6;
 
+    /// <summary>Casts with a purpose, among the seat's own spells, as the plan orders them: a Warlord scorches and lures
+    /// first (its next attack), an Economist wards and blights first (income, its own and its rivals'), and a
+    /// Spellcaster or a Spellweaver tries a spell it hasn't cast yet first. A Ward, Blight or Lure goes on every tile
+    /// with a purpose at once, else on the first.</summary>
+    private static IEnumerable<Orders> Casts(Match match, int seat, Plan plan)
+    {
+        var me = match.Seats[seat];
+        var mine = match.SpellsOf(seat);
+        var casts = Spells(match, seat).Where(c => mine.Contains(c.Spell)).ToList();
+        IEnumerable<Orders> ordered = plan switch
+        {
+            Plan.Warlord => casts.OrderBy(c => c.Spell is not (Spell.Scorch or Spell.Lure)),
+            Plan.Economist => casts.OrderBy(c => c.Spell is not (Spell.Ward or Spell.Blight)),
+            Plan.Spellcaster => casts.OrderBy(c => me.SpellsCast.Contains(c.Spell)),
+            _ => casts,
+        };
+        if (me.Trait == Trait.Spellweaver)
+        {
+            ordered = ordered.OrderBy(c => me.SpellsCast.Contains(c.Spell));
+        }
+
+        foreach (var cast in ordered)
+        {
+            var more = casts.Where(c => c.Spell == cast.Spell && c.Target != cast.Target).Select(c => c.Target!.Value).Distinct().ToList();
+            if (Match.GoesOnSeveralTiles(cast.Spell) && more.Count > 0)
+            {
+                yield return cast with { MoreTiles = more };
+            }
+
+            yield return cast;
+        }
+    }
+
     /// <summary>Spells with a purpose, most urgent first: Ward a threatened tile; Lure or Scorch a target its units
-    /// next to it can then beat; Blight a rival's best tile next to it.</summary>
-    private static IEnumerable<SpellCast> Casts(Match match, int seat)
+    /// next to it can then beat next round; Blight a rival's best tile next to it.</summary>
+    private static IEnumerable<Orders> Spells(Match match, int seat)
     {
         var rules = match.Rules;
         var mine = match.Seats[seat].Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
@@ -215,27 +185,27 @@ public static class Bot
         var rivals = mine.SelectMany(match.Map.NeighboursOf).Distinct()
             .Where(h => match.OwnerOf(h) is { } o && o != seat).OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
 
-        foreach (var threatened in mine.Where(h => match.Map.NeighboursOf(h).Any(n => rivals.Contains(n) && Power(n) > 0
-                     && Power(n) + Rally(match, n) > Power(h))))
+        foreach (var threatened in mine.Where(h => match.Map.NeighboursOf(h).Any(n => rivals.Contains(n) && Power(n) > Power(h))))
         {
-            yield return new SpellCast(Spell.Ward, threatened);
+            yield return Orders.Cast(seat, Spell.Ward, threatened);
         }
 
         foreach (var monster in mine.SelectMany(match.Map.NeighboursOf).Distinct().OrderBy(h => h.Q).ThenBy(h => h.R)
                      .Where(h => match.OwnerOf(h) is null && match.Map[h].Guard > rules.MinGuard
                                  && MyPowerNextTo(h) >= match.Map[h].Guard - rules.LurePower))
         {
-            yield return new SpellCast(Spell.Lure, monster);
+            yield return Orders.Cast(seat, Spell.Lure, monster);
         }
 
         foreach (var rival in rivals.Where(h => Power(h) > 0 && MyPowerNextTo(h) > 0 && MyPowerNextTo(h) <= Power(h)))
         {
-            yield return new SpellCast(Spell.Scorch, rival, Power(rival) - MyPowerNextTo(rival) + 1);
+            yield return Orders.Cast(seat, Spell.Scorch, rival, Power(rival) - MyPowerNextTo(rival) + 1);
         }
 
-        foreach (var rival in rivals.Where(h => match.Map[h].Yield >= 3).OrderByDescending(h => match.Map[h].Yield))
+        foreach (var rival in rivals.Where(h => Income(match, h) >= 3 || match.Map[h].Type == TileType.Wild) // a Shrine, or a tile that may roll high
+                     .OrderByDescending(h => Income(match, h)).ThenBy(h => h.Q).ThenBy(h => h.R))
         {
-            yield return new SpellCast(Spell.Blight, rival);
+            yield return Orders.Cast(seat, Spell.Blight, rival);
         }
     }
 
@@ -252,10 +222,10 @@ public static class Bot
         var attack = BestAttack(match, seat, me);
         var monsterAttack = attack is { Target: { } t } && match.OwnerOf(t) is null ? attack : null;
 
-        // Defend: enough Imps on its most threatened tile to beat the rival stack next to it, and the Rally it may bring.
+        // Defend: enough Imps on its most threatened tile to beat the rival stack next to it.
         var threats = mine.Select(h => (Tile: h, Gap: match.Map.NeighboursOf(h)
                 .Where(n => match.OwnerOf(n) is { } o && o != seat && Power(n) > 0)
-                .Select(n => Power(n) + Rally(match, n)).DefaultIfEmpty(0).Max() - Power(h)))
+                .Select(Power).DefaultIfEmpty(0).Max() - Power(h)))
             .Where(x => x.Gap >= 0).OrderByDescending(x => x.Gap).ThenBy(x => x.Tile.Q).ThenBy(x => x.Tile.R).ToList();
         var defend = threats.Count > 0 && threats[0].Gap > 0
             ? Orders.Summon(seat, threats[0].Tile, UnitKind.Imp, threats[0].Gap + 1)
@@ -263,10 +233,10 @@ public static class Bot
 
         var free = mine.SelectMany(match.Map.NeighboursOf).Distinct()
             .Where(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded).ToList();
-        var attune = free.Count == 0 ? null : Orders.Attune(seat, PickGood(free, h => match.Map[h].Yield!.Value, random));
-        var richFree = free.Where(h => match.Map[h].Yield >= 2).ToList();
+        var attune = free.Count == 0 ? null : Orders.Attune(seat, PickGood(free, h => Worth(match, h), random));
+        var richFree = free.Where(h => Worth(match, h) >= 2).ToList();
         var richAttune = richFree.Count == 0 ? null
-            : Orders.Attune(seat, richFree.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First());
+            : Orders.Attune(seat, richFree.OrderByDescending(h => Worth(match, h)).ThenBy(h => h.Q).ThenBy(h => h.R).First());
 
         // Every plan takes land while it's cheap (a small realm's price): no real player passes up a tile for a few mana.
         var cheap = attune is not null && rules.AttunePrice(me.Tiles.Count) <= rules.AttunePrice(rules.AttuneCheapTiles) ? attune : null;
@@ -287,26 +257,34 @@ public static class Bot
             var threatened = defend?.Target is { } d && open.Contains(d) ? d : (Hex?)null;
             return threatened is { } tower
                 ? Orders.Build(seat, tower, Upgrade.Tower)
-                : Orders.Build(seat, open.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First(), first);
+                : Orders.Build(seat, open.OrderByDescending(h => Worth(match, h)).ThenBy(h => h.Q).ThenBy(h => h.R).First(), first);
         }
+
+        // A spell: its best purposeful cast for a Warlord, an Economist or a Spellcaster; any of them for the others,
+        // which cast only when they have nothing better to do.
+        var casts = Casts(match, seat, plan).ToList();
+        var warlordCast = casts.FirstOrDefault(c => c.Spell is Spell.Scorch or Spell.Lure);
+        var sanctum = mine.Any(h => match.UpgradeOn(h) == Upgrade.Sanctum) ? null : Build(Upgrade.Sanctum);
 
         IEnumerable<Orders?> order = plan switch
         {
-            // A Warlord grows its army until it has a stack worth sending (8 power), then takes land as well.
-            Plan.Warlord => mine.Max(Power) >= WarlordStack ? [attack, defend, attune, army] : [attack, defend, cheap, army, attune],
-            Plan.Builder => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, attune, monsterAttack, some],
-            Plan.Spellcaster => [attack, defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Sanctum) : null, attune, some],
-            Plan.Expander => [defend, attune, attack, some],
+            // A Warlord grows its army until it has a stack worth sending (8 power), then takes land as well; it scorches
+            // or lures for its next attack.
+            Plan.Warlord => mine.Max(Power) >= WarlordStack ? [attack, defend, warlordCast, attune, army] : [attack, defend, warlordCast, cheap, army, attune],
+            // A Builder and an Economist never pick Attack, but when someone else picks it they strike back if they can win.
+            Plan.Builder => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, attune, monsterAttack, .. casts, some, Following(attack)],
+            // A Spellcaster builds one Sanctum (from round 2), then casts every round it has a spell worth casting.
+            Plan.Spellcaster => [attack, defend, cheap, match.CurrentRound >= 2 ? sanctum : null, .. casts, attune, some],
+            Plan.Expander => [defend, attune, attack, .. casts, some],
             // An Economist grows income: a Shrine on its best tile (from round 2), rich land first, monsters it can beat.
-            Plan.Economist => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, attune, some],
+            Plan.Economist => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, .. casts, attune, some, Following(attack)],
             _ => [],
         };
         return order.OfType<Orders>();
-    }
 
-    /// <summary>The Rally a rival's stack at <paramref name="hex"/> could bring. Its owner's mana is hidden by the fog,
-    /// so a bot assumes it can afford one.</summary>
-    private static int Rally(Match match, Hex hex) => match.OwnerOf(hex) is not null ? match.Rules.RallyPower : 0;
+        // Orders to give only while another seat's pick goes round, never as a pick.
+        Orders? Following(Orders? orders) => match.OpenStance is not null ? orders : null;
+    }
 
     /// <summary>The stack a Warlord builds before it also attunes.</summary>
     private const int WarlordStack = 8;
@@ -351,12 +329,22 @@ public static class Bot
             yield return attack;
         }
 
+        // A trait that scores spells casts one whenever it has one worth casting, once land is no longer cheap.
+        var casts = Casts(match, seat, Plan.Balanced).ToList();
+        if (me.Trait is Trait.Spellweaver or Trait.Hexer && rules.AttunePrice(me.Tiles.Count) > rules.AttunePrice(rules.AttuneCheapTiles))
+        {
+            foreach (var cast in casts)
+            {
+                yield return cast;
+            }
+        }
+
         var free = mine.SelectMany(match.Map.NeighboursOf).Distinct()
             .Where(h => match.Map[h].IsUnveiled && match.OwnerOf(h) is null && !match.Map[h].IsGuarded).ToList();
 
         // Attune: one of the best free tiles next to its land, leaning to its trait's.
         var attune = free.Count == 0 ? null
-            : Orders.Attune(seat, PickGood(free, h => match.Map[h].Yield!.Value + (Suits(match, me, h) ? TraitLean : 0), random));
+            : Orders.Attune(seat, PickGood(free, h => Worth(match, h) + (Suits(match, me, h) ? TraitLean : 0), random));
 
         // Summon: half its mana (at least one unit's worth) on a tile next to a rival, monsters or free land.
         // A seat always holds a tile after the opening: the last one can't be taken.
@@ -389,15 +377,16 @@ public static class Bot
             }
             else if (open.Count > 0)
             {
-                var best = open.OrderByDescending(h => match.Map[h].Yield).ThenBy(h => h.Q).ThenBy(h => h.R).First();
+                var best = open.OrderByDescending(h => Worth(match, h)).ThenBy(h => h.Q).ThenBy(h => h.R).First();
                 yield return Orders.Build(seat, best, me.Trait is Trait.Spellweaver or Trait.Hexer ? Upgrade.Sanctum : Upgrade.Shrine);
             }
         }
 
         // Every other round it summons before it attunes, so it has units to fight with; but land comes first while it's
-        // cheap.
+        // cheap. In the other rounds, with no land to attune, it casts a spell with a purpose before it summons.
         var unitsFirst = match.CurrentRound % 2 == 0 && rules.AttunePrice(me.Tiles.Count) > rules.AttunePrice(rules.AttuneCheapTiles);
-        foreach (var orders in unitsFirst ? summons.Append(attune) : summons.Prepend(attune))
+        IEnumerable<Orders?> rest = unitsFirst ? [.. summons, attune] : [attune, .. casts, .. summons];
+        foreach (var orders in rest)
         {
             if (orders is not null)
             {

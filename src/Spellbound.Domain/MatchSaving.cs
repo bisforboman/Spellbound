@@ -9,19 +9,21 @@ public sealed partial class Match
         Phase,
         OpeningUnveil,
         CurrentRound,
-        [.. onAuction],
+        [.. toPick],
         [.. Map.Tiles.OrderBy(t => t.Hex.Q).ThenBy(t => t.Hex.R).Select(t => new TileState(t.Hex, t.Type, t.Yield, t.Guard))],
         [.. seats.Select(s => new SeatState(
             s.Mana, s.Score, s.ProducedThisRound, s.ProducedCarry, s.ConquestPointsThisRound,
             [.. s.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)], s.LandCarry,
             [.. s.Offer], s.Trait, s.TraitPoints, [.. s.OpeningTiles], s.MonstersCleared, s.RivalTilesTaken,
-            [.. s.SpellsCast.Order()], s.HexesCast, s.RoundsCast,
-            [.. s.Guesses.OrderBy(g => g.Key).Select(g => new GuessState(g.Key, g.Value))], s.GuessPoints))],
+            [.. s.SpellsCast.Order()], s.HexesCast, s.RoundsCast, s.LastRoundCast))],
         [.. units.Where(u => !u.Value.IsEmpty).OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R)
             .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))],
         [.. upgrades.OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R).Select(u => new UpgradeState(u.Key, u.Value))],
         [.. blightedLastRound.OrderBy(h => h.Q).ThenBy(h => h.R)],
-        [.. favour.Where(f => f.Value > 0).OrderBy(f => f.Key).Select(f => new FavourState(f.Key, f.Value))]);
+        [.. picks],
+        acted,
+        [.. wards.OrderBy(w => w.Key.Q).ThenBy(w => w.Key.R).Select(w => new WardState(w.Key, w.Value))],
+        [.. blights.OrderBy(h => h.Q).ThenBy(h => h.R)]);
 
     /// <summary>A saved match, to play on under the rules it was saved with.</summary>
     public static Match Load(MatchState state, GameRules rules)
@@ -52,17 +54,12 @@ public sealed partial class Match
             };
             foreach (var spell in s.SpellsCast ?? [])
             {
-                seat.Cast(spell);
+                seat.Cast(spell, 0);
             }
 
-            foreach (var guess in s.Guesses ?? [])
-            {
-                seat.Guess(guess.Rival, guess.Trait);
-            }
-
-            seat.GuessPoints = s.GuessPoints;
             seat.HexesCast = s.HexesCast;
             seat.RoundsCast = s.RoundsCast;
+            seat.LastRoundCast = s.LastRoundCast;
             foreach (var hex in s.Tiles)
             {
                 seat.Take(hex);
@@ -76,7 +73,7 @@ public sealed partial class Match
             OpeningUnveil = state.OpeningUnveil,
             CurrentRound = state.CurrentRound,
         };
-        match.onAuction.AddRange(state.OnAuction);
+        match.toPick.AddRange(state.OnAuction);
         foreach (var u in state.Units)
         {
             match.units[u.Hex] = new Army(u.Imps, u.Golems);
@@ -88,10 +85,14 @@ public sealed partial class Match
         }
 
         match.blightedLastRound.UnionWith(state.Blighted ?? []);
-        foreach (var f in state.Favour ?? [])
+        match.picks.AddRange(state.Picks ?? []);
+        match.acted = state.Acted;
+        foreach (var w in state.Wards ?? [])
         {
-            match.favour[f.Stance] = f.Favour;
+            match.wards[w.Hex] = w.Power;
         }
+
+        match.blights.UnionWith(state.Blights ?? []);
 
         return match;
     }

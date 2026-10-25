@@ -1,6 +1,7 @@
 namespace Spellbound.Domain;
 
-/// <summary>The one decision a player makes each round (docs/game-design.md, Rounds and stances).</summary>
+/// <summary>The stances (docs/game-design.md, Rounds and stances). Each round the players pick them in turn, one each,
+/// none twice; everyone may then take the stance just picked, the picker first and a little cheaper.</summary>
 public enum Stance
 {
     /// <summary>Send units against a rival's tile or a monster-guarded tile next to your land.</summary>
@@ -14,6 +15,12 @@ public enum Stance
 
     /// <summary>Spend mana to build an upgrade on one of your tiles.</summary>
     Build,
+
+    /// <summary>Spend mana to cast one spell.</summary>
+    Cast,
+
+    /// <summary>Gain a little mana; only its picker takes it.</summary>
+    Channel,
 }
 
 /// <summary>The spells (docs/game-design.md, Spells). Each lasts this round, except Lure, which weakens monsters for
@@ -35,29 +42,23 @@ public enum Spell
     /// <summary>A monster guard next to your land loses power for good.</summary>
     Lure,
 
-    /// <summary>Your attack this round strikes with more power: the attacker's Ward.</summary>
+    /// <summary>No longer cast (removed 24 Oct 2026, when Cast became a stance and a round could no longer cast and
+    /// attack). Kept so saved matches that cast it still load; it still counts as a spell cast for Spellweaver.</summary>
     Rally,
 }
 
-/// <summary>A spell cast alongside a round's stance: which spell, at which tile, how much power Scorch burns, and what
-/// Leyline moves (its <see cref="Target"/> is where the units leave from).</summary>
-public sealed record SpellCast(Spell Spell, Hex Target, int Count = 0, Move? Transfer = null);
-
 /// <summary>Units summoned on one of a seat's own tiles alongside an attack, to guard it while the army is away.</summary>
 public sealed record Reinforcement(Hex Tile, UnitKind Kind, int Count);
-
-/// <summary>A guess at a rival's secret trait, made alongside a round's orders: once per rival, never changed, scored at
-/// the end.</summary>
-public sealed record TraitGuess(int Rival, Trait Trait);
 
 /// <summary>Units moving one step, from one of a player's tiles to a neighbouring one of theirs.</summary>
 public sealed record Move(Hex From, Hex To, Army Units);
 
 /// <summary>
-/// A seat's secret commitment for a round: one stance, what it aims at, and any moves. A stance with no target does
-/// nothing (a player can always hold back). For Summon, <see cref="Kind"/> and <see cref="Count"/> say what to summon;
-/// for Attack, <see cref="Attackers"/> says which units go, from which of the seat's tiles next to the target. Alongside
-/// the stance a seat may cast one spell (<see cref="Cast"/>).
+/// A seat's turn in a round: the stance it picks or takes, what it aims at, and, for a pick, any moves. A stance with
+/// no target does nothing (a player can always pass). For Summon, <see cref="Kind"/> and <see cref="Count"/> say what to summon;
+/// for Attack, <see cref="Attackers"/> says which units go, from which of the seat's tiles next to the target. For
+/// Cast, <see cref="Spell"/> says which spell, <see cref="Count"/> how much power a Scorch burns, and
+/// <see cref="Transfer"/> what a Leyline moves (the target is where its units leave from).
 /// </summary>
 public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<Move> Moves, UnitKind Kind = UnitKind.Imp, int Count = 0)
 {
@@ -66,27 +67,24 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
     /// <summary>For Build: what to build.</summary>
     public Upgrade Upgrade { get; init; }
 
-    /// <summary>The spell cast alongside the stance this round, if any.</summary>
-    public SpellCast? Cast { get; init; }
+    /// <summary>For Cast: which spell.</summary>
+    public Spell Spell { get; init; }
+
+    /// <summary>For a Leyline: the units it moves, and between which tiles.</summary>
+    public Move? Transfer { get; init; }
+
+    /// <summary>For a Ward, Blight or Lure: more tiles beyond <see cref="Target"/> that take the same spell, each
+    /// paid for.</summary>
+    public IReadOnlyList<Hex> MoreTiles { get; init; } = [];
+
+    /// <summary>For Cast: every tile the spell goes on.</summary>
+    public IReadOnlyList<Hex> SpellTiles => Target is { } first ? [first, .. MoreTiles] : [];
 
     /// <summary>For Attack: units summoned on one of the seat's tiles at the same time, if any.</summary>
     public Reinforcement? Reinforce { get; init; }
 
     /// <summary>These orders (an attack) with a small summon at home alongside.</summary>
     public Orders Reinforcing(Hex tile, UnitKind kind, int count) => this with { Reinforce = new Reinforcement(tile, kind, count) };
-
-    /// <summary>A guess at a rival's trait made alongside these orders, if any.</summary>
-    public TraitGuess? Guess { get; init; }
-
-    /// <summary>These orders with a guess at a rival's trait.</summary>
-    public Orders Guessing(int rival, Trait trait) => this with { Guess = new TraitGuess(rival, trait) };
-
-    /// <summary>These orders with a spell cast alongside.</summary>
-    public Orders Casting(Spell spell, Hex tile, int count = 0) => this with { Cast = new SpellCast(spell, tile, count) };
-
-    /// <summary>These orders with a Leyline cast alongside.</summary>
-    public Orders CastingLeyline(Move transfer) =>
-        this with { Cast = new SpellCast(Spell.Leyline, (transfer ?? throw new ArgumentNullException(nameof(transfer))).From, Transfer: transfer) };
 
     public static Orders Attack(int seat, Hex tile, IReadOnlyList<Move> attackers, params IReadOnlyList<Move> moves) =>
         new(seat, Stance.Attack, tile, moves) { Attackers = attackers };
@@ -99,6 +97,25 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
     public static Orders Build(int seat, Hex tile, Upgrade upgrade, params IReadOnlyList<Move> moves) =>
         new(seat, Stance.Build, tile, moves) { Upgrade = upgrade };
 
-    /// <summary>Picks a stance but aims it at nothing: only the moves happen.</summary>
-    public static Orders Hold(int seat, params IReadOnlyList<Move> moves) => new(seat, Stance.Summon, null, moves);
+    /// <summary>Casts a spell at a tile; for Scorch, <paramref name="count"/> is the power to burn.</summary>
+    public static Orders Cast(int seat, Spell spell, Hex tile, int count = 0, params IReadOnlyList<Move> moves) =>
+        new(seat, Stance.Cast, tile, moves, Count: count) { Spell = spell };
+
+    /// <summary>Casts a Ward, Blight or Lure on several tiles at once, each paid for.</summary>
+    public static Orders CastOn(int seat, Spell spell, IReadOnlyList<Hex> tiles, params IReadOnlyList<Move> moves) =>
+        new(seat, Stance.Cast, (tiles ?? throw new ArgumentNullException(nameof(tiles)))[0], moves) { Spell = spell, MoreTiles = [.. tiles.Skip(1)] };
+
+    /// <summary>Casts a Leyline: <paramref name="transfer"/>'s units travel between two of the seat's tiles.</summary>
+    public static Orders Leyline(int seat, Move transfer, params IReadOnlyList<Move> moves) =>
+        new(seat, Stance.Cast, (transfer ?? throw new ArgumentNullException(nameof(transfer))).From, moves)
+        {
+            Spell = Spell.Leyline,
+            Transfer = transfer,
+        };
+
+    /// <summary>Takes a stance but aims it at nothing: only a pick's moves happen.</summary>
+    public static Orders Pass(int seat, Stance stance, params IReadOnlyList<Move> moves) => new(seat, stance, null, moves);
+
+    /// <summary>Picks Channel: its picker gains mana.</summary>
+    public static Orders Channel(int seat, params IReadOnlyList<Move> moves) => new(seat, Stance.Channel, null, moves);
 }

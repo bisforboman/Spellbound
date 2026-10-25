@@ -1,6 +1,6 @@
 # Spellbound roadmap
 
-Rewritten for the clean-slate design in [game-design.md](game-design.md): a dark hex map, an opening mana auction, one
+Rewritten for the clean-slate design in [game-design.md](game-design.md): a dark hex map, an opening draft, one
 stance per round, Imps and Golems, 8 rounds, points banked as you go.
 
 The old game (the Realm and its Mageborn rework) was removed on 18 Oct 2026 and is in the git history at `b171e46`.
@@ -38,6 +38,21 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   simulator's mana numbers (unspent at the end, spent per stance and on spells, spells cast, Imps and Golems summoned)
 - [x] Pages: a "Spell (optional)" section on the orders form (a spell, its target and how much, with the preview), and
   its playtest step
+- [x] Cast is a stance again (owner's choice, 24 Oct 2026): one spell a Cast round, at the same costs, Rally removed; a Cast row on the orders form replaces the "Spell (optional)" fold; bots and the simulator
+- [x] The stance draft, as in Puerto Rico (owner's choice, 25 Oct 2026): picks in turn, no stance twice a round, everyone
+  takes each stance (the picker first, 1 mana less), a sixth stance Channel, Hold removed; turns in the domain
+  (`Match.Take`), bots, the simulator, the table tool, the server's steps (one turn at a time), the orders form (pick,
+  or take or pass) and a playtest that plays a round turn by turn; measured (`game-design.md`, Rounds and stances)
+- [x] Board first and casual (owner's choice, 25 Oct 2026): seat tokens for whose turn, a stance tray under the map
+  (picked tokens in their picker's colour, the stance going round pulsing, free ones glowing on your pick and dimmed
+  otherwise), a bubble for what's next, and effects on the map as the turns play back (summon, attack, a tile taken,
+  a spell); mock-ups in `tools/mockups/board-first.html`
+- [ ] Retune after the stance draft: the Warbrand's goal (maxed in 98% of games) and the point scale; play the bots'
+  turns back one at a time on the board
+  updated (unspent mana at the end rose from 11 to 28 a seat: a fix is proposed to the owner, not built)
+- [x] Each trait gives a spell (owner's choice, 24 Oct 2026): one spell per trait, shared by two (Spellweaver all
+  five); Ward, Blight and Lure go on several tiles in one Cast; Hexer counts rounds of Blight; the form, help page,
+  bots, table tool and playtest follow
 - [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [x] Domain: a round's submission (one stance + moves) and its validation (`Orders`, `Match.Check`)
 - [x] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles
@@ -56,8 +71,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [ ] Pages: new game (pick a trait), the opening auction, the map with tap-to-select tiles, the stance buttons, the
   round report, the end screen. Each action shows its cost and result first: Attune's price, what a Summon's mana
   buys, both sides' power before an attack
-  - [x] 6a: new match (you and 2–4 bots), the match page with the hex map (inline SVG, tap a tile; the same choices as
-    plain buttons), each seat in one of the theme's inks, the opening auction with its preview (`Match.CheckBid`), the
+  - [x] 6a: new match (you and 2–4 bots), the match page with the hex map (inline SVG, tap a tile; at first the same choices as
+    plain buttons, now the map alone), each seat in one of the theme's inks, the opening auction with its preview (`Match.CheckBid`), the
     last report, standings and the end; the home page links your matches
   - [x] 6b: the rounds' orders (stance buttons, targets, how many units attack from each tile, `Match.Check` as the
     preview), the round report, the end screen
@@ -68,18 +83,22 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] Battle report text in the art direction's tone ([theme](theme.md)): your battles end in a stamp (Conquered,
   Repelled, Thwarted, Held, Lost), and the report and tile labels say "you" and "Bot N"
 - [x] Mobile layout pass at 360 px: bottom navigation, big buttons, no horizontal scroll. The match page (owner's
-  choices, 21 Oct 2026): a bottom bar that jumps to Map, Orders, Report and Standings; the action (Commit, Bid and
-  Pass, Choose) and its cost fixed above it in thumb reach; the stances as a 2×2 grid; Moves and Spell folded behind
+  choices, 21 Oct 2026): a bottom bar that jumps to Map, Orders, Report and Standings (since 24 Oct 2026, tabs between views: see below); the action (Commit, Bid and
+  Pass, Choose) and its cost fixed above it in thumb reach; the stances as a 2×2 grid (later one a row); Moves and Spell folded behind
   a header that says what's in them; and a short report (your lines, your battles, where the match is) with
   "Everything that happened" a tap away. A match starts in three steps (owner's choice, 23 Oct 2026): a welcome
   (your seat, who's playing, how the match goes), the trait with the map still dark, then the map and the first
-  auction; the standings wait for the rounds (nobody scores in the opening), then are folded (with who leads) until the Standings tab opens them, and open by themselves at
+  auction; the standings wait for the rounds (nobody scores in the opening), then are a view of their own (with who leads), which opens by itself at
   the end. Tiles go by name, not coordinates (owner's choice, 23 Oct 2026): a row letter from the top and the place
-  in the row ("C3"), shown on each revealed hex and used in the lists, the orders and the reports. Each revealed hex
+  in the row ("C3"), shown on the selected hex (on every revealed hex until 24 Oct 2026, the owner's choice) and used in the lists, the orders and the reports. Each revealed hex
   shows its type's symbol (◆ Steady, ≈ Shifting, ✶ Wild), with a key under the map and the symbol before each tile in
-  the lists; a summon asks what and how many before where. A held tile is ringed in its owner's ink instead of
-  filled (heavier for yours), and the map takes painted art for the three types once it exists
-  ([tile art](tile-art.md), the owner is sourcing it)
+  the lists; a summon asks what and how many before where. A held tile's one border is its edge in its owner's ink
+  (heavier for yours), left out between two tiles of the same owner so each player's land reads as one zone (owner's
+  choice, 24 Oct 2026; it was an inner ring inside the tile's own border), and the map shows painted art for the three types
+  ([tile art](tile-art.md), generated with SDXL on a local ComfyUI, 24 Oct 2026). Shifting and Wild tiles roll their yield every round (owner's choice, 24 Oct 2026): the map shows each type's range, the round report lists the rolls. A round that begins while the match page is open plays once: a banner, "+N" rising from every held tile, and your mana's gain (owner's choice, 24 Oct 2026). The opening auctions go tile by tile: one tile per player, bid on in name order, the winner sits out the rest, the last tile goes free to whoever won none, and the 3 free tiles appear as the rounds begin (owner's choice, 24 Oct 2026; since replaced by the draft, below). In the opening, tiles go without names (the map marks the tile up now); names start with the rounds. The hexes show no ranges (the painted art and the key show the type); a held tile shows what it paid this round, small ("+3") (owner's choice, 24 Oct 2026). After each opening step the page plays it back a line at a time (1.5 s apart, with Skip): each pick (first each auction's bids), with the tile's border appearing then. The match page's top line holds only your colour, where the match is and your mana; the Help tab holds your trait's goal, the tile types, the opening, a round, scoring and every trait (owner's choice, 24 Oct 2026). The stances go one to a row, and the chosen one opens its own choices under it (a summon's units and how many, a build's upgrade, an attack's units and guard). Every tile is chosen on the map, with a line saying what to tap and the usable tiles marked: a stance's target, a move's from and to, a spell's tile, Leyline's second tile and where reinforcements guard; the lists and drop-downs are gone (owner's choice, 24 Oct 2026). The match page is three views, switched by the bottom tabs (owner's choices, 24 Oct 2026): Board (the map and the orders), Report (what just happened), Standings and Help, with the top line on each. The view is in the URL (#board, #report, #standings, #help), so back, reload and links keep it; half-given orders survive a look at another view; a report that comes in while the page is open puts a dot on the Report tab until it is read
+- [x] Page looks and a raised board ([theme](theme.md), owner's choice, 24 Oct 2026): five backgrounds to swap
+  between on the account page (Burned grimoire, Sigil night, Candlelit table, Arcane dust, Painted rune-slate), kept
+  per device in a cookie, and the map's tiles raised like board-game pieces (a thickness and a bevel)
 - [x] PWA manifest and icons so the game can be added to the home screen *(already built)*
 - [x] Integration test for a round (WebApplicationFactory on a real PostgreSQL, like the platform's tests):
   `RoundFlowTests` commits a round and reads the match page back over HTTP, checks that failed orders change nothing
@@ -92,13 +111,17 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   per conquest, mana produced 1 per 10, no points for unspent mana (`discussions/strategies.md`)
 - [x] Reading rivals (`discussions/reading-rivals.md`), one at a time, asking the owner after each:
   - [x] Rally, the attacker's Ward (+2 power for 3 mana)
-  - [x] traits secret until the end, with a guess at each rival's (bots guess from the tiles a rival took in the opening)
+  - [x] traits secret until the end (a guess at each rival's trait was built, then removed on 24 Oct 2026: the owner found it beside the point)
   - [x] fog of war: rivals' far-off units and their mana hidden, and each player's report shows only what they could see
 - [x] An undefended capture scores 1 point, a defended one 2 (after the third AI-taste session: raids on empty tiles decided every match)
 - [x] Reinforcements with an attack: up to 3 power summoned at home, 1 mana more per unit (after the fourth AI-taste session)
 - [x] Follow orders (shared stances, from Puerto Rico), built and then removed after the sixth AI-taste session: 4 of 13 happened
-- [x] Unpicked stances get cheaper (Puerto Rico's doubloons): Attune, Summon or Build nobody chose costs 1 less a round, up to 3
+- [x] Unpicked stances get cheaper (Puerto Rico's doubloons): Attune, Summon or Build nobody chose costs 1 less a round, up to 3;
+  removed (owner's choice, 24 Oct 2026): the owner hadn't known it was there, and stances now cost the same every round
 - [x] Playtest steps for the new pages (`tools/Spellbound.Playtest`): every page has one, the not-found ones included
+- [x] The opening as a draft (owner's choice, 24 Oct 2026; it replaced the tile-by-tile auction): each Unveil's tiles
+  are taken one each in turn, for free, the first seat rotating from one draft to the next; starting mana 4; a missed
+  pick is a bot's after 24 hours (`Match.Draft`, `Bot.ChoosePick`, the match page's pick list)
 
 ## M2: Playing with friends
 - [x] Invites and a lobby (2–5 seats, bots fill empty seats): an invite link, `/join/{code}`

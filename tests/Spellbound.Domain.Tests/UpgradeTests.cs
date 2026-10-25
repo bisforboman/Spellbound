@@ -7,7 +7,7 @@ public class UpgradeTests
 {
     private static Hex Home(Match match, int seat) => match.Seats[seat].Tiles.OrderBy(h => h.Q).ThenBy(h => h.R).First();
 
-    private static Match Rich(int players = 3) => FirstWhere(m => Border(m, 0, 1) is not null, GameRules.Default with { StartingMana = 30 }, players);
+    private static Match Rich(int players = 3) => FirstWhere(m => Border(m, 0, 1) is not null, AnySpell(GameRules.Default with { StartingMana = 30 }), players);
 
     [Fact]
     public void Building_costs_its_price_and_puts_the_upgrade_on_the_tile()
@@ -36,7 +36,7 @@ public class UpgradeTests
 
         Assert.Contains("isn't yours", match.Check(Orders.Build(0, theirs, Upgrade.Shrine)).Lines[0], StringComparison.Ordinal);
         Assert.Contains("already has a Shrine", match.Check(Orders.Build(0, home, Upgrade.Tower)).Lines[0], StringComparison.Ordinal);
-        Assert.False(match.Resolve([Orders.Build(0, theirs, Upgrade.Shrine), Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1)).Succeeded);
+        Assert.False(match.Resolve([Orders.Build(0, theirs, Upgrade.Shrine), Scenarios.Hold(1), Scenarios.Hold(2)], new SeededRandom(1)).Succeeded);
         Assert.Equal(before, Snapshot(match));
 
         var poor = Opened(1, GameRules.Default with { UpgradeCost = 1000 });
@@ -95,10 +95,10 @@ public class UpgradeTests
         var home = Home(match, 0);
         Play(match, Orders.Build(0, home, Upgrade.Sanctum));
 
-        var ward = match.Check(Orders.Hold(0).Casting(Spell.Ward, home));
+        var ward = match.Check(Orders.Cast(0, Spell.Ward, home));
 
         Assert.StartsWith("Cast Ward for 2 mana (1 less for your Sanctum)", ward.Lines[0], StringComparison.Ordinal);
-        Assert.Equal(2, match.SpellCostOf(Orders.Hold(0).Casting(Spell.Ward, home)));
+        Assert.Equal(2, match.SpellCostOf(Orders.Cast(0, Spell.Ward, home)));
     }
 
     [Fact]

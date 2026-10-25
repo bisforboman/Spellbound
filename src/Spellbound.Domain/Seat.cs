@@ -57,24 +57,23 @@ public sealed class Seat
     /// <summary>Rounds in which a spell was cast (and, for Scorch, burned something).</summary>
     public int RoundsCast { get; internal set; }
 
-    /// <summary>Scorches and Blights cast.</summary>
+    /// <summary>Casts of Scorch (that burned something) and of Blight, once a Cast however many tiles it goes on.</summary>
     public int HexesCast { get; internal set; }
+
+    /// <summary>The last round a spell was cast in, so a round with several casts counts once in <see cref="RoundsCast"/>.</summary>
+    public int LastRoundCast { get; internal set; }
 
     private readonly HashSet<Spell> spellsCast = [];
 
-    private readonly Dictionary<int, Trait> guesses = [];
 
-    /// <summary>The seat's guesses at its rivals' traits, by rival seat index. Secret until the end.</summary>
-    public IReadOnlyDictionary<int, Trait> Guesses => guesses;
-
-    /// <summary>The points its right guesses earned, once scored at the end.</summary>
-    public int GuessPoints { get; internal set; }
-
-    internal void Guess(int rival, Trait trait) => guesses[rival] = trait;
-
-    internal void Cast(Spell spell)
+    internal void Cast(Spell spell, int round)
     {
-        RoundsCast++;
+        if (round != LastRoundCast)
+        {
+            RoundsCast++;
+            LastRoundCast = round;
+        }
+
         spellsCast.Add(spell);
         if (spell is Spell.Scorch or Spell.Blight)
         {

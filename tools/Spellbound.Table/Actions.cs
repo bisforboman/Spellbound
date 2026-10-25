@@ -5,12 +5,12 @@ using Spellbound.Domain;
 
 namespace Spellbound.Table;
 
-/// <summary>An AI seat's action, read from JSON: a trait pick, a bid or pass, or a round's orders.</summary>
+/// <summary>An AI seat's action, read from JSON: a trait pick, a tile pick in the draft, or a round's orders.</summary>
 internal abstract record Action
 {
     public sealed record PickTrait(Trait Trait) : Action;
 
-    public sealed record MakeBid(Bid Bid) : Action;
+    public sealed record PickTile(Pick Pick) : Action;
 
     public sealed record GiveOrders(Orders Orders) : Action;
 
@@ -26,10 +26,10 @@ internal abstract record Action
                 return (null, "Send one JSON object.");
             }
 
-            var kinds = new[] { "trait", "bid", "pass", "stance" }.Count(k => Get(root, k) is not null);
+            var kinds = new[] { "trait", "pick", "stance" }.Count(k => Get(root, k) is not null);
             if (kinds > 1)
             {
-                return (null, "One action at a time: a trait, a bid, a pass or a stance.");
+                return (null, "One action at a time: a trait, a pick or a stance.");
             }
 
             if (Get(root, "trait") is { } trait)
@@ -39,14 +39,9 @@ internal abstract record Action
                     : (null, $"There is no trait \"{trait.GetString()}\".");
             }
 
-            if (Get(root, "pass") is not null)
+            if (Get(root, "pick") is { } pick)
             {
-                return (new MakeBid(Bid.Pass(seat)), null);
-            }
-
-            if (Get(root, "bid") is { } bid)
-            {
-                return (new MakeBid(new Bid(seat, HexOf(bid), Int(root, "amount"))), null);
+                return (new PickTile(new Pick(seat, HexOf(pick))), null);
             }
 
             if (Get(root, "stance") is { } stance)
@@ -54,7 +49,7 @@ internal abstract record Action
                 return (new GiveOrders(OrdersOf(root, stance.GetString() ?? "", seat)), null);
             }
 
-            return (null, "Send {\"trait\": …}, {\"bid\": \"q,r\", \"amount\": n}, {\"pass\": true} or {\"stance\": …}.");
+            return (null, "Send {\"trait\": …}, {\"pick\": \"q,r\"} or {\"stance\": …}.");
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException or KeyNotFoundException or ArgumentException)
         {
@@ -65,9 +60,18 @@ internal abstract record Action
     private static Orders OrdersOf(JsonElement root, string stance, int seat)
     {
         var moves = Get(root, "moves") is { } m ? m.EnumerateArray().Select(MoveOf).ToList() : [];
+        if (stance.Equals("channel", StringComparison.OrdinalIgnoreCase))
+        {
+            return Orders.Channel(seat, moves);
+        }
+
+        if (Get(root, "target") is null && Enum.TryParse<Stance>(stance, ignoreCase: true, out var passing))
+        {
+            return Orders.Pass(seat, passing, moves); // the stance taken, aimed at nothing
+        }
+
         var orders = stance.ToLowerInvariant() switch
         {
-            "hold" => Orders.Hold(seat, moves),
             "attune" => Orders.Attune(seat, HexOf(Need(root, "target")), moves),
             "summon" => Orders.Summon(seat, HexOf(Need(root, "target")),
                 Enum.Parse<UnitKind>(Need(root, "kind").GetString()!, ignoreCase: true), Int(root, "count"), moves),
@@ -76,7 +80,8 @@ internal abstract record Action
             "attack" => Orders.Attack(seat, HexOf(Need(root, "target")),
                 [.. Need(root, "send").EnumerateArray().Select(s => new Move(HexOf(Need(s, "from")), HexOf(Need(root, "target")), ArmyOf(s)))],
                 moves),
-            _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build or hold."),
+            "cast" => CastOf(root, seat, moves),
+            _ => throw new FormatException($"There is no stance \"{stance}\": attack, attune, summon, build, cast or channel."),
         };
 
         if (Get(root, "reinforce") is { ValueKind: JsonValueKind.Object } reinforce)
@@ -85,21 +90,19 @@ internal abstract record Action
                 Enum.Parse<UnitKind>(Get(reinforce, "kind")?.GetString() ?? "imp", ignoreCase: true), Int(reinforce, "count"));
         }
 
-        if (Get(root, "guess") is { ValueKind: JsonValueKind.Object } guess)
-        {
-            orders = orders.Guessing(Int(guess, "seat") - 1, Enum.Parse<Trait>(Need(guess, "trait").GetString()!, ignoreCase: true));
-        }
+        return orders;
+    }
 
-        if (Get(root, "spell") is not { ValueKind: JsonValueKind.Object } spell)
-        {
-            return orders;
-        }
-
-        var name = Enum.Parse<Spell>(Need(spell, "name").GetString()!, ignoreCase: true);
-        var target = HexOf(Need(spell, "target"));
+    private static Orders CastOf(JsonElement root, int seat, List<Move> moves)
+    {
+        var name = Enum.Parse<Spell>(Need(root, "spell").GetString()!, ignoreCase: true);
+        var target = HexOf(Need(root, "target"));
         return name == Spell.Leyline
-            ? orders.CastingLeyline(new Move(target, HexOf(Need(spell, "to")), ArmyOf(spell)))
-            : orders.Casting(name, target, Int(spell, "count"));
+            ? Orders.Leyline(seat, new Move(target, HexOf(Need(root, "to")), ArmyOf(root)), moves)
+            : Orders.Cast(seat, name, target, Int(root, "count"), moves) with
+            {
+                MoreTiles = Get(root, "also") is { ValueKind: JsonValueKind.Array } also ? [.. also.EnumerateArray().Select(HexOf)] : [],
+            };
     }
 
     private static Move MoveOf(JsonElement e) => new(HexOf(Need(e, "from")), HexOf(Need(e, "to")), ArmyOf(e));

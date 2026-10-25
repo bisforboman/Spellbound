@@ -18,7 +18,7 @@ $T check m.json --seat 1 '{"stance":"attune","target":"0,1"}'   # cost and resul
 $T act   m.json --seat 1 '{"stance":"attune","target":"0,1"}'   # commits, then waits for the other AI seats
 ```
 
-- A step (an opening auction or a round) resolves once every AI seat has acted; the bots act then, and the step's
+- A step (an opening pick or a round) resolves once the AI seat whose turn it is (in the opening) or every AI seat (in a round) has acted; the bots act then, and the step's
   randomness comes from the seed and the step, so a match replays.
 - `act` waits (up to `--wait` seconds, 1200 by default) for the other AI seats, then prints what happened.
 - Everything is logged to `m.json.log.jsonl`: each action, whether it was refused and why, and each step's report.

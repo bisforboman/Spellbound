@@ -10,13 +10,16 @@ public sealed record MatchState(
     MatchPhase Phase,
     int OpeningUnveil,
     int CurrentRound,
-    IReadOnlyList<Hex> OnAuction,
+    IReadOnlyList<Hex> OnAuction, // the tiles to draft, named for the auction the draft replaced (saved matches keep the name)
     IReadOnlyList<TileState> Tiles,
     IReadOnlyList<SeatState> Seats,
     IReadOnlyList<UnitsState> Units,
     IReadOnlyList<UpgradeState>? Upgrades = null,
     IReadOnlyList<Hex>? Blighted = null,
-    IReadOnlyList<FavourState>? Favour = null)
+    IReadOnlyList<StancePick>? Picks = null, // the round's picks so far, and how many seats took the last one
+    int Acted = 0,
+    IReadOnlyList<WardState>? Wards = null, // this round's Wards and Blights, kept while the round is under way
+    IReadOnlyList<Hex>? Blights = null)
 {
     public const int CurrentVersion = 1;
 }
@@ -35,13 +38,10 @@ public sealed record SeatState(
     IReadOnlyList<Spell>? SpellsCast = null,
     int HexesCast = 0,
     int RoundsCast = 0,
-    IReadOnlyList<GuessState>? Guesses = null,
-    int GuessPoints = 0);
-
-public sealed record GuessState(int Rival, Trait Trait);
-
-public sealed record FavourState(Stance Stance, int Favour);
+    int LastRoundCast = 0);
 
 public sealed record UnitsState(Hex Hex, int Imps, int Golems);
 
 public sealed record UpgradeState(Hex Hex, Upgrade Upgrade);
+
+public sealed record WardState(Hex Hex, int Power);

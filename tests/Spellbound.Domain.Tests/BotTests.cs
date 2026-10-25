@@ -17,11 +17,14 @@ public class BotTests
     }
 
     [Fact]
-    public void A_bot_that_cant_afford_the_smallest_bid_passes()
+    public void A_bot_picks_only_on_its_turn_and_a_tile_its_trait_wants_first()
     {
-        var match = Match.Start(3, GameRules.Default with { MinBid = 100 }, new SeededRandom(1));
+        var match = Enumerable.Range(1, 500).Select(n => Match.Start(3, GameRules.Default, new SeededRandom(n)))
+            .First(m => m.Seats[0].Offer.Contains(Trait.Wildheart) && m.ToPick.Count(h => m.Map[h].Type == TileType.Wild) == 1);
+        match.ChooseTrait(0, Trait.Wildheart);
 
-        Assert.Equal(Bid.Pass(0), Bot.ChooseBid(match, 0, new SeededRandom(1)));
+        Assert.Null(Bot.ChoosePick(match, 1, new SeededRandom(1)));
+        Assert.Equal(TileType.Wild, match.Map[Bot.ChoosePick(match, 0, new SeededRandom(1))!.Tile].Type);
     }
 
     [Fact]
@@ -36,10 +39,10 @@ public class BotTests
         var match = Match.Start(3, rules, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
-        Assert.Equal(Orders.Hold(0).Target, Bot.ChooseOrders(match, 0, random).Target);
+        Assert.Equal(Orders.Channel(0), Bot.ChooseOrders(match, 0, random)); // nothing it can afford: it channels
     }
 
     [Theory]
@@ -53,7 +56,7 @@ public class BotTests
         var match = Match.Start(3, GameRules.Default with { Rounds = 1, UpgradeCost = 1 }, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         Assert.Equal(Stance.Build, Bot.ChooseOrders(match, 0, random, plan).Stance);
@@ -66,7 +69,7 @@ public class BotTests
         var match = Match.Start(3, GameRules.Default with { Rounds = 1, UpgradeCost = 1, UpgradeCap = 0 }, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         var orders = Bot.ChooseOrders(match, 0, random);
@@ -102,8 +105,8 @@ public class BotTests
             while (match.Phase != MatchPhase.Ended)
             {
                 var report = match.Phase == MatchPhase.Opening
-                    ? match.Auction([.. match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random, plan))], random)
-                    : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random, plan))], random);
+                    ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
+                    : match.Take(Bot.ChooseOrders(match, match.Actor!.Value, random, plan), random);
                 Assert.True(report.Succeeded, string.Join('\n', report.Lines));
                 lines.AddRange(report.Lines);
             }

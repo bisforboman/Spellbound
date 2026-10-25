@@ -1,108 +1,35 @@
-@* A round's orders (docs/game-design.md, Rounds and stances): one stance, what it aims at, and for an attack the units
-   that go. The tile comes from the map or the plain choices here; the preview is Match.Check's own lines. *@
+@* A turn in a round (docs/game-design.md, Rounds and stances): on your pick, a stance nobody has picked this round,
+   tapped on the stance tray, what it aims at and any moves; when another seat's pick goes round, that stance or a
+   pass. A bubble says what's next in a sentence; the numbers are in the preview below it. For an attack, the units
+   that go. Every tile is chosen on the map (owner's choice, 24 Oct 2026): the match page hands each tap to Tap(), which
+   takes it for the pick under way (where a move starts or ends, where a Leyline's units arrive, where to guard home)
+   and otherwise leaves it as the stance's tile (for Cast, the spell's). Pickable says which tiles a tap can choose now, for the map to outline, and Prompt
+   says what the next tap is for. The preview is Match.Check's own lines. *@
 
-<h2 class="h4">Round @Match.CurrentRound of @Match.Rules.Rounds: your stance</h2>
+<StanceTray Match="Match" Owners="Owners" You="You" Chosen="@(Enum.Parse<Stance>(stance))" OnChoose="s => ChooseStance(s.ToString())" />
 
-<fieldset class="stances">
-    @foreach (var choice in Choices)
+<div class="bubble">
+    @if (Picking)
     {
-        var s = choice;
-        <label class="choice">
-            <input type="radio" name="stance" checked="@(stance == s.Key)" @onchange="() => stance = s.Key" />
-            <span><b>@s.Key</b>: @s.Value@(Favour(s.Key) is > 0 and var f ? $" ({f} mana off)" : "")</span>
-        </label>
+        <p><b>Your pick.</b> Tap a stance: you go first and pay @Match.Rules.PickerDiscount less, then everyone else may do it too.</p>
     }
-</fieldset>
+    else
+    {
+        <p><b>@(Owners?[Match.Picks[^1].Seat] is null ? "Bot" : "Seat") @(Match.Picks[^1].Seat + 1) picked @Match.OpenStance.</b> @Match.OpenStance too, or pass?</p>
+    }
+    <p class="bubble-sub"><b>@stance</b>: @(stance == "Channel" ? $"gain {Match.Rules.ChannelMana} mana; only you take it" : AllChoices[stance])</p>
+</div>
 
-@switch (stance)
+<div class="stance-options">@StanceOptions()</div>
+@if (Picking && stance != "Channel")
 {
-    case "Attune":
-        <p>Tap a free tile next to your land, or choose one:</p>
-        @Targets(FreeNextToYou())
-        break;
-
-    case "Summon":
-        <div class="d-flex gap-2">
-            <label class="choice flex-fill">
-                <input type="radio" name="kind" checked="@(kind == UnitKind.Imp)" @onchange="() => kind = UnitKind.Imp" />
-                <span><b>Imps</b>: power @Match.Rules.ImpPower, @Match.Rules.ImpCost mana</span>
-            </label>
-            <label class="choice flex-fill">
-                <input type="radio" name="kind" checked="@(kind == UnitKind.Golem)" @onchange="() => kind = UnitKind.Golem" />
-                <span><b>Golems</b>: power @Match.Rules.GolemPower, @Match.Rules.GolemCost mana, upkeep @Match.Rules.GolemUpkeep</span>
-            </label>
-        </div>
-        <label class="form-label" for="count">How many</label>
-        <input id="count" type="number" class="form-control form-control-lg" min="1" @bind="count" @bind:event="oninput" />
-        <p class="mt-3">Where: tap one of your tiles, or choose one:</p>
-        @Targets(Me.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R))
-        break;
-
-    case "Build":
-        <p>Tap one of your tiles without an upgrade, or choose one (@Match.Rules.UpgradeCost mana; at most
-            @Match.Rules.UpgradeCap upgrades; each is worth @Match.Rules.PointsPerUpgrade point at the end and passes with the tile if it's taken):</p>
-        @Targets(Me.Tiles.Where(h => Match.UpgradeOn(h) is null).OrderBy(h => h.Q).ThenBy(h => h.R))
-        @foreach (var kind in Enum.GetValues<Upgrade>())
-        {
-            var k = kind;
-            <label class="choice mt-2">
-                <input type="radio" name="upgrade" checked="@(upgrade == k)" @onchange="() => upgrade = k" />
-                <span><b>@k</b>: @Match.UpgradeEffect(k)</span>
-            </label>
-        }
-        break;
-
-    case "Attack":
-        <p>Tap a rival's tile or a monster tile next to your units, or choose one:</p>
-        @Targets(AttackTargets())
-        @if (Selected is { } target && AttackTargets().Contains(target))
-        {
-            <p class="mt-2">Send from:</p>
-            @foreach (var from in Sources(target))
-            {
-                var f = from;
-                var here = AfterMoves(f);
-                var sent = sends.GetValueOrDefault(f, here);
-                <div class="attack-source">
-                    <span>@TileNames.Of(Match.Map, f) (@here)</span>
-                    @if (here.Imps > 0)
-                    {
-                        <label>Imps <input type="number" class="form-control" min="0" max="@here.Imps" value="@sent.Imps"
-                                           @oninput="e => Send(f, sent with { Imps = Parse(e, here.Imps) })" /></label>
-                    }
-                    @if (here.Golems > 0)
-                    {
-                        <label>Golems <input type="number" class="form-control" min="0" max="@here.Golems" value="@sent.Golems"
-                                             @oninput="e => Send(f, sent with { Golems = Parse(e, here.Golems) })" /></label>
-                    }
-                </div>
-            }
-
-            <label class="form-label mt-2" for="reinforce-at">Guard home (optional)</label>
-            <p class="text-muted">While your army is away: up to @Match.Rules.ReinforceMaxPower power of units, @Match.Rules.ReinforceSurcharge
-                mana more each than a summon. They can't join the attack.</p>
-            <select id="reinforce-at" class="form-select" @bind="reinforceAt">
-                <option value="">No reinforcements</option>
-                @foreach (var h in Me.Tiles.OrderBy(h => h.Q).ThenBy(h => h.R))
-                {
-                    <option value="@Key(h)">@Seats.Describe(Match, h, You, Owners)</option>
-                }
-            </select>
-            @if (Parse(reinforceAt) is not null)
-            {
-                <div class="attack-source">
-                    <label>Imps <input id="reinforce-imps" type="number" class="form-control" min="1"
-                                       max="@(Match.Rules.ReinforceMaxPower / Match.Rules.ImpPower)" @bind="reinforceImps" @bind:event="oninput" /></label>
-                </div>
-            }
-        }
-        break;
-
-    default:
-        <p>Hold: spend nothing this round.</p>
-        break;
+    @* A pick needn't be used: taking a stance keeps it from the others this round. *@
+    <button type="button" class="btn btn-link" disabled="@Busy"
+            @onclick="() => OnCommit.InvokeAsync(Orders.Pass(You, Enum.Parse<Stance>(stance), [.. moves]))">Pick @stance without using it</button>
 }
 
+@if (Picking)
+{
 <button type="button" class="fold-head" aria-expanded="@showMoves" @onclick="() => showMoves = !showMoves">
     <span class="fold-title">Moves (optional) @(showMoves ? "▾" : "▸")</span>
     <span class="fold-sum">@(moves.Count == 0 ? "none" : $"{moves.Count} planned")</span>
@@ -110,161 +37,47 @@
 @if (showMoves)
 {
 <div class="fold-body">
-<p class="text-muted">Units step to a neighbouring tile of yours, once a round. Moves happen first, so moved units can attack.</p>
+<p class="text-muted">With your pick, units step to a neighbouring tile of yours, once a round. Moves happen first, so moved units can attack.</p>
 @foreach (var move in moves.ToList())
 {
     var m = move;
     <div class="attack-source">
-        <span>@m.Units from @TileNames.Of(Match.Map, m.From) to @TileNames.Of(Match.Map, m.To)</span>
-        <button type="button" class="btn btn-link" @onclick="() => moves.Remove(m)">Remove</button>
+        <span>@m.Units from @Name(m.From) to @Name(m.To)</span>
+        <button type="button" class="btn btn-link" @onclick="() => RemoveMove(m)">Remove</button>
     </div>
 }
-@if (MoveFroms().Any())
+@if (pick is Pick.MoveFrom or Pick.MoveTo)
 {
-    <div class="move-form">
-        <label class="form-label" for="move-from">From</label>
-        <select id="move-from" class="form-select" @bind="moveFrom" @bind:after="FromChosen">
-            <option value="">Choose a tile with units</option>
-            @foreach (var h in MoveFroms())
-            {
-                <option value="@Key(h)">@TileNames.Of(Match.Map, h) (@Movable(h))</option>
-            }
-        </select>
-        @if (Parse(moveFrom) is { } from)
+    <p class="pick-prompt">@Prompt()</p>
+    <button type="button" class="btn btn-link" @onclick="CancelMove">Cancel</button>
+}
+else if (moveFrom is { } from && moveTo is { } to)
+{
+    var movable = Movable(from);
+    <p>From @Name(from) to @Name(to):</p>
+    <div class="attack-source">
+        @if (movable.Imps > 0)
         {
-            <label class="form-label mt-2" for="move-to">To</label>
-            <select id="move-to" class="form-select" @bind="moveTo">
-                <option value="">Choose a neighbouring tile of yours</option>
-                @foreach (var h in Me.Tiles.Where(from.IsNextTo).OrderBy(h => h.Q).ThenBy(h => h.R))
-                {
-                    <option value="@Key(h)">@Seats.Describe(Match, h, You, Owners)</option>
-                }
-            </select>
-            var movable = Movable(from);
-            <div class="attack-source">
-                @if (movable.Imps > 0)
-                {
-                    <label>Imps <input type="number" class="form-control" min="0" max="@movable.Imps" @bind="moveImps" /></label>
-                }
-                @if (movable.Golems > 0)
-                {
-                    <label>Golems <input type="number" class="form-control" min="0" max="@movable.Golems" @bind="moveGolems" /></label>
-                }
-            </div>
-            <button type="button" class="btn btn-outline-primary btn-lg w-100 mt-2" disabled="@(Parse(moveTo) is null)" @onclick="AddMove">Add this move</button>
+            <label>Imps <input type="number" class="form-control" min="0" max="@movable.Imps" @bind="moveImps" /></label>
+        }
+        @if (movable.Golems > 0)
+        {
+            <label>Golems <input type="number" class="form-control" min="0" max="@movable.Golems" @bind="moveGolems" /></label>
         }
     </div>
-}
-</div>
-}
-
-<button type="button" class="fold-head" aria-expanded="@showSpell" @onclick="() => showSpell = !showSpell">
-    <span class="fold-title">Spell (optional) @(showSpell ? "▾" : "▸")</span>
-    <span class="fold-sum">@SpellSummary()</span>
-</button>
-@if (showSpell)
-{
-<div class="fold-body">
-<p class="text-muted">One spell a round, paid on top of the stance. Spells work after Attunes and Summons, before attacks.</p>
-<fieldset class="spells">
-    <label class="choice">
-        <input type="radio" name="spell" checked="@(spell is null)" @onchange="() => ChooseSpell(null)" />
-        <span><b>No spell</b></span>
-    </label>
-    @foreach (var choice in SpellChoices())
-    {
-        var c = choice;
-        <label class="choice">
-            <input type="radio" name="spell" checked="@(spell == c.Spell)" @onchange="() => ChooseSpell(c.Spell)" />
-            <span><b>@c.Spell</b> (@c.Cost): @c.Effect</span>
-        </label>
-    }
-</fieldset>
-@if (spell is { } chosen)
-{
-    var targets = SpellTargets(chosen).ToList();
-    <div class="move-form">
-        @if (targets.Count == 0)
-        {
-            <p class="text-muted">@(chosen == Spell.Rally ? "Rally goes with an attack: choose Attack and the tile you attack first." : $"No tile for {chosen} this round.")</p>
-        }
-        else
-        {
-            <label class="form-label" for="spell-target">@(chosen == Spell.Leyline ? "From" : "On")</label>
-            <select id="spell-target" class="form-select" @bind="spellTarget" @bind:after="SpellTargetChosen">
-                <option value="">Choose a tile</option>
-                @foreach (var h in targets)
-                {
-                    <option value="@Key(h)">@Seats.Describe(Match, h, You, Owners)</option>
-                }
-            </select>
-        }
-        @if (Parse(spellTarget) is { } on)
-        {
-            @if (chosen == Spell.Scorch)
-            {
-                <label class="form-label mt-2" for="scorch-power">Power to burn (@Match.Rules.ScorchManaPerPower mana each)</label>
-                <input id="scorch-power" type="number" class="form-control form-control-lg" min="1" max="@Match.UnitsOn(on).Power(Match.Rules)"
-                       @bind="scorchPower" @bind:event="oninput" />
-            }
-            else if (chosen == Spell.Leyline)
-            {
-                <label class="form-label mt-2" for="leyline-to">To</label>
-                <select id="leyline-to" class="form-select" @bind="leylineTo">
-                    <option value="">Choose another tile of yours</option>
-                    @foreach (var h in Me.Tiles.Where(h => h != on).OrderBy(h => h.Q).ThenBy(h => h.R))
-                    {
-                        <option value="@Key(h)">@Seats.Describe(Match, h, You, Owners)</option>
-                    }
-                </select>
-                var free = Riders(on);
-                <div class="attack-source">
-                    @if (free.Imps > 0)
-                    {
-                        <label>Imps <input id="leyline-imps" type="number" class="form-control" min="0" max="@free.Imps" @bind="leylineImps" @bind:event="oninput" /></label>
-                    }
-                    @if (free.Golems > 0)
-                    {
-                        <label>Golems <input id="leyline-golems" type="number" class="form-control" min="0" max="@free.Golems" @bind="leylineGolems" @bind:event="oninput" /></label>
-                    }
-                </div>
-            }
-        }
+    <div class="d-flex gap-2 mt-2">
+        <button type="button" class="btn btn-outline-primary btn-lg flex-fill" @onclick="CancelMove">Cancel</button>
+        <button type="button" class="btn btn-primary btn-lg flex-fill" @onclick="AddMove">Add this move</button>
     </div>
 }
-</div>
+else if (MoveFroms().Any())
+{
+    <button type="button" class="btn btn-outline-primary btn-lg w-100" @onclick="() => StartPick(Pick.MoveFrom)">Add a move</button>
 }
-
-@if (Match.Seats.Any(s => s.Index != You && s.Trait is not null && !Me.Guesses.ContainsKey(s.Index)))
+else
 {
-<button type="button" class="fold-head" aria-expanded="@showGuess" @onclick="() => showGuess = !showGuess">
-    <span class="fold-title">Guess a trait (optional) @(showGuess ? "▾" : "▸")</span>
-    <span class="fold-sum">@(GuessFor is { } g && guessTrait is { } gt ? $"{RivalName(g)}: {gt}" : "none")</span>
-</button>
-@if (showGuess)
-{
-<div class="fold-body">
-    <p class="text-muted">Traits stay secret until the end. Guess one rival's: @Plural(Match.Rules.PointsPerTraitGuess, "point")
-        at the end if you're right (at most @Match.Rules.TraitGuessCap). Once per rival; a guess can't be changed.</p>
-    <label class="form-label" for="guess-rival">Rival</label>
-    <select id="guess-rival" class="form-select" @bind="guessRival">
-        <option value="">No guess this round</option>
-        @foreach (var rival in Match.Seats.Where(s => s.Index != You && s.Trait is not null && !Me.Guesses.ContainsKey(s.Index)))
-        {
-            <option value="@rival.Index">@RivalName(rival.Index)</option>
-        }
-    </select>
-    @if (GuessFor is not null)
-    {
-        <label class="form-label mt-2" for="guess-trait">Their trait</label>
-        <select id="guess-trait" class="form-select" @bind="guessTrait">
-            <option value="">Choose a trait</option>
-            @foreach (var t in Enum.GetValues<Trait>().Where(t => !Me.Offer.Contains(t)))
-            {
-                <option value="@t">@t: @Match.GoalText(t)</option>
-            }
-        </select>
-    }
+    <p class="text-muted">No units that can step this round.</p>
+}
 </div>
 }
 }
@@ -272,10 +85,6 @@
 @{
     var orders = Build();
     var check = orders is null ? null : Match.Check(orders);
-}
-@if (check is null && spell is { } waiting && BuildStance() is not null)
-{
-    <p class="text-muted mt-2">Choose where @waiting goes, or choose No spell.</p>
 }
 @if (check is not null)
 {
@@ -289,20 +98,40 @@
 <div class="action-bar">
     <p class="action-sum @(check is { Succeeded: false } ? "ledger-problem" : "")">@TileNames.In(Match.Map, ActionSummary(check))</p>
     <div class="action-row">
+        @if (!Picking)
+        {
+            <button type="button" class="btn btn-outline-primary btn-lg" disabled="@Busy"
+                    @onclick="() => OnCommit.InvokeAsync(Orders.Pass(You, Match.OpenStance!.Value))">Pass</button>
+        }
         <button type="button" class="btn btn-primary btn-lg" disabled="@(Busy || check is not { Succeeded: true })"
-                @onclick="() => OnCommit.InvokeAsync(orders!)">Commit: @stance@(orders?.Cast is { } cast ? $" and {cast.Spell}" : "")@(orders?.Guess is not null ? " and guess" : "")</button>
+                @onclick="() => OnCommit.InvokeAsync(orders!)">@(Picking ? "Pick" : "Take") @stance@(orders is { Stance: Stance.Cast } cast ? $" {cast.Spell}" : "")</button>
     </div>
 </div>
 
 @code {
-    private static readonly IReadOnlyDictionary<string, string> Choices = new Dictionary<string, string>
+    private static readonly IReadOnlyDictionary<string, string> AllChoices = new Dictionary<string, string>
     {
         ["Attune"] = "claim a free tile next to your land",
         ["Summon"] = "spend mana on units",
         ["Attack"] = "send units at a rival's or a monster's tile",
         ["Build"] = "an upgrade on one of your tiles",
-        ["Hold"] = "do nothing this round",
+        ["Cast"] = "your trait's spell",
+        ["Channel"] = "gain mana; only you take it",
     };
+
+    /// <summary>Whether this turn is your pick (rather than taking the stance another seat picked).</summary>
+    private bool Picking => Match.OpenStance is null;
+
+    /// <summary>What the next tap on the map is for, besides the stance's own tile.</summary>
+    private enum Pick
+    {
+        None,
+        MoveFrom,
+        MoveTo,
+        LeylineTo,
+        MoreTiles,
+        GuardHome,
+    }
 
     [Parameter, EditorRequired]
     public Match Match { get; set; } = default!;
@@ -313,14 +142,16 @@
     [Parameter]
     public IReadOnlyList<string?>? Owners { get; set; }
 
+    /// <summary>The tile tapped last, which is the stance's tile when it is one it can aim at.</summary>
     [Parameter]
     public Hex? Selected { get; set; }
 
     [Parameter]
-    public EventCallback<Hex> OnSelect { get; set; }
-
-    [Parameter]
     public EventCallback<Orders> OnCommit { get; set; }
+
+    /// <summary>Raised when what the map should outline changes, so the page draws it again.</summary>
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
 
     [Parameter]
     public bool Busy { get; set; }
@@ -331,85 +162,365 @@
     private int count = 1;
     private readonly Dictionary<Hex, Army> sends = [];
     private readonly List<Move> moves = [];
-    private string moveFrom = string.Empty;
-    private string moveTo = string.Empty;
+    private Pick pick;
+    private Hex? moveFrom;
+    private Hex? moveTo;
     private int moveImps;
     private int moveGolems;
-    private int round;
+    private string? turn; // the turn the form was set up for: a new one starts afresh
     private bool showMoves;
-    private bool showSpell;
-    private bool showGuess;
-    private string reinforceAt = string.Empty;
+    private Hex? reinforceAt;
     private int reinforceImps = 3;
-    private string guessRival = string.Empty;
-    private Trait? guessTrait;
     private Spell? spell;
-    private string spellTarget = string.Empty;
+    private readonly List<Hex> moreTiles = []; // a Ward, Blight or Lure's tiles beyond the first
     private int scorchPower = 1;
-    private string leylineTo = string.Empty;
+    private Hex? leylineTo;
+    private Hex? leylineFrom; // the tile the riders' counts were set for
     private int leylineImps;
     private int leylineGolems;
 
     private Seat Me => Match.Seats[You];
 
-    /// <summary>How much less a stance costs this round because nobody chose it lately.</summary>
-    private int Favour(string choice) => Enum.TryParse<Stance>(choice, out var s) ? Match.FavourOf(s) : 0;
+    /// <summary>
+    /// Takes a tap on the map for the pick under way, if the tile suits it; returns false for the page to treat it as
+    /// the stance's tile (or just show the tile).
+    /// </summary>
+    public bool Tap(Hex hex)
+    {
+        switch (pick)
+        {
+            case Pick.MoveFrom when MoveFroms().Contains(hex):
+                var movable = Movable(hex);
+                (moveFrom, moveImps, moveGolems, pick) = (hex, movable.Imps, movable.Golems, Pick.MoveTo);
+                break;
+            case Pick.MoveTo when moveFrom is { } from && MoveTos(from).Contains(hex):
+                (moveTo, pick) = (hex, Pick.None);
+                break;
+            case Pick.LeylineTo when StanceTarget is { } on && Me.Tiles.Contains(hex) && hex != on:
+                (leylineTo, pick) = (hex, Pick.None);
+                break;
+            case Pick.MoreTiles when MoreTileChoices().Contains(hex):
+                pick = Pick.None;
+                moreTiles.Add(hex);
+                break;
+            case Pick.GuardHome when Me.Tiles.Contains(hex):
+                (reinforceAt, pick) = (hex, Pick.None);
+                break;
+            default:
+                return false;
+        }
+
+        StateHasChanged();
+        return true;
+    }
+
+    /// <summary>The tiles a tap can choose now: for the pick under way, or else the stance's possible tiles.</summary>
+    public IReadOnlySet<Hex> Pickable => (pick switch
+    {
+        Pick.MoveFrom => MoveFroms(),
+        Pick.MoveTo => moveFrom is { } from ? MoveTos(from) : [],
+        Pick.LeylineTo => StanceTarget is { } on ? Me.Tiles.Where(h => h != on) : [],
+        Pick.GuardHome => Me.Tiles,
+        Pick.MoreTiles => MoreTileChoices(),
+        _ => StanceTargets(),
+    }).ToHashSet();
+
+    /// <summary>What the next tap on the map is for, in a sentence.</summary>
+    private string Prompt() => pick switch
+    {
+        Pick.MoveFrom => "Tap one of your tiles with units to move from.",
+        Pick.MoveTo => "Tap a neighbouring tile of yours to move them to.",
+        Pick.LeylineTo => "Tap another tile of yours for the units to arrive at.",
+        Pick.GuardHome => "Tap one of your tiles to guard while the army is away.",
+        Pick.MoreTiles => $"Tap another tile for {spell}.",
+        _ => stance switch
+        {
+            "Channel" => $"Channel: gain {Match.Rules.ChannelMana} mana.",
+            _ when !StanceTargets().Any() => NoTarget(),
+            "Attune" => "Tap a free tile next to your land.",
+            "Summon" => "Tap one of your tiles to summon on.",
+            "Build" => "Tap one of your tiles without an upgrade.",
+            "Cast" when spell == Spell.Leyline && StanceTarget is not null && leylineTo is null => "Then choose where the units arrive.",
+            "Cast" => spell == Spell.Leyline ? "Tap the tile of yours the units leave from." : $"Tap the tile for {spell}.",
+            _ => "Tap a rival's or a monster's tile next to your units.",
+        },
+    };
+
+    private string NoTarget() => stance switch
+    {
+        "Attune" => "No free tile next to your land this round.",
+        "Build" => "No tile of yours without an upgrade.",
+        "Attack" => "Nothing to attack next to your units this round.",
+        "Cast" => spell is { } s ? $"No tile for {s} this round." : "Choose a spell.",
+        _ => "No tile for this stance this round.",
+    };
+
+    /// <summary>The options of the chosen stance, under its row: Summon's units then the tap, Build's upgrade then the
+    /// tap, Attack's tap then who goes and who guards home, Cast's spell then the tap.</summary>
+    private RenderFragment StanceOptions() => __builder =>
+    {
+        switch (stance)
+        {
+            case "Summon":
+                <div class="d-flex gap-2">
+                    <label class="choice flex-fill">
+                        <input type="radio" name="kind" checked="@(kind == UnitKind.Imp)" @onchange="() => kind = UnitKind.Imp" />
+                        <span><b>Imps</b>: power @Match.Rules.ImpPower, <span class="text-nowrap">@Match.Rules.ImpCost <ManaIcon /></span></span>
+                    </label>
+                    <label class="choice flex-fill">
+                        <input type="radio" name="kind" checked="@(kind == UnitKind.Golem)" @onchange="() => kind = UnitKind.Golem" />
+                        <span><b>Golems</b>: power @Match.Rules.GolemPower, <span class="text-nowrap">@Match.Rules.GolemCost <ManaIcon />,</span> upkeep <span class="text-nowrap">@Match.Rules.GolemUpkeep <ManaIcon /></span></span>
+                    </label>
+                </div>
+                <label class="form-label" for="count">How many</label>
+                <input id="count" type="number" class="form-control form-control-lg" min="1" @bind="count" @bind:event="oninput" />
+                @TargetLine()
+                break;
+
+            case "Build":
+                @foreach (var option in Enum.GetValues<Upgrade>())
+                {
+                    var k = option;
+                    <label class="choice">
+                        <input type="radio" name="upgrade" checked="@(upgrade == k)" @onchange="() => upgrade = k" />
+                        <span><b>@k</b>: @Match.UpgradeEffect(k)</span>
+                    </label>
+                }
+                <p class="text-muted"><span class="text-nowrap">@Match.Rules.UpgradeCost <ManaIcon />;</span> at most @Match.Rules.UpgradeCap upgrades; each is worth
+                    @Match.Rules.PointsPerUpgrade point at the end and passes with the tile if it's taken.</p>
+                @TargetLine()
+                break;
+
+            case "Attack":
+                @TargetLine()
+                @if (StanceTarget is { } target)
+                {
+                    <p class="mt-2">Send from:</p>
+                    @foreach (var from in Sources(target))
+                    {
+                        var f = from;
+                        var here = AfterMoves(f);
+                        var sent = sends.GetValueOrDefault(f, here);
+                        <div class="attack-source">
+                            <span>@Name(f) (@here)</span>
+                            @if (here.Imps > 0)
+                            {
+                                <label>Imps <input type="number" class="form-control" min="0" max="@here.Imps" value="@sent.Imps"
+                                                   @oninput="e => Send(f, sent with { Imps = Parse(e, here.Imps) })" /></label>
+                            }
+                            @if (here.Golems > 0)
+                            {
+                                <label>Golems <input type="number" class="form-control" min="0" max="@here.Golems" value="@sent.Golems"
+                                                     @oninput="e => Send(f, sent with { Golems = Parse(e, here.Golems) })" /></label>
+                            }
+                        </div>
+                    }
+
+                    <p class="mt-2 mb-1"><b>Guard home</b> (optional): up to @Match.Rules.ReinforceMaxPower power of Imps,
+                        @Match.Rules.ReinforceSurcharge mana more each than a summon, while the army is away.</p>
+                    @if (pick == Pick.GuardHome)
+                    {
+                        <p class="pick-prompt">@Prompt()</p>
+                        <button type="button" class="btn btn-link" @onclick="() => SetPick(Pick.None)">Cancel</button>
+                    }
+                    else if (reinforceAt is { } home)
+                    {
+                        <div class="attack-source">
+                            <span>On @Name(home)</span>
+                            <label>Imps <input id="reinforce-imps" type="number" class="form-control" min="1"
+                                               max="@(Match.Rules.ReinforceMaxPower / Match.Rules.ImpPower)" @bind="reinforceImps" @bind:event="oninput" /></label>
+                            <button type="button" class="btn btn-link" @onclick="RemoveGuard">Remove</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-primary btn-lg w-100" @onclick="() => StartPick(Pick.GuardHome)">Guard home</button>
+                    }
+                }
+                break;
+
+            case "Cast":
+                <p class="text-muted">Your trait decides your spells. They work after Attunes, Summons and Builds, before attacks.</p>
+                @foreach (var choice in SpellChoices())
+                {
+                    var c = choice;
+                    <label class="choice">
+                        <input type="radio" name="spell" checked="@(spell == c.Spell)" @onchange="() => ChooseSpell(c.Spell)" />
+                        <span><b>@c.Spell</b> (@c.Cost): @c.Effect</span>
+                    </label>
+                }
+                @if (spell is { } chosen)
+                {
+                    @TargetLine()
+                    @if (StanceTarget is { } first && Match.GoesOnSeveralTiles(chosen))
+                    {
+                        @foreach (var tile in moreTiles.Where(h => h != first).ToList())
+                        {
+                            var t = tile;
+                            <div class="attack-source">
+                                <span>Also on @Name(t)</span>
+                                <button type="button" class="btn btn-link" @onclick="() => RemoveTile(t)">Remove</button>
+                            </div>
+                        }
+                        @if (pick == Pick.MoreTiles)
+                        {
+                            <p class="pick-prompt">@Prompt()</p>
+                            <button type="button" class="btn btn-link" @onclick="() => SetPick(Pick.None)">Cancel</button>
+                        }
+                        else if (MoreTileChoices().Any())
+                        {
+                            <button type="button" class="btn btn-outline-primary btn-lg w-100" @onclick="() => StartPick(Pick.MoreTiles)">Add another tile</button>
+                        }
+                    }
+                    @if (StanceTarget is { } on && chosen == Spell.Scorch)
+                    {
+                        <label class="form-label mt-2" for="scorch-power">Power to burn (<span class="text-nowrap">@Match.Rules.ScorchManaPerPower <ManaIcon /></span> each)</label>
+                        <input id="scorch-power" type="number" class="form-control form-control-lg" min="1" max="@Match.UnitsOn(on).Power(Match.Rules)"
+                               @bind="scorchPower" @bind:event="oninput" />
+                    }
+                    else if (StanceTarget is { } from && chosen == Spell.Leyline)
+                    {
+                        var free = Riders(from);
+                        <div class="attack-source">
+                            @if (free.Imps > 0)
+                            {
+                                <label>Imps <input id="leyline-imps" type="number" class="form-control" min="0" max="@free.Imps" @bind="leylineImps" @bind:event="oninput" /></label>
+                            }
+                            @if (free.Golems > 0)
+                            {
+                                <label>Golems <input id="leyline-golems" type="number" class="form-control" min="0" max="@free.Golems" @bind="leylineGolems" @bind:event="oninput" /></label>
+                            }
+                        </div>
+                        @if (pick == Pick.LeylineTo)
+                        {
+                            <p class="pick-prompt">@Prompt()</p>
+                            <button type="button" class="btn btn-link" @onclick="() => SetPick(Pick.None)">Cancel</button>
+                        }
+                        else if (leylineTo is { } to)
+                        {
+                            <p>They arrive at <b>@Name(to)</b>.
+                                <button type="button" class="btn btn-link" @onclick="() => StartPick(Pick.LeylineTo)">Change</button></p>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-outline-primary btn-lg w-100" @onclick="() => StartPick(Pick.LeylineTo)">Choose where they arrive</button>
+                        }
+                    }
+                }
+                break;
+
+            case "Attune":
+                @TargetLine()
+                break;
+        }
+    };
+
+    /// <summary>The stance's tile once tapped, or what to tap.</summary>
+    private RenderFragment TargetLine() => __builder =>
+    {
+        if (StanceTarget is { } t)
+        {
+            <p class="mt-2">On <b>@Seats.Describe(Match, t, You, Owners)</b>. Tap another to change it.</p>
+        }
+        else
+        {
+            <p class="pick-prompt mt-2">@(pick == Pick.None ? Prompt() : StanceTargets().Any() ? "Then tap the stance's tile on the map." : NoTarget())</p>
+        }
+    };
 
     protected override void OnParametersSet()
     {
-        if (round != Match.CurrentRound)
+        var now = $"{Match.CurrentRound}-{Match.Picks.Count}-{Match.OpenStance}";
+        if (turn != now)
         {
-            round = Match.CurrentRound;
+            turn = now;
+            // The stance going round, or on a pick Summon (always usable) while it's free, else the first one left.
+            stance = (Match.OpenStance ?? (Match.Unpicked.Contains(Stance.Summon) ? Stance.Summon : Match.Unpicked.FirstOrDefault(s => s != Stance.Channel, Stance.Channel))).ToString();
             sends.Clear();
             moves.Clear();
             count = 1;
-            ChooseSpell(null);
-            (guessRival, guessTrait) = (string.Empty, null);
-            (reinforceAt, reinforceImps) = (string.Empty, 3);
+            pick = Pick.None;
+            (moveFrom, moveTo) = (null, null);
+            spell = OnlySpell;
+            moreTiles.Clear();
+            (scorchPower, leylineTo, leylineImps, leylineGolems, leylineFrom) = (1, null, 0, 0, null);
+            (reinforceAt, reinforceImps) = (null, 3);
+        }
+
+        // A Leyline from a newly tapped tile carries everything there that can ride, by default.
+        if (stance == "Cast" && spell == Spell.Leyline && StanceTarget is { } from && from != leylineFrom)
+        {
+            var free = Riders(from);
+            (leylineFrom, leylineImps, leylineGolems) = (from, free.Imps, free.Golems);
+            leylineTo = leylineTo == from ? null : leylineTo;
         }
     }
 
-    /// <summary>The orders as chosen so far, with the spell if one is chosen, or null if they don't aim at anything
-    /// yet.</summary>
-    private Orders? Build() => BuildStance() is { } orders && WithSpell(orders) is { } all ? WithGuess(WithReinforcement(all)) : null;
+    protected override Task OnAfterRenderAsync(bool firstRender) => firstRender ? OnChanged.InvokeAsync() : Task.CompletedTask;
+
+    private Task Changed() => OnChanged.InvokeAsync();
+
+    private Task ChooseStance(string chosen)
+    {
+        stance = chosen;
+        spell ??= OnlySpell;
+        if (pick is Pick.GuardHome or Pick.LeylineTo or Pick.MoreTiles)
+        {
+            pick = Pick.None;
+        }
+
+        return Changed();
+    }
+
+    private Task StartPick(Pick next)
+    {
+        pick = next;
+        if (next == Pick.MoveFrom)
+        {
+            (moveFrom, moveTo) = (null, null);
+        }
+
+        return Changed();
+    }
+
+    private Task SetPick(Pick next)
+    {
+        pick = next;
+        return Changed();
+    }
+
+    private Task RemoveGuard()
+    {
+        reinforceAt = null;
+        return Changed();
+    }
+
+    /// <summary>The name of a tile, as on the map.</summary>
+    private string Name(Hex hex) => TileNames.Of(Match.Map, hex);
+
+    /// <summary>The tiles the chosen stance can aim at.</summary>
+    private IEnumerable<Hex> StanceTargets() => stance switch
+    {
+        "Attune" => FreeNextToYou(),
+        "Summon" => Me.Tiles,
+        "Build" => Me.Tiles.Where(h => Match.UpgradeOn(h) is null),
+        "Attack" => AttackTargets(),
+        "Cast" => spell is { } chosen ? SpellTargets(chosen) : [],
+        _ => [],
+    };
+
+    /// <summary>The tapped tile, if the chosen stance can aim at it.</summary>
+    private Hex? StanceTarget => Selected is { } t && StanceTargets().Contains(t) ? t : null;
+
+    /// <summary>The orders as chosen so far, or null if they don't aim at anything yet.</summary>
+    private Orders? Build() => BuildStance() is { } orders ? WithReinforcement(orders) : null;
 
     private Orders WithReinforcement(Orders orders) =>
-        stance == "Attack" && Parse(reinforceAt) is { } at ? orders.Reinforcing(at, UnitKind.Imp, reinforceImps) : orders;
+        stance == "Attack" && reinforceAt is { } at ? orders.Reinforcing(at, UnitKind.Imp, reinforceImps) : orders;
 
-    private Orders WithGuess(Orders orders) =>
-        GuessFor is { } rival && guessTrait is { } trait ? orders.Guessing(rival, trait) : orders;
-
-    private int? GuessFor => int.TryParse(guessRival, CultureInfo.InvariantCulture, out var r) ? r : null;
-
-    private string RivalName(int seat) => Owners is { } owners && seat < owners.Count && owners[seat] is not null ? $"Seat {seat + 1}" : $"Bot {seat + 1}";
-
-    private static string Plural(int n, string word) => n == 1 ? $"1 {word}" : $"{n} {word}s";
-
-    private Orders? WithSpell(Orders orders)
+    private Orders? BuildStance() => (stance, StanceTarget) switch
     {
-        if (spell is not { } chosen)
-        {
-            return orders;
-        }
-
-        if (Parse(spellTarget) is not { } on)
-        {
-            return null;
-        }
-
-        if (chosen != Spell.Leyline)
-        {
-            return orders.Casting(chosen, on, chosen == Spell.Scorch ? scorchPower : 0);
-        }
-
-        return Parse(leylineTo) is { } to
-            ? orders.CastingLeyline(new Move(on, to, new Army(Math.Max(0, leylineImps), Math.Max(0, leylineGolems))))
-            : null;
-    }
-
-    private Orders? BuildStance() => (stance, Selected) switch
-    {
-        ("Hold", _) => Orders.Hold(You, [.. moves]),
+        ("Channel", _) => Orders.Channel(You, [.. moves]),
         (_, null) => null,
         ("Attune", { } t) => Orders.Attune(You, t, [.. moves]),
         ("Build", { } t) => Orders.Build(You, t, upgrade, [.. moves]),
@@ -417,6 +528,17 @@
         ("Attack", { } t) => Orders.Attack(You, t,
             [.. Sources(t).Select(f => new Move(f, t, sends.GetValueOrDefault(f, AfterMoves(f)))).Where(m => !m.Units.IsEmpty)],
             [.. moves]),
+        ("Cast", { } t) => spell switch
+        {
+            null => null,
+            Spell.Leyline => leylineTo is { } to
+                ? Orders.Leyline(You, new Move(t, to, new Army(Math.Max(0, leylineImps), Math.Max(0, leylineGolems))), [.. moves])
+                : null,
+            { } s => Orders.Cast(You, s, t, s == Spell.Scorch ? scorchPower : 0, [.. moves]) with
+            {
+                MoreTiles = Match.GoesOnSeveralTiles(s) ? [.. moreTiles.Where(h => h != t && SpellTargets(s).Contains(h))] : [],
+            },
+        },
         _ => null,
     };
 
@@ -428,12 +550,13 @@
     private Army Movable(Hex hex) =>
         moves.Where(m => m.From == hex).Aggregate(Match.UnitsOn(hex), (army, m) => army - m.Units);
 
-    private IEnumerable<Hex> MoveFroms() =>
-        Me.Tiles.Where(h => !Movable(h).IsEmpty && Me.Tiles.Any(h.IsNextTo)).OrderBy(h => h.Q).ThenBy(h => h.R);
+    private IEnumerable<Hex> MoveFroms() => Me.Tiles.Where(h => !Movable(h).IsEmpty && Me.Tiles.Any(h.IsNextTo));
 
-    private void AddMove()
+    private IEnumerable<Hex> MoveTos(Hex from) => Me.Tiles.Where(from.IsNextTo);
+
+    private Task AddMove()
     {
-        if (Parse(moveFrom) is { } from && Parse(moveTo) is { } to)
+        if (moveFrom is { } from && moveTo is { } to)
         {
             var movable = Movable(from);
             var army = new Army(Math.Clamp(moveImps, 0, movable.Imps), Math.Clamp(moveGolems, 0, movable.Golems));
@@ -444,112 +567,95 @@
             }
         }
 
-        (moveFrom, moveTo, moveImps, moveGolems) = (string.Empty, string.Empty, 0, 0);
+        return CancelMove();
     }
 
-    private void FromChosen()
+    private Task CancelMove()
     {
-        var movable = Parse(moveFrom) is { } from ? Movable(from) : Army.None;
-        (moveImps, moveGolems) = (movable.Imps, movable.Golems);
+        (moveFrom, moveTo, moveImps, moveGolems) = (null, null, 0, 0);
+        if (pick is Pick.MoveFrom or Pick.MoveTo)
+        {
+            pick = Pick.None;
+        }
+
+        return Changed();
     }
 
-    /// <summary>What the folded spell section holds, for its header.</summary>
-    private string SpellSummary() => (spell, Parse(spellTarget)) switch
+    private Task RemoveMove(Move move)
     {
-        (null, _) => "none",
-        ({ } s, { } on) => $"{s} on {TileNames.Of(Match.Map, on)}",
-        ({ } s, null) => $"{s}, choose a tile",
-    };
+        moves.Remove(move);
+        return Changed();
+    }
 
-    /// <summary>The line in the action bar: the problem, or the cost all told (the check's last line).</summary>
-    private static string ActionSummary(Report? check) => check switch
+    /// <summary>The line in the action bar: what to tap next, the problem, or the cost all told (the check's last
+    /// line).</summary>
+    private string ActionSummary(Report? check) => (pick, check) switch
     {
-        null => "Choose what your stance aims at.",
-        { Succeeded: false } => check.Lines[0],
+        (not Pick.None, _) => Prompt(),
+        (_, null) => Prompt(),
+        (_, { Succeeded: false }) => check.Lines[0],
         _ => check.Lines[^1],
     };
 
-    private void ChooseSpell(Spell? chosen)
+    private Task ChooseSpell(Spell chosen)
     {
         spell = chosen;
-        (spellTarget, scorchPower, leylineTo, leylineImps, leylineGolems) = (string.Empty, 1, string.Empty, 0, 0);
+        moreTiles.Clear();
+        (scorchPower, leylineTo, leylineImps, leylineGolems, leylineFrom) = (1, null, 0, 0, null);
+        if (pick is Pick.LeylineTo or Pick.MoreTiles)
+        {
+            pick = Pick.None;
+        }
+
+        return Changed();
     }
 
-    /// <summary>The units a Leyline can carry from a tile: those that aren't stepping, and any summoned there this round.</summary>
-    private Army Riders(Hex hex) =>
-        Movable(hex) + (stance == "Summon" && Selected == hex ? Army.Of(kind, Math.Max(0, count)) : Army.None);
+    /// <summary>The seat's one spell, when its trait gives it only one: chosen already.</summary>
+    private Spell? OnlySpell => Match.SpellsOf(You) is [var only] ? only : null;
 
-    private void SpellTargetChosen()
+    /// <summary>The tiles another tile of the chosen spell can go on: its targets, less those it already has.</summary>
+    private IEnumerable<Hex> MoreTileChoices() => spell is { } s && StanceTarget is { } first
+        ? SpellTargets(s).Where(h => h != first && !moreTiles.Contains(h))
+        : [];
+
+    private Task RemoveTile(Hex tile)
     {
-        var free = Parse(spellTarget) is { } on ? Riders(on) : Army.None;
-        (leylineImps, leylineGolems, leylineTo) = (free.Imps, free.Golems, string.Empty);
+        moreTiles.Remove(tile);
+        return Changed();
     }
 
-    private IEnumerable<(Spell Spell, string Cost, string Effect)> SpellChoices()
-    {
-        var r = Match.Rules;
-        yield return (Spell.Scorch, $"{r.ScorchManaPerPower} mana per power that burns", "burn units on a rival's tile next to yours");
-        yield return (Spell.Ward, $"{r.WardCost} mana", $"one of your tiles defends with {r.WardPower} more power this round");
-        yield return (Spell.Leyline, $"{r.LeylineManaPerUnit} mana per unit, at least {r.LeylineMinCost}", "send units between any two of your tiles");
-        yield return (Spell.Blight, $"{r.BlightCost} mana", "a rival's tile next to yours yields nothing next round");
-        yield return (Spell.Lure, $"{r.LureCost} mana", $"a monster tile next to yours loses {r.LurePower} guard power for good");
-        yield return (Spell.Rally, $"{r.RallyCost} mana", $"your attack this round strikes with {r.RallyPower} more power");
-    }
+    /// <summary>The units a Leyline can carry from a tile: those that aren't stepping.</summary>
+    private Army Riders(Hex hex) => Movable(hex);
+
+    private IEnumerable<(Spell Spell, string Cost, string Effect)> SpellChoices() =>
+        AllSpellChoices().Where(c => Match.SpellsOf(You).Contains(c.Spell));
+
+    private IEnumerable<(Spell Spell, string Cost, string Effect)> AllSpellChoices() =>
+        GameRules.AllSpells.Select(s => (s, Match.SpellCostText(s), Match.SpellEffect(s)));
 
     /// <summary>The tiles a spell can aim at (for a Leyline, where the units leave from).</summary>
     private IEnumerable<Hex> SpellTargets(Spell chosen)
     {
         var nextToYou = Me.Tiles.SelectMany(Match.Map.NeighboursOf).Distinct().ToList();
         var rivals = nextToYou.Where(h => Match.OwnerOf(h) is { } o && o != You);
-        var found = chosen switch
+        return chosen switch
         {
             Spell.Scorch => rivals.Where(h => Match.UnitsOn(h).Power(Match.Rules) > 0),
-            // Spells come after Attunes and Summons: a Ward can go on the tile being attuned, a Leyline can carry the
-            // units being summoned.
-            Spell.Ward => stance == "Attune" && Selected is { } attuned ? Me.Tiles.Append(attuned).Distinct() : Me.Tiles,
+            Spell.Ward => Me.Tiles,
             Spell.Leyline => Me.Tiles.Count > 1 ? Me.Tiles.Where(h => !Riders(h).IsEmpty) : [],
             Spell.Blight => rivals,
             Spell.Lure => nextToYou.Where(h => Match.OwnerOf(h) is null && Match.Map[h].IsGuarded && Match.Map[h].Guard > Match.Rules.MinGuard),
-            Spell.Rally => stance == "Attack" && Selected is { } attacked ? [attacked] : [],
             _ => [],
         };
-        return found.OrderBy(h => h.Q).ThenBy(h => h.R);
     }
-
-    private static string Key(Hex hex) => $"{hex.Q},{hex.R}";
-
-    private static Hex? Parse(string key) =>
-        key.Split(',') is [var q, var r] && int.TryParse(q, CultureInfo.InvariantCulture, out var qq)
-        && int.TryParse(r, CultureInfo.InvariantCulture, out var rr) ? new Hex(qq, rr) : null;
-
-    private RenderFragment Targets(IEnumerable<Hex> hexes) => __builder =>
-    {
-        var list = hexes.ToList();
-        if (list.Count == 0)
-        {
-            <p class="text-muted">None this round.</p>
-            return;
-        }
-
-        foreach (var hex in list)
-        {
-            var h = hex;
-            <label class="choice">
-                <input type="radio" name="target" checked="@(Selected == h)" @onchange="() => OnSelect.InvokeAsync(h)" />
-                <span>@Seats.Describe(Match, h, You, Owners)</span>
-            </label>
-        }
-    };
 
     private IEnumerable<Hex> FreeNextToYou() =>
         Me.Tiles.SelectMany(Match.Map.NeighboursOf).Distinct()
-            .Where(h => Match.Map[h].IsUnveiled && !Match.Map[h].IsGuarded && Match.OwnerOf(h) is null)
-            .OrderBy(h => h.Q).ThenBy(h => h.R);
+            .Where(h => Match.Map[h].IsUnveiled && !Match.Map[h].IsGuarded && Match.OwnerOf(h) is null);
 
-    private IReadOnlyList<Hex> AttackTargets() =>
-        [.. Me.Tiles.Where(h => !AfterMoves(h).IsEmpty).SelectMany(Match.Map.NeighboursOf).Distinct()
-            .Where(h => Match.OwnerOf(h) is { } o ? o != You : Match.Map[h].IsGuarded)
-            .OrderBy(h => h.Q).ThenBy(h => h.R)];
+    private IEnumerable<Hex> AttackTargets() =>
+        Me.Tiles.Where(h => !AfterMoves(h).IsEmpty).SelectMany(Match.Map.NeighboursOf).Distinct()
+            .Where(h => Match.OwnerOf(h) is { } o ? o != You : Match.Map[h].IsGuarded);
 
     private IEnumerable<Hex> Sources(Hex target) =>
         Me.Tiles.Where(h => h.IsNextTo(target) && !AfterMoves(h).IsEmpty).OrderBy(h => h.Q).ThenBy(h => h.R);

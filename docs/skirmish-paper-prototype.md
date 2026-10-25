@@ -7,23 +7,20 @@ A one-page version of `game-design.md` for a first test on a table. All numbers 
 ## Setup
 
 1. Make 19 face-down hexes and lay them out as a round board (1 in the middle, a ring of 6, an outer ring of 12).
-2. Write a type on each: **Steady** 7, **Shifting** 6, **Wild** 6. A tile's mana yield is decided when it's turned over: Steady = 2; Shifting = 1–3 (d6: 1–2 → 1, 3–4 → 2, 5–6 → 3); Wild = 0–4 (d6: 1 → 0, 2 → 1, 3–4 → 2, 5 → 3, 6 → 4). Write the yield on the tile.
-3. Each player takes **9 mana**. Play the first test **without traits**.
+2. Write a type on each: **Steady** 7, **Shifting** 6, **Wild** 6. A tile's mana yield is rolled every round, at income (below): Steady = 2; Shifting = 1–3 (d6: 1–2 → 1, 3–4 → 2, 5–6 → 3); Wild = 0–4 (d6: 1 → 0, 2 → 1, 3–4 → 2, 5 → 3, 6 → 4).
+3. Each player takes **4 mana**. Play the first test **without traits**.
 
 ## The opening (before round 1)
 
 Do this **three times**:
-1. **Unveil:** turn over 4 random face-down tiles. The first 3 are auctioned; the 4th stays free. 12 tiles are revealed in total, 3 of them free.
-2. **Auction:** each player secretly writes one of the 3 tiles and a bid of at least 1 mana, or "pass". Reveal together.
-   - Highest bid on a tile wins it and pays. Losers don't pay.
-   - A tie for the top bid: nobody gets that tile; it joins the leftovers.
-   - Everyone who didn't win gets a random leftover tile for free.
+1. **Unveil:** turn over 3 random face-down tiles (one per player). Put them in a row, in reading order.
+2. **Draft, in turn:** players take one tile each, for free. The first time player 1 picks first, then player 2, then player 3; the second time player 2 starts, the third time player 3. The last player in the order gets the tile left over.
 
-Each player now holds 3 tiles, scattered or connected.
+Each player now holds 3 tiles, scattered or connected. Then turn over 3 more face-down tiles: they are free, for anyone to attune from round 1.
 
 ## A round (8 rounds)
 
-1. **Income:** each player collects the mana yield of every tile they hold.
+1. **Income:** roll a d6 for each Shifting and Wild tile someone holds (see the table above); each player collects the yield of every tile they hold.
 2. **Upkeep:** pay 1 mana per Golem. A Golem you can't pay for dissolves.
 3. **Commit, in secret:** one stance plus any unit moves. Reveal together. (Later Unveils in rounds 2 and 4 happen before income.)
    - **Attune:** claim one free, unguarded tile next to any tile you own. Cost: **1 + 1 for each of your first 3 tiles, + 3 for each tile beyond**. If two players attune the same tile, nobody gets it and nobody pays.
@@ -48,7 +45,7 @@ After round 8, most points wins. Tie-break: most tiles held, then most mana in h
 
 ## Watch for
 
-- Is 9 starting mana enough for the opening? Do bids end up all 1s and 2s, or does someone spend everything?
+- Does picking first in a draft feel worth much? Is 4 starting mana enough for round 1?
 - Are there enough free tiles to attune after the opening, or does the 19-hex map run out at once?
 - Is this Attune price too cheap or too dear?
 - Do Imps pile up into an unbeatable horde?

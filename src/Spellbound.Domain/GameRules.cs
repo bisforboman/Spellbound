@@ -22,22 +22,26 @@ public sealed record GameRules
 
     // Setup and the opening (docs/game-design.md, Resources and Unveil)
 
-    /// <summary>The mana each player starts with; it also pays the opening's bids.</summary>
-    public int StartingMana { get; init; } = 9;
+    /// <summary>The mana each player starts with, for the rounds: the opening draft is free.</summary>
+    public int StartingMana { get; init; } = 4;
 
-    /// <summary>How many Unveils the opening has. Each auctions one tile per player and leaves one free.</summary>
+    /// <summary>How many Unveils the opening has. Each reveals one tile per player, and the players take one each in turn.</summary>
     public int OpeningUnveils { get; init; } = 3;
 
-    /// <summary>The smallest bid in an opening auction. A player who wants to spend nothing passes instead.</summary>
-    public int MinBid { get; init; } = 1;
-
-    /// <summary>The unauctioned tiles each opening Unveil reveals and leaves free.</summary>
-    public int OpeningFreeTilesPerUnveil { get; init; } = 1;
+    /// <summary>The tiles revealed unowned as the rounds begin, free for anyone to attune.</summary>
+    public int FreeTilesWhenRoundsBegin { get; init; } = 3;
 
     // Rounds (docs/game-design.md, Rounds and stances, Units, Taking unowned tiles, Scoring and winning)
 
     /// <summary>How many rounds a match lasts after the opening.</summary>
     public int Rounds { get; init; } = 8;
+
+    /// <summary>What a stance's picker saves on their own action (docs/game-design.md, Rounds and stances): this much
+    /// off what it costs, never below nothing.</summary>
+    public int PickerDiscount { get; init; } = 1;
+
+    /// <summary>The mana Channel gives its picker; nobody else takes Channel.</summary>
+    public int ChannelMana { get; init; } = 2;
 
     public int ImpPower { get; init; } = 1;
     public int ImpCost { get; init; } = 1;
@@ -77,15 +81,37 @@ public sealed record GameRules
     /// <summary>The defence a Ward adds to its tile in this round's battles.</summary>
     public int WardPower { get; init; } = 3;
 
-    /// <summary>A Rally's price, and the power it adds to the seat's attack this round (paid even if the attack doesn't
-    /// happen, as a Ward is).</summary>
-    public int RallyCost { get; init; } = 3;
-    public int RallyPower { get; init; } = 2;
-
     public int LeylineManaPerUnit { get; init; } = 1;
     public int LeylineMinCost { get; init; } = 2;
     public int BlightCost { get; init; } = 3;
     public int LureCost { get; init; } = 3;
+
+    /// <summary>The spells each trait lets its player cast (owner's choice, 24 Oct 2026): one each, shared by two
+    /// traits, and the whole book for a Spellweaver. A seat without a trait can cast any spell. Kept in trait order, so
+    /// the rules save the same however they were read (the database's jsonb reorders keys).</summary>
+    public IReadOnlyDictionary<Trait, IReadOnlyList<Spell>> TraitSpells
+    {
+        get => traitSpells;
+        init => traitSpells = new SortedDictionary<Trait, IReadOnlyList<Spell>>(
+            (value ?? throw new ArgumentNullException(nameof(value))).ToDictionary(p => p.Key, p => p.Value));
+    }
+
+    private readonly SortedDictionary<Trait, IReadOnlyList<Spell>> traitSpells = new()
+    {
+        [Trait.Hearthkeeper] = [Spell.Ward],
+        [Trait.Warden] = [Spell.Ward],
+        [Trait.Wanderer] = [Spell.Leyline],
+        [Trait.Weaver] = [Spell.Leyline],
+        [Trait.Beastbane] = [Spell.Lure],
+        [Trait.Golemwright] = [Spell.Lure],
+        [Trait.Wildheart] = [Spell.Blight],
+        [Trait.Hexer] = [Spell.Blight],
+        [Trait.Warbrand] = [Spell.Scorch],
+        [Trait.Spellweaver] = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure],
+    };
+
+    /// <summary>Every spell a seat can cast with no trait in the way (Rally, removed, isn't one).</summary>
+    public static IReadOnlyList<Spell> AllSpells { get; } = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure];
 
     /// <summary>How much a Lure weakens a monster guard, for good; a guard never drops below <see cref="MinGuard"/>.</summary>
     public int LurePower { get; init; } = 1;
@@ -98,11 +124,6 @@ public sealed record GameRules
     public int PointsPerEmptyConquest { get; init; } = 1;
 
     // Reinforcing (docs/game-design.md, Rounds and stances): a small summon alongside an attack.
-
-    /// <summary>How much cheaper Attune, Summon or Build gets for each round nobody chooses it, and the most it can
-    /// get (Puerto Rico's doubloons on unpicked roles).</summary>
-    public int FavourPerRound { get; init; } = 1;
-    public int FavourCap { get; init; } = 3;
 
     /// <summary>The most power an attack's reinforcement can summon.</summary>
     public int ReinforceMaxPower { get; init; } = 3;
@@ -142,10 +163,6 @@ public sealed record GameRules
     /// <summary>The most points a trait goal can add.</summary>
     public int TraitGoalCap { get; init; } = 3;
 
-    /// <summary>Points at the end for each rival's trait guessed right, and the most that guessing can add.</summary>
-    public int PointsPerTraitGuess { get; init; } = 1;
-    public int TraitGuessCap { get; init; } = 3;
-
     /// <summary>Wildheart and Hearthkeeper: one point per this many tiles of their type.</summary>
     public int TilesOfTypePerTraitPoint { get; init; } = 1;
 
@@ -169,11 +186,11 @@ public sealed record GameRules
     /// <summary>Golemwright: one point per this many Golems at the end.</summary>
     public int GolemsPerTraitPoint { get; init; } = 3;
 
-    /// <summary>Hexer: one point per this many Scorches and Blights cast.</summary>
+    /// <summary>Hexer: one point per this many rounds it casts Blight (or Scorch, if its spells include it).</summary>
     public int HexesPerTraitPoint { get; init; } = 1;
 
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.
-    // On average every type yields 2.
+    // A held tile rolls its yield every round. On average every type yields 2.
 
     public IReadOnlyList<int> SteadyYields { get; init; } = [2, 2, 2, 2, 2, 2];
     public IReadOnlyList<int> ShiftingYields { get; init; } = [1, 1, 2, 2, 3, 3];
@@ -192,6 +209,24 @@ public sealed record GameRules
 
     public int AttunePrice(int tilesHeld) => AttuneBasePrice + AttunePricePerTile * Math.Min(tilesHeld, AttuneCheapTiles)
         + AttunePricePerTileBeyond * Math.Max(0, tilesHeld - AttuneCheapTiles);
+
+    /// <summary>One roll of a tile's yield: a face of its type's die.</summary>
+    public int RollYield(TileType type, IRandomSource random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        var faces = YieldsOf(type);
+        return faces[random.Next(faces.Count)];
+    }
+
+    /// <summary>Whether a type's yield can change from one roll to the next (Steady's can't).</summary>
+    public bool Varies(TileType type) => YieldsOf(type).Distinct().Skip(1).Any();
+
+    /// <summary>A type's possible yields in words: "2" or "0–4".</summary>
+    public string YieldRange(TileType type) =>
+        Varies(type) ? $"{YieldsOf(type).Min()}–{YieldsOf(type).Max()}" : $"{YieldsOf(type)[0]}";
+
+    /// <summary>What a type yields on average, for the bots' sums.</summary>
+    public double AverageYield(TileType type) => YieldsOf(type).Average();
 
     public IReadOnlyList<int> YieldsOf(TileType type) => type switch
     {

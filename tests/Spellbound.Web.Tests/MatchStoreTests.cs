@@ -32,8 +32,8 @@ public sealed class MatchStoreTests : TestDatabase
     {
         var match = loaded.Match;
         return match.Phase == MatchPhase.Opening
-            ? match.Auction([.. match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random))], random)
-            : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random))], random);
+            ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
+            : match.Take(Bot.ChooseOrders(match, match.Actor!.Value, random), random);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class MatchStoreTests : TestDatabase
             steps++;
         }
 
-        Assert.Equal(3 + 8, steps);
+        Assert.True(steps >= (3 * 2) + (8 * 3)); // each opening draft has two picks (the third tile is the leftover), then every turn
         Assert.Equal(Now, (await WithDbAsync(db => db.LoadGameAsync(id)))!.EndedAt); // its game ended with it
         Assert.Equal(MatchJson.Serialize(memory.Save()), MatchJson.Serialize((await store.LoadAsync(id))!.Match.Save()));
     }
@@ -80,7 +80,7 @@ public sealed class MatchStoreTests : TestDatabase
         var id = await store.CreateAsync([null, null], GameRules.Default, Now, seed: 2);
         var before = await WithDbAsync(db => db.LoadGameStateAsync(id));
 
-        var report = await store.ApplyAsync(id, Now, (loaded, random) => loaded.Match.Auction([Bid.Pass(0)], random));
+        var report = await store.ApplyAsync(id, Now, (loaded, random) => loaded.Match.Draft(new Pick(1, loaded.Match.ToPick[0]), random)); // seat 1's turn
 
         Assert.False(report!.Succeeded);
         Assert.Equal(before, await WithDbAsync(db => db.LoadGameStateAsync(id)));
@@ -91,12 +91,12 @@ public sealed class MatchStoreTests : TestDatabase
     {
         var id = await store.CreateAsync([null, null, null], GameRules.Default, Now, seed: 4);
 
-        // Each passes the auction it finds; if both read the same state, the second save would undo the first.
+        // Each makes the pick it finds; if both read the same state, the second save would undo the first.
         var reports = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => Task.Run(() => store.ApplyAsync(id, Now,
-            (loaded, random) => loaded.Match.Auction([.. loaded.Match.Seats.Select(s => Bid.Pass(s.Index))], random)))));
+            (loaded, random) => loaded.Match.Draft(new Pick(loaded.Match.Picker!.Value, loaded.Match.ToPick[0]), random)))));
 
         Assert.All(reports, r => Assert.True(r!.Succeeded));
-        Assert.Equal(3, (await store.LoadAsync(id))!.Match.OpeningUnveil);
+        Assert.Equal(2, (await store.LoadAsync(id))!.Match.OpeningUnveil); // both of the first draft's picks
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public sealed class MatchStoreTests : TestDatabase
         var list = await store.ListForAsync("alice");
 
         Assert.Equal(
-            [new PlayerMatch(second, 1, "Opening auction 2 of 3", true), new PlayerMatch(first, 0, "Opening auction 1 of 3", true)],
+            [new PlayerMatch(second, 1, "Opening draft 2 of 3, pick 1 of 2", true), new PlayerMatch(first, 0, "Opening draft 1 of 3, pick 1 of 2", true)],
             list);
         Assert.Empty(await store.ListForAsync("bob"));
     }

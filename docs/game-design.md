@@ -10,11 +10,11 @@ Decided discussions (background and the angles that were considered):
 
 A walkthrough of one game from start to finish, kept up to date as rules are settled.
 
-1. **Setup.** The map lies dark. Each player starts with **9 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening auctions put them.
-2. **The opening Unveils.** Traits are still hidden, so nobody knows for sure why a rival bids hard on a tile. Before the first round, three Unveils reveal **3 tiles per player plus 3 extra**, one tile at a time. In each one, as many tiles as there are players go up for a secret mana auction: winners take the tile they bid on, and everyone else gets a random tile nobody wanted. The rest of the revealed tiles stay unowned, for later. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
-3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end; alongside any round's orders a player may guess a rival's (once per rival), for points at the end. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
+1. **Setup.** The map lies dark. Each player starts with **4 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening draft puts them.
+2. **The opening Unveils.** Before the first round, three Unveils each reveal **one tile per player**, and the players take **one each in turn**, for free: the first draft starts with seat 1, each next one a seat later, and the last to pick gets the tile left over. Traits are still hidden, so nobody knows for sure why a rival picked a tile. As the rounds begin, **3 more tiles** are revealed, unowned, for anyone to attune. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
+3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end. Each round the players pick **stances** in turn (Attack, Attune, Summon, Build, Cast or Channel), none twice, and everyone may take each stance picked, the picker first and a little cheaper; each turn happens at once, in the open. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
-5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no auction). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
+5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no draft). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
 6. **The second half.** Rounds 5–8: with the map fully revealed and free land running out, growth turns into competition. Attuning gets more expensive as realms grow, so attacking rivals becomes the cheaper way to gain land. A player's last tile can never be taken.
 7. **The end.** After round 8, the player with the most points wins. Points are banked every round, so what you earned early can't be taken away. Trait-goal points are hidden until the end.
 
@@ -25,34 +25,40 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   "the same 3 for everyone"). The pool of 10 covers 5 players. A player who hasn't drafted when the opening ends gets
   the first trait of their offer.
 - A trait is something to **build around**: it should pull a player towards a strategy (certain tiles, a way of expanding, a style of play), not just add a small bonus.
-- Traits are **secret until the end of the match** (decided 21 Oct 2026, reversing "revealed when the rounds start"; asked for by the Bluffer, `discussions/reading-rivals.md`). Players can only guess at each other's traits: from how they bid in the opening, and from everything they do after.
-- **Guessing:** alongside any round's orders, a player may guess one rival's trait. Once per rival; a guess can't be changed and stays secret. At the end each right guess is worth **1 point**, at most **3**. A trait you were offered can't be a rival's (no trait is offered to two players), so it can't be guessed.
+- Traits are **secret until the end of the match** (decided 21 Oct 2026, reversing "revealed when the rounds start"; asked for by the Bluffer, `discussions/reading-rivals.md`). Players can only guess at each other's traits: from what they pick in the opening, and from everything they do after.
+- **No guessing** (owner's choice, 24 Oct 2026; it removed a guess at each rival's trait, worth a point at the end): players read rivals from what they do, for nothing but their own plans.
 - Traits give **trait goals**: their own way to score (see *Scoring and winning*). Every goal is scored once, at the
   end, hidden until then, and capped at **3 points**.
 - **The pool** (the first six decided 20 Oct 2026, the last four 21 Oct 2026; the reasoning is in
   `discussions/traits.md`):
 
-| Trait | Pulls towards | Goal at the end (hidden), cap 3 |
-|---|---|---|
-| Wildheart | Wild land | 1 point per Wild tile held |
-| Hearthkeeper | Steady land | 1 point per Steady tile held |
-| Weaver | one connected realm | 1 point per 2 tiles in your largest connected group beyond the first 2 (4 tiles = 1, 6 = 2, 8 = 3) |
-| Wanderer | many separate footholds | 1 point per separate group of 2 or more tiles (a lone tile doesn't count) |
-| Beastbane | clearing monsters | 1 point per monster tile cleared (on top of the conquest points) |
-| Warbrand | taking rivals' land | 1 point per rival tile taken (on top of the conquest points) |
-| Golemwright | Golems | 1 point per 3 Golems you have at the end |
-| Spellweaver | casting every kind of spell | 1 point per 2 different spells cast, and 1 for casting spells in 6 rounds |
-| Warden | keeping the land you started with | 1 point per tile from your opening still held, beyond the first (so at most 2) |
-| Hexer | Scorch and Blight | 1 point per Scorch or Blight cast (a Scorch counts only if it burns something) |
+| Trait | Pulls towards | Spell | Goal at the end (hidden), cap 3 |
+|---|---|---|---|
+| Wildheart | Wild land | Blight | 1 point per Wild tile held |
+| Hearthkeeper | Steady land | Ward | 1 point per Steady tile held |
+| Weaver | one connected realm | Leyline | 1 point per 2 tiles in your largest connected group beyond the first 2 (4 tiles = 1, 6 = 2, 8 = 3) |
+| Wanderer | many separate footholds | Leyline | 1 point per separate group of 2 or more tiles (a lone tile doesn't count) |
+| Beastbane | clearing monsters | Lure | 1 point per monster tile cleared (on top of the conquest points) |
+| Warbrand | taking rivals' land | Scorch | 1 point per rival tile taken (on top of the conquest points) |
+| Golemwright | Golems | Lure | 1 point per 3 Golems you have at the end |
+| Spellweaver | casting every kind of spell | all five | 1 point per 2 different spells cast, and 1 for casting spells in 6 rounds |
+| Warden | keeping the land you started with | Ward | 1 point per tile from your opening still held, beyond the first (so at most 2) |
+| Hexer | Blight | Blight | 1 point per round you cast Blight (a Cast on several tiles counts once) |
+
+- **Each trait gives its player a spell** (owner's choice, 24 Oct 2026; the column above): the only spell that
+  player can cast, shared with one other trait so a cast narrows a rival's trait to two without naming it. A
+  Spellweaver can cast all five. Hexer scored Scorch and Blight until then.
 
 - No trait changes the Attune price, income, upkeep or a cost: they would snowball (principle 7 in `design-principles.md`).
-- **Measured** (1,000 bot games each; bots draft at random, bid like their trait and lean towards their trait's
+- **Measured** (1,000 bot games each; bots draft at random, pick like their trait and lean towards their trait's
   tiles, units and spells): every trait wins between 25% and 39% of 3-player games (33% is even) and between 16% and
   24% of 5-player games (20% is even). Spellweaver and Weaver win least. Goals average 0.5 (Beastbane) to 1.9 points.
   *(21 Oct 2026, after the AI players' sessions: Spellweaver no longer hits its cap by round 4 (1 per 2 spells plus 1
   for casting in 6 rounds); Wanderer counts groups of 2 or more instead of groups beyond the first; Weaver scores
   from 4 tiles (bots' groups are often 3, so its bot average fell from 0.9 to 0.7); see `playtests/`.)*
-  *With Rally there are six spells, so a Spellweaver who casts all six reaches its cap without the 6-round point.*
+  *Since 24 Oct 2026 there are five spells again (Rally was removed when Cast became a stance), so a Spellweaver who
+  casts all five has 2 points and needs the 6-round point for its cap. With a whole round per spell, bots rarely get
+  there: see *Spells*, Measured.*
 
 ## Map
 
@@ -73,72 +79,103 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Shifting | 1–3 | 2 |
 | Wild | 0–4 | 2 |
 
-- A tile's yield is decided **once, when it is unveiled**: it gets a fixed value within its type's range and keeps it for the whole game. The value is visible from then on, so players know exactly what they are bidding on.
+- A tile's yield is **rolled every round** (owner's choice, 24 Oct 2026; it replaced a yield fixed once, when the tile was unveiled): at the start of each round, every held Shifting and Wild tile rolls its yield from its type's range, and its owner collects that roll. Steady tiles always yield 2. The map and the draft show each type's range ("0–4"), so players pick a risk, not a number. The rolls are public: the round's report lists every one.
 - **The odds** are the paper prototype's die: Shifting yields 1, 2 or 3 with equal chance; Wild yields 0 or 4 one time in six each, 1 or 3 one time in six each, and 2 two times in six.
 - **Mix:** roughly **equal thirds** of each type (19 hexes: 7 Steady, 6 Shifting, 6 Wild).
 
 ## Unveil
 
 - An **Unveil** turns over a batch of tiles on the dark map, one at a time.
-- **The opening:** before round 1, three Unveils reveal **3 tiles per player + 3 free tiles** in total (one free tile in each Unveil). Each has an auction (below), so every player ends with 3 tiles and 3 free tiles are left to attune.
+- **The opening:** before round 1, three Unveils each reveal **one tile per player**, and the players draft them (below), so every player ends with 3 tiles. The opening is only the draft (owner's choice, 24 Oct 2026): the **3 free tiles** are revealed as the rounds begin, for anyone to attune from round 1.
 
-| Players | Map | Opening reveals | Auctioned | Left free | Still dark |
+| Players | Map | Opening reveals | Drafted | Left free | Still dark |
 |---|---|---|---|---|---|
 | 2 | 19 | 9 | 6 | 3 | 10 |
 | 3 | 19 | 12 | 9 | 3 | 7 |
 | 4 | 37 | 15 | 12 | 3 | 22 |
 | 5 | 37 | 18 | 15 | 3 | 19 |
-- **The later Unveils:** in **rounds 2 and 4**. The tiles still dark after the opening are **split evenly** between them (an odd one goes to round 2). They have **no auction**: the tiles stay unowned until someone takes them. After round 4 the whole map is revealed.
+- **The later Unveils:** in **rounds 2 and 4**. The tiles still dark after the opening are **split evenly** between them (an odd one goes to round 2). They have **no draft**: the tiles stay unowned until someone takes them. After round 4 the whole map is revealed.
 - About **1 in 3** tiles revealed in a later Unveil is **guarded by monsters** (decided at random). The opening Unveils never reveal guarded tiles.
 
-### The Unveil auction (opening only)
+### The opening draft
 
-- In each opening Unveil, **as many tiles as there are players** are auctioned; the other unveiled tiles are only revealed.
-- Each player secretly bids **mana** on one of the auctioned tiles, or passes.
-- The highest bid on a tile wins it and pays. **Losing bidders don't pay.**
-- Players who lost or passed each get **one of the tiles nobody bid on, at random, for free**. So everyone ends each Unveil with exactly one new tile.
-- **Ties:** if the top bids on a tile are tied, nobody gets it and nobody pays; the tile becomes one of the random leftovers.
-- The smallest bid is **1 mana**; to spend nothing, pass. So bidding always costs something if you win, and passing keeps its meaning. Leftovers are handed out in seat order, each drawn at random from those still left.
-- Won or leftover tiles don't need to connect to your other tiles (scattered holdings are allowed).
+In turn (owner's choice, 24 Oct 2026; it replaced an auction, tile by tile, that the owner found a bit weird):
+
+- Each opening Unveil reveals **as many tiles as there are players**, listed by name (A1 before B2).
+- The players **take one each, in turn**: whoever's turn it is picks any of the tiles still on the table. A pick
+  **costs nothing**, and everyone sees it at once.
+- The **turn order rotates**: the first draft goes seat 1, 2, 3…, the second starts with seat 2, the third with seat 3
+  (1-2-3, 2-3-1, 3-1-2), like the rounds' rotating first seat. With 4 or 5 players, the last seats never pick first.
+- The **last tile** goes to the last seat in the order, without a turn. So everyone ends each Unveil with exactly one
+  new tile.
+- In a match with friends, a player whose turn it is has the usual **24 hours**; then a bot picks for them (a miss, as
+  in the rounds: two in a row and a bot takes the seat). Bots pick at once.
+- Picked tiles don't need to connect to your other tiles (scattered holdings are allowed).
+- **Measured** (2,000 bot games each, `--plans`; bots pick the tile worth most to them, so the tile their trait wants
+  first, else at random among equals): with 4 starting mana, mana after round 1's income averages 10.0 at 3 and at 5
+  players (the auction left 10.5 and 9.6 from 9). The rounds barely move: final scores 21.4 (was 21.5) and 20.6 (20.6),
+  and the plans' win rates stay within 5 points of the auction's at 3 players (Expander 55% to 50%, Warlord 42% to
+  43%) and within 3 at 5 (Warlord 33% to 30%, Economist 9% to 10%). Wins by seat stay even (3 players: 665, 673, 664 of 2,000; 5: 371 to 419). The
+  bots value every type alike (each averages 2), so this can't show how much picking first is worth to a person.
 
 ## Rounds and stances
 
-- Each round, every player secretly picks **one stance**. Then all stances resolve together.
-- A stance should be **one button** on a phone: the round's main decision is a single tap.
-- **Four stances**:
+Decided 25 Oct 2026, the owner's choice: a **stance draft, as in Puerto Rico** (its roles). It replaced one stance a
+round, committed in secret by everyone at once and resolved together. The reasoning is in
+`discussions/shared-stances.md`, "The stance draft (25 Oct 2026)".
+
+- **Players pick stances in turn**, one each a round, and **no stance twice in a round**; every round starts with all
+  of them free again. The **first picker moves one seat each round**, carrying on the opening draft's rotation (its
+  three drafts start with seats 1, 2 and 3), so over a match the first picks spread as evenly as they can.
+- **Everyone takes the stance just picked:** the picker first, then each other player in turn, going once round the
+  table. Each may take it (aimed at a tile, as below) or **pass**. Then the next player picks.
+- **The picker's privilege:** their own action costs **1 mana less** (never below nothing). The others pay full price.
+- **Moves come with your own pick only:** units step before the stance (see *Units*). Taking another player's stance
+  has no moves.
+- **Each turn happens at once**, in the open: the next player sees the board as it now is. There is no secret
+  commitment in the rounds any more; reading rivals is about what they will pick and when.
+- **A pick needn't be used:** a player may pick a stance and aim it at nothing, which keeps it from the others this
+  round. A player is never forced to spend.
+- A stance should be **one button** on a phone: a turn is one tap, plus its tile on the map.
+- **Six stances**:
   - **Attack:** attack a rival's or a monster-guarded tile with units (see *Battles*). An attack may also bring
     **reinforcements**: up to 3 power of units summoned on one of your tiles, at 1 mana more each than a summon
-    (an Imp costs 2). They guard that tile this round and can't join the attack. (Decided 21 Oct 2026. The Wargamer
+    (an Imp costs 2). They guard that tile and can't join the attack. (Decided 21 Oct 2026. The Wargamer
     asked for it in the third and fourth AI-taste sessions, and the Bluffer in the first. All four target tastes said
     one stance a round left mana piling up and home undefended.)
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
   - **Build:** spend mana on an upgrade for one of your tiles (see *Upgrades*).
-- **Unpicked stances get cheaper** (decided 21 Oct 2026; Puerto Rico's doubloons on unpicked roles, the owner's
-  idea, `discussions/shared-stances.md`): an Attune, Summon or Build that nobody chose in a round costs **1 mana
-  less** the next round, 1 more for each round it waits, **at most 3 less**. As soon as anyone chooses it, it goes
-  back to full price. The stance picker shows the discount, and the report says when a stance gets cheaper.
-- Alongside the stance, players can **cast one spell** (see *Spells*).
-- Alongside the stance, players can **move units** freely (see *Units*).
-- A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon): only the moves happen. A player is never forced to spend.
-- More stances (for example a defensive Hold, or Scry to peek at hidden things) can be added after the first playtest.
+  - **Cast:** spend mana on one spell (see *Spells*).
+  - **Channel:** gain **2 mana**. Only its picker takes it; nobody else does (Puerto Rico's Prospector). It is the
+    pick that is never wasted, so the last player to pick always has something worth taking. A flat gain, not a
+    multiplier, so it doesn't let a lead snowball (`design-principles.md`, principle 7).
+- **Stances cost the same every round.** *(Unpicked stances getting cheaper, Puerto Rico's doubloons, decided
+  21 Oct 2026, was removed on 24 Oct 2026, the owner's choice; on 25 Oct 2026 the owner chose not to bring it back with
+  the draft.)*
+- **With friends**, each turn waits on its player for **24 hours**; a player who lets it go by channels on a pick (or
+  takes the first stance still free, aimed at nothing, once Channel is gone) and passes on another player's stance.
+  After two misses in a row, a bot plays that seat (see `discussions/playing-with-friends.md`).
+- **Measured** (2,000 bot games each, `--plans`, against the rounds before the draft): with 5 players, mana left at
+  the end fell from 26 a seat to 3, conquest points rose from 1.5 a seat to 9.7, and final scores from 20 to 32
+  (first minus last 10 to 17). Every stance is picked: per game, Attack 8.0, Summon 8.0, Channel 7.4, Attune 6.3,
+  Build 5.8, Cast 4.6. Plans win 17–23% (a fair share is 20%; 14–29% before) and traits 14–24% (10–29%). Each seat
+  takes about 3.5 actions a round at 5 players and 2.5 at 3 (one before), and passes about once. With 3 players the
+  plans win 25–41% (a fair share is 33%). *To retune: the Warbrand's goal is maxed in 98% of games, and the point
+  scale has grown about half again (see Scale).* (Bots pick the first of their wishes that is still free; a Builder or
+  an Economist never picks Attack but joins one when it can win.)
 
 ### Round order
 
 In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 
-1. **Income:** every player collects the mana yield of each tile they hold.
+1. **Income:** every held Shifting and Wild tile rolls its yield (see *Tiles*); every player collects the yield of each tile they hold.
 2. **Upkeep:** pay 1 mana per Golem; a Golem that can't be paid for dissolves.
-3. **Commit:** every player secretly commits one stance plus any moves. When all have committed, everything is revealed. Until then a player can take their orders back and commit again; everyone sees who has committed, never what. With friends, a round that has waited **24 hours** resolves anyway: whoever hasn't committed holds (in the opening, passes). After two misses in a row, a bot plays that seat (see `discussions/playing-with-friends.md`).
-4. **Moves** resolve. Defenders can reinforce a threatened tile in the same round; attackers can't be sure what they'll meet.
-5. **Attune, Summon and Build** resolve, then **spells**. New tiles exist, new units can defend, and spells take effect before
-   attacks (Blight waits for the next round's income).
-6. **Attacks** resolve.
-   - Units sent to attack **have left** their tile: they don't defend it if it's attacked in the same round.
-   - If **several players attack the same tile**, all of them fight the defender together in **one battle**; if the attackers win, the surviving attackers then fight each other for the tile.
-   - Units that moved this round can attack: moves resolve first.
-   - Each attacked tile has one battle, and the battles are fought in board order (this decides whether a tile is still its owner's last when its battle comes).
-7. **Scoring:** points are banked (see *Scoring and winning*).
+3. **The draft:** the players pick in turn, and each stance goes round the table, as above. A turn's moves come first,
+   then its stance: an Attune, a Summon or a Build, a spell, or an attack, all at once.
+   - Units sent to attack **have left** their tile: they don't defend it against the attacks that come after.
+   - A Ward or a spell that lasts the round lasts until the round ends, so it covers every later turn.
+4. **Scoring:** when every player has picked and the last stance has gone round, points are banked (see *Scoring and winning*).
 
 ## Units
 
@@ -155,7 +192,7 @@ In rounds 2 and 4, the round starts with a **later Unveil**. Then:
 
 - Because weak units die first in battle and shield strong ones, strong units must cost more per point of power over time; the upkeep is what does that.
 - Upkeep is paid **after** the round's mana income. If a player still **can't pay upkeep** for a Golem, that Golem **dissolves**. When only some can be paid for, the unpaid ones dissolve from the player's tiles in board order (a fixed order, so the result is always the same).
-- **Moving units is possible every round**, regardless of stance, with **no limit** on the number of moves (to be tuned if visits get long).
+- **Moving units is possible every round**, with your own pick (whatever stance you pick), with **no limit** on the number of moves (to be tuned if visits get long).
 - Units can only move **between your own tiles**, one step to an **adjacent** tile. Reaching beyond your borders takes the **Attack** stance.
 - **One step per round:** a unit that moved this round can't move again until the next, so units cross a group one tile per round.
 - Imps can pile up without limit. This is accepted for now; if playtests show a cheap horde is too strong, add a limit then (per-tile cap, Imps fading after a few rounds, or weaker Imps).
@@ -168,7 +205,8 @@ A revealed, unowned tile is taken in one of two ways, depending on whether it is
   - Attuning extends where your units can go: it is how you grow your presence and join scattered groups together.
   - One Attune takes **one tile**.
   - **Price: 1 mana + 1 mana for each of your first 3 tiles, + 3 mana for each tile beyond them.** With 3 tiles an Attune costs 4, with 4 tiles 7, with 5 tiles 10: cheap for a small realm, dear for a big one. (The owner's choice, 21 Oct 2026. It was 1 + 1 per tile, then 1 + 2 and 1 + 3, each proposed by Claude from the strategy bots, while the always-attune Expander bot won too often. At 1 + 3, four of six AI tastes (Euro-gamer, 4X fan, Combo player, Casual player) couldn't grow after round 1. See `discussions/strategies.md` and `playtests/ai-feedback.md`.) The price is the same whichever tile you attune; it only grows with the size of your realm, so the biggest realm pays the most to grow (principle 7).
-  - **Clash:** if two players attune the same tile in the same round, nobody gets it and nobody pays.
+  - Turns come one at a time, so a tile attuned earlier in the round is gone for the players after. *(Until the stance
+    draft, 25 Oct 2026, two players attuning the same tile in the same round both got nothing.)*
 - **Guarded tiles:** some unowned tiles are **guarded by monsters**. They can't be attuned; you need units to defeat the guards first.
   - Guard strength is **visible**.
   - Guarded tiles are cleared with the **Attack** stance, the same way as a rival's tile.
@@ -198,49 +236,49 @@ Kept simple for now, to be extended later.
 - Battles against monsters use the same rules, with the guards as the defender.
 - **No defender bonus** for now: ties already go to the defender, so an attacker needs strictly more power. A bonus (from a stance, terrain or units that stay put) can be added later.
 - **A rival's last tile:** if an attack on it wins, the defending units die, but the tile **stays with the defender** (empty). The attacker's units stay where they were, and **no conquest points** are scored. The surviving attackers go back to the tile they attacked from (the first in board order, if they came from several); if that tile was lost in the same round, they dissolve.
-- **Several attackers** (decided 19 Oct 2026):
-  - Together they lose power to the defender **weakest units first, across all of them**, seat order deciding between equal units.
-  - If they win, the **strongest survivor takes the tile** and loses power equal to the next strongest's total (weakest first, as always); the other survivors are wiped out.
-  - A **tie at the top** wipes out all the survivors and nobody takes the tile: it stays with the defender (empty), or for a monster tile it stays free, its guards gone.
-  - A tie against monsters gives the tile to the attacker who sent the most power; if that's a tie too, nobody gets it.
+- **One attacker a battle:** each attack happens on its own turn, against the tile as the turns before left it. *(Until
+  the stance draft, 25 Oct 2026, several players attacking one tile in a round fought the defender together, then each
+  other.)*
 - **Monster guards** fight as one unit of their power, so a weaker attack never wears them down.
 
 ## Resources
 
-- **Mana:** produced by tiles (see *Tiles*); pays for opening bids, attuning and summoning.
-- **Starting mana: 9.** Players start with nothing else: no tiles until the opening, and no units.
-- **Unspent mana carries over** to the next round, including whatever is left after the opening auctions.
-- **Spells** use mana alongside the stance (see *Spells*).
+- **Mana:** produced by tiles (see *Tiles*); pays for attuning, summoning, building and spells (the opening draft is free).
+- **Starting mana: 4** (lowered from 9 with the draft, the owner's choice, 24 Oct 2026; 4 is the simulator's number, about what players had left after the auction: see *The opening draft*). Players start with nothing else: no tiles until the opening, and no units.
+- **Unspent mana carries over** to the next round, including the starting mana, which the opening doesn't touch.
+- **Spells** are bought with the Cast stance (see *Spells*).
 
 ## Spells
 
-Decided 20 Oct 2026 (the reasoning is in `discussions/spells.md`). **A spell is cast alongside the stance**, like
-moves: optional, at most one a round, committed in secret with the stance; the stance and the spell are paid together.
-*(First decided as a fourth stance, "Cast"; changed the same day once the simulator showed that, as a stance, spells
-used the surplus mana only by replacing Attunes.)* A spell's target is one of your tiles or a tile next to your land, its cost and
+Decided 20 Oct 2026 (the reasoning is in `discussions/spells.md`). **Casting a spell is a stance, Cast** (owner's
+choice, 24 Oct 2026): a Cast round casts **one spell**, instead of attuning, summoning, attacking or building.
+**Your trait decides which spell** (see *Traits*; a Spellweaver has all five). **Ward, Blight and Lure can go on
+several tiles in one Cast**, each tile paid for and checked on its own (owner's choice, 24 Oct 2026, so a Cast can
+take a round's mana); Scorch and Leyline already grow with the mana put into them, so they go on one.
+*(First decided as a fourth stance on 20 Oct 2026; moved alongside the stance the same day once the simulator showed
+that, as a stance, spells used the surplus mana only by replacing Attunes; made a stance again on 24 Oct 2026, with the
+mana surplus as the known risk, measured below.)* A spell's target is one of your tiles or a tile next to your land, its cost and
 effect are shown before you commit, and its effect lasts **this round only** (except Lure's, below); no spell changes
 yields, prices or income. Costs are flat and small.
 
 | Spell | Cost | Target | Effect (this round) |
 |---|---|---|---|
 | Scorch | 3 mana per power that burns | a rival's tile next to yours | Burns up to that much of its units' power, weakest first (the battle loss rule). You pay only for what burns. Monsters are immune. |
-| Ward | 3 mana | one of your tiles, or the tile you attune this round | Its defence counts 3 more power in this round's battles. |
+| Ward | 3 mana a tile | your tiles | Its defence counts 3 more power in this round's battles. |
 | Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
-| Blight | 3 mana | a rival's tile next to yours | It yields nothing in the next round's income. A tile blighted last round can't be blighted again this round. |
-| Rally | 3 mana | the tile you attack this round | Your attack strikes with 2 more power, and that power takes the blows first. Paid even if the attack doesn't happen (a Scorch may leave nothing to send). The attacker's Ward: decided 21 Oct 2026 for reading rivals (`discussions/reading-rivals.md`; asked for by the Wargamer and the Bluffer). It was designed at +3; the Warlord strategy bot then won 48% of 3-player games, so +2 (44%). |
-| Lure | 3 mana | a monster tile next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
+| Blight | 3 mana a tile | rivals' tiles next to yours | It yields nothing in the next round's income. A tile blighted last round can't be blighted again this round. |
+| Lure | 3 mana a tile | monster tiles next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
 
-- **How spells resolve:** in seat order, after Attunes and Summons and before attacks. Two Wards on one tile add up, and
-  two Scorches both burn.
+- **How spells resolve:** at once, on the caster's turn. Two Wards on one tile add up, and two Scorches both burn; a
+  Ward lasts until the round ends, so it covers the attacks of every later turn.
 - **Ward takes the blows first:** when a warded tile holds, its defenders lose only the attack power the Ward didn't
   absorb.
 - **An attack goes with what's left:** if a rival's Scorch burns units on the tile an attack leaves from, the attack
   sends only the units still there, or doesn't happen if none are.
-- **Spells see the round as it will be** at their turn: a Ward can go on the tile you attune this round (it holds if
-  the Attune does), and a Leyline can carry units you summon this round.
-- **Leyline** can't carry units that also step this round; the units it carries can attack the same round.
-- **Scorch before your own attack:** a Scorch and an attack on the same tile in one round work together: the Scorch
-  burns first, and the attack's preview counts it (as it counts a Lure on a monster tile you attack).
+- **Leyline** can't carry units that also step this round.
+- **Rally is gone** (owner's choice, 24 Oct 2026): it went with an attack, and a Cast round has none. It was the
+  attacker's Ward (+2 power for 3 mana, decided 21 Oct 2026 for reading rivals, `discussions/reading-rivals.md`).
+  Saved matches that cast it still count it for Spellweaver.
 - **Scorch pays for what burns** (decided 21 Oct 2026, after the first AI players' session,
   `playtests/2026-10-21-ai-players.md`): units that moved away before it, units another seat's Scorch burned first,
   or a Golem too strong to burn whole cost nothing. Its price went from 2 to 3 mana per power: at 2 it beat
@@ -258,6 +296,19 @@ yields, prices or income. Costs are flat and small.
   (see `discussions/traits.md`): they spend about 19 mana a match on spells and end with about 13 unspent, and Ward
   is cast most (about 9 a game), then Blight (about 5).* *Unspent mana briefly scored 1 per 10 at the end (21 Oct
   2026); it was dropped the same day in favour of scoring mana produced at 1 per 10, so income pays, not hoarding.*
+- **Measured as a stance** (24 Oct 2026, 2,000 bot games, 3 players; bots cast when they have a purposeful spell and
+  nothing better: the everyday bot in rounds where it would otherwise summon, a Spellweaver or Hexer once land is no
+  longer cheap): unspent mana at the end rises from about **11 to 28** a seat (with `--plans`, 12 to 32; 25 and 30 once the unpicked-stance discount was also removed), spells
+  cast fall from about 19 a game to **2** (Blight 1.3, Ward 0.8), and mana spent on spells from 19 to 2 a seat. The
+  surplus is back, as in the first stance version. Spellweaver wins **6%** (was 29%) and Hexer **12%** (34%): a
+  whole round for a 3-mana spell rarely beats an Attune, a Build or a summon. The plans: Expander 57% (was 50%),
+  Warlord 38% (43%), Economist 31% (25%), Builder 30% (26%), Spellcaster 23% (32%), Balanced 20% (23%).
+- **Measured with trait spells** (24 Oct 2026, the same runs; bots cast only their own spell, on every tile with a
+  purpose when they can pay): unspent mana at the end falls a little, from 25.4 to **23.8** a seat (`--plans`: 29.7
+  to 27.4); spells cast stay rare (about 1.5 a game; mana on spells 2.1 a seat). Spellweaver still wins 6% and Hexer
+  12%. Plans: Expander 50% (58%), Spellcaster 39% (23%), Warlord 35% (36%), Economist 28% (31%), Builder 27% (31%),
+  Balanced 20% (20%). Bots cast only with a clear purpose (a threatened tile, a rich rival tile, a beatable monster),
+  so what people do with a spell of their own is for a playtest to show.
 
 ## Upgrades
 
@@ -292,7 +343,7 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
   - **Mana produced:** points for the mana your land produces.
   - **Conquest:** points for rival tiles taken and monster tiles cleared.
   - **Trait goals:** each trait can add its own way to score.
-- **Visibility:** the main score is **visible** to everyone during the game; **traits, trait-goal points and guesses are hidden** until the end, and so is rivals' mana (see *Fog of war*).
+- **Visibility:** the main score is **visible** to everyone during the game; **traits and trait-goal points are hidden** until the end, and so is rivals' mana (see *Fog of war*).
 - **Point values**, banked at the end of every round:
 
 | Source | Points |
@@ -302,7 +353,6 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
 | Conquest | 2 per monster tile cleared or **defended** rival tile taken (it had units, a Ward or a Tower when the battle began); **1 per undefended** rival tile taken. Kept even if the tile is lost again. (It was 1 for any, then 2 for any from 21 Oct 2026, when fighting didn't pay. The same day the third AI-taste session found raids on empty tiles decided every match, and the owner made an undefended capture worth 1.) |
 | Trait goals | set by each trait, scored once at the end, up to 3 (see *Traits*) |
 | Upgrades | 1 per upgrade you hold at the end |
-| Guesses | 1 per rival's trait guessed right, scored once at the end, up to 3 (see *Traits*) |
 
 - **Tie-break:** most tiles held at the end; if still tied, most mana in hand.
 - **Scale** (changed 20 Oct 2026): a 3-player game ends around **18 points** a seat (about 12 for land, 5 for mana,
@@ -312,6 +362,8 @@ something built on a tile that keeps paying (`playtests/ai-feedback.md`).
   for conquest, and about 1 from trait goals: still about 18 in all. Since the strategy retune (21 Oct 2026: Attune
   1 + 1 per tile to 3 tiles then + 3, 2 points per conquest, mana 1 per 10) a seat ends around 21: about 10 for land, 5 for mana, 4 for
   conquest, 1 from its trait and 1–2 from upgrades.*
+  *Since the stance draft (25 Oct 2026) a seat ends around 31 with 3 players: about 12 for land, 7 for mana, 9 for
+  conquest, 1 from its trait and 2 from upgrades. Conquest is now near a third of a score; to retune from play.*
 
 ## Fog of war
 
@@ -326,8 +378,7 @@ Decided 21 Oct 2026 for reading rivals (`discussions/reading-rivals.md`; Claude'
   tile you can see *as the board stands after the round*. A summon, a spell or a battle far from your land is
   hidden.
 - **When the match ends, everything is revealed.**
-- Bots play by the same rule: they read units only next to their own land and never a rival's mana (a bot assumes a
-  rival can always afford a Rally).
+- Bots play by the same rule: they read units only next to their own land and never a rival's mana.
 
 ## Player elimination
 

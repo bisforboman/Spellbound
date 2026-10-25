@@ -3,12 +3,13 @@ using Spellbound.Domain;
 namespace Spellbound.Web.Data;
 
 /// <summary>
-/// How a step resolves (docs/discussions/playing-with-friends.md): every person's commitment, a hold (a pass, in the
-/// opening) for each person who let the deadline go by, and the bots' choices for the rest, with the step's randomness.
+/// How a step resolves (docs/discussions/playing-with-friends.md): a step is one seat's turn, an opening pick or a
+/// turn in a round. The person's commitment, else for a person who let the deadline go by a bot's pick in the opening
+/// and Channel or a pass in the rounds, else the bot's choice, with the step's randomness.
 /// </summary>
 public static class MatchSteps
 {
-    /// <param name="committed">Each committing seat's bid or orders, as stored (JSON).</param>
+    /// <param name="committed">Each committing seat's pick or orders, as stored (JSON).</param>
     /// <param name="holding">The seats of people who missed the deadline.</param>
     /// <returns>What happened, and the seats whose land was attacked by someone else (for their notification).</returns>
     public static (Report Report, IReadOnlySet<int> Attacked) Resolve(Match match, IReadOnlyDictionary<int, string> committed, IReadOnlySet<int> holding, IRandomSource random)
@@ -18,31 +19,27 @@ public static class MatchSteps
         ArgumentNullException.ThrowIfNull(holding);
         if (match.Phase == MatchPhase.Opening)
         {
-            // A seat with no trait yet gets one now, in secret: the bots', and a person's who let the deadline go by.
-            foreach (var seat in match.Seats.Where(s => s.Trait is null && !committed.ContainsKey(s.Index)))
+            // The picker gets a trait now, in secret, if it has none and didn't commit: a bot, or a person who let the
+            // deadline go by. A seat that never picks before the rounds gets one as the opening ends.
+            var picker = match.Picker!.Value;
+            if (match.Seats[picker].Trait is null && !committed.ContainsKey(picker) && Bot.ChooseTrait(match, picker, random) is { } trait)
             {
-                if (Bot.ChooseTrait(match, seat.Index, random) is { } trait)
-                {
-                    match.ChooseTrait(seat.Index, trait);
-                }
+                match.ChooseTrait(picker, trait);
             }
 
-            return (match.Auction(
-                [.. match.Seats.Select(s =>
-                    committed.TryGetValue(s.Index, out var bid) ? MatchJson.Deserialize<Bid>(bid) with { Seat = s.Index }
-                    : holding.Contains(s.Index) ? new Bid(s.Index, null, 0)
-                    : Bot.ChooseBid(match, s.Index, random))],
-                random), new HashSet<int>());
+            var pick = committed.TryGetValue(picker, out var mine) ? MatchJson.Deserialize<Pick>(mine) with { Seat = picker }
+                : Bot.ChoosePick(match, picker, random)!;
+            return (match.Draft(pick, random), new HashSet<int>());
         }
 
-        List<Orders> all = [.. match.Seats.Select(s =>
-            committed.TryGetValue(s.Index, out var orders) ? MatchJson.Deserialize<Orders>(orders) with { Seat = s.Index }
-            : holding.Contains(s.Index) ? Orders.Hold(s.Index)
-            : Bot.ChooseOrders(match, s.Index, random))];
-        var attacked = all
-            .Where(o => o.Stance == Stance.Attack && o.Target is { } target && match.OwnerOf(target) is { } owner && owner != o.Seat)
-            .Select(o => match.OwnerOf(o.Target!.Value)!.Value)
-            .ToHashSet();
-        return (match.Resolve(all, random), attacked);
+        // A round's turn: the person's orders, else Channel or a pass for a person who let the deadline go by, else the bot's.
+        var actor = match.Actor!.Value;
+        var orders = committed.TryGetValue(actor, out var given) ? MatchJson.Deserialize<Orders>(given) with { Seat = actor }
+            : holding.Contains(actor) ? match.Passing(actor)
+            : Bot.ChooseOrders(match, actor, random);
+        var attacked = orders is { Stance: Stance.Attack, Target: { } target } && match.OwnerOf(target) is { } owner && owner != actor
+            ? new HashSet<int> { owner }
+            : new HashSet<int>();
+        return (match.Take(orders, random), attacked);
     }
 }

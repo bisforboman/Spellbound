@@ -96,7 +96,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         var games = await Admin.GetRunningGamesAsync();
 
         Assert.Equal([first, second], games.Select(g => g.Game.Id));
-        Assert.Equal("Opening auction 1 of 3, 3 seats", games[0].Description);
+        Assert.Equal("Opening draft 1 of 3, pick 1 of 3, 3 seats", games[0].Description);
         Assert.Equal([$"Seat 1 in game {first}", $"Seat 3 in game {first}"], games[0].Players);
         Assert.Empty(games[1].Players);
         Assert.Equal($"Seat 1 in game {first}", Assert.Single(await Admin.GetPlayersAsync(), p => p.OwnerId == merlinId).Player!.Name);
@@ -104,7 +104,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal($"Game {first} has ended.", await Admin.EndGameNowAsync(first));
         Assert.Equal($"Game {first} isn't running.", await Admin.EndGameNowAsync(first));
         Assert.Equal([second], (await Admin.GetRunningGamesAsync()).Select(g => g.Game.Id));
-        Assert.False((await Matches.ApplyAsync(first, Now, (m, r) => m.Match.Auction([], r)))!.Succeeded);
+        Assert.False((await Matches.ApplyAsync(first, Now, (m, r) => m.Match.Draft(new Pick(0, m.Match.ToPick[0]), r)))!.Succeeded);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class AdminFlowTests : TestDatabase, IAsyncLifetime
         var home = await merlin.GetStringAsync(new Uri("/", UriKind.Relative));
         var other = await morgana.GetStringAsync(new Uri("/", UriKind.Relative));
 
-        Assert.Contains($"<a href=\"match/{id}\">Match {id}</a>, seat 2: Opening auction 1 of 3", home, StringComparison.Ordinal);
+        Assert.Contains($"<a href=\"match/{id}\">Match {id}</a>, seat 2: Opening draft 1 of 3", home, StringComparison.Ordinal);
         Assert.Contains("in a match yet.", other, StringComparison.Ordinal);
     }
 

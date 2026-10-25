@@ -12,7 +12,7 @@ public class FogStorageTests
         var match = Match.Start(3, GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         return match;
@@ -22,7 +22,12 @@ public class FogStorageTests
     public void A_stored_report_keeps_whom_each_line_concerns_and_the_page_shows_a_player_only_theirs()
     {
         var match = Opened();
-        var report = match.Resolve([.. match.Seats.Select(s => Orders.Hold(s.Index))], new SeededRandom(1));
+        // A whole round of letting turns go by: the last turn's report has the next round's income.
+        var report = match.Take(match.Passing(match.Actor!.Value), new SeededRandom(1));
+        while (match.CurrentRound == 1)
+        {
+            report = match.Take(match.Passing(match.Actor!.Value), new SeededRandom(1));
+        }
         var stored = MatchJson.Deserialize<StoredMatch>(MatchJson.Serialize(new StoredMatch(1, match.Save(), report.Lines, report.Tags)));
         var loaded = new LoadedMatch(1, ["alice", null, null], Match.Load(stored.Match, match.Rules))
         {

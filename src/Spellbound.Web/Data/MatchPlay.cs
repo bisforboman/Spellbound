@@ -3,7 +3,7 @@ using Spellbound.Domain;
 namespace Spellbound.Web.Data;
 
 /// <summary>
-/// A player's side of a match (docs/roadmap.md, M2): each person commits their bid or orders for the step and waits for
+/// A player's side of a match (docs/roadmap.md, M2): each person commits their pick or orders for the step and waits for
 /// the others; when everyone has, the bots choose theirs with the step's randomness and the step resolves
 /// (<see cref="MatchStore.CommitAsync"/>). With one person, a commitment resolves the step at once.
 /// </summary>
@@ -28,10 +28,10 @@ public sealed class MatchPlay(MatchStore store, TimeProvider time)
             ? loaded.Match.ChooseTrait(seat, trait)
             : Report.Fail("You don't sit in this match."), isStep: false) ?? Report.Fail("There is no such match.");
 
-    /// <summary>The player commits a bid (no tile: a pass) for the current opening auction. When every person in the
-    /// match has, the auction settles with the bots' bids (<see cref="MatchSteps"/>).</summary>
-    public Task<Report> BidAsync(long id, string ownerId, Hex? tile, int amount) =>
-        CommitAsync(id, ownerId, new Bid(0, tile, tile is null ? 0 : amount), (match, seat, bid) => match.CheckBid(bid with { Seat = seat }));
+    /// <summary>The player picks a tile in the opening draft, on their turn; the bots after them pick theirs at once
+    /// (<see cref="MatchStore.CommitAsync"/>).</summary>
+    public Task<Report> PickAsync(long id, string ownerId, Hex tile) =>
+        CommitAsync(id, ownerId, new Pick(0, tile), (match, seat, pick) => match.CheckPick(pick with { Seat = seat }));
 
     /// <summary>The player commits their orders for the round. When every person in the match has, the round resolves
     /// with the bots' orders.</summary>

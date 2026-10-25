@@ -5,10 +5,10 @@ public class AttackTests
     private static Match Opened(int seed, GameRules? rules = null, int players = 3)
     {
         var random = new SeededRandom(seed);
-        var match = Match.Start(players, rules ?? GameRules.Default, random);
+        var match = Match.Start(players, (rules ?? GameRules.Default) with { PickerDiscount = 0 }, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         return match;
@@ -22,7 +22,7 @@ public class AttackTests
     private static Report Play(Match match, params Orders[] orders)
     {
         var report = match.Resolve(
-            [.. orders, .. match.Seats.Where(s => orders.All(o => o.Seat != s.Index)).Select(s => Orders.Hold(s.Index))],
+            [.. orders, .. match.Seats.Where(s => orders.All(o => o.Seat != s.Index)).Select(s => Scenarios.Hold(s.Index))],
             new SeededRandom(match.CurrentRound));
         Assert.True(report.Succeeded, string.Join('\n', report.Lines));
         return report;
@@ -90,8 +90,6 @@ public class AttackTests
         var report = Play(match, orders);
 
         Assert.Contains(check.Lines, l => l.StartsWith("Reinforce", StringComparison.Ordinal) && l.Contains("for 6 mana", StringComparison.Ordinal));
-        // The preview says what it can't know: rivals' secret orders this round.
-        Assert.Contains(check.Lines, l => l.Contains("rivals give orders in secret too", StringComparison.Ordinal));
         Assert.Contains(report.Lines, l => l == $"Seat 1 reinforces {mine} with 3 Imps.");
         Assert.Equal(new Army(3, 0), match.UnitsOn(mine)); // they stayed home
         Assert.Equal(new Army(2, 0), match.UnitsOn(theirs)); // the attack went on with the 2 sent
@@ -110,14 +108,14 @@ public class AttackTests
         var attack = Attack(0, mine, theirs, new Army(2, 0));
         var orders = problem switch
         {
-            "without an attack" => Orders.Hold(0).Reinforcing(mine, UnitKind.Imp, 1),
+            "without an attack" => Orders.Pass(0, Stance.Summon).Reinforcing(mine, UnitKind.Imp, 1),
             "too many" => attack.Reinforcing(mine, UnitKind.Imp, 4),
             _ => attack.Reinforcing(theirs, UnitKind.Imp, 1),
         };
         var before = Snapshot(match);
 
         var check = match.Check(orders);
-        var report = match.Resolve([orders, Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+        var report = match.Resolve([orders, Scenarios.Hold(1), Scenarios.Hold(2)], new SeededRandom(1));
 
         Assert.False(check.Succeeded);
         Assert.Contains(reason, check.Lines[0], StringComparison.Ordinal);
@@ -125,21 +123,6 @@ public class AttackTests
         Assert.Equal(before, Snapshot(match));
     }
 
-    [Fact]
-    public void Units_that_attack_dont_defend_their_own_tile()
-    {
-        var match = FirstWhere(m => Border(m, 0, 1) is not null);
-        var (mine, theirs) = Border(match, 0, 1)!.Value;
-        Play(match, Orders.Summon(0, mine, UnitKind.Imp, 4), Orders.Summon(1, theirs, UnitKind.Golem, 1));
-
-        Play(match, Attack(0, mine, theirs, new Army(4, 0)), Attack(1, theirs, mine, new Army(0, 1)));
-
-        // Each side's tile was empty when the other arrived, so they swap tiles.
-        Assert.Equal(1, match.OwnerOf(mine));
-        Assert.Equal(new Army(0, 1), match.UnitsOn(mine));
-        Assert.Equal(0, match.OwnerOf(theirs));
-        Assert.Equal(new Army(4, 0), match.UnitsOn(theirs));
-    }
 
     [Fact]
     public void A_rivals_last_tile_cant_be_taken()
@@ -159,7 +142,7 @@ public class AttackTests
     }
 
     [Fact]
-    public void Several_attackers_fight_the_defender_together_then_the_strongest_survivor_takes_the_tile()
+    public void Attack_goes_round_the_table_and_each_attacker_finds_the_tile_as_the_one_before_left_it()
     {
         var match = FirstWhere(m => m.Seats[1].Tiles.Any(t => m.Seats[0].Tiles.Any(t.IsNextTo) && m.Seats[2].Tiles.Any(t.IsNextTo)));
         var target = match.Seats[1].Tiles.First(t => match.Seats[0].Tiles.Any(t.IsNextTo) && match.Seats[2].Tiles.Any(t.IsNextTo));
@@ -167,28 +150,16 @@ public class AttackTests
         var from2 = match.Seats[2].Tiles.First(target.IsNextTo);
         Play(match, Orders.Summon(0, from0, UnitKind.Imp, 5), Orders.Summon(1, target, UnitKind.Imp, 1), Orders.Summon(2, from2, UnitKind.Imp, 3));
 
+        // Round 2: Seat 2 picks first (passing), then Seat 3 picks Attack and goes first: 3 Imps against 1 take the tile
+        // with 2 left. Seat 1 follows: 5 against those 2 takes it again, keeping 3.
         var report = Play(match, Attack(0, from0, target, new Army(5, 0)), Attack(2, from2, target, new Army(3, 0)));
 
-        // 8 against 1: Seat 1 loses its Imp's worth from the weakest (Seat 1 first in seat order), leaving 4 and 3.
-        // Then 4 beats 3 and keeps 1.
-        Assert.Contains(report.Lines, l => l.Contains("fight each other", StringComparison.Ordinal));
+        Assert.Contains(report.Lines, l => l.StartsWith("Seat 3 takes", StringComparison.Ordinal));
+        Assert.Contains(report.Lines, l => l.StartsWith("Seat 1 takes", StringComparison.Ordinal));
+        Assert.True(report.Lines.ToList().FindIndex(l => l.StartsWith("Seat 3 takes", StringComparison.Ordinal))
+                    < report.Lines.ToList().FindIndex(l => l.StartsWith("Seat 1 takes", StringComparison.Ordinal)));
         Assert.Equal(0, match.OwnerOf(target));
-        Assert.Equal(new Army(1, 0), match.UnitsOn(target));
-    }
-
-    [Fact]
-    public void A_tie_between_the_strongest_survivors_leaves_the_tile_with_the_defender()
-    {
-        var match = FirstWhere(m => m.Seats[1].Tiles.Any(t => m.Seats[0].Tiles.Any(t.IsNextTo) && m.Seats[2].Tiles.Any(t.IsNextTo)));
-        var target = match.Seats[1].Tiles.First(t => match.Seats[0].Tiles.Any(t.IsNextTo) && match.Seats[2].Tiles.Any(t.IsNextTo));
-        var from0 = match.Seats[0].Tiles.First(target.IsNextTo);
-        var from2 = match.Seats[2].Tiles.First(target.IsNextTo);
-        Play(match, Orders.Summon(0, from0, UnitKind.Imp, 3), Orders.Summon(2, from2, UnitKind.Imp, 3));
-
-        Play(match, Attack(0, from0, target, new Army(3, 0)), Attack(2, from2, target, new Army(3, 0)));
-
-        Assert.Equal(1, match.OwnerOf(target));
-        Assert.Equal(Army.None, match.UnitsOn(target));
+        Assert.Equal(new Army(3, 0), match.UnitsOn(target));
     }
 
     /// <summary>A match in round 2, after the first later Unveil, where every revealed tile is guarded and one is next
@@ -294,7 +265,7 @@ public class AttackTests
         };
         var before = Snapshot(match);
 
-        var report = match.Resolve([orders, Orders.Hold(1), Orders.Hold(2)], new SeededRandom(1));
+        var report = match.Resolve([orders, Scenarios.Hold(1), Scenarios.Hold(2)], new SeededRandom(1));
 
         Assert.False(report.Succeeded);
         Assert.Contains(reason, Assert.Single(report.Lines), StringComparison.Ordinal);
@@ -320,7 +291,7 @@ public class AttackTests
         while (match.Phase != MatchPhase.Ended)
         {
             var report = match.Phase == MatchPhase.Opening
-                ? match.Auction([.. match.Seats.Select(s => Bot.ChooseBid(match, s.Index, random))], random)
+                ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
                 : match.Resolve([.. match.Seats.Select(s => Bot.ChooseOrders(match, s.Index, random))], random);
             Assert.True(report.Succeeded, string.Join('\n', report.Lines));
             lines.AddRange(report.Lines);

@@ -1,6 +1,6 @@
 # Spellbound
 
-A text-first multiplayer strategy game for phones: a dark hex map, an opening mana auction, one stance per round,
+A text-first multiplayer strategy game for phones: a dark hex map, an opening draft, a stance draft each round,
 Imps and Golems, 8 rounds, points banked as you go. It is a clean-slate design (19 Oct 2026); the old game (the Realm,
 an Archmage-style strategy game, and its Mageborn rework) was removed and is in the git history at `b171e46`. The
 platform it ran on stays; the new game plugs into it as `SpellboundGame`, its matches started on demand.
@@ -42,7 +42,7 @@ host's tables, `src/Spellbound.Web/Data/Sql/` for the game's. It runs at the nex
 
 ## Architecture rules
 
-The first group held for the old game and still fits the new design (simultaneous, secret rounds resolved from a
+The first group held for the old game and still fits the new design (rounds played in turn, resolved from a
 seed); revisit it as M1 is built, and don't assume the old game's turns or mages exist.
 
 - **All game rules live in `Spellbound.Domain`.** It is pure C#. It has no database, ASP.NET or I/O references,
@@ -66,7 +66,11 @@ These hold for the platform, whatever the game:
 ## UI rules
 
 - Mobile-first. The UI must work at 360 px wide, with tap targets at least 44 px, and work one-handed.
-- Pages are text-first: numbers, short reports and simple forms. No canvas or game engine, and no JS framework.
+- The match page is board-first (owner's choice, 25 Oct 2026): the map is the main screen, the round's stances are a
+  tray of tokens under it, a one-line bubble says what's next in plain words, and small effects show what just happened.
+  The longer text and the numbers live in the preview (the ledger), the Report and Help. Effects are CSS keyframes and
+  inline SVG started by a render; no canvas or game engine, no JS framework, nothing extra to download. Other pages
+  stay text-first: short reports and simple forms.
 - Every action form shows its cost and its projected result before the player confirms (the old game's "ledger").
 - A change to pages gets a playtest run (`tools/Spellbound.Playtest`): it must pass, and look at the screenshots of the
   pages you changed. New pages and actions get a step in it.

@@ -11,8 +11,9 @@ platform's pages; each page and action the new game adds gets a step. It:
 1. creates a fresh `spellbound_playtest` database;
 2. starts the app;
 3. signs in three players at 360×740 (one of them an admin) and checks the home page (their matches: none yet);
-4. visits the account page (data download) and notifications; starts a 3-player match, bids, and passes through the
-   opening to round 1, then summons, moves (when two of its tiles touch), attunes, attacks if the map offers it, and holds to the end of round 8; starts a 5-player match (the 37-tile map) and taps a hex; visits privacy and the admin page (a
+4. visits the account page (data download) and notifications; starts a 3-player match, picks a tile on the map, and picks through the
+   opening to round 1, then plays the rounds turn by turn as a stance draft (picks Summon, passes on a bot's pick, moves with its own pick,
+   attunes, attacks if the map offers it, casts and builds when those come round) and lets every turn go by to the end of round 8; starts a 5-player match (the 37-tile map) and taps a hex; visits privacy and the admin page (a
    player who isn't an admin is refused), where the admin ends the first match, and its player sees it ended;
 5. checks the admin page's **Problems** list at the end.
 

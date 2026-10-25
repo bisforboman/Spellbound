@@ -8,7 +8,7 @@ public class FogTests
         var match = Match.Start(3, GameRules.Default, random);
         while (match.Phase == MatchPhase.Opening)
         {
-            match.Auction([.. match.Seats.Select(s => Bid.Pass(s.Index))], random);
+            match.Draft(new Pick(match.Picker!.Value, match.ToPick[0]), random);
         }
 
         return match;
@@ -32,7 +32,7 @@ public class FogTests
     }
 
     private static Report Play(Match match, params Orders[] orders) =>
-        match.Resolve([.. orders, .. match.Seats.Where(s => orders.All(o => o.Seat != s.Index)).Select(s => Orders.Hold(s.Index))],
+        match.Resolve([.. orders, .. match.Seats.Where(s => orders.All(o => o.Seat != s.Index)).Select(s => Scenarios.Hold(s.Index))],
             new SeededRandom(match.CurrentRound));
 
     [Fact]

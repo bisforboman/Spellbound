@@ -29,7 +29,7 @@ On top of the art, the game draws:
 - **the middle:** a dark round seal with the tile's yield, about 16% of the height across;
 - **the top fifth:** the tile's name ("C3");
 - **the bottom fifth:** units or a monster guard ("3i", "☠3");
-- **the edge:** a ring in the owner's colour when someone holds the tile, and the outlines for "up for auction" and
+- **the edge:** a ring in the owner's colour when someone holds the tile, and the outlines for "to pick" and
   "selected".
 
 So put the subject in the ring between the middle and the edge, and keep the middle and top quiet.
@@ -62,6 +62,21 @@ A starting point for a generator; adjust to taste. Use the same style sentence f
 - **Shifting:** "…of restless dunes and marsh: rippling sand, a still pool and a few reeds, slate and ash greys."
 - **Wild:** "…of untamed wild land: twisted thorns around a faintly glowing rift, scattered sparks of magic, deep
   ashen violet-black (not bright purple)."
+
+## How the current images were made
+
+`tools/tile-art/generate.py` asks a local ComfyUI (SDXL base 1.0, on `127.0.0.1:8188`) for four candidates per type,
+and `tools/tile-art/finish.py` turns the chosen one into the 512 px WebP, toned down and under 60 KB. The prompts in
+the script differ from the ones above in two ways: they drop "a hexagonal board-game tile" (with it SDXL paints hex
+grids and parchment) and ask for a top-down landscape instead; and Wild's negative prompt allows saturation, or it gets
+no glow at all, so it comes out magenta and `finish.py` desaturates it to ash-violet. The seeds and settings of the
+images in use are in `wwwroot/tiles/LICENSE.md`.
+
+The page backdrop of the painted rune-slate look ([theme](theme.md), "Looks") comes from
+`tools/tile-art/backdrop.py`: 768×1344 candidates of a dark engraved slate slab, from the same ComfyUI or, with
+`--cpu`, from SDXL base 1.0 on the CPU with diffusers (about 6 minutes an image, so a cloud session can do it; the one
+in use was made that way). `backdrop.py --finish` turns the chosen one into the 720 px WebP in `wwwroot/backdrops/`. Its seed and settings are in
+`wwwroot/backdrops/LICENSE.md`.
 
 ## Trying it
 
