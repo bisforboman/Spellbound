@@ -1117,7 +1117,7 @@ tr.you td {
 }
 
     .stance-options {
-        margin: -0.25rem 0 0.5rem 1.6rem;
+        margin: 0 0 0.5rem; /* under the tray and the bubble: the chosen stance's choices */
     }
 
 /* What the next tap on the map is for */
@@ -1371,9 +1371,297 @@ tr.you td {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .round-banner, .hex-map .hex-gain, .mana-gain {
+    .round-banner, .hex-map .hex-gain, .mana-gain, .hex-map .effects {
         display: none;
     }
+
+}
+
+/* Board first (owner's choice, 25 Oct 2026; docs/theme.md, "The board"): whose turn it is as seat tokens, the round's
+   stances as a tray of tokens under the map, a bubble that says what's next, and small effects that show what just
+   happened. All CSS and inline SVG: nothing to download. */
+.seat-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: -0.25rem 0 0.5rem;
+}
+
+.seat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.6rem 0.15rem 0.25rem;
+    border-radius: 99px;
+    border: 1px solid #ffffff14;
+    background: #0007;
+    color: var(--ink-soft);
+    font-family: var(--font-label);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+    .seat-chip i {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background: var(--c);
+        box-shadow: inset 0 0 0 2px #0009;
+    }
+
+    .seat-chip.now {
+        color: var(--ink);
+        border-color: var(--c);
+        animation: turn-pulse 1.6s ease-in-out infinite;
+    }
+
+@keyframes turn-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 60%, transparent); }
+    50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.tray {
+    display: flex;
+    justify-content: center;
+    gap: 0.35rem;
+    margin: 0.25rem 0 0.5rem;
+}
+
+.token {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    width: 3.4rem;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-family: var(--font-label);
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+    .token .stance-icon {
+        width: 3rem;
+        height: 3rem;
+        padding: 0.6rem;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #4a4033, #1e1914 75%);
+        border: 2px solid #6b5b45;
+        box-shadow: 0 4px 6px #000a;
+    }
+
+    .token:disabled {
+        color: var(--ink-soft);
+        opacity: 1;
+    }
+
+    .token.taken .stance-icon {
+        filter: grayscale(0.8) brightness(0.6);
+    }
+
+    .token.taken::after {
+        content: "";
+        position: absolute;
+        top: 2.1rem;
+        right: 0.15rem;
+        width: 1.05rem;
+        height: 1.05rem;
+        border-radius: 50%;
+        background: var(--c);
+        border: 2px solid #000;
+    }
+
+    .token.open .stance-icon {
+        border-color: var(--c);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 45%, transparent), 0 4px 6px #000a;
+    }
+
+    .token.on .stance-icon {
+        border-color: var(--school);
+        background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--school) 45%, #4a4033), #1e1914 75%);
+    }
+
+    .token.on {
+        color: var(--ink);
+    }
+
+    /* Whose choice it is: on your pick the free tokens glow, on anyone else's turn they're dimmed */
+    .tray.your-pick .token:not(:disabled) .stance-icon {
+        border-color: var(--school);
+        animation: pick-glow 1.8s ease-in-out infinite;
+    }
+
+    .tray.not-yours .token:not(.open):not(.taken) .stance-icon {
+        opacity: 0.4;
+    }
+
+    .token.open .stance-icon {
+        animation: open-pulse 1.4s ease-in-out infinite;
+    }
+
+    .token-now {
+        position: absolute;
+        top: -0.45rem;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0 0.35rem;
+        border-radius: 99px;
+        background: var(--c);
+        color: var(--on-ink);
+        font-size: 0.6rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        box-shadow: 0 1px 3px #000a;
+    }
+
+@keyframes pick-glow {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--school) 55%, transparent), 0 4px 6px #000a; }
+    50% { box-shadow: 0 0 0 5px transparent, 0 4px 6px #000a; }
+}
+
+@keyframes open-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 45%, transparent), 0 4px 6px #000a; }
+    50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--c) 15%, transparent), 0 4px 6px #000a; }
+}
+
+.tray-now {
+    margin: -0.25rem 0 0.5rem;
+    text-align: center;
+    color: var(--ink-soft);
+    font-family: var(--font-label);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.bubble {
+    margin: 0 0 0.6rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 12px;
+    border: 1px solid var(--paper-edge);
+    background: #0009;
+}
+
+    .bubble p {
+        margin: 0;
+    }
+
+    .bubble .bubble-sub {
+        margin-top: 0.2rem;
+        color: var(--ink-soft);
+        font-size: 0.9rem;
+    }
+
+/* The fog of war: a mist drifting over a rival's tile whose units you can't see */
+.hex-map .fog {
+    pointer-events: none; /* its fill is on the element: a url(#…) in this file would look for the gradient here */
+    animation: fog-drift 7s ease-in-out infinite alternate;
+}
+
+@keyframes fog-drift {
+    from { opacity: 0.8; }
+    to { opacity: 1; }
+}
+
+/* The effects: one play each, as a playback beat appears (BeatEffects) */
+.hex-map .effects {
+    pointer-events: none;
+}
+
+.hex-map .fx-ring {
+    fill: none;
+    stroke-width: 2;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fx-ring 0.9s ease-out both;
+}
+
+@keyframes fx-ring {
+    from { transform: scale(0.3); opacity: 0.9; }
+    to { transform: scale(1.6); opacity: 0; }
+}
+
+.hex-map .fx-pop {
+    font-size: 15px;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fx-pop 1.2s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes fx-pop {
+    0% { transform: scale(0); opacity: 0; }
+    25% { transform: scale(1.35); opacity: 1; }
+    40% { transform: scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-6px); }
+}
+
+.hex-map .fx-army {
+    animation: fx-slide 0.8s ease-in both;
+}
+
+    .hex-map .fx-army circle {
+        stroke: #000;
+        stroke-width: 1.5;
+    }
+
+@keyframes fx-slide {
+    from { transform: translate(0, 0); }
+    85% { opacity: 1; }
+    to { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
+.hex-map .fx-clash {
+    fill: none;
+    stroke: #ffd27a;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fx-clash 0.5s ease-out 0.75s both;
+}
+
+@keyframes fx-clash {
+    0% { transform: scale(0.2); opacity: 0; }
+    40% { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+.hex-map .fx-wash {
+    animation: fx-wash 0.9s ease-out both;
+}
+
+@keyframes fx-wash {
+    from { stroke-width: 0; fill: var(--c); fill-opacity: 0.55; }
+    to { stroke-width: 2.2; fill: var(--c); fill-opacity: 0; }
+}
+
+.hex-map .fx-glyph {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fx-glyph 1.4s ease-out both;
+}
+
+    .hex-map .fx-glyph circle {
+        fill: none;
+        stroke: #9fd0ff;
+        stroke-width: 1.6;
+        stroke-dasharray: 3 3;
+    }
+
+    .hex-map .fx-glyph path {
+        fill: #9fd0ff;
+        fill-opacity: 0.8;
+    }
+
+@keyframes fx-glyph {
+    0% { transform: scale(0.5) rotate(-40deg); opacity: 0; }
+    30% { opacity: 1; }
+    100% { transform: scale(1.15) rotate(20deg); opacity: 0; }
 }
 
 /* The match page's top line: your colour, where the match is, your mana, and the way to the help page */
@@ -1472,4 +1760,11 @@ details.fold {
 
 .lobby-seats li {
     min-height: 1.75rem;
+}
+
+/* Last, so it wins over the pulses above: no pulsing for players who reduce motion */
+@media (prefers-reduced-motion: reduce) {
+    .seat-chip.now, .tray.your-pick .token:not(:disabled) .stance-icon, .token.open .stance-icon, .hex-map .fog {
+        animation: none;
+    }
 }

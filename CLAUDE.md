@@ -66,7 +66,11 @@ These hold for the platform, whatever the game:
 ## UI rules
 
 - Mobile-first. The UI must work at 360 px wide, with tap targets at least 44 px, and work one-handed.
-- Pages are text-first: numbers, short reports and simple forms. No canvas or game engine, and no JS framework.
+- The match page is board-first (owner's choice, 25 Oct 2026): the map is the main screen, the round's stances are a
+  tray of tokens under it, a one-line bubble says what's next in plain words, and small effects show what just happened.
+  The longer text and the numbers live in the preview (the ledger), the Report and Help. Effects are CSS keyframes and
+  inline SVG started by a render; no canvas or game engine, no JS framework, nothing extra to download. Other pages
+  stay text-first: short reports and simple forms.
 - Every action form shows its cost and its projected result before the player confirms (the old game's "ledger").
 - A change to pages gets a playtest run (`tools/Spellbound.Playtest`): it must pass, and look at the screenshots of the
   pages you changed. New pages and actions get a step in it.

@@ -53,7 +53,7 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
         Assert.Equal(new Army(2, 0), saved.Match.UnitsOn(home));
         Assert.Equal(0, saved.Match.Actor); // the bots took their turns, and it's merlin's again
         Assert.Equal(report.Lines, saved.LastReport);
-        Assert.Contains("Picked this round: Summon (You)", page, StringComparison.Ordinal);
+        Assert.Contains("aria-label=\"Summon, picked by you\"", page, StringComparison.Ordinal); // the stance tray
         Assert.Contains($"You summon 2 Imps at {TileNames.Of(saved.Match.Map, home)}", page, StringComparison.Ordinal); // in your words, by tile name
         Assert.Contains($"href=\"match/{id}#help\"", page, StringComparison.Ordinal); // the Help view: the trait's goal and the rules
         Assert.Contains($"href=\"match/{id}#report\"", page, StringComparison.Ordinal); // the view tabs

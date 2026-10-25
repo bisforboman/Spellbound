@@ -369,7 +369,8 @@ namespace Spellbound.Playtest
             // Round 1 starts with Merlin's pick (the opening's rotation goes on), so every stance is still free.
             await StepAsync(merlin, "summon", async page =>
             {
-                await Expect(page, "your pick");
+                await Expect(page, "Your pick.");
+                await page.Locator(".seat-chip.now:has-text('Your turn')").WaitForAsync(); // whose turn it is, pulsing
                 await UntilAsync(page, "Summon");
                 await Expect(page, "Tap one of your tiles to summon on");
                 // Tiles are chosen on the map only: a tile the stance can't use just shows what it is.
@@ -391,7 +392,7 @@ namespace Spellbound.Playtest
                 await page.Locator("#playback:has-text('The turns since yours')").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 await Expect(page, "You summon 3 Imps");
                 await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(options.Out, "turns-playback-screen.png"), FullPage = true });
-                await Expect(page, "Picked this round: Summon (You)");
+                await page.Locator(".tray button[data-stance='Summon'][aria-label='Summon, picked by you']").WaitForAsync(); // the tray shows who picked it
             });
             await StepAsync(merlin, "new-round", async page =>
             {
@@ -449,12 +450,12 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("The board still shows the report.");
                 }
 
-                var stances = page.Locator("label.choice:has(input[name='stance'])");
+                var stances = page.Locator(".tray button:not([disabled])");
                 await stances.Last.ClickAsync();
-                var chosen = await stances.Last.InnerTextAsync();
+                var chosen = await stances.Last.GetAttributeAsync("data-stance");
                 await page.ClickAsync(".match-tabs a:has-text('Report')");
                 await page.ClickAsync(".match-tabs a:has-text('Board')");
-                if (!await stances.Last.Locator("input").IsCheckedAsync())
+                if (await page.Locator($".tray button[data-stance='{chosen}'][aria-pressed='true']").CountAsync() == 0)
                 {
                     throw new PlaytestException($"A look at the report lost the stance chosen on the board ({chosen}).");
                 }
@@ -467,7 +468,7 @@ namespace Spellbound.Playtest
                 // Round 2 starts with a bot's pick: Merlin may take it too, or pass. Moves only come with his own pick.
                 if (await page.Locator("button:has-text('Pass')").CountAsync() > 0)
                 {
-                    await Expect(page, "Take it too, at full price, or pass");
+                    await Expect(page, "too, or pass?");
                     if (await page.Locator("button:has-text('Moves (optional)')").CountAsync() > 0)
                     {
                         throw new PlaytestException("Moves are offered on a turn that isn't Merlin's pick.");
@@ -879,13 +880,13 @@ namespace Spellbound.Playtest
             for (var turn = 0; turn < 60; turn++)
             {
                 await MyTurnAsync(page);
-                var label = page.Locator($"label.choice:has(input[name='stance']):has-text('{stance}:')");
+                var label = page.Locator($".tray button[data-stance='{stance}']:not([disabled])");
                 if (await label.CountAsync() > 0)
                 {
                     try
                     {
                         await label.ClickAsync(new LocatorClickOptions { Timeout = 5_000 });
-                        await page.Locator($"label.choice:has(input[name='stance']:checked):has-text('{stance}:')").WaitForAsync(new LocatorWaitForOptions { Timeout = 5_000 });
+                        await page.Locator($".tray button[data-stance='{stance}'][aria-pressed='true']").WaitForAsync(new LocatorWaitForOptions { Timeout = 5_000 });
                         return;
                     }
                     catch (TimeoutException)
@@ -981,7 +982,7 @@ namespace Spellbound.Playtest
                 return;
             }
 
-            var channel = page.Locator("label.choice:has-text('Channel:')");
+            var channel = page.Locator(".tray button[data-stance='Channel']:not([disabled])");
             if (await channel.CountAsync() > 0)
             {
                 await channel.ClickAsync(quick);
@@ -989,7 +990,7 @@ namespace Spellbound.Playtest
                 return;
             }
 
-            await page.Locator("label.choice:has(input[name='stance'])").First.ClickAsync(quick);
+            await page.Locator(".tray button:not([disabled])").First.ClickAsync(quick);
             await TakeTurnAsync(page, "button:has-text('without using it')");
         }
 

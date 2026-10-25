@@ -13,10 +13,18 @@
 
 <div class="board-tray">
 <svg class="hex-map@(Art.Paths is null ? "" : " painted")" viewBox="@ViewBox" role="group" aria-label="The map">
-    @if (Art.Paths is not null)
-    {
-        <defs><clipPath id="hex-clip"><polygon points="@Points(0, 0)" /></clipPath></defs>
-    }
+    <defs>
+        @if (Art.Paths is not null)
+        {
+            <clipPath id="hex-clip"><polygon points="@Points(0, 0)" /></clipPath>
+        }
+        @* The fog of war over a rival's tile whose units you can't see: a pale mist, lighter at its heart. *@
+        <radialGradient id="fog-mist" cx="40%" cy="35%" r="75%">
+            <stop offset="0%" stop-color="#c9cfdc" stop-opacity="0.62" />
+            <stop offset="55%" stop-color="#9aa1b4" stop-opacity="0.42" />
+            <stop offset="100%" stop-color="#5d6274" stop-opacity="0.6" />
+        </radialGradient>
+    </defs>
     <g class="hex-depth" aria-hidden="true">
         @foreach (var tile in Match.Map.Tiles)
         {
@@ -42,6 +50,10 @@
                 </g>
             }
             <polygon class="rim" points="@Points(x, y)" />
+            @if (unveiled && units is null && owner is not null)
+            {
+                <polygon class="fog" points="@Points(x, y)" fill="url(#fog-mist)" /> @* its units are hidden: the tile's label says so *@
+            }
             @if (unveiled)
             {
                 var corners = Corners(x, y, inset: 1.2);
@@ -69,10 +81,6 @@
                 @if (tile.IsGuarded)
                 {
                     @Label(x, y + 16, "hex-note", $"☠{tile.Guard}")
-                }
-                else if (units is null && owner is not null)
-                {
-                    @Label(x, y + 16, "hex-note fog", "?")
                 }
                 else if (units is { IsEmpty: false } seen)
                 {
@@ -106,6 +114,43 @@
             <path class="@(o == You ? "zone yours" : "zone")" style="stroke: @Seats.Ink(o)" d="@ZoneEdges(tile.Hex, o, x, y, inset)" />
         }
     </g>
+    @* What just happened, played once over the board (BeatEffects): new elements for each beat, so each plays afresh. *@
+    @if (Effects is { Count: > 0 } effects)
+    {
+        <g class="effects" @key="EffectsKey" aria-hidden="true">
+            @foreach (var fx in effects)
+            {
+                var (x, y) = Center(fx.At);
+                var ink = Seats.Ink(fx.Seat);
+                switch (fx.Kind)
+                {
+                    case EffectKind.Summon:
+                        <circle class="fx-ring" cx="@F(x)" cy="@F(y)" r="20" style="stroke: @ink" />
+                        @Label(x, y - 14, "fx-pop", fx.Label ?? "+")
+                        break;
+                    case EffectKind.Attack:
+                        @if (fx.From is { } from)
+                        {
+                            var (fx0, fy0) = Center(from);
+                            <g class="fx-army" style="--dx: @F(x - fx0)px; --dy: @F(y - fy0)px">
+                                <circle cx="@F(fx0)" cy="@F(fy0)" r="9" style="fill: @ink" />
+                            </g>
+                        }
+                        <path class="fx-clash" d="@ClashPath(x, y)" />
+                        break;
+                    case EffectKind.Take:
+                        <polygon class="fx-wash" points="@Points(x, y)" style="--c: @ink; stroke: @ink" />
+                        break;
+                    case EffectKind.Cast:
+                        <g class="fx-glyph">
+                            <circle cx="@F(x)" cy="@F(y)" r="21" />
+                            <path d="@GlyphPath(x, y)" />
+                        </g>
+                        break;
+                }
+            }
+        </g>
+    }
 </svg>
 </div>
 
@@ -151,6 +196,23 @@
     /// <summary>What each held tile paid as a round began, shown once as a "+N" rising from it; null otherwise.</summary>
     [Parameter]
     public IReadOnlyDictionary<Hex, int>? Gains { get; set; }
+
+    /// <summary>What just happened, to play once over the board (a playback beat's effects); null for none.</summary>
+    [Parameter]
+    public IReadOnlyList<Effect>? Effects { get; set; }
+
+    /// <summary>Which beat the effects are for: a new key draws them afresh, so they play again.</summary>
+    [Parameter]
+    public int EffectsKey { get; set; }
+
+    /// <summary>An attack's flash: a cross over the target.</summary>
+    private static string ClashPath(double x, double y) =>
+        $"M{F(x - 13)},{F(y - 13)} L{F(x + 13)},{F(y + 13)} M{F(x + 13)},{F(y - 13)} L{F(x - 13)},{F(y + 13)}";
+
+    /// <summary>A spell's glyph: a four-pointed star on the tile.</summary>
+    private static string GlyphPath(double x, double y) =>
+        $"M{F(x)},{F(y - 15)} L{F(x + 4)},{F(y - 4)} L{F(x + 15)},{F(y)} L{F(x + 4)},{F(y + 4)} L{F(x)},{F(y + 15)} "
+        + $"L{F(x - 4)},{F(y + 4)} L{F(x - 15)},{F(y)} L{F(x - 4)},{F(y - 4)} Z";
 
     /// <summary>The round the gains are for: each round's chips are new elements, so their animation plays again.</summary>
     private int Round => Match.CurrentRound;

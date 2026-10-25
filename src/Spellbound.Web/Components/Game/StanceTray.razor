@@ -1,0 +1,63 @@
+@* The round's six stances as tokens on the table under the map (docs/theme.md, "The board", owner's choice,
+   25 Oct 2026): a token someone picked this round is turned over and wears its picker's colour, the stance going round
+   the table pulses with a "Now" tag, and on your turn the tokens you can take are buttons. When it's your pick the free
+   tokens glow; on anyone else's turn they're dimmed, so it's plain whether you choose now (the owner's ask, 25 Oct
+   2026). A line under the tray says which stance is going round, or who picks. *@
+
+<div class="tray@(YourPick ? " your-pick" : " not-yours")" role="group" aria-label="This round's stances">
+    @foreach (var s in Enum.GetValues<Stance>())
+    {
+        var stance = s;
+        var pick = Match.Picks.FirstOrDefault(p => p.Stance == stance);
+        var open = Match.OpenStance == stance;
+        var choosable = OnChoose.HasDelegate && (Match.OpenStance is null ? pick is null : open);
+        var ink = pick is null ? "" : $"--c: {Seats.Ink(pick.Seat)}";
+        var classes = "token" + (pick is not null && !open ? " taken" : "") + (open ? " open" : "") + (Chosen == stance ? " on" : "");
+        <button type="button" class="@classes"
+                style="@ink" data-stance="@stance" disabled="@(!choosable)"
+                aria-pressed="@(Chosen == stance ? "true" : "false")" aria-label="@Label(stance, pick)" @onclick="() => OnChoose.InvokeAsync(stance)">
+            <StanceIcon Stance="stance" />
+            <span class="token-name">@stance</span>
+            @if (open)
+            {
+                <span class="token-now">Now</span>
+            }
+        </button>
+    }
+</div>
+<p class="tray-now">@Now()</p>
+
+@code {
+    [Parameter, EditorRequired]
+    public Match Match { get; set; } = default!;
+
+    /// <summary>Who sits in each seat (null for a bot), to name a stance's picker.</summary>
+    [Parameter]
+    public IReadOnlyList<string?>? Owners { get; set; }
+
+    [Parameter]
+    public int? You { get; set; }
+
+    /// <summary>The stance chosen on the form, marked; none when the tray only shows the round.</summary>
+    [Parameter]
+    public Stance? Chosen { get; set; }
+
+    /// <summary>A tap on a token that can be taken now; without it the tray is only to look at.</summary>
+    [Parameter]
+    public EventCallback<Stance> OnChoose { get; set; }
+
+    /// <summary>Whether it's your turn to pick a stance (the tray's free tokens are then the choice).</summary>
+    private bool YourPick => OnChoose.HasDelegate && Match.OpenStance is null;
+
+    /// <summary>Which stance is going round and whose it is, or who picks next.</summary>
+    private string Now() => Match.OpenStance is { } open
+        ? $"Now: {open}, picked by {Name(Match.Picks[^1].Seat)}."
+        : YourPick ? "Your pick: tap a stance." : Match.Actor is { } actor ? $"{Capital(Name(actor))} {(actor == You ? "pick" : "picks")} next." : "";
+
+    private string Name(int seat) => seat == You ? "you" : Owners?[seat] is null ? $"Bot {seat + 1}" : $"Seat {seat + 1}";
+
+    private static string Capital(string text) => char.ToUpperInvariant(text[0]) + text[1..];
+
+    private string Label(Stance stance, StancePick? pick) =>
+        pick is null ? $"{stance}, free" : $"{stance}, picked by {(pick.Seat == You ? "you" : Owners?[pick.Seat] is null ? $"Bot {pick.Seat + 1}" : $"Seat {pick.Seat + 1}")}";
+}
