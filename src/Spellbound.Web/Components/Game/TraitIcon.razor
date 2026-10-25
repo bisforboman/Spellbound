@@ -1,0 +1,62 @@
+@* A trait's icon: a woodcut-style mark on a 24-unit grid, in the current text colour (see docs/theme.md, "Trait icons"). *@
+<svg class="trait-icon" viewBox="0 0 24 24" width="@Size" height="@Size" role="img" aria-label="@Trait"
+     fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linejoin="round" stroke-linecap="round">
+    <title>@Trait</title>
+    @switch (Trait)
+    {
+        case Trait.Wildheart:
+            @* A flame. *@
+            <path fill-rule="evenodd" d="M12 1.5c1 3.2 4.6 5.4 5.8 9 1.4 4.3-.9 9.8-5.8 11-4.9-1.2-7.2-6.7-5.8-11 .4-1.3 1.2-2.4 2-3.2.1 2 .9 3.2 2 3.7-.8-3.5.3-6.8 1.8-9.5zM12 13c-1.6 1.7-2.5 3.4-2.1 5 .3 1.3 1.1 2 2.1 2.4 1-.4 1.8-1.1 2.1-2.4.4-1.6-.5-3.3-2.1-5z" />
+            break;
+        case Trait.Hearthkeeper:
+            @* A hearth: a house with a chimney and a fire in its arched doorway. *@
+            <path fill-rule="evenodd" d="M12 2 1.5 11.5h3V22h15V11.5h3L19 8.3V3.5h-3v2.1zM8.5 22v-5.5a3.5 3.5 0 0 1 7 0V22z" />
+            <path d="M12 15.2c.9 1 1.8 2 1.8 3.4 0 1.2-.8 2.1-1.8 2.1s-1.8-.9-1.8-2.1c0-1.4.9-2.4 1.8-3.4z" />
+            break;
+        case Trait.Weaver:
+            @* Three hexes joined in one group. *@
+            <path d="M8 4.7 11.7 6.8v4.4L8 13.3 4.3 11.2V6.8zM16 4.7l3.7 2.1v4.4L16 13.3l-3.7-2.1V6.8zM12 11.6l3.7 2.2v4.3L12 20.2l-3.7-2.1v-4.3z" />
+            break;
+        case Trait.Wanderer:
+            @* Three small hexes far apart, a dotted trail between them. *@
+            <path d="M4.8 1.5l3.3 1.9v3.8L4.8 9.1 1.5 7.2V3.4zM19.2 7.5l3.3 1.9v3.8l-3.3 1.9-3.3-1.9V9.4zM8 15l3.3 1.9v3.8L8 22.6l-3.3-1.9v-3.8z" />
+            <path fill="none" stroke-width="1.6" stroke-dasharray="0.1 3" d="M8.6 6.6 15.4 9.6M17.4 14 11.6 17.4" />
+            break;
+        case Trait.Beastbane:
+            @* A beast's skull. *@
+            <path fill-rule="evenodd" d="M12 1.5c-5.2 0-8.5 3.4-8.5 8 0 2.7 1.2 4.6 3 5.7V18h2v-2h2v3h3v-3h2v2h2v-2.8c1.8-1.1 3-3 3-5.7 0-4.6-3.3-8-8.5-8zM8.2 7.6a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8zm7.6 0a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8zM12 12.3l1.3 2.4h-2.6z" />
+            <path d="M6.5 19.5h11v1.5L15.5 22.5h-7L6.5 21z" />
+            break;
+        case Trait.Warbrand:
+            @* A sword, point up. *@
+            <path d="M12 1 14.5 4.5v10h-5v-10zM4.5 14.5h15v2.9h-15zM10.6 17.4h2.8v2.4h-2.8zM12 18.6a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4z" />
+            break;
+        case Trait.Golemwright:
+            @* A golem's stone fist: four knuckle blocks over a squared hand, the thumb across. *@
+            <path d="M4 4h3.6v6H4zM8.4 3h3.6v7H8.4zM12.8 3h3.6v7h-3.6zM17.2 4.5h3.3v5.5h-3.3zM4 11h10.4L13 14H4zM15.6 11h4.9v3h-6.3zM4 15.2h16.5v2.6L18 20.5V23H7v-2.5L4 17.8z" />
+            break;
+        case Trait.Spellweaver:
+            @* A spell sigil: a four-pointed star with two lesser sparks. *@
+            <path d="M10.5 3 12.4 9.6 19 11.5 12.4 13.4 10.5 20 8.6 13.4 2 11.5 8.6 9.6zM19 1.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9zM18.5 16l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" />
+            break;
+        case Trait.Warden:
+            @* A shield with a cross band. *@
+            <path fill-rule="evenodd" d="M12 1.5 21 4.5V11c0 5.5-3.8 9.6-9 11.5C6.8 20.6 3 16.5 3 11V4.5zM10.6 5v5.2H5.6v2.6h5.2v6.8c.4.2.8.4 1.2.6.4-.2.8-.4 1.2-.6v-6.8h5.2v-2.6h-5.2V5z" />
+            break;
+        case Trait.Hexer:
+            @* A curse mark: an evil eye weeping blight. *@
+            <path fill-rule="evenodd" d="M1 10.5C3.8 6 7.6 3.8 12 3.8S20.2 6 23 10.5c-2.8 4.5-6.6 6.7-11 6.7S3.8 15 1 10.5zm11-4.3a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6z" />
+            <path d="M12 8.2a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6zM12 17.2c.9 1.5 1.6 2.6 1.6 3.6a1.6 1.6 0 0 1-3.2 0c0-1 .7-2.1 1.6-3.6z" />
+            break;
+    }
+</svg>
+
+@code {
+    /// <summary>The trait to draw.</summary>
+    [Parameter, EditorRequired]
+    public Trait Trait { get; set; }
+
+    /// <summary>The icon's width and height in CSS pixels.</summary>
+    [Parameter]
+    public int Size { get; set; } = 22;
+}

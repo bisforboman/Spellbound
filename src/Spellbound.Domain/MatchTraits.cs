@@ -112,7 +112,7 @@ public sealed partial class Match
         static (int, int) Per(int count, int per) => (count, count / per);
     }
 
-    /// <summary>At the end: every seat's trait is revealed with its goal, and the goal's points are added.</summary>
+    /// <summary>At the end: every seat's goal is counted, and its points are added.</summary>
     private void ScoreTraits(ReportLines lines)
     {
         foreach (var seat in seats.Where(s => s.Trait is not null))
@@ -140,7 +140,8 @@ public sealed partial class Match
         _ => count.ToString(System.Globalization.CultureInfo.InvariantCulture),
     };
 
-    /// <summary>At the end of the opening: a seat that hasn't chosen gets the first trait of its offer.</summary>
+    /// <summary>At the end of the opening: a seat that hasn't chosen gets the first trait of its offer, and every trait is
+    /// shown to everyone.</summary>
     private void SettleTraits(ReportLines lines)
     {
         foreach (var seat in seats)
@@ -154,9 +155,10 @@ public sealed partial class Match
             lines.Add($"Seat {seat.Index + 1} didn't choose a trait, so it takes the first one it was offered.");
         }
 
+        // Every trait is open from the first round (owner's choice, 25 Oct 2026; secret until the end before that).
         if (seats.Any(s => s.Trait is not null))
         {
-            lines.Add("Every trait stays secret until the end.");
+            lines.Add($"The traits: {string.Join("; ", seats.Where(s => s.Trait is not null).Select(s => $"Seat {s.Index + 1}, {s.Trait}"))}.");
         }
     }
 
