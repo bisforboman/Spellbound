@@ -59,6 +59,14 @@ public sealed record GameRules
     public int AttuneCheapTiles { get; init; } = 3;
     public int AttunePricePerTileBeyond { get; init; } = 3;
 
+    /// <summary>An Attune's price is its base plus a die of this many faces, rolled when the stance is taken (the seat
+    /// then pays or declines).</summary>
+    public int AttuneDieFaces { get; init; } = 6;
+
+    /// <summary>What each step beyond the first from a seat's nearest tile adds to an Attune's base price: any free tile
+    /// can be attuned, nearby land is cheapest.</summary>
+    public int AttuneDistanceCost { get; init; } = 1;
+
     /// <summary>The rounds that start with a later Unveil, which reveals the tiles still dark, split evenly (an odd one
     /// goes to the earlier round). After the last of them the whole map is revealed.</summary>
     public IReadOnlyList<int> LaterUnveilRounds { get; init; } = [2, 4];

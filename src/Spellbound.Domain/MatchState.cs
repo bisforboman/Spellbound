@@ -19,7 +19,8 @@ public sealed record MatchState(
     IReadOnlyList<StancePick>? Picks = null, // the round's picks so far, and how many seats took the last one
     int Acted = 0,
     IReadOnlyList<WardState>? Wards = null, // this round's Wards and Blights, kept while the round is under way
-    IReadOnlyList<Hex>? Blights = null)
+    IReadOnlyList<Hex>? Blights = null,
+    AttuneOffer? Offer = null) // an Attune's rolled price, waiting to be paid or declined
 {
     public const int CurrentVersion = 1;
 }

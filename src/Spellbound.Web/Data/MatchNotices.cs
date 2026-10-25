@@ -15,6 +15,7 @@ public static class MatchNotices
     {
         ArgumentNullException.ThrowIfNull(match);
         return match.Phase == MatchPhase.Opening ? $"opening draft {match.OpeningUnveil}, pick {match.PickNumber}"
+            : match.Offer is not null ? $"round {match.CurrentRound}, an Attune price"
             : match.OpenStance is { } open ? $"round {match.CurrentRound}, {open}"
             : $"round {match.CurrentRound}, pick {match.Picks.Count + 1}";
     }

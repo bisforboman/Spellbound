@@ -121,21 +121,71 @@ public class RoundPlayTests
         Assert.Equal(price, GameRules.Default.AttunePrice(tiles));
 
     [Fact]
-    public void Attuning_claims_a_free_tile_next_to_yours_for_one_plus_one_per_tile_held_up_to_three()
+    public void Attuning_rolls_a_price_of_the_base_and_a_die_and_paying_it_takes_the_tile()
     {
         var match = FirstWhere(m => FreeNeighbours(m, 0).Any());
         var target = FreeNeighbours(match, 0).First();
         var mana = match.Seats[0].Mana;
 
         var check = match.Check(Orders.Attune(0, target));
-        var report = match.Resolve(HoldAll(match, Orders.Attune(0, target)), new SeededRandom(7));
+        var roll = match.Take(Orders.Attune(0, target), new SeededRandom(7));
+        var offer = match.Offer!;
 
-        Assert.Contains(check.Lines, l => l.Contains("for 4 mana", StringComparison.Ordinal));
-        Assert.True(report.Succeeded);
+        Assert.Contains(check.Lines, l => l.Contains("4 + a die, so 5–10 mana", StringComparison.Ordinal));
+        Assert.True(roll.Succeeded);
+        Assert.Equal((0, target, 4 + offer.Roll), (offer.Seat, offer.Tile, offer.Price));
+        Assert.Contains(roll.Lines, l => l.StartsWith($"Seat 1 rolls a {offer.Roll}", StringComparison.Ordinal));
+        Assert.Null(match.OwnerOf(target)); // not yet: the seat sees the price first
+        Assert.Equal(0, match.Actor);
+
+        Assert.True(match.Settle(0, pay: true, new SeededRandom(7)).Succeeded);
         Assert.Equal(0, match.OwnerOf(target));
-        Assert.Equal(4, match.Seats[0].Tiles.Count);
-        var income = match.Seats[0].Tiles.Sum(h => match.Map[h].Yield!.Value);
-        Assert.Equal(mana - 4 + income, match.Seats[0].Mana);
+        Assert.Equal(mana - offer.Price, match.Seats[0].Mana);
+        Assert.Null(match.Offer);
+        Assert.Equal(1, match.Actor); // the turn is over
+    }
+
+    [Fact]
+    public void Declining_a_rolled_price_pays_nothing_and_ends_the_turn()
+    {
+        var match = FirstWhere(m => FreeNeighbours(m, 0).Any());
+        var target = FreeNeighbours(match, 0).First();
+        var mana = match.Seats[0].Mana;
+        match.Take(Orders.Attune(0, target), new SeededRandom(7));
+
+        var report = match.Settle(0, pay: false, new SeededRandom(7));
+
+        Assert.True(report.Succeeded);
+        Assert.Contains(report.Lines, l => l.StartsWith("Seat 1 won't pay", StringComparison.Ordinal));
+        Assert.Null(match.OwnerOf(target));
+        Assert.Equal(mana, match.Seats[0].Mana);
+        Assert.Equal(1, match.Actor);
+    }
+
+    [Fact]
+    public void While_a_price_waits_nothing_else_can_be_done_and_settling_it_wrongly_changes_nothing()
+    {
+        var match = FirstWhere(m => FreeNeighbours(m, 0).Any());
+        var target = FreeNeighbours(match, 0).First();
+        match.Take(Orders.Attune(0, target), new SeededRandom(7));
+        var before = Snapshot(match);
+
+        Assert.Contains("price to pay or decline first", match.Check(Orders.Channel(0)).Lines[0], StringComparison.Ordinal);
+        Assert.False(match.Settle(1, pay: true, new SeededRandom(7)).Succeeded);
+        Assert.Equal(before, Snapshot(match));
+    }
+
+    [Fact]
+    public void Any_free_tile_can_be_attuned_and_each_step_beyond_the_first_adds_one_to_the_base()
+    {
+        var match = FirstWhere(m => m.Map.Tiles.Any(t => t.IsUnveiled && !t.IsGuarded && m.OwnerOf(t.Hex) is null
+            && m.Seats[0].Tiles.Min(h => h.DistanceTo(t.Hex)) >= 2));
+        var far = match.Map.Tiles.First(t => t.IsUnveiled && !t.IsGuarded && match.OwnerOf(t.Hex) is null
+            && match.Seats[0].Tiles.Min(h => h.DistanceTo(t.Hex)) >= 2).Hex;
+        var steps = match.Seats[0].Tiles.Min(h => h.DistanceTo(far));
+
+        Assert.Equal(4 + steps - 1, match.AttuneBase(0, far));
+        Assert.True(match.Check(Orders.Attune(0, far)).Succeeded);
     }
 
     [Fact]
@@ -146,6 +196,7 @@ public class RoundPlayTests
         var mana = match.Seats[1].Mana;
 
         Assert.True(match.Take(Orders.Attune(0, target), new SeededRandom(7)).Succeeded);
+        Assert.True(match.Settle(0, pay: true, new SeededRandom(7)).Succeeded);
         var before = Snapshot(match);
         var late = match.Take(Orders.Attune(1, target), new SeededRandom(7));
 
@@ -195,8 +246,7 @@ public class RoundPlayTests
         { "summon on a rival's tile", "only be summoned on your own tiles" },
         { "summon too many", "cost 2 mana each" },
         { "attune an owned tile", "Only a free, unveiled tile" },
-        { "attune far away", "isn't next to any of your tiles" },
-        { "attune too dear", "Attuning costs 103 mana" },
+        { "attune too dear", "costs at least 104 mana" },
         { "move off your land", "only move between your own tiles" },
         { "move units you don't have", "There aren't 1 Imp" },
         { "move two steps", "aren't next to each other" },
@@ -225,7 +275,6 @@ public class RoundPlayTests
             "summon on a rival's tile" => HoldAll(match, Orders.Summon(0, rival, UnitKind.Imp, 1)),
             "summon too many" => HoldAll(match, Orders.Summon(0, mine[0], UnitKind.Golem, int.MaxValue)),
             "attune an owned tile" => HoldAll(match, Orders.Attune(0, rival)),
-            "attune far away" => HoldAll(match, Orders.Attune(0, lonely)),
             "attune too dear" => HoldAll(match, Orders.Attune(0, free)),
             "move off your land" => HoldAll(match, Scenarios.Hold(0, new Move(mine[0], rival, new Army(1, 0)))),
             "move units you don't have" => HoldAll(match, Scenarios.Hold(0, new Move(near.a, near.b, new Army(1, 0)))),

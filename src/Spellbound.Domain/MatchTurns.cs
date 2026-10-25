@@ -57,6 +57,11 @@ public sealed partial class Match
     /// <summary>Why this stance can't be taken now (as the open stance on the seat's turn, else as a pick); null if it can.</summary>
     private string? TurnProblem(Orders orders)
     {
+        if (offer is { } waiting)
+        {
+            return $"Seat {waiting.Seat + 1} has an Attune price to pay or decline first.";
+        }
+
         if (!IsPick(orders))
         {
             var open = OpenStance!.Value;

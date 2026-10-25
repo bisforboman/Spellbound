@@ -119,8 +119,15 @@ public static partial class Simulation
                 var stancePaid = Math.Max(0, stanceCost - Math.Max(0, off - spell));
                 var owners = match.Map.Tiles.ToDictionary(t => t.Hex, t => (Owner: match.OwnerOf(t.Hex), t.IsGuarded));
                 lines.AddRange(Resolved(match.Take(order, random)));
+                if (match.Offer is { } offer)
+                {
+                    var pays = Bot.Pays(match, actor);
+                    round.AttuneDeclines += pays ? 0 : 1;
+                    report.ManaSpent["Attune"] = report.ManaSpent.GetValueOrDefault("Attune") + (pays ? offer.Price : 0);
+                    lines.AddRange(Resolved(match.Settle(actor, pays, random)));
+                }
                 report.ManaSpent["Spell"] = report.ManaSpent.GetValueOrDefault("Spell") + spellPaid;
-                if (stancePaid > 0 && order.Target is { } target && (order.Stance != Stance.Attune || match.OwnerOf(target) == actor))
+                if (stancePaid > 0 && order.Target is not null && order.Stance != Stance.Attune) // an Attune's price is counted when it's paid
                 {
                     report.ManaSpent[order.Stance.ToString()] = report.ManaSpent.GetValueOrDefault(order.Stance.ToString()) + stancePaid;
                 }
@@ -223,6 +230,9 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         public int FreeTiles { get; internal set; }
         public int Attunes { get; internal set; }
         public int PricedOut { get; internal set; }
+
+        /// <summary>Attune prices rolled and not paid.</summary>
+        public int AttuneDeclines { get; internal set; }
         public int Conquests { get; internal set; }
         public int MonstersCleared { get; internal set; }
         public int LastTileSaves { get; internal set; }
@@ -291,12 +301,12 @@ public sealed class SimulationReport(int players, int games, int seed, int round
         md.AppendLine();
         md.AppendLine("Actions taken (every seat may take each stance picked; Pass: a stance taken but aimed at nothing):");
         md.AppendLine();
-        md.AppendLine("| Round | Free tiles | Attack | Attune | Summon | Build | Cast | Channel | Pass | Attuned | Priced out | Conquests | Monsters cleared | Last tile saved |");
-        md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+        md.AppendLine("| Round | Free tiles | Attack | Attune | Summon | Build | Cast | Channel | Pass | Attuned | Priced out | Conquests | Monsters cleared | Last tile saved | Attune declined |");
+        md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
         for (var r = 0; r < Rounds.Count; r++)
         {
             var s = Rounds[r];
-            md.AppendLine(c, $"| {r + 1} | {PerGame(s.FreeTiles)} | {PerGame(s.Stances["Attack"])} | {PerGame(s.Stances["Attune"])} | {PerGame(s.Stances["Summon"])} | {PerGame(s.Stances["Build"])} | {PerGame(s.Stances["Cast"])} | {PerGame(s.Stances["Channel"])} | {PerGame(s.Stances["Pass"])} | {PerGame(s.Attunes)} | {PerGame(s.PricedOut)} | {PerGame(s.Conquests)} | {PerGame(s.MonstersCleared)} | {PerGame(s.LastTileSaves)} |");
+            md.AppendLine(c, $"| {r + 1} | {PerGame(s.FreeTiles)} | {PerGame(s.Stances["Attack"])} | {PerGame(s.Stances["Attune"])} | {PerGame(s.Stances["Summon"])} | {PerGame(s.Stances["Build"])} | {PerGame(s.Stances["Cast"])} | {PerGame(s.Stances["Channel"])} | {PerGame(s.Stances["Pass"])} | {PerGame(s.Attunes)} | {PerGame(s.PricedOut)} | {PerGame(s.Conquests)} | {PerGame(s.MonstersCleared)} | {PerGame(s.LastTileSaves)} | {PerGame(s.AttuneDeclines)} |");
         }
 
         md.AppendLine();

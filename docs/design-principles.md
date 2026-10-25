@@ -40,8 +40,9 @@ weighed less (owner, 21 Oct 2026).
 3. **A stance is a choice for everyone.** Every pick decides what all players may do next, and which stances are left.
    *(Was: one stance a round; it gave way to the same draft.)* (design; owner)
 4. **See the cost before you commit.** Every order shows what it costs and what it will do (the ledger, `check`).
-   Hidden information is about rivals, never about the rules. (design; praised by the Euro-gamer, 4X fan and Casual
-   player)
+   Hidden information is about rivals, never about the rules. A die with known odds isn't hidden: rolled yields show
+   their range, and an Attune shows its price's range, then the rolled price before you pay it (25 Oct 2026). (design;
+   praised by the Euro-gamer, 4X fan and Casual player)
 5. **Points are banked and never lost.** What you earned early stays yours. (design, `discussions/scoring-and-end.md`)
 6. **Everyone stays in the game to the end.** A player's last tile can't be taken, and banked points keep a lead from
    being total. (design, `discussions/player-elimination.md`; game-design.md cited this as principle 12)

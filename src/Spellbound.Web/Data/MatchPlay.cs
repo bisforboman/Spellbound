@@ -38,6 +38,14 @@ public sealed class MatchPlay(MatchStore store, TimeProvider time)
     public Task<Report> OrdersAsync(long id, string ownerId, Orders orders) =>
         CommitAsync(id, ownerId, orders, (match, seat, mine) => match.Check(mine with { Seat = seat }));
 
+    /// <summary>The player pays the Attune price the die rolled for them, taking the tile, or declines it; either ends
+    /// their turn.</summary>
+    public Task<Report> SettleAsync(long id, string ownerId, bool pay) =>
+        CommitAsync(id, ownerId, new MatchSteps.AttuneChoice(pay), (match, seat, choice) =>
+            match.Offer is not { } offer || offer.Seat != seat ? Report.Fail("There's no Attune price waiting for you.")
+            : choice.Pay && offer.Price > match.Seats[seat].Mana ? Report.Fail($"It costs {offer.Price} mana; you have {match.Seats[seat].Mana}.")
+            : new Report(true, [choice.Pay ? $"Pay {offer.Price} mana." : "Decline."]));
+
     /// <summary>The player takes back what they committed this step, if it hasn't resolved yet.</summary>
     public Task<bool> WithdrawAsync(long id, string ownerId) => store.WithdrawAsync(id, ownerId);
 

@@ -33,6 +33,7 @@ public sealed class MatchStoreTests : TestDatabase
         var match = loaded.Match;
         return match.Phase == MatchPhase.Opening
             ? match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random)
+            : match.Offer is { } offer ? match.Settle(offer.Seat, Bot.Pays(match, offer.Seat), random)
             : match.Take(Bot.ChooseOrders(match, match.Actor!.Value, random), random);
     }
 

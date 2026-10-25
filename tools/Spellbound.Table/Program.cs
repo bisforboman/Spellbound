@@ -159,6 +159,10 @@ static (Spellbound.Table.Action? Action, string[] Lines) Validate(TableState tab
         case Spellbound.Table.Action.PickTile pick:
             var pickCheck = match.CheckPick(pick.Pick);
             return (pickCheck.Succeeded ? action : null, [.. pickCheck.Lines]);
+        case Spellbound.Table.Action.Settle settle when match.Offer is { } offer && offer.Seat == seat:
+            return (action, [settle.Pay ? $"Pay {offer.Price} mana for it." : "Decline it."]);
+        case Spellbound.Table.Action.Settle:
+            return (null, ["There's no Attune price waiting for you."]);
         case Spellbound.Table.Action.GiveOrders orders:
             var check = match.Check(orders.Orders);
             return (check.Succeeded ? action : null, [.. check.Lines]);
@@ -189,16 +193,19 @@ TableState Resolve(TableState table)
     else
     {
         var actor = match.Actor!.Value;
-        report = match.Take(table.Pending.TryGetValue(actor, out var json)
-            ? ((Spellbound.Table.Action.GiveOrders)Spellbound.Table.Action.Parse(json, actor).Action!).Orders
-            : Bot.ChooseOrders(match, actor, random), random);
+        var action = table.Pending.TryGetValue(actor, out var json) ? Spellbound.Table.Action.Parse(json, actor).Action : null;
+        report = action switch
+        {
+            Spellbound.Table.Action.Settle settle => match.Settle(actor, settle.Pay, random),
+            Spellbound.Table.Action.GiveOrders give => match.Take(give.Orders, random),
+            _ => Bot.PlayTurn(match, actor, random),
+        };
     }
 
     // The scripted bots take their turns at once, until it is an AI seat's turn again (or the match is over).
     while (report.Succeeded && match.Phase == MatchPhase.Rounds && !table.AiSeats.Contains(match.Actor!.Value))
     {
-        var more = match.Take(Bot.ChooseOrders(match, match.Actor!.Value, random), random);
-        report = new Report(more.Succeeded, [.. report.Lines, .. more.Lines], [.. report.Lines.Select((_, i) => report.TagOf(i)), .. more.Lines.Select((_, i) => more.TagOf(i))]);
+        report = report.Then(Bot.PlayTurn(match, match.Actor!.Value, random));
     }
 
     TableFile.Log(file, new { step = table.Step, resolved = report.Succeeded, lines = report.Lines });

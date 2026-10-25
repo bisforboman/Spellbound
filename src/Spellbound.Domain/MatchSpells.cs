@@ -19,7 +19,7 @@ public sealed partial class Match
         ArgumentNullException.ThrowIfNull(orders);
         return orders.Target is null ? 0 : orders.Stance switch
         {
-            Stance.Attune => Rules.AttunePrice(seats[orders.Seat].Tiles.Count),
+            Stance.Attune => AttuneBase(orders.Seat, orders.Target.Value) + 1, // the cheapest roll
             Stance.Summon => Rules.CostOf(orders.Kind) * orders.Count,
             Stance.Build => Rules.UpgradeCost,
             Stance.Cast => SpellCostOf(orders),

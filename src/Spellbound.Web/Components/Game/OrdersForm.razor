@@ -111,7 +111,7 @@ else
 @code {
     private static readonly IReadOnlyDictionary<string, string> AllChoices = new Dictionary<string, string>
     {
-        ["Attune"] = "claim a free tile next to your land",
+        ["Attune"] = "claim a free tile; near your land is cheapest, and a die sets the price",
         ["Summon"] = "spend mana on units",
         ["Attack"] = "send units at a rival's or a monster's tile",
         ["Build"] = "an upgrade on one of your tiles",
@@ -237,7 +237,7 @@ else
         {
             "Channel" => $"Channel: gain {Match.Rules.ChannelMana} mana.",
             _ when !StanceTargets().Any() => NoTarget(),
-            "Attune" => "Tap a free tile next to your land.",
+            "Attune" => "Tap a free tile: near your land is cheapest.",
             "Summon" => "Tap one of your tiles to summon on.",
             "Build" => "Tap one of your tiles without an upgrade.",
             "Cast" when spell == Spell.Leyline && StanceTarget is not null && leylineTo is null => "Then choose where the units arrive.",
@@ -248,7 +248,7 @@ else
 
     private string NoTarget() => stance switch
     {
-        "Attune" => "No free tile next to your land this round.",
+        "Attune" => "No free tile on the map this round.",
         "Build" => "No tile of yours without an upgrade.",
         "Attack" => "Nothing to attack next to your units this round.",
         "Cast" => spell is { } s ? $"No tile for {s} this round." : "Choose a spell.",
@@ -501,7 +501,7 @@ else
     /// <summary>The tiles the chosen stance can aim at.</summary>
     private IEnumerable<Hex> StanceTargets() => stance switch
     {
-        "Attune" => FreeNextToYou(),
+        "Attune" => FreeTiles(),
         "Summon" => Me.Tiles,
         "Build" => Me.Tiles.Where(h => Match.UpgradeOn(h) is null),
         "Attack" => AttackTargets(),
@@ -649,9 +649,9 @@ else
         };
     }
 
-    private IEnumerable<Hex> FreeNextToYou() =>
-        Me.Tiles.SelectMany(Match.Map.NeighboursOf).Distinct()
-            .Where(h => Match.Map[h].IsUnveiled && !Match.Map[h].IsGuarded && Match.OwnerOf(h) is null);
+    /// <summary>The tiles an Attune can claim: any free, unveiled, unguarded tile (the further, the dearer).</summary>
+    private IEnumerable<Hex> FreeTiles() =>
+        Match.Map.Tiles.Where(t => t.IsUnveiled && !t.IsGuarded && Match.OwnerOf(t.Hex) is null).Select(t => t.Hex);
 
     private IEnumerable<Hex> AttackTargets() =>
         Me.Tiles.Where(h => !AfterMoves(h).IsEmpty).SelectMany(Match.Map.NeighboursOf).Distinct()
