@@ -87,7 +87,7 @@ int Act(int seat, string json)
         var pending = new Dictionary<int, string>(table.Pending) { [seat] = json };
         var next = table with { Pending = pending };
         var loaded = table.Load();
-        var ready = loaded.Phase == MatchPhase.Opening ? pending.ContainsKey(loaded.Picker!.Value) : table.AiSeats.All(pending.ContainsKey);
+        var ready = pending.ContainsKey(loaded.Phase == MatchPhase.Opening ? loaded.Picker!.Value : loaded.Actor!.Value);
         return ready ? (Resolve(next), (table.Step, null)) : (next, (table.Step, null));
     });
 
@@ -188,11 +188,17 @@ TableState Resolve(TableState table)
     }
     else
     {
-        report = match.Resolve(
-            [.. match.Seats.Select(s => table.Pending.TryGetValue(s.Index, out var json)
-                ? ((Spellbound.Table.Action.GiveOrders)Spellbound.Table.Action.Parse(json, s.Index).Action!).Orders
-                : Bot.ChooseOrders(match, s.Index, random))],
-            random);
+        var actor = match.Actor!.Value;
+        report = match.Take(table.Pending.TryGetValue(actor, out var json)
+            ? ((Spellbound.Table.Action.GiveOrders)Spellbound.Table.Action.Parse(json, actor).Action!).Orders
+            : Bot.ChooseOrders(match, actor, random), random);
+    }
+
+    // The scripted bots take their turns at once, until it is an AI seat's turn again (or the match is over).
+    while (report.Succeeded && match.Phase == MatchPhase.Rounds && !table.AiSeats.Contains(match.Actor!.Value))
+    {
+        var more = match.Take(Bot.ChooseOrders(match, match.Actor!.Value, random), random);
+        report = new Report(more.Succeeded, [.. report.Lines, .. more.Lines], [.. report.Lines.Select((_, i) => report.TagOf(i)), .. more.Lines.Select((_, i) => more.TagOf(i))]);
     }
 
     TableFile.Log(file, new { step = table.Step, resolved = report.Succeeded, lines = report.Lines });

@@ -139,7 +139,7 @@ public sealed class MatchPlayTests : TestDatabase
     {
         var id = await store.CreateAsync(["alice", "bob"], GameRules.Default, DateTimeOffset.UtcNow);
         await Opening.PickAsync(play, id, "alice", "bob");
-        await play.OrdersAsync(id, "alice", Orders.Hold(0));
+        await play.OrdersAsync(id, "alice", Scenarios.Hold(0));
 
         Assert.True(await play.WithdrawAsync(id, "alice"));
         Assert.Empty((await play.ViewAsync(id, "bob"))!.Committed);
@@ -157,7 +157,7 @@ public sealed class MatchPlayTests : TestDatabase
         Assert.False((await play.OrdersAsync(id, "alice", Orders.Summon(0, tile, UnitKind.Golem, 1000))).Succeeded);
         Assert.Equal([0], (await play.ViewAsync(id, "bob"))!.Committed);
 
-        await play.OrdersAsync(id, "bob", Orders.Hold(1));
+        await play.OrdersAsync(id, "bob", Scenarios.Hold(1));
         Assert.Equal(new Army(1, 0), (await play.ViewAsync(id, "alice"))!.Match.UnitsOn(tile)); // the first orders stood
     }
 
@@ -228,7 +228,7 @@ public sealed class MatchPlayTests : TestDatabase
 
         Assert.False(report.Succeeded);
         Assert.Equal(before, await WithDbAsync(db => db.LoadGameStateAsync(id)));
-        Assert.False((await play.OrdersAsync(id, "bob", Orders.Hold(0))).Succeeded);
+        Assert.False((await play.OrdersAsync(id, "bob", Scenarios.Hold(0))).Succeeded);
     }
 
     [Fact]
@@ -238,13 +238,13 @@ public sealed class MatchPlayTests : TestDatabase
 
         for (var round = 1; round <= 8; round++)
         {
-            Assert.True((await play.OrdersAsync(id, "alice", Orders.Hold(0))).Succeeded);
+            Assert.True((await play.OrdersAsync(id, "alice", Scenarios.Hold(0))).Succeeded);
         }
 
         var view = (await play.ViewAsync(id, "alice"))!;
         Assert.Equal(MatchPhase.Ended, view.Match.Phase);
         Assert.False(view.IsRunning);
         Assert.NotEmpty(view.Match.Winners);
-        Assert.Equal("This match has ended.", Assert.Single((await play.OrdersAsync(id, "alice", Orders.Hold(0))).Lines));
+        Assert.Equal("This match has ended.", Assert.Single((await play.OrdersAsync(id, "alice", Scenarios.Hold(0))).Lines));
     }
 }

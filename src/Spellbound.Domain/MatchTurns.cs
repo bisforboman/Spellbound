@@ -22,8 +22,9 @@ public sealed partial class Match
     /// <summary>The stance going round the table now, or null when the next seat is to pick one (or outside the rounds).</summary>
     public Stance? OpenStance => Phase == MatchPhase.Rounds && picks.Count > 0 && acted < TakersOf(picks[^1].Stance) ? picks[^1].Stance : null;
 
-    /// <summary>The seat that picks first this round.</summary>
-    public int FirstPicker => (Math.Max(CurrentRound, 1) - 1) % seats.Count;
+    /// <summary>The seat that picks first this round: the opening's rotation goes on (its Unveils start with seats 1, 2
+    /// and 3), so over a match the first picks spread as evenly as they can.</summary>
+    public int FirstPicker => (Math.Max(CurrentRound, 1) - 1 + Rules.OpeningUnveils) % seats.Count;
 
     /// <summary>The seat whose turn it is, to pick a stance or to take the open one; null outside the rounds.</summary>
     public int? Actor => Phase != MatchPhase.Rounds ? null
@@ -45,9 +46,10 @@ public sealed partial class Match
 
     private int TakersOf(Stance stance) => stance == Stance.Channel ? 1 : seats.Count;
 
-    /// <summary>Whether these orders are a pick: on the seat's turn when no stance is open, and also when it isn't the
-    /// seat's turn (a check then shows them as the seat's next pick).</summary>
-    private bool IsPick(Orders orders) => Actor != orders.Seat || OpenStance is null;
+    /// <summary>Whether these orders are a pick: when no stance is going round, or (for a check off the seat's turn) when
+    /// the seat has already had its turn on the one going round. Otherwise they take the open stance.</summary>
+    private bool IsPick(Orders orders) =>
+        OpenStance is null || (orders.Seat - picks[^1].Seat + seats.Count) % seats.Count < acted;
 
     /// <summary>The picker's discount on its own action; nothing for the seats that follow.</summary>
     private int DiscountFor(Orders orders) => IsPick(orders) && orders.Stance != Stance.Channel ? Rules.PickerDiscount : 0;

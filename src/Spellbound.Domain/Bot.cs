@@ -271,15 +271,19 @@ public static class Bot
             // A Warlord grows its army until it has a stack worth sending (8 power), then takes land as well; it scorches
             // or lures for its next attack.
             Plan.Warlord => mine.Max(Power) >= WarlordStack ? [attack, defend, warlordCast, attune, army] : [attack, defend, warlordCast, cheap, army, attune],
-            Plan.Builder => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, attune, monsterAttack, .. casts, some],
+            // A Builder and an Economist never pick Attack, but when someone else picks it they strike back if they can win.
+            Plan.Builder => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, attune, monsterAttack, .. casts, some, Following(attack)],
             // A Spellcaster builds one Sanctum (from round 2), then casts every round it has a spell worth casting.
             Plan.Spellcaster => [attack, defend, cheap, match.CurrentRound >= 2 ? sanctum : null, .. casts, attune, some],
             Plan.Expander => [defend, attune, attack, .. casts, some],
             // An Economist grows income: a Shrine on its best tile (from round 2), rich land first, monsters it can beat.
-            Plan.Economist => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, .. casts, attune, some],
+            Plan.Economist => [defend, cheap, match.CurrentRound >= 2 ? Build(Upgrade.Shrine) : null, richAttune, monsterAttack, .. casts, attune, some, Following(attack)],
             _ => [],
         };
         return order.OfType<Orders>();
+
+        // Orders to give only while another seat's pick goes round, never as a pick.
+        Orders? Following(Orders? orders) => match.OpenStance is not null ? orders : null;
     }
 
     /// <summary>The stack a Warlord builds before it also attunes.</summary>

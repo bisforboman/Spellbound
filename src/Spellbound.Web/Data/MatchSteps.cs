@@ -3,9 +3,9 @@ using Spellbound.Domain;
 namespace Spellbound.Web.Data;
 
 /// <summary>
-/// How a step resolves (docs/discussions/playing-with-friends.md): every person's commitment, a hold for each person who
-/// let the deadline go by (in the opening, a bot picks for them), and the bots' choices for the rest, with the step's
-/// randomness.
+/// How a step resolves (docs/discussions/playing-with-friends.md): a step is one seat's turn, an opening pick or a
+/// turn in a round. The person's commitment, else for a person who let the deadline go by a bot's pick in the opening
+/// and Channel or a pass in the rounds, else the bot's choice, with the step's randomness.
 /// </summary>
 public static class MatchSteps
 {
@@ -32,14 +32,14 @@ public static class MatchSteps
             return (match.Draft(pick, random), new HashSet<int>());
         }
 
-        List<Orders> all = [.. match.Seats.Select(s =>
-            committed.TryGetValue(s.Index, out var orders) ? MatchJson.Deserialize<Orders>(orders) with { Seat = s.Index }
-            : holding.Contains(s.Index) ? Orders.Hold(s.Index)
-            : Bot.ChooseOrders(match, s.Index, random))];
-        var attacked = all
-            .Where(o => o.Stance == Stance.Attack && o.Target is { } target && match.OwnerOf(target) is { } owner && owner != o.Seat)
-            .Select(o => match.OwnerOf(o.Target!.Value)!.Value)
-            .ToHashSet();
-        return (match.Resolve(all, random), attacked);
+        // A round's turn: the person's orders, else Channel or a pass for a person who let the deadline go by, else the bot's.
+        var actor = match.Actor!.Value;
+        var orders = committed.TryGetValue(actor, out var given) ? MatchJson.Deserialize<Orders>(given) with { Seat = actor }
+            : holding.Contains(actor) ? match.Passing(actor)
+            : Bot.ChooseOrders(match, actor, random);
+        var attacked = orders is { Stance: Stance.Attack, Target: { } target } && match.OwnerOf(target) is { } owner && owner != actor
+            ? new HashSet<int> { owner }
+            : new HashSet<int>();
+        return (match.Take(orders, random), attacked);
     }
 }

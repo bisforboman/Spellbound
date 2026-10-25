@@ -51,7 +51,7 @@ public sealed class MatchNoticeTests : TestDatabase
     }
 
     private Task HoldAsync(long id, string ownerId) =>
-        store.CommitAsync(id, ownerId, Start, MatchJson.Serialize(Orders.Hold(0)), (loaded, seat) => loaded.Match.Check(Orders.Hold(seat)));
+        store.CommitAsync(id, ownerId, Start, MatchJson.Serialize(Scenarios.Hold(0)), (loaded, seat) => loaded.Match.Check(Scenarios.Hold(seat)));
 
     /// <summary>Everyone picks in turn until the rounds begin.</summary>
     private async Task ThroughTheOpeningAsync(long id)
@@ -187,7 +187,7 @@ public sealed class MatchNoticeTests : TestDatabase
         {
             if (match.Seats[1].Tiles.FirstOrDefault(mine.IsNextTo) is var theirs && match.Seats[1].Tiles.Any(mine.IsNextTo))
             {
-                var summon = match.Resolve([Orders.Summon(0, mine, UnitKind.Imp, 2), Orders.Hold(1), Orders.Hold(2)], random);
+                var summon = match.Resolve([Orders.Summon(0, mine, UnitKind.Imp, 2), Scenarios.Hold(1), Scenarios.Hold(2)], random);
                 return summon.Succeeded ? (match, mine, theirs) : null;
             }
         }

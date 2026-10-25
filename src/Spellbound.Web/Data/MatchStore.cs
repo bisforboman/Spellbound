@@ -38,9 +38,9 @@ public sealed record LoadedMatch(long Id, IReadOnlyList<string?> Owners, Match M
     public IEnumerable<int> People => Owners.Select((owner, seat) => (owner, seat))
         .Where(s => s.owner is not null && !Away.Contains(s.seat)).Select(s => s.seat);
 
-    /// <summary>The people the current step waits on: in the opening, the one whose turn it is to pick (if a person),
-    /// and in the rounds, everyone.</summary>
-    public IEnumerable<int> InStep => People.Where(s => Match.Phase != MatchPhase.Opening || Match.Picker == s);
+    /// <summary>The person the current step waits on: the one whose turn it is, to pick a tile in the opening or to take
+    /// a turn in the rounds (none if it is a bot's).</summary>
+    public IEnumerable<int> InStep => People.Where(s => (Match.Phase == MatchPhase.Opening ? Match.Picker : Match.Actor) == s);
 
     /// <summary>The seat this account sits in, or null.</summary>
     public int? SeatOf(string ownerId)
@@ -345,9 +345,9 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
             return (report, []);
         }
 
-        // In the opening, bots pick at once until it is a person's turn (or the opening is over).
+        // Bots take their turns at once until it is a person's turn (or the match is over).
         var after = loaded with { Away = loaded.Away.Union(nowAway).ToHashSet() };
-        while (after.Match.Phase == MatchPhase.Opening && !after.InStep.Any())
+        while (after.Match.Phase != MatchPhase.Ended && !after.InStep.Any())
         {
             var (more, _) = MatchSteps.Resolve(after.Match, new Dictionary<int, string>(), new HashSet<int>(), StepRandom(seed, after.Match));
             if (!more.Succeeded)
@@ -428,7 +428,8 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
 
     /// <summary>Which step of a match a commitment is for: one pick of an opening draft, or a round.</summary>
     public static string StepKey(Match match) =>
-        match.Phase == MatchPhase.Opening ? $"opening-{match.OpeningUnveil}-{match.PickNumber}" : $"round-{match.CurrentRound}";
+        match.Phase == MatchPhase.Opening ? $"opening-{match.OpeningUnveil}-{match.PickNumber}"
+            : $"round-{match.CurrentRound}-{match.Picks.Count}-{match.OpenStance?.ToString() ?? "pick"}-{match.Actor}";
 
     /// <summary>The matches a player sits in, newest first.</summary>
     public async Task<IReadOnlyList<PlayerMatch>> ListForAsync(string ownerId)
@@ -456,16 +457,17 @@ public sealed class MatchStore(HostDatabase database, PushSink? push = null)
         (_, MatchPhase.Ended) => $"Over after {match.Rules.Rounds} rounds",
         (false, _) => "Ended early by an admin",
         (_, MatchPhase.Opening) => $"Opening draft {match.OpeningUnveil} of {match.Rules.OpeningUnveils}, pick {match.PickNumber} of {match.Seats.Count}",
-        _ => $"Round {match.CurrentRound} of {match.Rules.Rounds}",
+        _ when match.OpenStance is { } open => $"Round {match.CurrentRound} of {match.Rules.Rounds}, {open} going round",
+        _ => $"Round {match.CurrentRound} of {match.Rules.Rounds}, pick {match.Picks.Count + 1} of {match.Seats.Count}",
     };
 
-    /// <summary>The randomness for a match's next step, from its seed and where it is: each opening pick and each
-    /// round gets its own, so a step never depends on how often the match was saved before it. Not HashCode, which
+    /// <summary>The randomness for a match's next step, from its seed and where it is: each opening pick and each turn
+    /// of a round gets its own, so a step never depends on how often the match was saved before it. Not HashCode, which
     /// changes from one run of the server to the next.</summary>
     public static IRandomSource StepRandom(int seed, Match match) => new SeededRandom(unchecked(match.Phase switch
     {
         MatchPhase.Opening => seed + (10 * match.OpeningUnveil) + match.PickNumber,
-        _ => seed + 100 + match.CurrentRound,
+        _ => seed + 100 + (1000 * match.CurrentRound) + (20 * match.Picks.Count) + (match.OpenStance is null ? 0 : 10) + (match.Actor ?? 0),
     }));
 
     /// <summary>A match in an open transaction, with its seed and whether its game still runs; null if the game isn't

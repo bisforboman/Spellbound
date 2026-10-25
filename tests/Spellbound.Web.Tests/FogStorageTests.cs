@@ -22,7 +22,7 @@ public class FogStorageTests
     public void A_stored_report_keeps_whom_each_line_concerns_and_the_page_shows_a_player_only_theirs()
     {
         var match = Opened();
-        var report = match.Resolve([.. match.Seats.Select(s => Orders.Hold(s.Index))], new SeededRandom(1));
+        var report = match.Resolve([.. match.Seats.Select(s => Scenarios.Hold(s.Index))], new SeededRandom(1));
         var stored = MatchJson.Deserialize<StoredMatch>(MatchJson.Serialize(new StoredMatch(1, match.Save(), report.Lines, report.Tags)));
         var loaded = new LoadedMatch(1, ["alice", null, null], Match.Load(stored.Match, match.Rules))
         {

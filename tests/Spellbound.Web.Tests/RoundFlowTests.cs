@@ -76,7 +76,7 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
     {
         var id = await ToTheRoundsAsync();
 
-        var taps = await Task.WhenAll(Play.OrdersAsync(id, merlinId, Orders.Hold(0)), Play.OrdersAsync(id, merlinId, Orders.Hold(0)));
+        var taps = await Task.WhenAll(Play.OrdersAsync(id, merlinId, Scenarios.Hold(0)), Play.OrdersAsync(id, merlinId, Scenarios.Hold(0)));
         var saved = (await Play.ViewAsync(id, merlinId))!;
 
         // The player's row is locked, so the second tap waits and plays the next round; neither sees half a round.
@@ -94,12 +94,12 @@ public sealed class RoundFlowTests : TestDatabase, IAsyncLifetime
 
         for (var round = 1; round <= GameRules.Default.Rounds; round++)
         {
-            Assert.True((await Play.OrdersAsync(id, merlinId, Orders.Hold(0))).Succeeded);
+            Assert.True((await Play.OrdersAsync(id, merlinId, Scenarios.Hold(0))).Succeeded);
         }
 
         var game = await WithDbAsync(db => db.LoadGameAsync(id));
         var page = await merlin.GetStringAsync(new Uri($"/match/{id}", UriKind.Relative));
-        var after = await Play.OrdersAsync(id, merlinId, Orders.Hold(0));
+        var after = await Play.OrdersAsync(id, merlinId, Scenarios.Hold(0));
 
         Assert.NotNull(game!.EndedAt);
         Assert.Contains("The match is over", page, StringComparison.Ordinal);
