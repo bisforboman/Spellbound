@@ -5,7 +5,8 @@ namespace Spellbound.Web.Components.Game;
 /// <summary>
 /// The painted tile images (docs/tile-art.md), if they are there: <c>wwwroot/tiles/steady</c>, <c>shifting</c> and
 /// <c>wild</c>, as .webp, .png or .svg. The map uses them only when all three exist, so it never mixes art and plain
-/// tiles; until then it draws plain tiles with the types' symbols. Looked up once, at startup.
+/// tiles; until then it draws plain tiles with the types' symbols. <c>barren</c> is optional: without it a Barren tile
+/// is drawn plain, as ash, even on the painted map. Looked up once, at startup.
 /// </summary>
 public sealed class TileArt
 {
@@ -17,9 +18,12 @@ public sealed class TileArt
         var found = Enum.GetValues<TileType>().ToDictionary(t => t, t => Extensions
             .Select(e => $"tiles/{t.ToString().ToLowerInvariant()}{e}")
             .FirstOrDefault(path => environment.WebRootFileProvider.GetFileInfo(path).Exists));
-        Paths = found.Values.All(p => p is not null) ? found.ToDictionary(p => p.Key, p => p.Value!) : null;
+        Paths = found.Where(p => p.Key != TileType.Barren).All(p => p.Value is not null)
+            ? found.Where(p => p.Value is not null).ToDictionary(p => p.Key, p => p.Value!)
+            : null;
     }
 
-    /// <summary>Each type's image, relative to the web root, or null while any is missing.</summary>
+    /// <summary>Each type's image, relative to the web root (Barren's only if it is there), or null while any of the
+    /// other three is missing.</summary>
     public IReadOnlyDictionary<TileType, string>? Paths { get; }
 }

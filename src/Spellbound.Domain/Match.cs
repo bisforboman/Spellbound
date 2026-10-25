@@ -159,10 +159,11 @@ public sealed partial class Match
         }
     }
 
-    /// <summary>Turns over this many dark tiles, picked at random (never guarded: only later Unveils have monsters).</summary>
+    /// <summary>Turns over this many dark tiles, picked at random (never guarded, and never Barren: only later Unveils
+    /// have those).</summary>
     private List<Hex> RevealDark(int count, IRandomSource random)
     {
-        var dark = Map.Dark.Select(t => t.Hex).OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
+        var dark = Map.Dark.Where(t => t.Type != TileType.Barren).Select(t => t.Hex).OrderBy(h => h.Q).ThenBy(h => h.R).ToList();
         var revealed = new List<Hex>();
         for (var i = 0; i < count && dark.Count > 0; i++)
         {

@@ -85,7 +85,7 @@ public class TraitTests
         Assert.Equal(match.Seats[0].Offer[0], match.Seats[0].Trait);
         Assert.Equal(match.Seats[1].Offer[1], match.Seats[1].Trait);
         Assert.Contains(report.Lines, l => l == "Seat 1 didn't choose a trait, so it takes the first one it was offered.");
-        Assert.DoesNotContain(report.Lines, l => Enum.GetNames<Trait>().Any(t => l.Contains(t, StringComparison.Ordinal))); // secret
+        Assert.Contains($"The traits: Seat 1, {match.Seats[0].Trait}; Seat 2, {match.Seats[1].Trait}; Seat 3, {match.Seats[2].Trait}.", report.Lines); // open to all from round 1
         Assert.All(match.Seats, s => Assert.Equal(3, s.OpeningTiles.Count));
     }
 

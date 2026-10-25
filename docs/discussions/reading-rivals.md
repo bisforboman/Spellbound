@@ -49,6 +49,9 @@ Small.
 
 ## 2. Traits secret until the end
 
+*Reversed on 25 Oct 2026 (owner's choice): traits are open from the first round, with an icon by each seat. Trait
+guessing had already been removed (24 Oct), and an open trait is easier to read and plan around.*
+
 **Who asked:** the Bluffer, sessions 1 and 2: "keep traits secret until the end, so players guess, like Coup's hidden
 roles".
 

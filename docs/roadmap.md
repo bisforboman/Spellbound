@@ -49,6 +49,13 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   a spell); mock-ups in `tools/mockups/board-first.html`
 - [x] Attune by a rolled price (owner's choice, 25 Oct 2026): any free tile, a base by realm size + 1 a step + a die;
   the price is shown, then paid or declined (`Match.Settle`), on the page as Pay / Decline; bots pay when they can
+- [x] Barren land (owner's choice, 25 Oct 2026): a fourth tile type that yields nothing, only in the later Unveils and
+  never guarded, still land for points and Attune prices; one per 2 players (`PlayersPerBarrenTile`), plain ash on the
+  map until it has art (prompt in `tile-art.md`); measured in `game-design.md`, Tiles
+- [x] The fog of war's mist over the dark tiles too (owner's choice, 25 Oct 2026), fainter than over a rival's hidden units
+- [x] Traits open from round 1, with an icon each (owner's choice, 25 Oct 2026): `TraitIcon.razor` (drawn on 24 Oct
+  in its own session, [theme](theme.md), "Trait icons") on the trait draft, the turn chips, the standings, the rivals'
+  line and Help; the report names every seat's trait as the rounds begin
 - [ ] Retune after the stance draft: the Warbrand's goal (maxed in 98% of games) and the point scale; play the bots'
   turns back one at a time on the board
   updated (unspent mana at the end rose from 11 to 28 a seat: a fix is proposed to the owner, not built)
@@ -117,7 +124,7 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   per conquest, mana produced 1 per 10, no points for unspent mana (`discussions/strategies.md`)
 - [x] Reading rivals (`discussions/reading-rivals.md`), one at a time, asking the owner after each:
   - [x] Rally, the attacker's Ward (+2 power for 3 mana)
-  - [x] traits secret until the end (a guess at each rival's trait was built, then removed on 24 Oct 2026: the owner found it beside the point)
+  - [x] traits secret until the end (a guess at each rival's trait was built, then removed on 24 Oct 2026: the owner found it beside the point; traits open from round 1 since 25 Oct 2026)
   - [x] fog of war: rivals' far-off units and their mana hidden, and each player's report shows only what they could see
 - [x] An undefended capture scores 1 point, a defended one 2 (after the third AI-taste session: raids on empty tiles decided every match)
 - [x] Reinforcements with an attack: up to 3 power summoned at home, 1 mana more per unit (after the fourth AI-taste session)

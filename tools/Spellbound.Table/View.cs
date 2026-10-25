@@ -28,7 +28,7 @@ internal static class View
 
         foreach (var rival in match.Seats.Where(s => s.Index != seat))
         {
-            var shown = match.Phase == MatchPhase.Ended && rival.Trait is { } rt ? $", trait {rt}" : "";
+            var shown = match.Phase != MatchPhase.Opening && rival.Trait is { } rt ? $", trait {rt}" : ""; // open from round 1
             var mana = match.ManaSeenBy(seat, rival.Index) is { } m ? $"{m} mana" : "mana unseen";
             text.AppendLine($"Seat {rival.Index + 1}: {mana}, {rival.Tiles.Count} tiles, {rival.Score} points{shown}.");
         }
@@ -126,7 +126,7 @@ internal static class View
     private static string TraitList(GameRules r)
     {
         var match = Match.Start(2, r, new SeededRandom(1));
-        return "THE TRAITS (each player is offered their own, drafts one, and keeps it secret):" + Environment.NewLine
+        return "THE TRAITS (each player is offered their own and drafts one; everyone sees every trait from round 1):" + Environment.NewLine
             + string.Join(Environment.NewLine, Enum.GetValues<Trait>().Select(t => $"  {t}: {match.GoalText(t)}"));
     }
 

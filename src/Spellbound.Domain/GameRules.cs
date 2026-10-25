@@ -76,6 +76,13 @@ public sealed record GameRules
     public int GuardedFaces { get; init; } = 2;
     public int GuardDieFaces { get; init; } = 6;
 
+    /// <summary>The map has one Barren tile for every this many players, rounded up (3 players: 2), only ever revealed in
+    /// a later Unveil. 0 for none.</summary>
+    public int PlayersPerBarrenTile { get; init; } = 2;
+
+    /// <summary>How many Barren tiles a map for this many players has.</summary>
+    public int BarrenTiles(int players) => PlayersPerBarrenTile <= 0 ? 0 : (players + PlayersPerBarrenTile - 1) / PlayersPerBarrenTile;
+
     /// <summary>The battle power of a tile's monster guard.</summary>
     public int MonsterPower { get; init; } = 3;
 
@@ -199,11 +206,12 @@ public sealed record GameRules
     public int HexesPerTraitPoint { get; init; } = 1;
 
     // Tiles: the possible yields of each type, one entry per face of a die, so a type's spread and odds are both here.
-    // A held tile rolls its yield every round. On average every type yields 2.
+    // A held tile rolls its yield every round. On average every type yields 2, except Barren land, which yields nothing.
 
     public IReadOnlyList<int> SteadyYields { get; init; } = [2, 2, 2, 2, 2, 2];
     public IReadOnlyList<int> ShiftingYields { get; init; } = [1, 1, 2, 2, 3, 3];
     public IReadOnlyList<int> WildYields { get; init; } = [0, 1, 2, 2, 3, 4];
+    public IReadOnlyList<int> BarrenYields { get; init; } = [0];
 
     public int MapRadius(int players)
     {
@@ -242,6 +250,7 @@ public sealed record GameRules
         TileType.Steady => SteadyYields,
         TileType.Shifting => ShiftingYields,
         TileType.Wild => WildYields,
+        TileType.Barren => BarrenYields,
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
     };
 }

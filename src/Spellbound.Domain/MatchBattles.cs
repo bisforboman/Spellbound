@@ -5,7 +5,7 @@ namespace Spellbound.Domain;
 public sealed partial class Match
 {
     /// <summary>Reveals the tiles still dark, split evenly over the later Unveil rounds that are left (an odd one goes
-    /// to the earlier round). Each revealed tile is guarded by monsters on a roll of the guard die.</summary>
+    /// to the earlier round). Each revealed tile but a Barren one is guarded by monsters on a roll of the guard die.</summary>
     private void LaterUnveil(IRandomSource random, ReportLines lines)
     {
         var left = Rules.LaterUnveilRounds.Count(r => r >= CurrentRound);
@@ -23,7 +23,7 @@ public sealed partial class Match
             var hex = dark[pick];
             dark.RemoveAt(pick);
             Map.Unveil(hex, Rules, random);
-            if (random.Next(Rules.GuardDieFaces) < Rules.GuardedFaces)
+            if (Map[hex].Type != TileType.Barren && random.Next(Rules.GuardDieFaces) < Rules.GuardedFaces)
             {
                 Map.SetGuard(hex, Rules.MonsterPower);
             }

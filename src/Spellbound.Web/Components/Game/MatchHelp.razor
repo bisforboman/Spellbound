@@ -12,8 +12,8 @@
 
     @if (me.Trait is { } trait)
     {
-        <h2 class="h4">Your trait: @trait</h2>
-        <p>@Capitalised(match.GoalText(trait).TrimEnd('.')). Rivals learn it only when the match ends, and you learn theirs.</p>
+        <h2 class="h4">Your trait: <span class="trait-name"><TraitIcon Trait="trait" /> @trait</span></h2>
+        <p>@Capitalised(match.GoalText(trait).TrimEnd('.')). Everyone sees every trait from the first round.</p>
         <p>Your @(match.SpellsOf(me.Index).Count == 1 ? "spell" : "spells"): @string.Join(", ", match.SpellsOf(me.Index)).</p>
     }
 
@@ -22,12 +22,14 @@
         @foreach (var type in Enum.GetValues<TileType>())
         {
             <li>
-                @if (Art.Paths is { } art)
+                @if (Art.Paths is { } art && art.TryGetValue(type, out var image))
                 {
-                    <img class="tile-swatch" src="@Assets[art[type]]" alt="" />
+                    <img class="tile-swatch" src="@Assets[image]" alt="" />
                 }
                 <span class="tile-mark">@Seats.Mark(type)</span>
-                <b>@type</b>: @(match.Rules.Varies(type) ? $"rolls {match.Rules.YieldRange(type)} mana each round" : $"yields {match.Rules.YieldRange(type)} mana every round").
+                <b>@type</b>: @(type == TileType.Barren
+                    ? "yields no mana. It turns up only in the later Unveils, never guarded, and still counts as land"
+                    : match.Rules.Varies(type) ? $"rolls {match.Rules.YieldRange(type)} mana each round" : $"yields {match.Rules.YieldRange(type)} mana every round").
             </li>
         }
     </ul>
@@ -73,7 +75,7 @@
     <ul class="help-list">
         @foreach (var t in Enum.GetValues<Trait>())
         {
-            <li><b>@t</b> (@string.Join(", ", match.Rules.TraitSpells.GetValueOrDefault(t) ?? [])): @match.GoalText(t)</li>
+            <li><span class="trait-name"><TraitIcon Trait="t" /> <b>@t</b></span> (@string.Join(", ", match.Rules.TraitSpells.GetValueOrDefault(t) ?? [])): @match.GoalText(t)</li>
         }
     </ul>
     </div>

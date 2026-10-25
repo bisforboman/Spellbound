@@ -68,7 +68,50 @@ public class MapTests
 
         Assert.All(map.Tiles, t => Assert.False(t.IsUnveiled));
         Assert.Equal(19, map.Dark.Count());
-        Assert.Equal(7, map.Tiles.Count(t => t.Type == TileType.Steady));
+        Assert.Equal(2, map.Tiles.Count(t => t.Type == TileType.Barren)); // one per 2 players, rounded up
+        Assert.Equal(GameMap.TypeMix(17), map.Tiles.Where(t => t.Type != TileType.Barren).Select(t => t.Type).Order());
+    }
+
+    [Theory]
+    [InlineData(2, 1)]
+    [InlineData(3, 2)]
+    [InlineData(4, 2)]
+    [InlineData(5, 3)]
+    public void A_map_has_one_barren_tile_per_two_players_rounded_up(int players, int barren)
+    {
+        Assert.Equal(barren, GameMap.Create(players, Rules, new SeededRandom(3)).Tiles.Count(t => t.Type == TileType.Barren));
+        Assert.DoesNotContain(GameMap.Create(players, Rules with { PlayersPerBarrenTile = 0 }, new SeededRandom(3)).Tiles,
+            t => t.Type == TileType.Barren);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Barren_tiles_appear_only_in_the_later_unveils_unguarded_and_yield_nothing(int seed)
+    {
+        var random = new SeededRandom(seed);
+        var match = Match.Start(5, Rules, random);
+        while (match.Phase == MatchPhase.Opening)
+        {
+            match.Draft(Bot.ChoosePick(match, match.Picker!.Value, random)!, random);
+        }
+
+        Assert.All(match.Map.Tiles.Where(t => t.IsUnveiled), t => Assert.NotEqual(TileType.Barren, t.Type)); // not drafted, not free
+        while (match.Phase != MatchPhase.Ended)
+        {
+            Assert.True(Bot.PlayTurn(match, match.Actor!.Value, random).Succeeded);
+        }
+
+        var barren = match.Map.Tiles.Where(t => t.Type == TileType.Barren).ToList();
+        Assert.Equal(3, barren.Count);
+        Assert.All(barren, t =>
+        {
+            Assert.True(t.IsUnveiled);
+            Assert.Equal(0, t.Yield);
+            Assert.False(t.IsGuarded);
+        });
+        Assert.Equal("0", Rules.YieldRange(TileType.Barren));
     }
 
     [Fact]

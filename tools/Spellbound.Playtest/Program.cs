@@ -285,6 +285,11 @@ namespace Spellbound.Playtest
                     throw new PlaytestException("The map shows before the trait is chosen.");
                 }
 
+                if (await page.Locator(".traits svg.trait-icon[aria-label]").CountAsync() != 2)
+                {
+                    throw new PlaytestException("The offered traits don't each show their icon.");
+                }
+
                 await page.Locator("input[name='trait']").Nth(1).CheckAsync();
                 await page.ClickAsync("button:has-text('Choose '):not([disabled])");
                 await Expect(page, "Opening draft 1 of 3");
@@ -351,7 +356,12 @@ namespace Spellbound.Playtest
 
                 await page.ClickAsync(".match-tabs a:has-text('Standings')");
                 await page.Locator("table.standings").WaitForAsync();
-                await Expect(page, "Rivals' traits are secret until the end");
+                // Traits are open from the first round: the rivals' line and an icon by every seat, in the table and the chips.
+                await Expect(page, "Rivals' traits:");
+                if (await page.Locator("table.standings svg.trait-icon").CountAsync() != 3 || await page.Locator(".seat-chip svg.trait-icon").CountAsync() != 3)
+                {
+                    throw new PlaytestException("Not every seat shows its trait's icon.");
+                }
                 await page.WaitForFunctionAsync(
                     "() => { const r = document.querySelector('table.standings').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }",
                     null, new PageWaitForFunctionOptions { Timeout = 5_000 });
