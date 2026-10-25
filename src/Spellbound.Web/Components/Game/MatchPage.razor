@@ -54,7 +54,7 @@ else
     {
         <section id="map" hidden="@(tab != MatchTab.Board)">
         <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is not null ? null : match.Phase == MatchPhase.Rounds && playing ? ordersForm?.Pickable : toPick)" OnSelect="Select" ShowNames="named"
-                Unowned="@ReplayPending"
+                Unowned="@ReplayPending" Dark="@ReplayDark"
                 Gains="@(fresh ? match.Seats.SelectMany(s => s.Tiles).ToDictionary(h => h, match.IncomeOf) : null)" />
 
         @if (selected is { } tile)
@@ -491,7 +491,7 @@ else
         _ = ReplayAsync(replayStop.Token);
     }
 
-    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (picks|gets the last tile) ");
+    private static bool Hands(string line) => System.Text.RegularExpressions.Regex.IsMatch(line, @"^Seat \d+ (picks|gets the last tile)\b");
 
     private async Task ReplayAsync(CancellationToken stop)
     {
@@ -533,6 +533,34 @@ else
     private IReadOnlySet<Hex>? ReplayPending => replay is { } beats
         ? beats.Skip(replayBeat).Where(Hands).SelectMany(l => TileNames.Of(l).Take(1)).ToHashSet()
         : null;
+
+    /// <summary>
+    /// The tiles of Unveils the playback hasn't reached, kept dark until it does: the picks after the end of the
+    /// Unveil on show (its last tile), and the tiles nobody holds yet (the next Unveil on the table, or the free tiles
+    /// as the rounds begin).
+    /// </summary>
+    private IReadOnlySet<Hex>? ReplayDark
+    {
+        get
+        {
+            if (replay is not { } beats || view is null)
+            {
+                return null;
+            }
+
+            var now = Math.Max(replayBeat - 1, 0);
+            var end = Enumerable.Range(now, beats.Count - now).FirstOrDefault(b => beats[b].Contains(" gets the last tile"), -1);
+            if (end < 0)
+            {
+                return null;
+            }
+
+            var match = view.Match;
+            return beats.Skip(end + 1).SelectMany(l => TileNames.Of(l).Take(1))
+                .Concat(match.Map.Tiles.Where(t => t.IsUnveiled && match.OwnerOf(t.Hex) is null).Select(t => t.Hex))
+                .ToHashSet();
+        }
+    }
 
     public void Dispose()
     {
