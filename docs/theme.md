@@ -127,7 +127,7 @@ CSS) so mana stands apart from other numbers, and 1em high so it follows the tex
 counts ("9 ◆"), with the word "mana" as its label, so screen readers still hear "9 mana". It stands in for the word
 where a number means mana: the top line, the bid button, unit, upgrade and Scorch costs, the standings' column and the
 "+3" on each held hex (8 px there, and 11 px in the chip that rises as a round begins). Sentences keep the word: the
-report, the ledger, the help page's text and the tile descriptions. The help page says what the icon is.
+report, the ledger, the Help view's text and the tile descriptions. The Help view says what the icon is.
 
 ## Sigils, the turn moon, the mana vial, battle stamps
 
