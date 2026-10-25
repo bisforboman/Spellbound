@@ -57,7 +57,7 @@ public sealed record GameRules
     public int AttuneBasePrice { get; init; } = 1;
     public int AttunePricePerTile { get; init; } = 1;
     public int AttuneCheapTiles { get; init; } = 3;
-    public int AttunePricePerTileBeyond { get; init; } = 3;
+    public int AttunePricePerTileBeyond { get; init; } = 5;
 
     /// <summary>The rounds that start with a later Unveil, which reveals the tiles still dark, split evenly (an odd one
     /// goes to the earlier round). After the last of them the whole map is revealed.</summary>

@@ -115,8 +115,8 @@ public class RoundPlayTests
     [Theory]
     [InlineData(0, 1)]
     [InlineData(3, 4)]
-    [InlineData(4, 7)]
-    [InlineData(5, 10)]
+    [InlineData(4, 9)]
+    [InlineData(5, 14)]
     public void Attune_is_cheap_for_a_small_realm_and_dear_beyond_three_tiles(int tiles, int price) =>
         Assert.Equal(price, GameRules.Default.AttunePrice(tiles));
 
