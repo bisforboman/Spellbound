@@ -74,7 +74,7 @@ public sealed partial class Match
             Trait.Spellweaver => "1 point per " + Each(r.SpellsPerTraitPoint, "different spell", "different spells")
                                  + $" cast, and 1 for casting spells in {r.SpellRoundsForTraitPoint} rounds",
             Trait.Warden => "1 point per tile from your opening you still hold, beyond the first",
-            Trait.Hexer => "1 point per " + Each(r.HexesPerTraitPoint, "Scorch or Blight", "Scorches and Blights") + " cast",
+            Trait.Hexer => "1 point per " + Each(r.HexesPerTraitPoint, "round", "rounds") + " you cast Blight",
             _ => "nothing",
         };
         return $"at the end, {goal}, up to {r.TraitGoalCap}.";
@@ -136,7 +136,7 @@ public sealed partial class Match
         Trait.Golemwright => Plural(count, "Golem"),
         Trait.Spellweaver => Plural(count, "different spell"),
         Trait.Warden => Plural(count, "opening tile") + " held",
-        Trait.Hexer => Plural(count, "Scorch or Blight", "Scorches and Blights"),
+        Trait.Hexer => Plural(count, "round") + " of Blight",
         _ => count.ToString(System.Globalization.CultureInfo.InvariantCulture),
     };
 

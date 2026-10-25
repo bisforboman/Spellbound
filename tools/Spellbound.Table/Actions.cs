@@ -90,7 +90,10 @@ internal abstract record Action
         var target = HexOf(Need(root, "target"));
         return name == Spell.Leyline
             ? Orders.Leyline(seat, new Move(target, HexOf(Need(root, "to")), ArmyOf(root)), moves)
-            : Orders.Cast(seat, name, target, Int(root, "count"), moves);
+            : Orders.Cast(seat, name, target, Int(root, "count"), moves) with
+            {
+                MoreTiles = Get(root, "also") is { ValueKind: JsonValueKind.Array } also ? [.. also.EnumerateArray().Select(HexOf)] : [],
+            };
     }
 
     private static Move MoveOf(JsonElement e) => new(HexOf(Need(e, "from")), HexOf(Need(e, "to")), ArmyOf(e));

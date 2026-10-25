@@ -100,7 +100,7 @@ else
         ["Summon"] = "spend mana on units",
         ["Attack"] = "send units at a rival's or a monster's tile",
         ["Build"] = "an upgrade on one of your tiles",
-        ["Cast"] = "one spell",
+        ["Cast"] = "your trait's spell",
         ["Hold"] = "do nothing this round",
     };
 
@@ -111,6 +111,7 @@ else
         MoveFrom,
         MoveTo,
         LeylineTo,
+        MoreTiles,
         GuardHome,
     }
 
@@ -153,6 +154,7 @@ else
     private Hex? reinforceAt;
     private int reinforceImps = 3;
     private Spell? spell;
+    private readonly List<Hex> moreTiles = []; // a Ward, Blight or Lure's tiles beyond the first
     private int scorchPower = 1;
     private Hex? leylineTo;
     private Hex? leylineFrom; // the tile the riders' counts were set for
@@ -179,6 +181,10 @@ else
             case Pick.LeylineTo when StanceTarget is { } on && Me.Tiles.Contains(hex) && hex != on:
                 (leylineTo, pick) = (hex, Pick.None);
                 break;
+            case Pick.MoreTiles when MoreTileChoices().Contains(hex):
+                pick = Pick.None;
+                moreTiles.Add(hex);
+                break;
             case Pick.GuardHome when Me.Tiles.Contains(hex):
                 (reinforceAt, pick) = (hex, Pick.None);
                 break;
@@ -197,6 +203,7 @@ else
         Pick.MoveTo => moveFrom is { } from ? MoveTos(from) : [],
         Pick.LeylineTo => StanceTarget is { } on ? Me.Tiles.Where(h => h != on) : [],
         Pick.GuardHome => Me.Tiles,
+        Pick.MoreTiles => MoreTileChoices(),
         _ => StanceTargets(),
     }).ToHashSet();
 
@@ -207,6 +214,7 @@ else
         Pick.MoveTo => "Tap a neighbouring tile of yours to move them to.",
         Pick.LeylineTo => "Tap another tile of yours for the units to arrive at.",
         Pick.GuardHome => "Tap one of your tiles to guard while the army is away.",
+        Pick.MoreTiles => $"Tap another tile for {spell}.",
         _ => stance switch
         {
             "Hold" => "Hold: spend nothing this round.",
@@ -314,7 +322,7 @@ else
                 break;
 
             case "Cast":
-                <p class="text-muted">Spells work after Attunes, Summons and Builds, before attacks.</p>
+                <p class="text-muted">Your trait decides your spells. They work after Attunes, Summons and Builds, before attacks.</p>
                 @foreach (var choice in SpellChoices())
                 {
                     var c = choice;
@@ -326,6 +334,26 @@ else
                 @if (spell is { } chosen)
                 {
                     @TargetLine()
+                    @if (StanceTarget is { } first && Match.GoesOnSeveralTiles(chosen))
+                    {
+                        @foreach (var tile in moreTiles.Where(h => h != first).ToList())
+                        {
+                            var t = tile;
+                            <div class="attack-source">
+                                <span>Also on @Name(t)</span>
+                                <button type="button" class="btn btn-link" @onclick="() => RemoveTile(t)">Remove</button>
+                            </div>
+                        }
+                        @if (pick == Pick.MoreTiles)
+                        {
+                            <p class="pick-prompt">@Prompt()</p>
+                            <button type="button" class="btn btn-link" @onclick="() => SetPick(Pick.None)">Cancel</button>
+                        }
+                        else if (MoreTileChoices().Any())
+                        {
+                            <button type="button" class="btn btn-outline-primary btn-lg w-100" @onclick="() => StartPick(Pick.MoreTiles)">Add another tile</button>
+                        }
+                    }
                     @if (StanceTarget is { } on && chosen == Spell.Scorch)
                     {
                         <label class="form-label mt-2" for="scorch-power">Power to burn (<span class="text-nowrap">@Match.Rules.ScorchManaPerPower <ManaIcon /></span> each)</label>
@@ -392,7 +420,8 @@ else
             count = 1;
             pick = Pick.None;
             (moveFrom, moveTo) = (null, null);
-            spell = null;
+            spell = OnlySpell;
+            moreTiles.Clear();
             (scorchPower, leylineTo, leylineImps, leylineGolems, leylineFrom) = (1, null, 0, 0, null);
             (reinforceAt, reinforceImps) = (null, 3);
         }
@@ -413,7 +442,8 @@ else
     private Task ChooseStance(string chosen)
     {
         stance = chosen;
-        if (pick is Pick.GuardHome or Pick.LeylineTo)
+        spell ??= OnlySpell;
+        if (pick is Pick.GuardHome or Pick.LeylineTo or Pick.MoreTiles)
         {
             pick = Pick.None;
         }
@@ -483,7 +513,10 @@ else
             Spell.Leyline => leylineTo is { } to
                 ? Orders.Leyline(You, new Move(t, to, new Army(Math.Max(0, leylineImps), Math.Max(0, leylineGolems))), [.. moves])
                 : null,
-            { } s => Orders.Cast(You, s, t, s == Spell.Scorch ? scorchPower : 0, [.. moves]),
+            { } s => Orders.Cast(You, s, t, s == Spell.Scorch ? scorchPower : 0, [.. moves]) with
+            {
+                MoreTiles = Match.GoesOnSeveralTiles(s) ? [.. moreTiles.Where(h => h != t && SpellTargets(s).Contains(h))] : [],
+            },
         },
         _ => null,
     };
@@ -546,8 +579,9 @@ else
     private Task ChooseSpell(Spell chosen)
     {
         spell = chosen;
+        moreTiles.Clear();
         (scorchPower, leylineTo, leylineImps, leylineGolems, leylineFrom) = (1, null, 0, 0, null);
-        if (pick == Pick.LeylineTo)
+        if (pick is Pick.LeylineTo or Pick.MoreTiles)
         {
             pick = Pick.None;
         }
@@ -555,18 +589,28 @@ else
         return Changed();
     }
 
+    /// <summary>The seat's one spell, when its trait gives it only one: chosen already.</summary>
+    private Spell? OnlySpell => Match.SpellsOf(You) is [var only] ? only : null;
+
+    /// <summary>The tiles another tile of the chosen spell can go on: its targets, less those it already has.</summary>
+    private IEnumerable<Hex> MoreTileChoices() => spell is { } s && StanceTarget is { } first
+        ? SpellTargets(s).Where(h => h != first && !moreTiles.Contains(h))
+        : [];
+
+    private Task RemoveTile(Hex tile)
+    {
+        moreTiles.Remove(tile);
+        return Changed();
+    }
+
     /// <summary>The units a Leyline can carry from a tile: those that aren't stepping.</summary>
     private Army Riders(Hex hex) => Movable(hex);
 
-    private IEnumerable<(Spell Spell, string Cost, string Effect)> SpellChoices()
-    {
-        var r = Match.Rules;
-        yield return (Spell.Scorch, $"{r.ScorchManaPerPower} mana per power that burns", "burn units on a rival's tile next to yours");
-        yield return (Spell.Ward, $"{r.WardCost} mana", $"one of your tiles defends with {r.WardPower} more power this round");
-        yield return (Spell.Leyline, $"{r.LeylineManaPerUnit} mana per unit, at least {r.LeylineMinCost}", "send units between any two of your tiles");
-        yield return (Spell.Blight, $"{r.BlightCost} mana", "a rival's tile next to yours yields nothing next round");
-        yield return (Spell.Lure, $"{r.LureCost} mana", $"a monster tile next to yours loses {r.LurePower} guard power for good");
-    }
+    private IEnumerable<(Spell Spell, string Cost, string Effect)> SpellChoices() =>
+        AllSpellChoices().Where(c => Match.SpellsOf(You).Contains(c.Spell));
+
+    private IEnumerable<(Spell Spell, string Cost, string Effect)> AllSpellChoices() =>
+        GameRules.AllSpells.Select(s => (s, Match.SpellCostText(s), Match.SpellEffect(s)));
 
     /// <summary>The tiles a spell can aim at (for a Leyline, where the units leave from).</summary>
     private IEnumerable<Hex> SpellTargets(Spell chosen)

@@ -69,6 +69,13 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
     /// <summary>For a Leyline: the units it moves, and between which tiles.</summary>
     public Move? Transfer { get; init; }
 
+    /// <summary>For a Ward, Blight or Lure: more tiles beyond <see cref="Target"/> that take the same spell, each
+    /// paid for.</summary>
+    public IReadOnlyList<Hex> MoreTiles { get; init; } = [];
+
+    /// <summary>For Cast: every tile the spell goes on.</summary>
+    public IReadOnlyList<Hex> SpellTiles => Target is { } first ? [first, .. MoreTiles] : [];
+
     /// <summary>For Attack: units summoned on one of the seat's tiles at the same time, if any.</summary>
     public Reinforcement? Reinforce { get; init; }
 
@@ -89,6 +96,10 @@ public sealed record Orders(int Seat, Stance Stance, Hex? Target, IReadOnlyList<
     /// <summary>Casts a spell at a tile; for Scorch, <paramref name="count"/> is the power to burn.</summary>
     public static Orders Cast(int seat, Spell spell, Hex tile, int count = 0, params IReadOnlyList<Move> moves) =>
         new(seat, Stance.Cast, tile, moves, Count: count) { Spell = spell };
+
+    /// <summary>Casts a Ward, Blight or Lure on several tiles at once, each paid for.</summary>
+    public static Orders CastOn(int seat, Spell spell, IReadOnlyList<Hex> tiles, params IReadOnlyList<Move> moves) =>
+        new(seat, Stance.Cast, (tiles ?? throw new ArgumentNullException(nameof(tiles)))[0], moves) { Spell = spell, MoreTiles = [.. tiles.Skip(1)] };
 
     /// <summary>Casts a Leyline: <paramref name="transfer"/>'s units travel between two of the seat's tiles.</summary>
     public static Orders Leyline(int seat, Move transfer, params IReadOnlyList<Move> moves) =>

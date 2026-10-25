@@ -32,18 +32,22 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 - **The pool** (the first six decided 20 Oct 2026, the last four 21 Oct 2026; the reasoning is in
   `discussions/traits.md`):
 
-| Trait | Pulls towards | Goal at the end (hidden), cap 3 |
-|---|---|---|
-| Wildheart | Wild land | 1 point per Wild tile held |
-| Hearthkeeper | Steady land | 1 point per Steady tile held |
-| Weaver | one connected realm | 1 point per 2 tiles in your largest connected group beyond the first 2 (4 tiles = 1, 6 = 2, 8 = 3) |
-| Wanderer | many separate footholds | 1 point per separate group of 2 or more tiles (a lone tile doesn't count) |
-| Beastbane | clearing monsters | 1 point per monster tile cleared (on top of the conquest points) |
-| Warbrand | taking rivals' land | 1 point per rival tile taken (on top of the conquest points) |
-| Golemwright | Golems | 1 point per 3 Golems you have at the end |
-| Spellweaver | casting every kind of spell | 1 point per 2 different spells cast, and 1 for casting spells in 6 rounds |
-| Warden | keeping the land you started with | 1 point per tile from your opening still held, beyond the first (so at most 2) |
-| Hexer | Scorch and Blight | 1 point per Scorch or Blight cast (a Scorch counts only if it burns something) |
+| Trait | Pulls towards | Spell | Goal at the end (hidden), cap 3 |
+|---|---|---|---|
+| Wildheart | Wild land | Blight | 1 point per Wild tile held |
+| Hearthkeeper | Steady land | Ward | 1 point per Steady tile held |
+| Weaver | one connected realm | Leyline | 1 point per 2 tiles in your largest connected group beyond the first 2 (4 tiles = 1, 6 = 2, 8 = 3) |
+| Wanderer | many separate footholds | Leyline | 1 point per separate group of 2 or more tiles (a lone tile doesn't count) |
+| Beastbane | clearing monsters | Lure | 1 point per monster tile cleared (on top of the conquest points) |
+| Warbrand | taking rivals' land | Scorch | 1 point per rival tile taken (on top of the conquest points) |
+| Golemwright | Golems | Lure | 1 point per 3 Golems you have at the end |
+| Spellweaver | casting every kind of spell | all five | 1 point per 2 different spells cast, and 1 for casting spells in 6 rounds |
+| Warden | keeping the land you started with | Ward | 1 point per tile from your opening still held, beyond the first (so at most 2) |
+| Hexer | Blight | Blight | 1 point per round you cast Blight (a Cast on several tiles counts once) |
+
+- **Each trait gives its player a spell** (owner's choice, 24 Oct 2026; the column above): the only spell that
+  player can cast, shared with one other trait so a cast narrows a rival's trait to two without naming it. A
+  Spellweaver can cast all five. Hexer scored Scorch and Blight until then.
 
 - No trait changes the Attune price, income, upkeep or a cost: they would snowball (principle 7 in `design-principles.md`).
 - **Measured** (1,000 bot games each; bots draft at random, pick like their trait and lean towards their trait's
@@ -230,6 +234,9 @@ Kept simple for now, to be extended later.
 
 Decided 20 Oct 2026 (the reasoning is in `discussions/spells.md`). **Casting a spell is a stance, Cast** (owner's
 choice, 24 Oct 2026): a Cast round casts **one spell**, instead of attuning, summoning, attacking or building.
+**Your trait decides which spell** (see *Traits*; a Spellweaver has all five). **Ward, Blight and Lure can go on
+several tiles in one Cast**, each tile paid for and checked on its own (owner's choice, 24 Oct 2026, so a Cast can
+take a round's mana); Scorch and Leyline already grow with the mana put into them, so they go on one.
 *(First decided as a fourth stance on 20 Oct 2026; moved alongside the stance the same day once the simulator showed
 that, as a stance, spells used the surplus mana only by replacing Attunes; made a stance again on 24 Oct 2026, with the
 mana surplus as the known risk, measured below.)* A spell's target is one of your tiles or a tile next to your land, its cost and
@@ -239,10 +246,10 @@ yields, prices or income. Costs are flat and small.
 | Spell | Cost | Target | Effect (this round) |
 |---|---|---|---|
 | Scorch | 3 mana per power that burns | a rival's tile next to yours | Burns up to that much of its units' power, weakest first (the battle loss rule). You pay only for what burns. Monsters are immune. |
-| Ward | 3 mana | one of your tiles | Its defence counts 3 more power in this round's battles. |
+| Ward | 3 mana a tile | your tiles | Its defence counts 3 more power in this round's battles. |
 | Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
-| Blight | 3 mana | a rival's tile next to yours | It yields nothing in the next round's income. A tile blighted last round can't be blighted again this round. |
-| Lure | 3 mana | a monster tile next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
+| Blight | 3 mana a tile | rivals' tiles next to yours | It yields nothing in the next round's income. A tile blighted last round can't be blighted again this round. |
+| Lure | 3 mana a tile | monster tiles next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
 
 - **How spells resolve:** in seat order, after Attunes and Summons and before attacks. Two Wards on one tile add up, and
   two Scorches both burn.
@@ -278,6 +285,12 @@ yields, prices or income. Costs are flat and small.
   surplus is back, as in the first stance version. Spellweaver wins **6%** (was 29%) and Hexer **12%** (34%): a
   whole round for a 3-mana spell rarely beats an Attune, a Build or a summon. The plans: Expander 57% (was 50%),
   Warlord 38% (43%), Economist 31% (25%), Builder 30% (26%), Spellcaster 23% (32%), Balanced 20% (23%).
+- **Measured with trait spells** (24 Oct 2026, the same runs; bots cast only their own spell, on every tile with a
+  purpose when they can pay): unspent mana at the end falls a little, from 25.4 to **23.8** a seat (`--plans`: 29.7
+  to 27.4); spells cast stay rare (about 1.5 a game; mana on spells 2.1 a seat). Spellweaver still wins 6% and Hexer
+  12%. Plans: Expander 50% (58%), Spellcaster 39% (23%), Warlord 35% (36%), Economist 28% (31%), Builder 27% (31%),
+  Balanced 20% (20%). Bots cast only with a clear purpose (a threatened tile, a rich rival tile, a beatable monster),
+  so what people do with a spell of their own is for a playtest to show.
 
 ## Upgrades
 

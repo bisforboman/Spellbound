@@ -27,11 +27,45 @@ public sealed partial class Match
         } + (orders.Reinforce is { } r ? Rules.ReinforceCostOf(r.Kind, r.Count) : 0);
     }
 
-    /// <summary>What a Cast's spell costs (0 for any other stance), a Sanctum's discount taken off.</summary>
+    /// <summary>What a Cast's spell costs on all its tiles (0 for any other stance), a Sanctum's discount taken off.</summary>
     public int SpellCostOf(Orders orders)
     {
         ArgumentNullException.ThrowIfNull(orders);
-        return orders is not { Stance: Stance.Cast, Target: { } target } ? 0 : Math.Max(0, orders.Spell switch
+        return orders.Stance != Stance.Cast ? 0 : orders.SpellTiles.Sum(tile => SpellCostOn(orders, tile));
+    }
+
+    /// <summary>The spells a seat can cast: its trait's (docs/game-design.md, Spells), or every one without a trait.</summary>
+    public IReadOnlyList<Spell> SpellsOf(int seat) =>
+        seats[seat].Trait is { } trait ? Rules.TraitSpells.GetValueOrDefault(trait) ?? [] : GameRules.AllSpells;
+
+    /// <summary>What a spell costs, in words, with this match's numbers.</summary>
+    public string SpellCostText(Spell spell) => spell switch
+    {
+        Spell.Scorch => $"{Rules.ScorchManaPerPower} mana per power that burns",
+        Spell.Ward => $"{Rules.WardCost} mana a tile",
+        Spell.Leyline => $"{Rules.LeylineManaPerUnit} mana per unit, at least {Rules.LeylineMinCost}",
+        Spell.Blight => $"{Rules.BlightCost} mana a tile",
+        Spell.Lure => $"{Rules.LureCost} mana a tile",
+        _ => "nothing",
+    };
+
+    /// <summary>What a spell does, in words, with this match's numbers.</summary>
+    public string SpellEffect(Spell spell) => spell switch
+    {
+        Spell.Scorch => "burn units on a rival's tile next to yours",
+        Spell.Ward => $"your tiles defend with {Rules.WardPower} more power this round",
+        Spell.Leyline => "send units between any two of your tiles",
+        Spell.Blight => "rivals' tiles next to yours yield nothing next round",
+        Spell.Lure => $"monster tiles next to yours lose {Rules.LurePower} guard power for good",
+        _ => "nothing",
+    };
+
+    /// <summary>The spells that can go on several tiles in one Cast; Scorch and Leyline already grow with the mana put in.</summary>
+    public static bool GoesOnSeveralTiles(Spell spell) => spell is Spell.Ward or Spell.Blight or Spell.Lure;
+
+    private int SpellCostOn(Orders orders, Hex target)
+    {
+        return Math.Max(0, orders.Spell switch
         {
             Spell.Scorch => Rules.ScorchManaPerPower * Burns(target, orders.Count),
             Spell.Ward => Rules.WardCost,
@@ -48,13 +82,65 @@ public sealed partial class Match
     private int Burns(Hex target, int count) =>
         UnitsOn(target).Power(Rules) - Battle.TakeLosses(UnitsOn(target), count, Rules).Power(Rules);
 
-    /// <summary>Checks a Cast stance's spell, aimed at <paramref name="target"/> (already known to be on the map).</summary>
+    /// <summary>Checks a Cast stance's spell: one of the seat's, on <paramref name="target"/> (already known to be on
+    /// the map) and any more tiles, each checked alone and all paid for together.</summary>
     private string? SpellProblem(Orders orders, Hex target, List<string> lines)
     {
         var seat = seats[orders.Seat];
+        if (!SpellsOf(seat.Index).Contains(orders.Spell))
+        {
+            return orders.Spell == Spell.Rally ? "Rally is no longer a spell."
+                : $"{orders.Spell} isn't one of your spells; yours: {string.Join(", ", SpellsOf(seat.Index))}.";
+        }
+
+        var tiles = orders.SpellTiles;
+        if (tiles.Count == 1)
+        {
+            return OneSpellProblem(orders, target, lines, alone: true, out _);
+        }
+
+        if (!GoesOnSeveralTiles(orders.Spell))
+        {
+            return $"Only Ward, Blight and Lure go on several tiles at once; {orders.Spell} goes on one.";
+        }
+
+        if (tiles.Distinct().Count() != tiles.Count)
+        {
+            return $"Each tile takes {orders.Spell} once.";
+        }
+
+        var total = 0;
+        foreach (var tile in tiles)
+        {
+            if (!Map.Contains(tile))
+            {
+                return $"{tile} isn't on the map.";
+            }
+
+            if (OneSpellProblem(orders, tile, lines, alone: false, out var cost) is { } problem)
+            {
+                return problem;
+            }
+
+            total += cost;
+        }
+
+        if (total > seat.Mana)
+        {
+            return $"{orders.Spell} on {tiles.Count} tiles costs {total} mana; you have {seat.Mana}.";
+        }
+
+        lines.Add($"All together: {orders.Spell} on {tiles.Count} tiles for {total} mana, leaving {seat.Mana - total}.");
+        return null;
+    }
+
+    /// <summary>Checks the spell on one tile, and says what it costs there.</summary>
+    private string? OneSpellProblem(Orders orders, Hex target, List<string> lines, bool alone, out int cost)
+    {
+        cost = 0;
+        var seat = seats[orders.Seat];
         var nextToYou = seat.Tiles.Any(h => h.IsNextTo(target));
         var owner = OwnerOf(target);
-        var cost = 0;
         string effect;
         switch (orders.Spell)
         {
@@ -122,7 +208,7 @@ public sealed partial class Match
                     return $"There aren't {move.Units} at {move.From} to send (units that step this round, in or out, can't ride a Leyline too).";
                 }
 
-                cost = SpellCostOf(orders);
+                cost = SpellCostOn(orders, target);
                 effect = $"move {move.Units} from {move.From} to {move.To}";
                 break;
             }
@@ -157,9 +243,6 @@ public sealed partial class Match
                 effect = $"the guards at {target} drop to power {Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower)}, for good";
                 break;
 
-            case Spell.Rally:
-                return "Rally is no longer a spell.";
-
             default:
                 return $"Unknown spell {orders.Spell}.";
         }
@@ -172,7 +255,8 @@ public sealed partial class Match
             return $"{orders.Spell} costs {cost} mana; you have {seat.Mana}.";
         }
 
-        lines.Add($"Cast {orders.Spell} for {cost} mana{(sanctum > 0 ? $" ({sanctum} less for your Sanctum)" : "")}, leaving {seat.Mana - cost}: {effect}.");
+        lines.Add($"Cast {orders.Spell} for {cost} mana{(sanctum > 0 ? $" ({sanctum} less for your Sanctum)" : "")}"
+                  + (alone ? $", leaving {seat.Mana - cost}" : "") + $": {effect}.");
         return null;
     }
 
@@ -182,47 +266,49 @@ public sealed partial class Match
         foreach (var order in orders.Where(o => o is { Stance: Stance.Cast, Target: not null }))
         {
             var seat = seats[order.Seat];
-            var target = order.Target!.Value;
             seat.Mana -= order.Spell == Spell.Scorch ? 0 : SpellCostOf(order);
             if (order.Spell != Spell.Scorch)
             {
-                seat.Cast(order.Spell);
+                seat.Cast(order.Spell); // once a Cast, however many tiles it goes on
             }
 
-            switch (order.Spell)
+            foreach (var target in order.SpellTiles)
             {
-                case Spell.Scorch:
-                    // Paid for what burns: units may have moved away, or a Golem be too strong to burn whole.
-                    var before = UnitsOn(target);
-                    units[target] = Battle.TakeLosses(before, order.Count, Rules);
-                    var burned = before - UnitsOn(target);
-                    var paid = burned.IsEmpty ? 0 : Math.Max(0, Rules.ScorchManaPerPower * burned.Power(Rules) - SanctumDiscount(order.Seat, target));
-                    seat.Mana -= paid;
-                    if (!burned.IsEmpty)
-                    {
-                        seat.Cast(Spell.Scorch); // only a Scorch that burns counts for Hexer and Spellweaver
-                    }
+                switch (order.Spell)
+                {
+                    case Spell.Scorch:
+                        // Paid for what burns: units may have moved away, or a Golem be too strong to burn whole.
+                        var before = UnitsOn(target);
+                        units[target] = Battle.TakeLosses(before, order.Count, Rules);
+                        var burned = before - UnitsOn(target);
+                        var paid = burned.IsEmpty ? 0 : Math.Max(0, Rules.ScorchManaPerPower * burned.Power(Rules) - SanctumDiscount(order.Seat, target));
+                        seat.Mana -= paid;
+                        if (!burned.IsEmpty)
+                        {
+                            seat.Cast(Spell.Scorch); // only a Scorch that burns counts for Hexer and Spellweaver
+                        }
 
-                    lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {burned} burn, for {paid} mana.", seat.Index, target);
-                    break;
-                case Spell.Ward:
-                    wards[target] = wards.GetValueOrDefault(target) + Rules.WardPower;
-                    lines.Add($"Seat {seat.Index + 1} casts Ward on {target}: it defends with {Rules.WardPower} more power this round.", seat.Index, target);
-                    break;
-                case Spell.Leyline:
-                    var move = order.Transfer!;
-                    units[move.From] = UnitsOn(move.From) - move.Units;
-                    units[move.To] = UnitsOn(move.To) + move.Units;
-                    lines.Add($"Seat {seat.Index + 1} casts Leyline: {move.Units} travel from {move.From} to {move.To}.", seat.Index, move.From, move.To);
-                    break;
-                case Spell.Blight:
-                    blights.Add(target);
-                    lines.Add($"Seat {seat.Index + 1} casts Blight on {Describe(target)}: it yields nothing next round.", seat.Index, target);
-                    break;
-                case Spell.Lure:
-                    Map.SetGuard(target, Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower));
-                    lines.Add($"Seat {seat.Index + 1} casts Lure on {target}: its guards drop to power {Map[target].Guard}.", seat.Index, target);
-                    break;
+                        lines.Add($"Seat {seat.Index + 1} casts Scorch on {target}: {burned} burn, for {paid} mana.", seat.Index, target);
+                        break;
+                    case Spell.Ward:
+                        wards[target] = wards.GetValueOrDefault(target) + Rules.WardPower;
+                        lines.Add($"Seat {seat.Index + 1} casts Ward on {target}: it defends with {Rules.WardPower} more power this round.", seat.Index, target);
+                        break;
+                    case Spell.Leyline:
+                        var move = order.Transfer!;
+                        units[move.From] = UnitsOn(move.From) - move.Units;
+                        units[move.To] = UnitsOn(move.To) + move.Units;
+                        lines.Add($"Seat {seat.Index + 1} casts Leyline: {move.Units} travel from {move.From} to {move.To}.", seat.Index, move.From, move.To);
+                        break;
+                    case Spell.Blight:
+                        blights.Add(target);
+                        lines.Add($"Seat {seat.Index + 1} casts Blight on {Describe(target)}: it yields nothing next round.", seat.Index, target);
+                        break;
+                    case Spell.Lure:
+                        Map.SetGuard(target, Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower));
+                        lines.Add($"Seat {seat.Index + 1} casts Lure on {target}: its guards drop to power {Map[target].Guard}.", seat.Index, target);
+                        break;
+                }
             }
         }
     }
