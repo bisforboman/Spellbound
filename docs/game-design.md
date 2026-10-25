@@ -12,7 +12,7 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 
 1. **Setup.** The map lies dark. Each player starts with **4 mana** and nothing else. Each player is offered **their own 2 traits** (nobody else is offered them) and drafts 1, in secret. There are no fixed starting positions: players start wherever the opening draft puts them.
 2. **The opening Unveils.** Before the first round, three Unveils each reveal **one tile per player**, and the players take **one each in turn**, for free: the first draft starts with seat 1, each next one a seat later, and the last to pick gets the tile left over. Traits are still hidden, so nobody knows for sure why a rival picked a tile. As the rounds begin, **3 more tiles** are revealed, unowned, for anyone to attune. By the end of the opening, every player owns 3 scattered or connected tiles and can see where the good land lies.
-3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end. Each round, every player secretly picks one **stance** (Attack, Attune or Summon) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
+3. **The rounds.** The game lasts **8 rounds**. Traits stay secret until the end. Each round, every player secretly picks one **stance** (Attack, Attune, Summon, Build or Cast) and may move units freely; then everything resolves together. A fog of war hides rivals' units away from your land, and their mana. Nobody starts with units, so the first rounds are about summoning and attuning.
 4. **Expanding.** Players grow into unowned land next to theirs: by **attuning** free tiles with mana, or by attacking the monsters guarding some of them. Attuning is also how scattered holdings get joined up, so units can move between them.
 5. **The middle Unveils.** In **rounds 2 and 4**, the tiles still dark after the opening are revealed, split evenly between the two Unveils (no draft). About 1 in 3 of these tiles is guarded by monsters. After round 4, the whole map is revealed.
 6. **The second half.** Rounds 5–8: with the map fully revealed and free land running out, growth turns into competition. Attuning gets more expensive as realms grow, so attacking rivals becomes the cheaper way to gain land. A player's last tile can never be taken.
@@ -52,7 +52,9 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   *(21 Oct 2026, after the AI players' sessions: Spellweaver no longer hits its cap by round 4 (1 per 2 spells plus 1
   for casting in 6 rounds); Wanderer counts groups of 2 or more instead of groups beyond the first; Weaver scores
   from 4 tiles (bots' groups are often 3, so its bot average fell from 0.9 to 0.7); see `playtests/`.)*
-  *With Rally there are six spells, so a Spellweaver who casts all six reaches its cap without the 6-round point.*
+  *Since 24 Oct 2026 there are five spells again (Rally was removed when Cast became a stance), so a Spellweaver who
+  casts all five has 2 points and needs the 6-round point for its cap. With a whole round per spell, bots rarely get
+  there: see *Spells*, Measured.*
 
 ## Map
 
@@ -116,7 +118,7 @@ In turn (owner's choice, 24 Oct 2026; it replaced an auction, tile by tile, that
 
 - Each round, every player secretly picks **one stance**. Then all stances resolve together.
 - A stance should be **one button** on a phone: the round's main decision is a single tap.
-- **Four stances**:
+- **Five stances**:
   - **Attack:** attack a rival's or a monster-guarded tile with units (see *Battles*). An attack may also bring
     **reinforcements**: up to 3 power of units summoned on one of your tiles, at 1 mana more each than a summon
     (an Imp costs 2). They guard that tile this round and can't join the attack. (Decided 21 Oct 2026. The Wargamer
@@ -125,13 +127,14 @@ In turn (owner's choice, 24 Oct 2026; it replaced an auction, tile by tile, that
   - **Attune:** spend mana to claim one free tile (see *Taking unowned tiles*).
   - **Summon:** spend mana to summon units (see *Units*).
   - **Build:** spend mana on an upgrade for one of your tiles (see *Upgrades*).
-- **Unpicked stances get cheaper** (decided 21 Oct 2026; Puerto Rico's doubloons on unpicked roles, the owner's
-  idea, `discussions/shared-stances.md`): an Attune, Summon or Build that nobody chose in a round costs **1 mana
-  less** the next round, 1 more for each round it waits, **at most 3 less**. As soon as anyone chooses it, it goes
-  back to full price. The stance picker shows the discount, and the report says when a stance gets cheaper.
-- Alongside the stance, players can **cast one spell** (see *Spells*).
+  - **Cast:** spend mana on one spell (see *Spells*).
+- **Stances cost the same every round.** *(Unpicked stances getting cheaper, Puerto Rico's doubloons, decided
+  21 Oct 2026, was removed on 24 Oct 2026, the owner's choice: an Attune, Summon or Build nobody chose had cost 1 mana
+  less a round, up to 3. Measured on removal, 2,000 bot games with 3 players: unspent mana at the end fell from 28.3 to
+  25.4 a seat (bots spend the same mana on fewer, full-price purchases, so they buy a little more), and the plans'
+  win rates moved by at most 2 points.)*
 - Alongside the stance, players can **move units** freely (see *Units*).
-- A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon): only the moves happen. A player is never forced to spend.
+- A stance can be committed **aimed at nothing** (no tile to attune, nothing to summon, no spell): only the moves happen. A player is never forced to spend.
 - More stances (for example a defensive Hold, or Scry to peek at hidden things) can be added after the first playtest.
 
 ### Round order
@@ -221,24 +224,24 @@ Kept simple for now, to be extended later.
 - **Mana:** produced by tiles (see *Tiles*); pays for attuning, summoning, building and spells (the opening draft is free).
 - **Starting mana: 4** (lowered from 9 with the draft, the owner's choice, 24 Oct 2026; 4 is the simulator's number, about what players had left after the auction: see *The opening draft*). Players start with nothing else: no tiles until the opening, and no units.
 - **Unspent mana carries over** to the next round, including the starting mana, which the opening doesn't touch.
-- **Spells** use mana alongside the stance (see *Spells*).
+- **Spells** are bought with the Cast stance (see *Spells*).
 
 ## Spells
 
-Decided 20 Oct 2026 (the reasoning is in `discussions/spells.md`). **A spell is cast alongside the stance**, like
-moves: optional, at most one a round, committed in secret with the stance; the stance and the spell are paid together.
-*(First decided as a fourth stance, "Cast"; changed the same day once the simulator showed that, as a stance, spells
-used the surplus mana only by replacing Attunes.)* A spell's target is one of your tiles or a tile next to your land, its cost and
+Decided 20 Oct 2026 (the reasoning is in `discussions/spells.md`). **Casting a spell is a stance, Cast** (owner's
+choice, 24 Oct 2026): a Cast round casts **one spell**, instead of attuning, summoning, attacking or building.
+*(First decided as a fourth stance on 20 Oct 2026; moved alongside the stance the same day once the simulator showed
+that, as a stance, spells used the surplus mana only by replacing Attunes; made a stance again on 24 Oct 2026, with the
+mana surplus as the known risk, measured below.)* A spell's target is one of your tiles or a tile next to your land, its cost and
 effect are shown before you commit, and its effect lasts **this round only** (except Lure's, below); no spell changes
 yields, prices or income. Costs are flat and small.
 
 | Spell | Cost | Target | Effect (this round) |
 |---|---|---|---|
 | Scorch | 3 mana per power that burns | a rival's tile next to yours | Burns up to that much of its units' power, weakest first (the battle loss rule). You pay only for what burns. Monsters are immune. |
-| Ward | 3 mana | one of your tiles, or the tile you attune this round | Its defence counts 3 more power in this round's battles. |
+| Ward | 3 mana | one of your tiles | Its defence counts 3 more power in this round's battles. |
 | Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
 | Blight | 3 mana | a rival's tile next to yours | It yields nothing in the next round's income. A tile blighted last round can't be blighted again this round. |
-| Rally | 3 mana | the tile you attack this round | Your attack strikes with 2 more power, and that power takes the blows first. Paid even if the attack doesn't happen (a Scorch may leave nothing to send). The attacker's Ward: decided 21 Oct 2026 for reading rivals (`discussions/reading-rivals.md`; asked for by the Wargamer and the Bluffer). It was designed at +3; the Warlord strategy bot then won 48% of 3-player games, so +2 (44%). |
 | Lure | 3 mana | a monster tile next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
 
 - **How spells resolve:** in seat order, after Attunes and Summons and before attacks. Two Wards on one tile add up, and
@@ -247,11 +250,10 @@ yields, prices or income. Costs are flat and small.
   absorb.
 - **An attack goes with what's left:** if a rival's Scorch burns units on the tile an attack leaves from, the attack
   sends only the units still there, or doesn't happen if none are.
-- **Spells see the round as it will be** at their turn: a Ward can go on the tile you attune this round (it holds if
-  the Attune does), and a Leyline can carry units you summon this round.
-- **Leyline** can't carry units that also step this round; the units it carries can attack the same round.
-- **Scorch before your own attack:** a Scorch and an attack on the same tile in one round work together: the Scorch
-  burns first, and the attack's preview counts it (as it counts a Lure on a monster tile you attack).
+- **Leyline** can't carry units that also step this round.
+- **Rally is gone** (owner's choice, 24 Oct 2026): it went with an attack, and a Cast round has none. It was the
+  attacker's Ward (+2 power for 3 mana, decided 21 Oct 2026 for reading rivals, `discussions/reading-rivals.md`).
+  Saved matches that cast it still count it for Spellweaver.
 - **Scorch pays for what burns** (decided 21 Oct 2026, after the first AI players' session,
   `playtests/2026-10-21-ai-players.md`): units that moved away before it, units another seat's Scorch burned first,
   or a Golem too strong to burn whole cost nothing. Its price went from 2 to 3 mana per power: at 2 it beat
@@ -269,6 +271,13 @@ yields, prices or income. Costs are flat and small.
   (see `discussions/traits.md`): they spend about 19 mana a match on spells and end with about 13 unspent, and Ward
   is cast most (about 9 a game), then Blight (about 5).* *Unspent mana briefly scored 1 per 10 at the end (21 Oct
   2026); it was dropped the same day in favour of scoring mana produced at 1 per 10, so income pays, not hoarding.*
+- **Measured as a stance** (24 Oct 2026, 2,000 bot games, 3 players; bots cast when they have a purposeful spell and
+  nothing better: the everyday bot in rounds where it would otherwise summon, a Spellweaver or Hexer once land is no
+  longer cheap): unspent mana at the end rises from about **11 to 28** a seat (with `--plans`, 12 to 32; 25 and 30 once the unpicked-stance discount was also removed), spells
+  cast fall from about 19 a game to **2** (Blight 1.3, Ward 0.8), and mana spent on spells from 19 to 2 a seat. The
+  surplus is back, as in the first stance version. Spellweaver wins **6%** (was 29%) and Hexer **12%** (34%): a
+  whole round for a 3-mana spell rarely beats an Attune, a Build or a summon. The plans: Expander 57% (was 50%),
+  Warlord 38% (43%), Economist 31% (25%), Builder 30% (26%), Spellcaster 23% (32%), Balanced 20% (23%).
 
 ## Upgrades
 
@@ -336,8 +345,7 @@ Decided 21 Oct 2026 for reading rivals (`discussions/reading-rivals.md`; Claude'
   tile you can see *as the board stands after the round*. A summon, a spell or a battle far from your land is
   hidden.
 - **When the match ends, everything is revealed.**
-- Bots play by the same rule: they read units only next to their own land and never a rival's mana (a bot assumes a
-  rival can always afford a Rally).
+- Bots play by the same rule: they read units only next to their own land and never a rival's mana.
 
 ## Player elimination
 

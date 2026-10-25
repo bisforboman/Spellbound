@@ -95,10 +95,10 @@ public class UpgradeTests
         var home = Home(match, 0);
         Play(match, Orders.Build(0, home, Upgrade.Sanctum));
 
-        var ward = match.Check(Orders.Hold(0).Casting(Spell.Ward, home));
+        var ward = match.Check(Orders.Cast(0, Spell.Ward, home));
 
         Assert.StartsWith("Cast Ward for 2 mana (1 less for your Sanctum)", ward.Lines[0], StringComparison.Ordinal);
-        Assert.Equal(2, match.SpellCostOf(Orders.Hold(0).Casting(Spell.Ward, home)));
+        Assert.Equal(2, match.SpellCostOf(Orders.Cast(0, Spell.Ward, home)));
     }
 
     [Fact]

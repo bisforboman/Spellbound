@@ -48,7 +48,7 @@ public sealed partial class Match
             return $"You already hold {Rules.UpgradeCap} upgrades, the most a realm can have.";
         }
 
-        var cost = Favoured(Stance.Build, Rules.UpgradeCost);
+        var cost = Rules.UpgradeCost;
         if (cost > seat.Mana)
         {
             return $"An upgrade costs {cost} mana; you have {seat.Mana}.";
@@ -74,7 +74,7 @@ public sealed partial class Match
         foreach (var order in orders.Where(o => o.Stance == Stance.Build && o.Target is not null))
         {
             var hex = order.Target!.Value;
-            seats[order.Seat].Mana -= Favoured(Stance.Build, Rules.UpgradeCost);
+            seats[order.Seat].Mana -= Rules.UpgradeCost;
             upgrades[hex] = order.Upgrade;
             lines.Add($"Seat {order.Seat + 1} builds a {order.Upgrade} on {hex}.");
         }

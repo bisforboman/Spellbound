@@ -36,20 +36,18 @@ public sealed partial class Match
 
         var lines = new List<string>();
         var positions = new Dictionary<Hex, Army>();
-        if ((MovesProblem(orders, lines, positions) ?? SpellProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions)
-             ?? ReinforceProblem(orders, lines)) is { } problem)
+        if ((MovesProblem(orders, lines, positions) ?? StanceProblem(orders, lines, positions) ?? ReinforceProblem(orders, lines)) is { } problem)
         {
             return Report.Fail(problem);
         }
 
         var mana = seats[orders.Seat].Mana;
-        var extras = orders.Cast is not null || orders.Reinforce is not null;
-        if (extras && CostOf(orders) > mana)
+        if (orders.Reinforce is not null && CostOf(orders) > mana)
         {
             return Report.Fail($"Your orders cost {CostOf(orders)} mana together; you have {mana}.");
         }
 
-        if (extras)
+        if (orders.Reinforce is not null)
         {
             lines.Add($"All together: {CostOf(orders)} mana, leaving {mana - CostOf(orders)}.");
         }
@@ -58,8 +56,8 @@ public sealed partial class Match
     }
 
     /// <summary>
-    /// Resolves the round with every seat's orders: moves, then Attunes and Summons, then attacks, then points are
-    /// banked (docs/game-design.md, Round order). Then the next round starts (with a later Unveil in rounds 2 and 4,
+    /// Resolves the round with every seat's orders: moves, then Attunes, Summons and Builds, then spells, then attacks,
+    /// then points are banked (docs/game-design.md, Round order). Then the next round starts (with a later Unveil in rounds 2 and 4,
     /// then income and upkeep), or after the last round the match ends. Fails, changing nothing, unless every seat has
     /// exactly one set of orders and all of them check.
     /// </summary>
@@ -103,7 +101,7 @@ public sealed partial class Match
         {
             var hex = order.Target!.Value;
             var army = Army.Of(order.Kind, order.Count);
-            seats[order.Seat].Mana -= Favoured(Stance.Summon, Rules.CostOf(order.Kind) * order.Count);
+            seats[order.Seat].Mana -= Rules.CostOf(order.Kind) * order.Count;
             units[hex] = UnitsOn(hex) + army;
             lines.Add($"Seat {order.Seat + 1} summons {army} at {hex}.", order.Seat, hex);
         }
@@ -120,7 +118,6 @@ public sealed partial class Match
         ResolveBuilds(byseat, lines);
         ResolveCasts(byseat, lines);
         ResolveAttacks(byseat.Where(o => o.Stance == Stance.Attack && o.Target is not null).ToList(), lines);
-        UpdateFavour(byseat, lines);
         BankPoints(lines);
         if (CurrentRound < Rules.Rounds)
         {
@@ -200,7 +197,7 @@ public sealed partial class Match
     /// then nobody gets it and nobody pays.</summary>
     private void ResolveAttunes(List<Orders> attunes, ReportLines lines)
     {
-        var prices = attunes.ToDictionary(o => o.Seat, o => Favoured(Stance.Attune, Rules.AttunePrice(seats[o.Seat].Tiles.Count)));
+        var prices = attunes.ToDictionary(o => o.Seat, o => Rules.AttunePrice(seats[o.Seat].Tiles.Count));
         foreach (var claim in attunes.GroupBy(o => o.Target!.Value))
         {
             if (claim.Count() > 1)
@@ -303,7 +300,7 @@ public sealed partial class Match
                     return $"{target} isn't next to any of your tiles.";
                 }
 
-                var price = Favoured(Stance.Attune, Rules.AttunePrice(seat.Tiles.Count));
+                var price = Rules.AttunePrice(seat.Tiles.Count);
                 if (price > seat.Mana)
                 {
                     return $"Attuning costs {price} mana; you have {seat.Mana}.";
@@ -322,12 +319,12 @@ public sealed partial class Match
 
                 // Checked by division, so a huge count can't overflow into a cheap one.
                 var each = Rules.CostOf(orders.Kind);
-                if (orders.Count < 0 || orders.Count > (seat.Mana + FavourOf(Stance.Summon)) / each)
+                if (orders.Count < 0 || orders.Count > seat.Mana / each)
                 {
-                    return $"{orders.Kind}s cost {each} mana each{(FavourOf(Stance.Summon) > 0 ? $", {FavourOf(Stance.Summon)} less in all this round" : "")}; you have {seat.Mana}.";
+                    return $"{orders.Kind}s cost {each} mana each; you have {seat.Mana}.";
                 }
 
-                var cost = Favoured(Stance.Summon, each * orders.Count);
+                var cost = each * orders.Count;
                 lines.Add($"Summon {Army.Of(orders.Kind, orders.Count)} at {target} for {cost} mana, leaving {seat.Mana - cost}.");
                 return null;
             }
@@ -337,6 +334,9 @@ public sealed partial class Match
 
             case Stance.Build:
                 return BuildProblem(orders, target, lines);
+
+            case Stance.Cast:
+                return SpellProblem(orders, target, lines);
 
             default:
                 return $"Unknown stance {orders.Stance}.";

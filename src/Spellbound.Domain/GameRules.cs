@@ -74,11 +74,6 @@ public sealed record GameRules
     /// <summary>The defence a Ward adds to its tile in this round's battles.</summary>
     public int WardPower { get; init; } = 3;
 
-    /// <summary>A Rally's price, and the power it adds to the seat's attack this round (paid even if the attack doesn't
-    /// happen, as a Ward is).</summary>
-    public int RallyCost { get; init; } = 3;
-    public int RallyPower { get; init; } = 2;
-
     public int LeylineManaPerUnit { get; init; } = 1;
     public int LeylineMinCost { get; init; } = 2;
     public int BlightCost { get; init; } = 3;
@@ -95,11 +90,6 @@ public sealed record GameRules
     public int PointsPerEmptyConquest { get; init; } = 1;
 
     // Reinforcing (docs/game-design.md, Rounds and stances): a small summon alongside an attack.
-
-    /// <summary>How much cheaper Attune, Summon or Build gets for each round nobody chooses it, and the most it can
-    /// get (Puerto Rico's doubloons on unpicked roles).</summary>
-    public int FavourPerRound { get; init; } = 1;
-    public int FavourCap { get; init; } = 3;
 
     /// <summary>The most power an attack's reinforcement can summon.</summary>
     public int ReinforceMaxPower { get; init; } = 3;

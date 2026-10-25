@@ -15,8 +15,7 @@ public sealed record MatchState(
     IReadOnlyList<SeatState> Seats,
     IReadOnlyList<UnitsState> Units,
     IReadOnlyList<UpgradeState>? Upgrades = null,
-    IReadOnlyList<Hex>? Blighted = null,
-    IReadOnlyList<FavourState>? Favour = null)
+    IReadOnlyList<Hex>? Blighted = null)
 {
     public const int CurrentVersion = 1;
 }
@@ -35,8 +34,6 @@ public sealed record SeatState(
     IReadOnlyList<Spell>? SpellsCast = null,
     int HexesCast = 0,
     int RoundsCast = 0);
-
-public sealed record FavourState(Stance Stance, int Favour);
 
 public sealed record UnitsState(Hex Hex, int Imps, int Golems);
 

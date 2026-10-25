@@ -73,28 +73,16 @@ public sealed partial class Match
             sent += go.Units;
         }
 
-        var rally = orders.Cast is { Spell: Spell.Rally } r && r.Target == target ? Rules.RallyPower : 0;
-        var attack = sent.Power(Rules) + rally;
+        var attack = sent.Power(Rules);
         var defence = DefencePower(target);
-
-        // Your own spell on the target lands before the attack: count it.
-        var afterSpell = orders.Cast switch
-        {
-            { Spell: Spell.Scorch } scorch when scorch.Target == target && owner is not null =>
-                (Power: Battle.TakeLosses(UnitsOn(target), scorch.Count, Rules).Power(Rules) + Ward(target) + Tower(target), Note: " after your Scorch"),
-            { Spell: Spell.Lure } lure when lure.Target == target && owner is null =>
-                (Power: Math.Max(Rules.MinGuard, Map[target].Guard - Rules.LurePower), Note: " after your Lure"),
-            _ => (Power: defence, Note: ""),
-        };
-        defence = afterSpell.Power;
         var outcome = attack > defence
             ? owner is { } o && seats[o].Tiles.Count == 1
-                ? $"you win, but it's their last tile: the defenders die and the tile stays theirs, and your {Battle.TakeLosses(sent, Math.Max(0, defence - rally), Rules)} go back"
-                : $"you win and take it, keeping {Battle.TakeLosses(sent, Math.Max(0, defence - rally), Rules)}"
+                ? $"you win, but it's their last tile: the defenders die and the tile stays theirs, and your {Battle.TakeLosses(sent, defence, Rules)} go back"
+                : $"you win and take it, keeping {Battle.TakeLosses(sent, defence, Rules)}"
             : attack == defence
                 ? owner is null ? "a tie: both sides are wiped out and you take the tile" : "a tie: both sides are wiped out and the tile stays theirs"
                 : "you lose everything you sent";
-        lines.Add($"Attack {DescribePlain(target)} ({DefenceText(target)}, power {defence}{afterSpell.Note}) with {sent} (power {attack}{(rally > 0 ? $", with your Rally" : "")}). "
+        lines.Add($"Attack {DescribePlain(target)} ({DefenceText(target)}, power {defence}) with {sent} (power {attack}). "
                   + $"As things stand, {outcome}. But rivals give orders in secret too: a summon, Ward or Scorch this round can change "
                   + "that. Units that attack don't defend their own tiles this round.");
         return null;
@@ -146,10 +134,9 @@ public sealed partial class Match
     {
         var owner = OwnerOf(target);
         var side = attacks.Select(o => (o.Seat, Army: o.Attackers.Aggregate(Army.None, (a, m) => a + m.Units))).ToList();
-        var rally = side.Sum(s => rallies.GetValueOrDefault(s.Seat));
-        var attack = side.Sum(s => s.Army.Power(Rules)) + rally;
+        var attack = side.Sum(s => s.Army.Power(Rules));
         var defence = DefencePower(target);
-        var who = string.Join(" and ", side.Select(s => $"Seat {s.Seat + 1} ({s.Army}{(rallies.ContainsKey(s.Seat) ? ", rallied" : "")})"));
+        var who = string.Join(" and ", side.Select(s => $"Seat {s.Seat + 1} ({s.Army})"));
         lines.Add($"{who} attack {DescribePlain(target)}, {DefenceText(target)}: power {attack} against {defence}.", null, target);
 
         if (attack < defence)
@@ -187,8 +174,7 @@ public sealed partial class Match
             return;
         }
 
-        // A Rally takes the blows first: the attackers lose only what gets past it.
-        var survivors = Battle.TakeLosses(side, Math.Max(0, defence - rally), Rules).Where(s => !s.Army.IsEmpty).ToList();
+        var survivors = Battle.TakeLosses(side, defence, Rules).Where(s => !s.Army.IsEmpty).ToList();
         if (survivors.Count > 1)
         {
             lines.Add($"The attackers fight each other for it: {string.Join(", ", survivors.Select(s => $"Seat {s.Seat + 1} with {s.Army}"))}.", null, target);

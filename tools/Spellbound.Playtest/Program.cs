@@ -384,7 +384,6 @@ namespace Spellbound.Playtest
                 await Expect(page, "Summon 3 Imps");
                 await page.ClickAsync("button:has-text('Commit: Summon')");
                 await Expect(page, "Round 2 of 8");
-                await Expect(page, " off)"); // nobody builds in round 1, so Build is cheaper now
                 // A round that begins while the page is open plays once: a banner, and "+N" rising from every held tile.
                 await page.Locator(".round-banner").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached });
                 if (await page.Locator(".hex-map .hex-gain").CountAsync() < 3)
@@ -514,14 +513,12 @@ namespace Spellbound.Playtest
                 await page.ClickAsync("button:has-text('Commit:')");
                 await Expect(page, "Round 4 of 8");
             });
-            // A Ward on one of Merlin's tiles alongside a hold: every seat has a tile, and Ward is among the cheapest spells.
+            // A Ward on one of Merlin's tiles, the Cast stance: every seat has a tile, and Ward is among the cheapest spells.
             await StepAsync(merlin, "spell-pick", async page =>
             {
-                await page.ClickAsync("label:has-text('Hold:')");
-                await page.ClickAsync("button:has-text('Spell (optional)')");
-                await page.ClickAsync("label:has-text('Rally')"); // goes only with an attack, and says so
-                await Expect(page, "Rally goes with an attack");
-                await page.ClickAsync("label:has-text('Ward')");
+                await page.ClickAsync("label:has-text('Cast:')");
+                await Expect(page, "Choose a spell");
+                await page.ClickAsync("label:has-text('Ward (')");
                 await Expect(page, "Tap the tile for Ward");
                 await page.Locator(".hex-map .hex.marked").First.ClickAsync();
                 await Expect(page, "On ");
@@ -529,9 +526,9 @@ namespace Spellbound.Playtest
             });
             await StepAsync(merlin, "spell-commit", async page =>
             {
-                if (await page.Locator("button:has-text('Commit: Hold and Ward'):not([disabled])").CountAsync() == 0)
+                if (await page.Locator("button:has-text('Commit: Cast Ward'):not([disabled])").CountAsync() == 0)
                 {
-                    await page.ClickAsync("label:has-text('No spell')"); // too little mana this run
+                    await page.ClickAsync("label:has-text('Hold:')"); // too little mana this run
                 }
 
                 await page.ClickAsync("button:has-text('Commit:')");

@@ -38,6 +38,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
   simulator's mana numbers (unspent at the end, spent per stance and on spells, spells cast, Imps and Golems summoned)
 - [x] Pages: a "Spell (optional)" section on the orders form (a spell, its target and how much, with the preview), and
   its playtest step
+- [x] Cast is a stance again (owner's choice, 24 Oct 2026): one spell a Cast round, at the same costs, Rally removed; a Cast row on the orders form replaces the "Spell (optional)" fold; bots and the simulator
+  updated (unspent mana at the end rose from 11 to 28 a seat: a fix is proposed to the owner, not built)
 - [x] Domain: the opening (three Unveils, sealed auctions, random leftovers, tie rule)
 - [x] Domain: a round's submission (one stance + moves) and its validation (`Orders`, `Match.Check`)
 - [x] Domain: resolution: income, upkeep, moves, Attune (price and clashes), Summon, attacks and battles
@@ -101,7 +103,8 @@ Goal: on a phone, start a 3-player game against 2 bots and play all 8 rounds.
 - [x] An undefended capture scores 1 point, a defended one 2 (after the third AI-taste session: raids on empty tiles decided every match)
 - [x] Reinforcements with an attack: up to 3 power summoned at home, 1 mana more per unit (after the fourth AI-taste session)
 - [x] Follow orders (shared stances, from Puerto Rico), built and then removed after the sixth AI-taste session: 4 of 13 happened
-- [x] Unpicked stances get cheaper (Puerto Rico's doubloons): Attune, Summon or Build nobody chose costs 1 less a round, up to 3
+- [x] Unpicked stances get cheaper (Puerto Rico's doubloons): Attune, Summon or Build nobody chose costs 1 less a round, up to 3;
+  removed (owner's choice, 24 Oct 2026): the owner hadn't known it was there, and stances now cost the same every round
 - [x] Playtest steps for the new pages (`tools/Spellbound.Playtest`): every page has one, the not-found ones included
 - [x] The opening as a draft (owner's choice, 24 Oct 2026; it replaced the tile-by-tile auction): each Unveil's tiles
   are taken one each in turn, for free, the first seat rotating from one draft to the next; starting mana 4; a missed

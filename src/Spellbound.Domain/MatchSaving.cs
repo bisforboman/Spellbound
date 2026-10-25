@@ -19,8 +19,7 @@ public sealed partial class Match
         [.. units.Where(u => !u.Value.IsEmpty).OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R)
             .Select(u => new UnitsState(u.Key, u.Value.Imps, u.Value.Golems))],
         [.. upgrades.OrderBy(u => u.Key.Q).ThenBy(u => u.Key.R).Select(u => new UpgradeState(u.Key, u.Value))],
-        [.. blightedLastRound.OrderBy(h => h.Q).ThenBy(h => h.R)],
-        [.. favour.Where(f => f.Value > 0).OrderBy(f => f.Key).Select(f => new FavourState(f.Key, f.Value))]);
+        [.. blightedLastRound.OrderBy(h => h.Q).ThenBy(h => h.R)]);
 
     /// <summary>A saved match, to play on under the rules it was saved with.</summary>
     public static Match Load(MatchState state, GameRules rules)
@@ -81,10 +80,6 @@ public sealed partial class Match
         }
 
         match.blightedLastRound.UnionWith(state.Blighted ?? []);
-        foreach (var f in state.Favour ?? [])
-        {
-            match.favour[f.Stance] = f.Favour;
-        }
 
         return match;
     }
