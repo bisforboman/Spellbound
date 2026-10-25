@@ -1,36 +1,26 @@
 @* A turn in a round (docs/game-design.md, Rounds and stances): on your pick, a stance nobody has picked this round,
-   what it aims at and any moves; when another seat's pick goes round, that stance or a pass. For an attack, the units
+   tapped on the stance tray, what it aims at and any moves; when another seat's pick goes round, that stance or a
+   pass. A bubble says what's next in a sentence; the numbers are in the preview below it. For an attack, the units
    that go. Every tile is chosen on the map (owner's choice, 24 Oct 2026): the match page hands each tap to Tap(), which
    takes it for the pick under way (where a move starts or ends, where a Leyline's units arrive, where to guard home)
    and otherwise leaves it as the stance's tile (for Cast, the spell's). Pickable says which tiles a tap can choose now, for the map to outline, and Prompt
    says what the next tap is for. The preview is Match.Check's own lines. *@
 
-@if (Picking)
-{
-    <h2 class="h4">Round @Match.CurrentRound of @Match.Rules.Rounds: your pick</h2>
-    <p class="text-muted">Pick a stance nobody has picked this round. You take it first, @Match.Rules.PickerDiscount <ManaIcon /> cheaper;
-        then everyone else may take it too, in turn.</p>
-}
-else
-{
-    <h2 class="h4">Round @Match.CurrentRound: @(Owners?[Match.Picks[^1].Seat] is null ? "Bot" : "Seat") @(Match.Picks[^1].Seat + 1) picked @Match.OpenStance</h2>
-    <p class="text-muted">Take it too, at full price, or pass.</p>
-}
+<StanceTray Match="Match" Owners="Owners" You="You" Chosen="@(Enum.Parse<Stance>(stance))" OnChoose="s => ChooseStance(s.ToString())" />
 
-<fieldset class="stances">
-    @foreach (var choice in Choices)
+<div class="bubble">
+    @if (Picking)
     {
-        var s = choice;
-        <label class="choice">
-            <input type="radio" name="stance" checked="@(stance == s.Key)" @onchange="() => ChooseStance(s.Key)" />
-            <span><b>@s.Key</b>: @s.Value</span>
-        </label>
-        @if (stance == s.Key)
-        {
-            <div class="stance-options">@StanceOptions()</div>
-        }
+        <p><b>Your pick.</b> Tap a stance: you go first and pay @Match.Rules.PickerDiscount less, then everyone else may do it too.</p>
     }
-</fieldset>
+    else
+    {
+        <p><b>@(Owners?[Match.Picks[^1].Seat] is null ? "Bot" : "Seat") @(Match.Picks[^1].Seat + 1) picked @Match.OpenStance.</b> @Match.OpenStance too, or pass?</p>
+    }
+    <p class="bubble-sub"><b>@stance</b>: @(stance == "Channel" ? $"gain {Match.Rules.ChannelMana} mana; only you take it" : AllChoices[stance])</p>
+</div>
+
+<div class="stance-options">@StanceOptions()</div>
 @if (Picking && stance != "Channel")
 {
     @* A pick needn't be used: taking a stance keeps it from the others this round. *@
@@ -128,12 +118,6 @@ else
         ["Cast"] = "your trait's spell",
         ["Channel"] = "gain mana; only you take it",
     };
-
-    /// <summary>The stances to choose from now: on your pick, those nobody has picked this round; else the one going round.</summary>
-    private IEnumerable<KeyValuePair<string, string>> Choices => AllChoices.Where(c => Picking
-        ? Match.Unpicked.Any(s => s.ToString() == c.Key)
-        : Match.OpenStance?.ToString() == c.Key)
-        .Select(c => c.Key == "Channel" ? new KeyValuePair<string, string>(c.Key, $"gain {Match.Rules.ChannelMana} mana; only you take it") : c);
 
     /// <summary>Whether this turn is your pick (rather than taking the stance another seat picked).</summary>
     private bool Picking => Match.OpenStance is null;
@@ -450,7 +434,8 @@ else
         if (turn != now)
         {
             turn = now;
-            stance = (Match.OpenStance ?? Match.Unpicked.FirstOrDefault(s => s != Stance.Channel, Stance.Channel)).ToString();
+            // The stance going round, or on a pick Summon (always usable) while it's free, else the first one left.
+            stance = (Match.OpenStance ?? (Match.Unpicked.Contains(Stance.Summon) ? Stance.Summon : Match.Unpicked.FirstOrDefault(s => s != Stance.Channel, Stance.Channel))).ToString();
             sends.Clear();
             moves.Clear();
             count = 1;

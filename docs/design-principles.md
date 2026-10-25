@@ -28,8 +28,11 @@ weighed less (owner, 21 Oct 2026).
 
 ## Principles
 
-1. **One phone, one hand, a few minutes a round.** Text-first pages, a turn is one tap, 8 rounds. With the stance
-   draft a seat takes 2–4 turns a round: to watch in play. (design; `CLAUDE.md` UI rules)
+1. **One phone, one hand, a few minutes a round, casual.** A board-first match page: the map, a tray of stance tokens
+   and a sentence that says what's next, with small effects that show what just happened, so the game explains itself
+   as it's played. A turn is one tap, 8 rounds. With the stance draft a seat takes 2–4 turns a round: to watch in play.
+   *(Was: text-first pages; changed 25 Oct 2026, the owner's choice, to casual and board-first.)* (design; owner;
+   `CLAUDE.md` UI rules)
 2. **Read your rivals' next move.** *(Was: secret, simultaneous orders, which all six AI tastes named the best part.
    It gave way on 25 Oct 2026, the owner's choice, to the stance draft: turns are now in public, and the reading is in
    what a rival will pick, and which stance they leave you; `discussions/shared-stances.md`, "The stance draft".)*

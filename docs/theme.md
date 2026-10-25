@@ -82,6 +82,34 @@ raised and tilted). `HexMap.razor` draws them with plain polygons, no CSS `drop-
 At the 5-player map's 37 tiles (about 40 px a tile at 360 px wide) the bevel stays at the edge, clear of the art and
 the labels.
 
+## The board
+
+Board first (owner's choice, 25 Oct 2026, from the mock-ups in `tools/mockups/board-first.html`; the owner picked the
+stance tray over a turn sheet). The match page in the rounds is the map, then:
+- **Whose turn:** a token per seat under the top line (`.seat-chip`), the one taking its turn pulsing in its colour.
+- **The stance tray** (`StanceTray.razor`): the six stances as round tokens on the table, each a small inline SVG icon
+  (`StanceIcon.razor`) with its name under it. A token picked this round is turned over (greyed) with its picker's
+  colour on a dot; the stance going round pulses in its picker's colour with a "Now" tag; on your pick the free
+  tokens glow, and on anyone else's turn they're dimmed. A line under the tray says which stance is going round, or
+  who picks.
+- **The bubble:** one sentence for what's next ("Your pick. Tap a stance…", "Bot 2 picked Attack. Attack too, or
+  pass?"), then the chosen stance's choices, the preview with its numbers, and one big button.
+
+- **The fog of war:** a rival's tile whose units you can't see (it isn't next to your land) wears a pale mist that drifts
+  slowly (`.fog`, a radial gradient in the map's own `defs`), instead of a "?". Its label still says the units are hidden.
+
+### Effects
+
+As the playback of the turns since yours shows each beat, its effects play once on the map (`BeatEffects.cs`, read from
+the beat's report lines; the `.effects` layer of `HexMap.razor`):
+- **Summon:** a ring in the summoner's colour and a "+N" that pops in and rises.
+- **Attack:** the army (a disc in the attacker's colour) slides from its tile to the target, a gold flash where they
+  meet, and if the tile is taken it washes into the winner's colour.
+- **Attune** (and any tile taken): the tile washes into its new owner's colour.
+- **Cast:** the spell's glyph glows on its tile and turns away.
+Each is a CSS keyframe of about 0.2–0.6 KB, drawn afresh for each beat (`EffectsKey`). With reduced motion the effects
+and pulses are off.
+
 ## Tokens
 
 | Token | Value | Use |

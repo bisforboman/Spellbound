@@ -49,12 +49,24 @@ else
                 <span class="mana-gain" @key="newRound" aria-hidden="true"> +@me.ProducedThisRound</span>
             }</span>
     </div>
+    @if (match.Phase == MatchPhase.Rounds && view.IsRunning)
+    {
+        @* Whose turn it is: a token per seat, the one taking its turn pulsing (not while the playback runs). *@
+        <div class="seat-row" role="list" aria-label="Whose turn">
+            @foreach (var seat in match.Seats)
+            {
+                var now = replay is null && match.Actor == seat.Index;
+                <span class="seat-chip@(now ? " now" : "")" role="listitem" style="--c: @Seats.Ink(seat.Index)">
+                    <i></i>@(now && seat.Index == you ? "Your turn" : now ? $"{Seats.Name(view, seat.Index, you)}'s turn" : Seats.Name(view, seat.Index, you))</span>
+            }
+        </div>
+    }
 
     @if (!drafting)
     {
         <section id="map" hidden="@(tab != MatchTab.Board)">
         <HexMap Match="match" You="you" Owners="view.Owners" Selected="@(ReplayTile ?? selected)" Highlight="@(replay is not null ? null : match.Phase == MatchPhase.Rounds && playing ? ordersForm?.Pickable : toPick)" OnSelect="Select" ShowNames="named"
-                Unowned="@ReplayPending" Dark="@ReplayDark"
+                Unowned="@ReplayPending" Dark="@ReplayDark" Effects="@ReplayEffects" EffectsKey="replayBeat"
                 Gains="@(fresh ? match.Seats.SelectMany(s => s.Tiles).ToDictionary(h => h, match.IncomeOf) : null)" />
 
         @if (selected is { } tile)
@@ -201,10 +213,6 @@ else
     }
     else if (playing && match.Phase == MatchPhase.Rounds)
     {
-        @if (match.Picks.Count > 0)
-        {
-            <p class="commit-line">Picked this round: @string.Join(", ", match.Picks.Select(p => $"{p.Stance} ({Seats.Name(view, p.Seat, you)})")).</p>
-        }
         @if (match.Actor == you)
         {
             <OrdersForm @ref="ordersForm" Match="match" You="you" Owners="view.Owners" Selected="selected" OnCommit="CommitAsync"
@@ -212,11 +220,13 @@ else
         }
         else
         {
-            <h2 class="h4">Round @match.CurrentRound of @match.Rules.Rounds</h2>
-            <div class="action-bar">
-                <p class="action-sum">@(match.OpenStance is { } open
+            <StanceTray Match="match" Owners="view.Owners" You="you" />
+            <div class="bubble">
+                <p>@(match.OpenStance is { } open
                     ? $"{Seats.Name(view, match.Picks[^1].Seat, you)} picked {open}; {Seats.Name(view, match.Actor!.Value, you)} takes it or passes."
                     : $"{Seats.Name(view, match.Actor!.Value, you)} picks next.") Wait for your turn.</p>
+            </div>
+            <div class="action-bar">
                 <div class="action-row">
                     <button type="button" class="btn btn-outline-primary btn-lg" disabled="@busy" @onclick="LoadAsync">Refresh</button>
                 </div>
@@ -581,6 +591,11 @@ else
         replayStop?.Cancel();
         replay = null;
     }
+
+    /// <summary>What the playback's beat does, played on the map (a summon, an attack, a tile taken, a spell).</summary>
+    private IReadOnlyList<Effect>? ReplayEffects => replay is { } beats && replayBeat > 0 && view is not null
+        ? BeatEffects.Of(beats[replayBeat - 1], view.Match)
+        : null;
 
     /// <summary>The tile the playback is on, marked on the map.</summary>
     private Hex? ReplayTile => replay is { } beats && replayBeat > 0 ? TileNames.Of(beats[replayBeat - 1]).Cast<Hex?>().FirstOrDefault() : null;
