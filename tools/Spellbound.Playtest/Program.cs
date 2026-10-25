@@ -193,7 +193,9 @@ namespace Spellbound.Playtest
                 return [];
             }
 
-            var lines = File.ReadAllLines(path);
+            // The app is still running and its log writer still open, so share it (Windows refuses otherwise).
+            using var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+            var lines = reader.ReadToEnd().Split('\n');
             return
             [
                 .. lines.Select((line, i) => (line, i))
