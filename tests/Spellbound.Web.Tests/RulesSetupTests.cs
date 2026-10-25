@@ -37,4 +37,20 @@ public class RulesSetupTests
         Assert.Equal([3], rules.LaterUnveilRounds);
         Assert.Equal(GameRules.Default.SteadyYields, rules.SteadyYields);
     }
+
+    [Fact]
+    public void Rules_stored_with_the_table_from_before_Pacify_load_with_it()
+    {
+        // A match's rules are stored with it: one started before Pacify keeps its Warden casting Ward.
+        var json = MatchJson.Serialize(GameRules.Default).Replace("\"Warden\":[\"Pacify\"]", "\"Warden\":[\"Ward\"]", StringComparison.Ordinal)
+            .Replace(",\"Pacify\"]", "]", StringComparison.Ordinal);
+
+        Assert.DoesNotContain("\"Pacify\"", json, StringComparison.Ordinal);
+        var rules = MatchJson.Deserialize<GameRules>(json);
+
+        Assert.Equal([Spell.Ward], rules.TraitSpells[Trait.Warden]);
+        Assert.Equal([Spell.Ward], rules.TraitSpells[Trait.Hearthkeeper]);
+        Assert.DoesNotContain(Spell.Pacify, rules.TraitSpells[Trait.Spellweaver]);
+        Assert.Equal(json, MatchJson.Serialize(rules));
+    }
 }

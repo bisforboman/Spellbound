@@ -24,7 +24,9 @@ public sealed partial class Match
         acted,
         [.. wards.OrderBy(w => w.Key.Q).ThenBy(w => w.Key.R).Select(w => new WardState(w.Key, w.Value))],
         [.. blights.OrderBy(h => h.Q).ThenBy(h => h.R)],
-        offer);
+        offer,
+        [.. pacified.Select(p => (p.Key, Army: PacifiedOn(p.Key))).Where(p => !p.Army.IsEmpty).OrderBy(p => p.Key.Q).ThenBy(p => p.Key.R)
+            .Select(p => new UnitsState(p.Key, p.Army.Imps, p.Army.Golems))]);
 
     /// <summary>A saved match, to play on under the rules it was saved with.</summary>
     public static Match Load(MatchState state, GameRules rules)
@@ -95,6 +97,10 @@ public sealed partial class Match
 
         match.blights.UnionWith(state.Blights ?? []);
         match.offer = state.Offer;
+        foreach (var p in state.Pacified ?? [])
+        {
+            match.pacified[p.Hex] = new Army(p.Imps, p.Golems);
+        }
 
         return match;
     }

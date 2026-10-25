@@ -55,8 +55,9 @@
     <p>With your own pick, units can also step between your neighbouring tiles first.</p>
 
     <h2 class="h4">Spells</h2>
-    <p>Each trait gives its player a spell (a Spellweaver gets them all), so a spell hints at a rival's trait. Ward,
-        Blight and Lure can go on several tiles in one Cast, each paid for.</p>
+    <p>Each trait gives its player a spell (a Spellweaver gets them all). Ward, Blight, Lure and Pacify can go on
+        several tiles in one Cast, each paid for. Pacified units can't attack for the rest of the round, even if they
+        move; an attack that sends them goes without them.</p>
     <ul class="help-list">
         @foreach (var s in GameRules.AllSpells)
         {

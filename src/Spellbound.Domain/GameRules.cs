@@ -93,9 +93,10 @@ public sealed record GameRules
     public int LeylineMinCost { get; init; } = 2;
     public int BlightCost { get; init; } = 3;
     public int LureCost { get; init; } = 3;
+    public int PacifyCost { get; init; } = 3;
 
-    /// <summary>The spells each trait lets its player cast (owner's choice, 24 Oct 2026): one each, shared by two
-    /// traits, and the whole book for a Spellweaver. A seat without a trait can cast any spell. Kept in trait order, so
+    /// <summary>The spells each trait lets its player cast (owner's choice, 24 Oct 2026): one each, and the whole book
+    /// for a Spellweaver. Warden's was Ward until Pacify came (25 Oct 2026); a match keeps the table it was saved with. A seat without a trait can cast any spell. Kept in trait order, so
     /// the rules save the same however they were read (the database's jsonb reorders keys).</summary>
     public IReadOnlyDictionary<Trait, IReadOnlyList<Spell>> TraitSpells
     {
@@ -107,7 +108,7 @@ public sealed record GameRules
     private readonly SortedDictionary<Trait, IReadOnlyList<Spell>> traitSpells = new()
     {
         [Trait.Hearthkeeper] = [Spell.Ward],
-        [Trait.Warden] = [Spell.Ward],
+        [Trait.Warden] = [Spell.Pacify],
         [Trait.Wanderer] = [Spell.Leyline],
         [Trait.Weaver] = [Spell.Leyline],
         [Trait.Beastbane] = [Spell.Lure],
@@ -115,11 +116,11 @@ public sealed record GameRules
         [Trait.Wildheart] = [Spell.Blight],
         [Trait.Hexer] = [Spell.Blight],
         [Trait.Warbrand] = [Spell.Scorch],
-        [Trait.Spellweaver] = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure],
+        [Trait.Spellweaver] = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure, Spell.Pacify],
     };
 
     /// <summary>Every spell a seat can cast with no trait in the way (Rally, removed, isn't one).</summary>
-    public static IReadOnlyList<Spell> AllSpells { get; } = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure];
+    public static IReadOnlyList<Spell> AllSpells { get; } = [Spell.Scorch, Spell.Ward, Spell.Leyline, Spell.Blight, Spell.Lure, Spell.Pacify];
 
     /// <summary>How much a Lure weakens a monster guard, for good; a guard never drops below <see cref="MinGuard"/>.</summary>
     public int LurePower { get; init; } = 1;

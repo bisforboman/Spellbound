@@ -135,6 +135,101 @@ public class SpellTests
     }
 
     [Fact]
+    public void Pacify_holds_back_an_attack_from_its_tile_and_the_report_says_so()
+    {
+        var match = Bordering();
+        var (mine, theirs) = Border(match, 0, 1)!.Value;
+        Play(match, Orders.Summon(1, theirs, UnitKind.Imp, 4));
+        Play(match); // in round 3 Seat 1 picks before Seat 2
+
+        PassUntilPicking(match, 0);
+        var mana = match.Seats[0].Mana;
+        var pacify = Orders.Cast(0, Spell.Pacify, theirs);
+        var check = match.Check(pacify);
+        var cast = match.Take(pacify, new SeededRandom(1));
+
+        Assert.Contains(check.Lines, l => l.StartsWith($"Cast Pacify for 3 mana, leaving {mana - 3}: the 4 Imps at {theirs} can't attack", StringComparison.Ordinal));
+        Assert.Contains($"Seat 1 casts Pacify on {theirs}: its 4 Imps can't attack this round.", cast.Lines);
+        Assert.Equal(mana - 3, match.Seats[0].Mana);
+        Assert.Equal(new Army(4, 0), match.PacifiedOn(theirs));
+        Assert.Equal(Army.None, match.ReadyToAttack(theirs, []));
+        Assert.Contains(Spell.Pacify, match.Seats[0].SpellsCast);
+
+        // Seat 2's attack from the pacified tile is taken, but doesn't happen; its units stay home and still defend.
+        PassUntilPicking(match, 1);
+        var attack = Orders.Attack(1, mine, [new Move(theirs, mine, new Army(4, 0))]);
+        Assert.Contains(match.Check(attack).Lines, l => l.Contains("every unit you send is pacified, so the attack won't happen", StringComparison.Ordinal));
+        var report = match.Take(attack, new SeededRandom(1));
+
+        Assert.True(report.Succeeded, string.Join('\n', report.Lines));
+        Assert.Contains($"Seat 2's attack from {theirs} is pacified.", report.Lines);
+        Assert.Equal(0, match.OwnerOf(mine));
+        Assert.Equal(new Army(4, 0), match.UnitsOn(theirs));
+    }
+
+    [Fact]
+    public void Pacified_units_that_move_still_cant_attack_and_a_save_keeps_them_pacified()
+    {
+        // Seat 2 holds a tile next to Seat 1 (pacified) and a neighbour of it that also borders Seat 1.
+        var match = Where(m => Stepping(m) is not null);
+        var (pacified, step, target) = Stepping(match)!.Value;
+        Play(match, Orders.Summon(1, pacified, UnitKind.Imp, 4));
+        Play(match); // in round 3 Seat 1 picks before Seat 2
+        PassUntilPicking(match, 0);
+        Assert.True(match.Take(Orders.Cast(0, Spell.Pacify, pacified), new SeededRandom(1)).Succeeded);
+
+        match = Match.Load(match.Save(), match.Rules);
+        PassUntilPicking(match, 1);
+        var move = new Move(pacified, step, new Army(4, 0));
+        Assert.Equal(Army.None, match.ReadyToAttack(step, [move]));
+        var report = match.Take(Orders.Attack(1, target, [new Move(step, target, new Army(4, 0))], move), new SeededRandom(1));
+
+        Assert.True(report.Succeeded, string.Join('\n', report.Lines));
+        Assert.Contains($"Seat 2's attack from {step} is pacified.", report.Lines);
+        Assert.Equal(0, match.OwnerOf(target));
+        Assert.Equal(new Army(4, 0), match.UnitsOn(step));
+
+        static (Hex Pacified, Hex Step, Hex Target)? Stepping(Match m) =>
+            (from a in m.Seats[1].Tiles.OrderBy(h => h.Q).ThenBy(h => h.R)
+             where m.Seats[0].Tiles.Any(a.IsNextTo)
+             from b in m.Seats[1].Tiles.Where(a.IsNextTo).OrderBy(h => h.Q).ThenBy(h => h.R)
+             from c in m.Seats[0].Tiles.Where(b.IsNextTo).OrderBy(h => h.Q).ThenBy(h => h.R)
+             select ((Hex, Hex, Hex)?)(a, b, c)).FirstOrDefault();
+    }
+
+    [Fact]
+    public void Pacify_goes_on_several_tiles_each_paid_for()
+    {
+        var match = Where(m => m.Seats[0].Tiles.SelectMany(m.Map.NeighboursOf).Distinct().Count(h => m.OwnerOf(h) is { } o && o != 0) >= 2);
+        var rivals = match.Seats[0].Tiles.SelectMany(match.Map.NeighboursOf).Distinct()
+            .Where(h => match.OwnerOf(h) is { } o && o != 0).OrderBy(h => h.Q).ThenBy(h => h.R).Take(2).ToList();
+        Play(match, [.. rivals.Select(h => Orders.Summon(match.OwnerOf(h)!.Value, h, UnitKind.Imp, 1)).DistinctBy(o => o.Seat)]);
+        rivals = [.. rivals.Where(h => !match.UnitsOn(h).IsEmpty)];
+        PassUntilPicking(match, 0);
+        var mana = match.Seats[0].Mana;
+
+        var report = match.Take(Orders.CastOn(0, Spell.Pacify, rivals), new SeededRandom(1));
+
+        Assert.True(report.Succeeded, string.Join('\n', report.Lines));
+        Assert.Equal(mana - 3 * rivals.Count, match.Seats[0].Mana);
+        Assert.All(rivals, h => Assert.Equal(match.UnitsOn(h), match.PacifiedOn(h)));
+    }
+
+    /// <summary>Every seat passes on its turns (aiming its picks at nothing) until it's <paramref name="seat"/>'s pick,
+    /// in the same round.</summary>
+    private static void PassUntilPicking(Match match, int seat)
+    {
+        var round = match.CurrentRound;
+        while (!match.IsPicking(seat))
+        {
+            Assert.Equal(round, match.CurrentRound);
+            var stance = match.OpenStance ?? match.Unpicked.First(s => s is not (Stance.Cast or Stance.Attack));
+            var report = match.Take(Orders.Pass(match.Actor!.Value, stance), new SeededRandom(1));
+            Assert.True(report.Succeeded, string.Join('\n', report.Lines));
+        }
+    }
+
+    [Fact]
     public void A_Cast_round_casts_one_spell_as_its_stance_and_pays_only_for_it()
     {
         var match = Bordering();
@@ -171,6 +266,24 @@ public class SpellTests
     }
 
     [Fact]
+    public void A_Warden_casts_Pacify_and_a_Hearthkeeper_Ward()
+    {
+        Assert.Equal([Spell.Pacify], GameRules.Default.TraitSpells[Trait.Warden]);
+        Assert.Equal([Spell.Ward], GameRules.Default.TraitSpells[Trait.Hearthkeeper]);
+        Assert.Equal(GameRules.AllSpells, GameRules.Default.TraitSpells[Trait.Spellweaver]);
+
+        // A match saved with the table from before Pacify keeps it: its Warden still casts Ward.
+        var old = GameRules.Default with
+        {
+            TraitSpells = new Dictionary<Trait, IReadOnlyList<Spell>>(GameRules.Default.TraitSpells) { [Trait.Warden] = [Spell.Ward] },
+        };
+        var match = FirstWhere(m => m.Seats.Any(s => s.Trait == Trait.Warden), old);
+        var warden = match.Seats.First(s => s.Trait == Trait.Warden).Index;
+
+        Assert.Equal([Spell.Ward], Match.Load(match.Save(), old).SpellsOf(warden));
+    }
+
+    [Fact]
     public void A_Ward_goes_on_several_tiles_each_paid_and_counts_as_one_cast()
     {
         var match = Bordering();
@@ -190,7 +303,7 @@ public class SpellTests
 
     public static TheoryData<string, string> BadMultiCasts => new()
     {
-        { "scorch on two tiles", "Only Ward, Blight and Lure go on several tiles" },
+        { "scorch on two tiles", "Only Ward, Blight, Lure and Pacify go on several tiles" },
         { "the same tile twice", "Each tile takes Ward once" },
         { "one tile not yours", "Ward needs one of your tiles" },
         { "too dear together", "Ward on 2 tiles costs 8 mana; you have" },
@@ -288,6 +401,9 @@ public class SpellTests
         { "leyline to the same tile", "two different tiles" },
         { "rally, no longer a spell", "Rally is no longer a spell" },
         { "too dear", "Ward costs 1000 mana; you have" },
+        { "pacify your own tile", "Pacify needs a rival's tile next to yours" },
+        { "pacify a tile with no units", "There are no units at" },
+        { "pacify too dear", "Pacify costs 1000 mana; you have" },
     };
 
     [Theory]
@@ -295,7 +411,12 @@ public class SpellTests
     public void A_spell_that_doesnt_check_changes_nothing(string problem, string reason)
     {
         // The opening doesn't depend on spell costs, so "too dear" plays the same match with Ward out of reach.
-        var match = Bordering(problem == "too dear" ? GameRules.Default with { WardCost = 1000 } : null);
+        var match = Bordering(problem switch
+        {
+            "too dear" => GameRules.Default with { WardCost = 1000 },
+            "pacify too dear" => GameRules.Default with { PacifyCost = 1000 },
+            _ => null,
+        });
         var (mine, theirs) = Border(match, 0, 1)!.Value;
         Play(match, Orders.Summon(1, theirs, UnitKind.Imp, 2));
 
@@ -309,6 +430,9 @@ public class SpellTests
             "lure a tile without monsters" => Orders.Cast(0, Spell.Lure, theirs),
             "leyline to the same tile" => Orders.Leyline(0, new Move(mine, mine, new Army(1, 0))),
             "rally, no longer a spell" => Orders.Cast(0, Spell.Rally, theirs),
+            "pacify your own tile" => Orders.Cast(0, Spell.Pacify, mine),
+            "pacify a tile with no units" => Orders.Cast(1, Spell.Pacify, mine),
+            "pacify too dear" => Orders.Cast(0, Spell.Pacify, theirs),
             _ => Orders.Cast(0, Spell.Ward, mine),
         };
         var before = Snapshot(match);

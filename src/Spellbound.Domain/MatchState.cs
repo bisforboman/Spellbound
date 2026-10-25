@@ -20,7 +20,8 @@ public sealed record MatchState(
     int Acted = 0,
     IReadOnlyList<WardState>? Wards = null, // this round's Wards and Blights, kept while the round is under way
     IReadOnlyList<Hex>? Blights = null,
-    AttuneOffer? Offer = null) // an Attune's rolled price, waiting to be paid or declined
+    AttuneOffer? Offer = null, // an Attune's rolled price, waiting to be paid or declined
+    IReadOnlyList<UnitsState>? Pacified = null) // this round's pacified units, by tile
 {
     public const int CurrentVersion = 1;
 }

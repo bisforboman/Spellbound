@@ -41,13 +41,13 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
 | Beastbane | clearing monsters | Lure | 1 point per monster tile cleared (on top of the conquest points) |
 | Warbrand | taking rivals' land | Scorch | 1 point per rival tile taken (on top of the conquest points) |
 | Golemwright | Golems | Lure | 1 point per 3 Golems you have at the end |
-| Spellweaver | casting every kind of spell | all five | 1 point per 2 different spells cast, and 1 for casting spells in 6 rounds |
-| Warden | keeping the land you started with | Ward | 1 point per tile from your opening still held, beyond the first (so at most 2) |
+| Spellweaver | casting every kind of spell | all six | 1 point per 2 different spells cast, and 1 for casting spells in 6 rounds |
+| Warden | keeping the land you started with | Pacify | 1 point per tile from your opening still held, beyond the first (so at most 2) |
 | Hexer | Blight | Blight | 1 point per round you cast Blight (a Cast on several tiles counts once) |
 
 - **Each trait gives its player a spell** (owner's choice, 24 Oct 2026; the column above): the only spell that
-  player can cast, shared with one other trait so a cast narrows a rival's trait to two without naming it. A
-  Spellweaver can cast all five. Hexer scored Scorch and Blight until then.
+  player can cast. A Spellweaver can cast all six. Hexer scored Scorch and Blight until then. Warden's spell was Ward
+  until Pacify came (25 Oct 2026); a match keeps the table it started with.
 
 - No trait changes the Attune price, income, upkeep or a cost: they would snowball (principle 7 in `design-principles.md`).
 - **Measured** (1,000 bot games each; bots draft at random, pick like their trait and lean towards their trait's
@@ -57,8 +57,8 @@ A walkthrough of one game from start to finish, kept up to date as rules are set
   for casting in 6 rounds); Wanderer counts groups of 2 or more instead of groups beyond the first; Weaver scores
   from 4 tiles (bots' groups are often 3, so its bot average fell from 0.9 to 0.7); see `playtests/`.)*
   *Since 24 Oct 2026 there are five spells again (Rally was removed when Cast became a stance), so a Spellweaver who
-  casts all five has 2 points and needs the 6-round point for its cap. With a whole round per spell, bots rarely get
-  there: see *Spells*, Measured.*
+  casts all five has 2 points and needs the 6-round point for its cap. Since 25 Oct 2026 there are six (Pacify), so
+  casting all six reaches the cap. With a whole round per spell, bots rarely get there: see *Spells*, Measured.*
 
 ## Map
 
@@ -254,8 +254,8 @@ Kept simple for now, to be extended later.
 
 Decided 20 Oct 2026 (the reasoning is in `discussions/spells.md`). **Casting a spell is a stance, Cast** (owner's
 choice, 24 Oct 2026): a Cast round casts **one spell**, instead of attuning, summoning, attacking or building.
-**Your trait decides which spell** (see *Traits*; a Spellweaver has all five). **Ward, Blight and Lure can go on
-several tiles in one Cast**, each tile paid for and checked on its own (owner's choice, 24 Oct 2026, so a Cast can
+**Your trait decides which spell** (see *Traits*; a Spellweaver has all six). **Ward, Blight, Lure and Pacify can go
+on several tiles in one Cast**, each tile paid for and checked on its own (owner's choice, 24 Oct 2026, so a Cast can
 take a round's mana); Scorch and Leyline already grow with the mana put into them, so they go on one.
 *(First decided as a fourth stance on 20 Oct 2026; moved alongside the stance the same day once the simulator showed
 that, as a stance, spells used the surplus mana only by replacing Attunes; made a stance again on 24 Oct 2026, with the
@@ -269,6 +269,7 @@ yields, prices or income. Costs are flat and small.
 | Ward | 3 mana a tile | your tiles | Its defence counts 3 more power in this round's battles. |
 | Leyline | 1 mana per unit (at least 2) | two of your tiles, any distance apart | Moves units between them, even across a gap; they count as moved. |
 | Blight | 3 mana a tile | rivals' tiles next to yours | It yields nothing in the next round's income. A tile blighted last round can't be blighted again this round. |
+| Pacify | 3 mana a tile | rivals' tiles next to yours | The units on it can't attack this round, even if they move away; they still defend. |
 | Lure | 3 mana a tile | monster tiles next to yours | Its guards lose 1 power **for good**, never below 1 (decided while spells were a stance, when a this-round Lure could never be followed by your own attack; it stays). |
 
 - **How spells resolve:** at once, on the caster's turn. Two Wards on one tile add up, and two Scorches both burn; a
@@ -278,6 +279,18 @@ yields, prices or income. Costs are flat and small.
 - **An attack goes with what's left:** if a rival's Scorch burns units on the tile an attack leaves from, the attack
   sends only the units still there, or doesn't happen if none are.
 - **Leyline** can't carry units that also step this round.
+- **Pacify** (owner's choices, 24–25 Oct 2026) holds back the units on the tile **when it resolves**, not those there
+  when orders were given: units that arrive later are free, and pacified units that step or ride a Leyline stay
+  pacified (when some of a tile's units leave, the pacified ones go first). A tile whose units are all pacified can't
+  be pacified again, and an empty tile can't be pacified. **An attack that sends pacified units goes without them**,
+  the same way as after a Scorch: the report says "Seat 2's attack from C3 is pacified", and if nothing is left the
+  attack doesn't happen. The preview says so before you commit. It goes on several tiles like Ward and Blight, so a
+  Cast can take a round's mana and cover a whole border. Units on a tile that changes hands are no longer pacified.
+- **Measured** (25 Oct 2026, 2,000 bot games, 3 players; bots pacify a rival tile whose free units could beat a tile
+  of theirs next to it): Pacify is cast 0.8 times a game (0.5 with `--plans`), mostly in place of Warden's old Wards
+  (Ward 1.7 to 1.0); spells cast stay about 4.6 a game, mana on spells 5.5 a seat, and unspent mana at the end 3.5 a
+  seat (4.0 with `--plans`), unchanged. Warden wins 31% (was 32%), Spellweaver 23% (23%; at its cap in 15% of games,
+  was 7%); every trait stays within 23–39%.
 - **Rally is gone** (owner's choice, 24 Oct 2026): it went with an attack, and a Cast round has none. It was the
   attacker's Ward (+2 power for 3 mana, decided 21 Oct 2026 for reading rivals, `discussions/reading-rivals.md`).
   Saved matches that cast it still count it for Spellweaver.

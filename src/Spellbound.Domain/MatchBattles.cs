@@ -73,6 +73,24 @@ public sealed partial class Match
             sent += go.Units;
         }
 
+        // A Pacify holds units back: the attack goes with the rest, or doesn't happen (ResolveAttacks says so).
+        var going = used.Aggregate(Army.None, (a, u) => a + Smaller(u.Value, ReadyToAttack(u.Key, orders.Moves)));
+        foreach (var (from, army) in used)
+        {
+            var ready = Smaller(army, ReadyToAttack(from, orders.Moves));
+            if (ready != army)
+            {
+                lines.Add($"The units at {from} are pacified this round: {army - ready} of those you send can't attack.");
+            }
+        }
+
+        if (going.IsEmpty)
+        {
+            lines.Add($"Attack {DescribePlain(target)}: every unit you send is pacified, so the attack won't happen.");
+            return null;
+        }
+
+        sent = going;
         var attack = sent.Power(Rules);
         var defence = DefencePower(target);
         var outcome = attack > defence
@@ -102,14 +120,22 @@ public sealed partial class Match
     /// </summary>
     private void ResolveAttacks(List<Orders> attacks, ReportLines lines)
     {
-        // An attack goes with the units still there: a rival's Scorch may have burned some since the orders were given.
+        // An attack goes with the units still there and free to go: a rival's Scorch may have burned some since the orders
+        // were given, and a Pacify holds back the units it found.
         attacks = [.. attacks.Select(o => o with
         {
             Attackers = [.. o.Attackers.GroupBy(go => go.From).Select(from =>
             {
                 var sent = from.Aggregate(Army.None, (a, go) => a + go.Units);
                 var there = UnitsOn(from.Key);
-                return new Move(from.Key, o.Target!.Value, new Army(Math.Min(sent.Imps, there.Imps), Math.Min(sent.Golems, there.Golems)));
+                var going = Smaller(Smaller(sent, there), there - PacifiedOn(from.Key));
+                if (going != Smaller(sent, there))
+                {
+                    lines.Add($"Seat {o.Seat + 1}'s attack from {from.Key} is pacified"
+                              + (going.IsEmpty ? "." : $": only {going} can go."), o.Seat, from.Key);
+                }
+
+                return new Move(from.Key, o.Target!.Value, going);
             }).Where(go => !go.Units.IsEmpty)],
         })];
         foreach (var empty in attacks.Where(o => o.Attackers.Count == 0))
@@ -208,6 +234,7 @@ public sealed partial class Match
 
     private void ClearDefenders(Hex target, int? owner)
     {
+        pacified.Remove(target);
         if (owner is null)
         {
             Map.SetGuard(target, 0);
@@ -233,6 +260,7 @@ public sealed partial class Match
         }
 
         seats[seat].Take(target);
+        pacified.Remove(target); // the new holder's units weren't pacified
         seats[seat].ConquestPointsThisRound += defended ? Rules.PointsPerConquest : Rules.PointsPerEmptyConquest;
         units[target] = army;
         lines.Add($"Seat {seat + 1} takes {target}" + (army.IsEmpty ? "" : $" with {army}") + (defended ? "." : ", undefended."), seat, target);

@@ -172,7 +172,7 @@ internal static class View
         A player's last tile can't be taken.
 
         SPELLS (the cast stance, one a round). Your trait decides your spell: {{string.Join("; ", r.TraitSpells.Select(t => $"{t.Key} {string.Join("/", t.Value)}"))}}.
-        Ward, Blight and Lure can go on several tiles in one cast ("also"), each paid for.
+        Ward, Blight, Lure and Pacify can go on several tiles in one cast ("also"), each paid for.
           scorch ({{r.ScorchManaPerPower}} mana per power that burns): burn power on a rival's tile next to yours, weakest
             first; you pay only for what burns.
           ward ({{r.WardCost}} mana): one of your tiles defends with {{r.WardPower}} more power this round.
@@ -180,6 +180,8 @@ internal static class View
           blight ({{r.BlightCost}} mana): a rival's tile next to yours yields nothing in the next round's income; not the
             same tile two rounds running.
           lure ({{r.LureCost}} mana): a monster tile next to yours loses {{r.LurePower}} guard power for good (never below {{r.MinGuard}}).
+          pacify ({{r.PacifyCost}} mana): the units on a rival's tile next to yours can't attack this round, even if they move;
+            they still defend. An attack that sends them goes without them.
 
         POINTS, banked every round and never lost: 1 per {{r.TilesPerPoint}} tile-rounds held (tiles held, added up each
         round), 1 per {{r.ManaPerPoint}} mana your land produced, {{r.PointsPerConquest}} per monster tile cleared or
